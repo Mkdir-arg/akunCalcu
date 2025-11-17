@@ -1,0 +1,291 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="mb-8">
+    <div class="bg-gradient-to-r from-akuna-blue to-akuna-dark rounded-3xl p-6 lg:p-8 text-white">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between">
+            <div>
+                <h1 class="text-2xl lg:text-4xl font-bold mb-2">
+                    <i class="fas fa-calculator mr-3"></i>Calculadora Rápida
+                </h1>
+                <p class="text-blue-100 text-sm lg:text-base">Cálculo instantáneo de precios - Ingresá medidas en milímetros</p>
+            </div>
+            <div class="mt-4 lg:mt-0">
+                <div class="bg-white bg-opacity-20 rounded-2xl p-4 backdrop-filter backdrop-blur-lg">
+                    <div class="text-center">
+                        <p class="text-sm text-blue-200 mb-1">Total Calculado</p>
+                        <p class="text-2xl lg:text-3xl font-bold text-yellow-300">$<span id="total-general-header">0.00</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Button -->
+<div class="mb-6">
+    <button id="add-product-btn" class="w-full lg:w-auto inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-plus mr-2"></i>
+        Agregar Producto
+    </button>
+</div>
+
+<!-- Product Selection Modal -->
+<div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Seleccionar Producto</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-2">
+                {% for producto in productos %}
+                <button class="product-option w-full text-left p-3 rounded-xl hover:bg-gray-50 border border-gray-200 transition-colors" 
+                        data-id="{{ producto.id }}"
+                        data-nombre="{{ producto.nombre }}"
+                        data-categoria="{{ producto.categoria }}"
+                        data-precio="{{ producto.precio_m2 }}">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-box text-white text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900">{{ producto.nombre }}</div>
+                            <div class="text-sm text-gray-500">{{ producto.categoria }} - ${{ producto.precio_m2|floatformat:2 }}/m²</div>
+                        </div>
+                    </div>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calculator Items Container -->
+<div id="calculator-items" class="space-y-4"></div>
+
+<!-- Total Section -->
+<div id="total-section" class="bg-gradient-to-r from-akuna-blue to-akuna-dark rounded-3xl p-6 mt-6 hidden">
+    <div class="flex flex-col lg:flex-row items-center justify-between text-white">
+        <div class="mb-4 lg:mb-0">
+            <h3 class="text-xl font-bold mb-2">
+                <i class="fas fa-calculator mr-2"></i>Total General
+            </h3>
+            <p class="text-blue-200">Cálculo en tiempo real</p>
+        </div>
+        <div class="bg-white bg-opacity-20 rounded-2xl p-6 backdrop-filter backdrop-blur-lg">
+            <div class="text-center">
+                <p class="text-blue-200 mb-2">Monto Total</p>
+                <p class="text-4xl font-bold text-yellow-300">$<span id="total-general">0.00</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+    <a href="{% url 'productos:cotizacion_create' %}" class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-save mr-2"></i>
+        Guardar como Cotización
+    </a>
+    <a href="{% url 'productos:productos_list' %}" class="inline-flex items-center justify-center px-6 py-3 bg-white hover:bg-gray-50 text-akuna-blue font-semibold rounded-2xl border-2 border-akuna-blue transition-all duration-300 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-cog mr-2"></i>
+        Gestionar Productos
+    </a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCounter = 0;
+    
+    const addProductBtn = document.getElementById('add-product-btn');
+    const productModal = document.getElementById('product-modal');
+    const closeModal = document.getElementById('close-modal');
+    const calculatorItems = document.getElementById('calculator-items');
+    const totalSection = document.getElementById('total-section');
+    
+    function formatNumber(num) {
+        return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    function createProductItem(producto) {
+        itemCounter++;
+        const itemId = `item-${itemCounter}`;
+        
+        const itemHTML = `
+            <div id="${itemId}" class="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 card-hover" data-precio="${producto.precio}">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-box text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-800">${producto.nombre}</h3>
+                        <p class="text-sm text-gray-500">${producto.categoria}</p>
+                    </div>
+                    <div class="text-right mr-4">
+                        <p class="text-sm text-gray-500">Precio m²</p>
+                        <p class="font-bold text-akuna-blue">$${formatNumber(parseFloat(producto.precio))}</p>
+                    </div>
+                    <button class="remove-item text-red-500 hover:text-red-700 p-2" data-item="${itemId}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-arrows-alt-v mr-1"></i>Alto (mm)
+                        </label>
+                        <input type="number" 
+                               class="alto-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-akuna-blue focus:border-transparent" 
+                               min="0" 
+                               placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-arrows-alt-h mr-1"></i>Ancho (mm)
+                        </label>
+                        <input type="number" 
+                               class="ancho-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-akuna-blue focus:border-transparent" 
+                               min="0" 
+                               placeholder="0">
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-2xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Área calculada:</span>
+                        <span class="font-semibold text-gray-800"><span class="area-display">0.000</span> m²</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-gray-800">Subtotal:</span>
+                        <span class="text-xl font-bold text-akuna-blue">$<span class="subtotal-display">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        calculatorItems.insertAdjacentHTML('beforeend', itemHTML);
+        
+        const newItem = document.getElementById(itemId);
+        setupItemEvents(newItem);
+        
+        // Mostrar sección de total si hay items
+        totalSection.classList.remove('hidden');
+        
+        // Animación de entrada
+        newItem.style.opacity = '0';
+        newItem.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            newItem.style.transition = 'all 0.3s ease';
+            newItem.style.opacity = '1';
+            newItem.style.transform = 'translateY(0)';
+        }, 10);
+    }
+    
+    function setupItemEvents(item) {
+        const altoInput = item.querySelector('.alto-input');
+        const anchoInput = item.querySelector('.ancho-input');
+        const removeBtn = item.querySelector('.remove-item');
+        
+        altoInput.addEventListener('input', () => calcularItem(item));
+        anchoInput.addEventListener('input', () => calcularItem(item));
+        
+        removeBtn.addEventListener('click', () => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '0';
+            item.style.transform = 'translateX(-100%)';
+            setTimeout(() => {
+                item.remove();
+                calcularTotal();
+                // Ocultar total si no hay items
+                if (calculatorItems.children.length === 0) {
+                    totalSection.classList.add('hidden');
+                }
+            }, 300);
+        });
+    }
+    
+    function calcularItem(item) {
+        const altoInput = item.querySelector('.alto-input');
+        const anchoInput = item.querySelector('.ancho-input');
+        const areaDisplay = item.querySelector('.area-display');
+        const subtotalDisplay = item.querySelector('.subtotal-display');
+        const precio = parseFloat(item.dataset.precio);
+        
+        const alto = parseFloat(altoInput.value) || 0;
+        const ancho = parseFloat(anchoInput.value) || 0;
+        
+        if (alto > 0 && ancho > 0) {
+            const area = (alto / 1000) * (ancho / 1000);
+            const subtotal = area * precio;
+            
+            areaDisplay.textContent = area.toFixed(3);
+            subtotalDisplay.textContent = formatNumber(subtotal);
+        } else {
+            areaDisplay.textContent = '0.000';
+            subtotalDisplay.textContent = '0.00';
+        }
+        
+        calcularTotal();
+    }
+    
+    function calcularTotal() {
+        let total = 0;
+        const items = calculatorItems.querySelectorAll('[data-precio]');
+        
+        items.forEach(item => {
+            const subtotalText = item.querySelector('.subtotal-display').textContent;
+            const subtotal = parseFloat(subtotalText.replace(/[.,]/g, match => match === ',' ? '.' : ''));
+            if (!isNaN(subtotal)) {
+                total += subtotal;
+            }
+        });
+        
+        const totalFormatted = formatNumber(total);
+        const totalElement = document.getElementById('total-general');
+        const totalHeaderElement = document.getElementById('total-general-header');
+        
+        if (totalElement) {
+            totalElement.textContent = totalFormatted;
+        }
+        
+        if (totalHeaderElement) {
+            totalHeaderElement.textContent = totalFormatted;
+        }
+    }
+    
+    // Event listeners
+    addProductBtn.addEventListener('click', () => {
+        productModal.classList.remove('hidden');
+    });
+    
+    closeModal.addEventListener('click', () => {
+        productModal.classList.add('hidden');
+    });
+    
+    productModal.addEventListener('click', (e) => {
+        if (e.target === productModal) {
+            productModal.classList.add('hidden');
+        }
+    });
+    
+    document.querySelectorAll('.product-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const producto = {
+                id: option.dataset.id,
+                nombre: option.dataset.nombre,
+                categoria: option.dataset.categoria,
+                precio: option.dataset.precio
+            };
+            
+            createProductItem(producto);
+            productModal.classList.add('hidden');
+        });
+    });
+});
+</script>
+{% endblock %}

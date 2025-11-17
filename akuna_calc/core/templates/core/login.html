@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Akuna Aberturas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'akuna-blue': '#145ea7',
+                        'akuna-dark': '#0f4c75',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.8s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-akuna-blue via-blue-600 to-akuna-dark overflow-hidden">
+    <!-- Background Elements -->
+    <div class="absolute inset-0">
+        <div class="absolute top-10 left-10 w-72 h-72 bg-white bg-opacity-10 rounded-full animate-float"></div>
+        <div class="absolute top-1/2 right-10 w-96 h-96 bg-white bg-opacity-5 rounded-full animate-float" style="animation-delay: -2s;"></div>
+        <div class="absolute bottom-10 left-1/3 w-64 h-64 bg-white bg-opacity-10 rounded-full animate-float" style="animation-delay: -4s;"></div>
+    </div>
+
+    <div class="min-h-screen flex items-center justify-center px-4 py-8 relative z-10">
+        <div class="w-full max-w-md">
+            <!-- Logo Section -->
+            <div class="text-center mb-8 animate-slide-up">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-3xl mb-6 backdrop-filter backdrop-blur-lg">
+                    <i class="fas fa-calculator text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold text-white mb-2">Akuna</h1>
+                <p class="text-blue-100 text-lg">Sistema de Cotizaciones</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-yellow-400 to-yellow-300 rounded-full mx-auto mt-4"></div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="glass-effect rounded-3xl p-8 shadow-2xl animate-slide-up" style="animation-delay: 0.2s;">
+                {% if form.errors %}
+                    <div class="bg-red-500 bg-opacity-20 border border-red-300 border-opacity-50 text-white px-4 py-3 rounded-2xl mb-6 backdrop-filter backdrop-blur-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-3"></i>
+                            <p>Usuario o contraseña incorrectos</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div class="space-y-2">
+                        <label for="{{ form.username.id_for_label }}" class="block text-white text-sm font-semibold">
+                            <i class="fas fa-user mr-2"></i>Usuario
+                        </label>
+                        <div class="relative">
+                            <input type="text" 
+                                   name="{{ form.username.name }}" 
+                                   id="{{ form.username.id_for_label }}"
+                                   class="w-full px-4 py-4 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-2xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-transparent backdrop-filter backdrop-blur-lg transition-all duration-300"
+                                   placeholder="Ingresa tu usuario"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+                                <i class="fas fa-user text-blue-200"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label for="{{ form.password.id_for_label }}" class="block text-white text-sm font-semibold">
+                            <i class="fas fa-lock mr-2"></i>Contraseña
+                        </label>
+                        <div class="relative">
+                            <input type="password" 
+                                   name="{{ form.password.name }}" 
+                                   id="{{ form.password.id_for_label }}"
+                                   class="w-full px-4 py-4 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-2xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-transparent backdrop-filter backdrop-blur-lg transition-all duration-300"
+                                   placeholder="Ingresa tu contraseña"
+                                   required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+                                <i class="fas fa-lock text-blue-200"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-akuna-dark font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Ingresar al Sistema
+                    </button>
+                </form>
+
+                <!-- Footer -->
+                <div class="text-center mt-8 pt-6 border-t border-white border-opacity-20">
+                    <p class="text-blue-100 text-sm">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Acceso seguro y protegido
+                    </p>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="text-center mt-8 animate-slide-up" style="animation-delay: 0.4s;">
+                <p class="text-blue-200 text-sm">
+                    © 2024 Akuna Aberturas - Sistema de Cotizaciones
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animación de entrada para los elementos
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.animate-slide-up');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(50px)';
+                
+                setTimeout(() => {
+                    el.style.transition = 'all 0.8s ease-out';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>

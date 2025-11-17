@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: akuna_calc
+      MYSQL_USER: akuna
+      MYSQL_PASSWORD: akuna123
+      MYSQL_ROOT_PASSWORD: root123
+    ports:
+      - "3308:3306"
+    command: >
+      --innodb-buffer-pool-size=128M
+      --innodb-log-file-size=32M
+      --innodb-flush-method=O_DSYNC
+      --innodb-flush-log-at-trx-commit=1
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    environment:
+      DB_NAME: akuna_calc
+      DB_USER: akuna
+      DB_PASSWORD: akuna123
+      DB_HOST: db
+      DB_PORT: 3306
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_PASSWORD: admin123
+      DEBUG: "true"
+    depends_on:
+      - db
+    volumes:
+      - ./akuna_calc:/app
+
+volumes:
+  mysql_data:

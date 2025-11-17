@@ -1,0 +1,173 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative overflow-hidden bg-gradient-to-br from-akuna-blue to-akuna-dark rounded-3xl mb-8 p-6 lg:p-12 text-white">
+    <div class="absolute inset-0 bg-black bg-opacity-10"></div>
+    <div class="relative z-10">
+        <div class="flex flex-col lg:flex-row items-center justify-between">
+            <div class="text-center lg:text-left mb-6 lg:mb-0">
+                <h1 class="text-3xl lg:text-5xl font-bold mb-4 animate-bounce-in">
+                    Bienvenido a <span class="text-yellow-300">Akuna</span>
+                </h1>
+                <p class="text-lg lg:text-xl text-blue-100 mb-6">Sistema inteligente de cotizaciones para aberturas</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <a href="{% url 'productos:calculadora' %}" class="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-filter backdrop-blur-lg border border-white border-opacity-30 text-white px-6 py-3 rounded-full transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-calculator mr-2"></i>Comenzar Cálculo
+                    </a>
+                    <a href="{% url 'productos:cotizacion_create' %}" class="bg-yellow-400 hover:bg-yellow-300 text-akuna-dark px-6 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i>Nueva Cotización
+                    </a>
+                </div>
+            </div>
+            <div class="hidden lg:block">
+                <div class="w-64 h-64 bg-white bg-opacity-10 rounded-full flex items-center justify-center backdrop-filter backdrop-blur-lg">
+                    <i class="fas fa-calculator text-8xl text-white opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+    <div class="bg-white rounded-2xl p-4 lg:p-6 shadow-lg card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Productos</p>
+                <p class="text-2xl font-bold text-akuna-blue">{{ productos_count|default:"0" }}</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-box text-akuna-blue text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-4 lg:p-6 shadow-lg card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Cotizaciones</p>
+                <p class="text-2xl font-bold text-green-600">{{ cotizaciones_count|default:"0" }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-file-invoice text-green-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-4 lg:p-6 shadow-lg card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Este Mes</p>
+                <p class="text-2xl font-bold text-purple-600">${{ total_mes|default:"0" }}</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-4 lg:p-6 shadow-lg card-hover">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Promedio</p>
+                <p class="text-2xl font-bold text-orange-600">${{ promedio|default:"0" }}</p>
+            </div>
+            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-calculator text-orange-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+    <!-- Calculadora Rápida -->
+    <div class="group bg-white rounded-3xl p-6 lg:p-8 shadow-xl card-hover border border-gray-100">
+        <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <i class="fas fa-calculator text-white text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-xl lg:text-2xl font-bold text-gray-800">Calculadora</h3>
+                <p class="text-sm text-gray-500">Cálculo rápido</p>
+            </div>
+        </div>
+        <p class="text-gray-600 mb-6 leading-relaxed">Realiza cálculos instantáneos de precios sin necesidad de guardar la cotización. Perfecto para consultas rápidas.</p>
+        <a href="{% url 'productos:calculadora' %}" class="inline-flex items-center justify-center w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+            <i class="fas fa-play mr-2"></i>
+            Iniciar Cálculo
+        </a>
+    </div>
+
+    <!-- Productos -->
+    <div class="group bg-white rounded-3xl p-6 lg:p-8 shadow-xl card-hover border border-gray-100">
+        <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <i class="fas fa-box text-white text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-xl lg:text-2xl font-bold text-gray-800">Productos</h3>
+                <p class="text-sm text-gray-500">Gestión completa</p>
+            </div>
+        </div>
+        <p class="text-gray-600 mb-6 leading-relaxed">Administra tu catálogo completo de productos, precios por m² y categorías. Control total de tu inventario.</p>
+        <a href="{% url 'productos:productos_list' %}" class="inline-flex items-center justify-center w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+            <i class="fas fa-cog mr-2"></i>
+            Gestionar Catálogo
+        </a>
+    </div>
+
+    <!-- Cotizaciones -->
+    <div class="group bg-white rounded-3xl p-6 lg:p-8 shadow-xl card-hover border border-gray-100">
+        <div class="flex items-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <i class="fas fa-file-invoice text-white text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-xl lg:text-2xl font-bold text-gray-800">Cotizaciones</h3>
+                <p class="text-sm text-gray-500">Historial completo</p>
+            </div>
+        </div>
+        <p class="text-gray-600 mb-6 leading-relaxed">Consulta, gestiona y crea nuevas cotizaciones. Mantén un registro detallado de todos tus presupuestos.</p>
+        <a href="{% url 'productos:cotizacion_list' %}" class="inline-flex items-center justify-center w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+            <i class="fas fa-search mr-2"></i>
+            Ver Historial
+        </a>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mt-8 bg-white rounded-3xl p-6 lg:p-8 shadow-xl">
+    <h3 class="text-xl lg:text-2xl font-bold text-gray-800 mb-6">Acciones Rápidas</h3>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'productos:producto_create' %}" class="flex flex-col items-center p-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 group">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
+                <i class="fas fa-plus text-blue-600"></i>
+            </div>
+            <span class="text-sm font-medium text-gray-700 text-center">Nuevo Producto</span>
+        </a>
+        
+        <a href="{% url 'productos:cotizacion_create' %}" class="flex flex-col items-center p-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 group">
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-green-200 transition-colors">
+                <i class="fas fa-file-plus text-green-600"></i>
+            </div>
+            <span class="text-sm font-medium text-gray-700 text-center">Nueva Cotización</span>
+        </a>
+        
+        <a href="{% url 'productos:calculadora' %}" class="flex flex-col items-center p-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 group">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
+                <i class="fas fa-calculator text-purple-600"></i>
+            </div>
+            <span class="text-sm font-medium text-gray-700 text-center">Calcular Precio</span>
+        </a>
+        
+        <a href="{% url 'admin:index' %}" class="flex flex-col items-center p-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 group">
+            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-orange-200 transition-colors">
+                <i class="fas fa-cogs text-orange-600"></i>
+            </div>
+            <span class="text-sm font-medium text-gray-700 text-center">Administración</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

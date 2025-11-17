@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">{{ title }}</h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.nombre.label }}
+                </label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="{{ form.categoria.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.categoria.label }}
+                </label>
+                {{ form.categoria }}
+                {% if form.categoria.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.categoria.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="{{ form.precio_m2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.precio_m2.label }}
+                </label>
+                {{ form.precio_m2 }}
+                {% if form.precio_m2.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-6">
+                <div class="flex items-center">
+                    {{ form.activo }}
+                    <label for="{{ form.activo.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
+                        {{ form.activo.label }}
+                    </label>
+                </div>
+                {% if form.activo.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.activo.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'productos:productos_list' %}" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
