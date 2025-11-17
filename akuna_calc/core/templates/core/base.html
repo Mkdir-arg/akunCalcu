@@ -11,14 +11,17 @@
             theme: {
                 extend: {
                     colors: {
-                        'akuna-blue': '#145ea7',
-                        'akuna-dark': '#0f4c75',
-                        'akuna-light': '#3282f6',
+                        'primary': '#1e293b',
+                        'primary-light': '#334155',
+                        'accent': '#0f172a',
+                        'surface': '#f8fafc',
+                        'border': '#e2e8f0',
                     },
                     animation: {
-                        'slide-in': 'slideIn 0.3s ease-out',
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'slide-in': 'slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                        'fade-in': 'fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                        'scale-in': 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        'float': 'float 3s ease-in-out infinite',
                     }
                 }
             }
@@ -26,55 +29,73 @@
     </script>
     <style>
         @keyframes slideIn {
-            from { transform: translateX(-100%); }
-            to { transform: translateX(0); }
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
         .glass-effect {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .card-elegant {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
         }
-        .card-hover {
-            transition: all 0.3s ease;
+        .card-elegant:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border-color: #cbd5e1;
         }
-        .card-hover:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        .btn-primary {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
+        }
+        .input-elegant {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid #e2e8f0;
+        }
+        .input-elegant:focus {
+            border-color: #64748b;
+            box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 min-h-screen">
     <!-- Mobile Menu Overlay -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
     
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-64 bg-gradient-to-b from-akuna-blue to-akuna-dark text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-64 bg-gradient-to-b from-primary to-accent text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
             <!-- Logo Section -->
-            <div class="flex items-center justify-between p-6 border-b border-blue-400 border-opacity-30">
+            <div class="flex items-center justify-between p-6 border-b border-slate-600 border-opacity-30">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center shadow-lg">
                         <i class="fas fa-calculator text-white text-lg"></i>
                     </div>
                     <div class="sidebar-text">
-                        <h1 class="text-xl font-bold">Akuna</h1>
-                        <p class="text-xs text-blue-200">Calculadora Pro</p>
+                        <h1 class="text-xl font-bold tracking-wide">Akuna</h1>
+                        <p class="text-xs text-slate-300 font-medium">Calculadora Pro</p>
                     </div>
                 </div>
-                <button id="sidebar-close" class="lg:hidden text-white hover:text-blue-200 transition-colors">
+                <button id="sidebar-close" class="lg:hidden text-white hover:text-slate-300 transition-colors">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -82,54 +103,54 @@
             <!-- Navigation -->
             <nav class="mt-6 px-4">
                 <div class="space-y-2">
-                    <a href="{% url 'home' %}" class="nav-item flex items-center px-4 py-3 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all duration-200 group">
-                        <div class="w-10 h-10 bg-white bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-20 transition-all">
+                    <a href="{% url 'home' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-home text-lg"></i>
                         </div>
                         <div class="sidebar-text">
-                            <span class="font-medium">Dashboard</span>
-                            <p class="text-xs text-blue-200">Panel principal</p>
+                            <span class="font-semibold">Dashboard</span>
+                            <p class="text-xs text-slate-300">Panel principal</p>
                         </div>
                     </a>
                     
-                    <a href="{% url 'productos:calculadora' %}" class="nav-item flex items-center px-4 py-3 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all duration-200 group">
-                        <div class="w-10 h-10 bg-white bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-20 transition-all">
+                    <a href="{% url 'productos:calculadora' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-calculator text-lg"></i>
                         </div>
                         <div class="sidebar-text">
-                            <span class="font-medium">Calculadora</span>
-                            <p class="text-xs text-blue-200">Cálculo rápido</p>
+                            <span class="font-semibold">Calculadora</span>
+                            <p class="text-xs text-slate-300">Cálculo rápido</p>
                         </div>
                     </a>
                     
-                    <a href="{% url 'productos:productos_list' %}" class="nav-item flex items-center px-4 py-3 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all duration-200 group">
-                        <div class="w-10 h-10 bg-white bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-20 transition-all">
+                    <a href="{% url 'productos:productos_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-box text-lg"></i>
                         </div>
                         <div class="sidebar-text">
-                            <span class="font-medium">Productos</span>
-                            <p class="text-xs text-blue-200">Gestión de catálogo</p>
+                            <span class="font-semibold">Productos</span>
+                            <p class="text-xs text-slate-300">Gestión de catálogo</p>
                         </div>
                     </a>
                     
-                    <a href="{% url 'productos:cotizacion_list' %}" class="nav-item flex items-center px-4 py-3 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all duration-200 group">
-                        <div class="w-10 h-10 bg-white bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-20 transition-all">
+                    <a href="{% url 'productos:cotizacion_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-file-invoice text-lg"></i>
                         </div>
                         <div class="sidebar-text">
-                            <span class="font-medium">Cotizaciones</span>
-                            <p class="text-xs text-blue-200">Historial y gestión</p>
+                            <span class="font-semibold">Cotizaciones</span>
+                            <p class="text-xs text-slate-300">Historial y gestión</p>
                         </div>
                     </a>
                     
                     {% if request.user.is_staff %}
-                    <a href="{% url 'user_list' %}" class="nav-item flex items-center px-4 py-3 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all duration-200 group">
-                        <div class="w-10 h-10 bg-white bg-opacity-10 rounded-lg flex items-center justify-center mr-3 group-hover:bg-opacity-20 transition-all">
+                    <a href="{% url 'user_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-users text-lg"></i>
                         </div>
                         <div class="sidebar-text">
-                            <span class="font-medium">Usuarios</span>
-                            <p class="text-xs text-blue-200">Gestión de accesos</p>
+                            <span class="font-semibold">Usuarios</span>
+                            <p class="text-xs text-slate-300">Gestión de accesos</p>
                         </div>
                     </a>
                     {% endif %}
@@ -137,14 +158,14 @@
             </nav>
 
             <!-- User Section -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-400 border-opacity-30">
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-600 border-opacity-30">
                 <div class="flex items-center space-x-3 sidebar-text">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <div class="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-500 rounded-full flex items-center justify-center shadow-lg">
                         <i class="fas fa-user text-sm"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="font-medium truncate">{{ user.username }}</p>
-                        <p class="text-xs text-blue-200">Usuario activo</p>
+                        <p class="font-semibold truncate">{{ user.username }}</p>
+                        <p class="text-xs text-slate-300">Usuario activo</p>
                     </div>
                 </div>
             </div>
@@ -153,27 +174,27 @@
         <!-- Main Content -->
         <div class="flex-1 flex flex-col lg:ml-0">
             <!-- Top Bar -->
-            <header class="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg border-b border-gray-200 sticky top-0 z-30">
+            <header class="glass-effect border-b border-slate-200 sticky top-0 z-30">
                 <div class="flex items-center justify-between px-4 lg:px-6 py-4">
                     <div class="flex items-center space-x-4">
-                        <button id="mobile-menu-btn" class="lg:hidden text-gray-600 hover:text-gray-900 transition-colors">
+                        <button id="mobile-menu-btn" class="lg:hidden text-slate-600 hover:text-slate-900 transition-colors">
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         <div>
-                            <h2 class="text-xl lg:text-2xl font-bold text-gray-800">Akuna Aberturas</h2>
-                            <p class="text-sm text-gray-500 hidden sm:block">Sistema de Cotizaciones</p>
+                            <h2 class="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Akuna Aberturas</h2>
+                            <p class="text-sm text-slate-500 hidden sm:block font-medium">Sistema de Cotizaciones</p>
                         </div>
                     </div>
                     
                     <div class="flex items-center space-x-2 lg:space-x-4">
-                        <div class="hidden sm:flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-2">
-                            <div class="w-8 h-8 bg-akuna-blue rounded-full flex items-center justify-center">
+                        <div class="hidden sm:flex items-center space-x-3 bg-slate-50 rounded-2xl px-4 py-2 border border-slate-200">
+                            <div class="w-8 h-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-white text-xs"></i>
                             </div>
-                            <span class="text-sm font-medium text-gray-700">{{ user.username }}</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ user.username }}</span>
                         </div>
-                        <a href="{% url 'logout' %}" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 lg:px-4 py-2 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg">
-                            <i class="fas fa-sign-out-alt mr-1 lg:mr-2"></i>
+                        <a href="{% url 'logout' %}" class="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white px-4 py-2 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg font-medium">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
                             <span class="hidden sm:inline">Salir</span>
                         </a>
                     </div>
