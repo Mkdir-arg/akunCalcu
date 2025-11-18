@@ -8,9 +8,13 @@
     
     <!-- Fallback CSS -->
     <link href="{% static 'css/fallback.css' %}" rel="stylesheet">
+    <link href="{% static 'css/responsive.css' %}" rel="stylesheet">
     
-    <!-- Tailwind CSS from CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS local -->
+    <link href="{% static 'css/tailwind.css' %}" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN fallback -->
+    <script src="https://cdn.tailwindcss.com" onerror="console.warn('Tailwind CDN failed')"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
