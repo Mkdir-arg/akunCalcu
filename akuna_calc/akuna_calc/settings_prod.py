@@ -23,8 +23,8 @@ DATABASES = {
 }
 
 # Static files for production
-STATIC_ROOT = '/home/YOURUSERNAME/akunCalcu/akuna_calc/staticfiles'
-STATICFILES_DIRS = ['/home/YOURUSERNAME/akunCalcu/akuna_calc/static']
+STATIC_ROOT = '/home/AKUN/akunCalcu/akuna_calc/staticfiles'
+STATICFILES_DIRS = ['/home/AKUN/akunCalcu/akuna_calc/static']
 
 # Security settings
 SECURE_SSL_REDIRECT = False  # PythonAnywhere handles SSL
