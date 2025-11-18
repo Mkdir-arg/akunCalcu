@@ -9,12 +9,32 @@ class Producto(models.Model):
         ('persianas', 'Persianas'),
     ]
     
+    FORMULA_CHOICES = [
+        ('area', 'Área (Alto × Ancho)'),
+        ('perimetro', 'Perímetro (Alto×2 + Ancho×2)'),
+    ]
+    
     nombre = models.CharField(max_length=200)
     categoria = models.CharField(max_length=100, choices=CATEGORIA_CHOICES)
     precio_m2 = models.DecimalField(max_digits=10, decimal_places=2)
+    formula = models.CharField(max_length=20, choices=FORMULA_CHOICES, default='area')
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def calcular_precio(self, alto_mm, ancho_mm):
+        """Calcula el precio según la fórmula del producto"""
+        alto_m = alto_mm / 1000
+        ancho_m = ancho_mm / 1000
+        
+        if self.formula == 'perimetro':
+            # Perímetro: (Alto×2 + Ancho×2)
+            calculo = (alto_m * 2) + (ancho_m * 2)
+        else:
+            # Área: Alto × Ancho
+            calculo = alto_m * ancho_m
+            
+        return calculo * float(self.precio_m2)
 
     def __str__(self):
         return self.nombre

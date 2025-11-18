@@ -81,6 +81,7 @@
                         data-nombre="{{ producto.nombre }}"
                         data-categoria="{{ producto.categoria }}"
                         data-precio="{{ producto.precio_m2 }}"
+                        data-formula="{{ producto.formula }}"
                         data-search="{{ producto.nombre|lower }} {{ producto.categoria|lower }}">
                     <div class="flex items-center">
                         <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
@@ -158,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemId = `item-${itemCounter}`;
         
         const itemHTML = `
-            <div id="${itemId}" class="card-elegant bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl" data-precio="${producto.precio}">
+            <div id="${itemId}" class="card-elegant bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl" data-precio="${producto.precio}" data-formula="${producto.formula}">
                 <div class="flex items-center mb-4 sm:mb-6">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl sm:rounded-2xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
                         <i class="fas fa-box text-white text-sm sm:text-base"></i>
@@ -199,8 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-200">
                     <div class="flex justify-between items-center mb-2 sm:mb-3">
-                        <span class="text-xs sm:text-sm text-slate-600 font-medium">Área calculada:</span>
-                        <span class="font-semibold text-slate-800 text-sm sm:text-base"><span class="area-display">0.000</span> m²</span>
+                        <span class="text-xs sm:text-sm text-slate-600 font-medium">${producto.formula === 'perimetro' ? 'Perímetro calculado:' : 'Área calculada:'}</span>
+                        <span class="font-semibold text-slate-800 text-sm sm:text-base"><span class="area-display">0.000</span> ${producto.formula === 'perimetro' ? 'm' : 'm²'}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-base sm:text-lg font-bold text-slate-800">Subtotal:</span>
@@ -265,12 +266,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const alto = parseFloat(altoInput.value) || 0;
         const ancho = parseFloat(anchoInput.value) || 0;
+        const formula = item.dataset.formula || 'area';
         
         if (alto > 0 && ancho > 0) {
-            const area = (alto / 1000) * (ancho / 1000);
-            const subtotal = area * precio;
+            let calculo;
+            if (formula === 'perimetro') {
+                // Perímetro: (Alto×2 + Ancho×2) en metros
+                calculo = ((alto / 1000) * 2) + ((ancho / 1000) * 2);
+            } else {
+                // Área: Alto × Ancho en metros
+                calculo = (alto / 1000) * (ancho / 1000);
+            }
             
-            areaDisplay.textContent = area.toFixed(3);
+            const subtotal = calculo * precio;
+            
+            areaDisplay.textContent = calculo.toFixed(3);
             subtotalDisplay.textContent = formatNumber(subtotal);
         } else {
             areaDisplay.textContent = '0.000';
@@ -328,7 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     id: option.dataset.id,
                     nombre: option.dataset.nombre,
                     categoria: option.dataset.categoria,
-                    precio: option.dataset.precio
+                    precio: option.dataset.precio,
+                    formula: option.dataset.formula || 'area'
                 };
                 
                 createProductItem(producto);
