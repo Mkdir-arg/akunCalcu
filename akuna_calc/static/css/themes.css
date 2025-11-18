@@ -3,9 +3,12 @@
     --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
     --bg-tertiary: #f1f5f9;
+    --bg-hero: #1e293b;
+    --bg-hero-secondary: #334155;
     --text-primary: #1e293b;
     --text-secondary: #475569;
     --text-tertiary: #64748b;
+    --text-on-dark: #ffffff;
     --border-primary: #e2e8f0;
     --border-secondary: #cbd5e1;
     --accent-primary: #1e293b;
@@ -19,9 +22,12 @@
     --bg-primary: #0f172a;
     --bg-secondary: #1e293b;
     --bg-tertiary: #334155;
+    --bg-hero: #1e293b;
+    --bg-hero-secondary: #0f172a;
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --text-tertiary: #94a3b8;
+    --text-on-dark: #ffffff;
     --border-primary: #334155;
     --border-secondary: #475569;
     --accent-primary: #3b82f6;
@@ -67,14 +73,16 @@ body {
 
 /* Glass effect */
 .glass-effect {
-    background: var(--bg-secondary);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20px);
     border: 1px solid var(--border-primary);
+    color: var(--text-primary);
 }
 
 [data-theme="dark"] .glass-effect {
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid var(--border-primary);
+    color: var(--text-on-dark);
 }
 
 /* Sidebar */
@@ -118,6 +126,15 @@ body {
 
 .bg-gradient-to-r {
     background: linear-gradient(to right, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+/* Hero section gradients */
+.from-primary {
+    background: linear-gradient(135deg, var(--bg-hero) 0%, var(--bg-hero-secondary) 100%) !important;
+}
+
+.to-accent {
+    background: linear-gradient(135deg, var(--bg-hero) 0%, var(--bg-hero-secondary) 100%) !important;
 }
 
 /* Theme toggle button */
@@ -181,6 +198,15 @@ body {
         background: rgba(30, 41, 59, 0.8) !important;
         color: white !important;
     }
+    
+    /* Hero section text */
+    .text-white {
+        color: #ffffff !important;
+    }
+    
+    .text-slate-200 {
+        color: #e2e8f0 !important;
+    }
 }
 
 /* Smooth transitions for theme changes */
@@ -198,3 +224,40 @@ body {
 [data-theme="dark"] .bg-slate-50 { background-color: var(--bg-tertiary) !important; }
 [data-theme="dark"] .border-slate-200 { border-color: var(--border-primary) !important; }
 [data-theme="dark"] .border-slate-300 { border-color: var(--border-secondary) !important; }
+
+/* Light theme specific fixes */
+[data-theme="light"] .bg-gradient-to-br.from-primary {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+[data-theme="light"] .text-white {
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .text-slate-200 {
+    color: #e2e8f0 !important;
+}
+
+/* Total calculator header fix */
+[data-theme="light"] .glass-effect {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #1e293b !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Hero section in light theme */
+[data-theme="light"] .from-primary.to-accent {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    color: white !important;
+}
+
+/* Ensure text contrast in hero */
+[data-theme="light"] .from-primary .text-white,
+[data-theme="light"] .to-accent .text-white {
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .from-primary .text-slate-200,
+[data-theme="light"] .to-accent .text-slate-200 {
+    color: #e2e8f0 !important;
+}
