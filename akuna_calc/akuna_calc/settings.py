@@ -10,7 +10,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['AKUN.pythonanywhere.com']
+ALLOWED_HOSTS = ['akun.pythonanywhere.com', 'AKUN.pythonanywhere.com', '*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

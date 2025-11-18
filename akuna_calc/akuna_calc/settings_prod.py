@@ -6,7 +6,7 @@ pymysql.install_as_MySQLdb()
 
 # Production settings
 DEBUG = False
-ALLOWED_HOSTS = ['YOURUSERNAME.pythonanywhere.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['akun.pythonanywhere.com', 'AKUN.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 # Database for PythonAnywhere
 DATABASES = {
