@@ -65,36 +65,25 @@
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
+        /* Efectos visuales respetando el sistema de temas */
         .glass-effect {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-elegant {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid #e2e8f0;
         }
         .card-elegant:hover {
             transform: translateY(-4px);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-            border-color: #cbd5e1;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
         }
         .input-elegant {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid #e2e8f0;
-        }
-        .input-elegant:focus {
-            border-color: #64748b;
-            box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
         }
     </style>
 </head>

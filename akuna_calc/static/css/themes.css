@@ -1,44 +1,92 @@
-/* Light Theme (Default) */
-:root {
-    --bg-primary: #f8fafc;
+/* ========= SISTEMA DE TEMAS ========= */
+/* Usar data-theme="light" | "dark" en <html> (lo maneja theme.js) */
+
+/* Tema claro (default) */
+:root,
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* Fondo principal y superficies */
+    --bg-primary: #f9fafb;
     --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --bg-hero: #1e293b;
-    --bg-hero-secondary: #334155;
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --text-tertiary: #64748b;
-    --text-on-dark: #ffffff;
-    --border-primary: #e2e8f0;
-    --border-secondary: #cbd5e1;
-    --accent-primary: #1e293b;
-    --accent-secondary: #334155;
-    --shadow: rgba(0, 0, 0, 0.1);
-    --shadow-lg: rgba(0, 0, 0, 0.15);
+    --bg-tertiary: #edf2f7;
+
+    /* Hero y gradientes principales */
+    --bg-hero: #1e3a8a;
+    --bg-hero-secondary: #1e40af;
+
+    /* Tipografía */
+    --text-primary: #0f172a;
+    --text-secondary: #4b5563;
+    --text-tertiary: #9ca3af;
+    --text-on-dark: #f9fafb;
+
+    /* Bordes */
+    --border-primary: rgba(15, 23, 42, 0.08);
+    --border-secondary: rgba(15, 23, 42, 0.15);
+
+    /* Sidebar / botones (azul profesional) */
+    --accent-primary: #1e3a8a;
+    --accent-secondary: #1e40af;
+
+    /* Sombras */
+    --shadow: rgba(15, 23, 42, 0.08);
+    --shadow-lg: rgba(15, 23, 42, 0.16);
+
+    /* Glass effect */
+    --glass-bg-light: rgba(255, 255, 255, 0.9);
+    --glass-border-light: rgba(226, 232, 240, 0.8);
+    --glass-text-light: #0f172a;
+
+    /* Total calculado */
+    --total-bg: #0f172a;
+    --total-text: #f9fafb;
 }
 
-/* Dark Theme */
+/* Tema oscuro */
 [data-theme="dark"] {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --bg-hero: #1e293b;
-    --bg-hero-secondary: #0f172a;
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
-    --text-on-dark: #ffffff;
-    --border-primary: #334155;
-    --border-secondary: #475569;
-    --accent-primary: #3b82f6;
-    --accent-secondary: #2563eb;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --shadow-lg: rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+
+    /* Fondo principal y superficies */
+    --bg-primary: #020617;
+    --bg-secondary: #0f172a;
+    --bg-tertiary: #020617;
+
+    /* Hero (azul oscuro a negro) */
+    --bg-hero: #020617;
+    --bg-hero-secondary: #000000;
+
+    /* Tipografía */
+    --text-primary: #e5e7eb;
+    --text-secondary: #cbd5f5;
+    --text-tertiary: #64748b;
+    --text-on-dark: #f9fafb;
+
+    /* Bordes */
+    --border-primary: rgba(148, 163, 184, 0.35);
+    --border-secondary: rgba(148, 163, 184, 0.5);
+
+    /* Sidebar / botones (azul brillante) */
+    --accent-primary: #2563eb;
+    --accent-secondary: #3b82f6;
+
+    /* Sombras */
+    --shadow: rgba(0, 0, 0, 0.6);
+    --shadow-lg: rgba(0, 0, 0, 0.85);
+
+    /* Glass effect */
+    --glass-bg-light: rgba(15, 23, 42, 0.82);
+    --glass-border-light: rgba(148, 163, 184, 0.45);
+    --glass-text-light: #e5e7eb;
+
+    /* Total calculado */
+    --total-bg: #020617;
+    --total-text: #e5e7eb;
 }
 
 /* Base styles using CSS variables */
 body {
-    background: var(--bg-primary);
+    background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -73,16 +121,11 @@ body {
 
 /* Glass effect */
 .glass-effect {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--glass-bg-light);
     backdrop-filter: blur(20px);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .glass-effect {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid var(--border-primary);
-    color: var(--text-on-dark);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border-light);
+    color: var(--glass-text-light);
 }
 
 /* Sidebar */
@@ -90,13 +133,10 @@ body {
     background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
 }
 
-[data-theme="dark"] .sidebar {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-}
-
 /* Buttons */
 .btn-primary {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: var(--text-on-dark);
 }
 
 .btn-primary:hover {
@@ -154,59 +194,18 @@ body {
     transform: scale(1.05);
 }
 
-/* Dark theme specific adjustments */
-[data-theme="dark"] {
-    /* Hero section */
-    .bg-gradient-to-br {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-    }
-    
-    /* Text colors */
-    .text-slate-200 {
-        color: #e2e8f0 !important;
-    }
-    
-    .text-white {
-        color: #ffffff !important;
-    }
-    
-    /* Stats cards gradients */
-    .bg-gradient-to-br.from-slate-500 {
-        background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
-    }
-    
-    .bg-gradient-to-br.from-emerald-500 {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    }
-    
-    .bg-gradient-to-br.from-violet-500 {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-    }
-    
-    .bg-gradient-to-br.from-amber-500 {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-    }
-    
-    /* Buttons */
-    .bg-white {
-        background-color: var(--bg-secondary) !important;
-        color: var(--text-primary) !important;
-    }
-    
-    /* Glass effect buttons */
-    .glass-effect {
-        background: rgba(30, 41, 59, 0.8) !important;
-        color: white !important;
-    }
-    
-    /* Hero section text */
-    .text-white {
-        color: #ffffff !important;
-    }
-    
-    .text-slate-200 {
-        color: #e2e8f0 !important;
-    }
+/* Dark theme specific adjustments (mínimos, sin anidar reglas) */
+[data-theme="dark"] .bg-white {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-slate-200 {
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .text-white {
+    color: #ffffff !important;
 }
 
 /* Smooth transitions for theme changes */
@@ -214,8 +213,7 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Override Tailwind classes with !important */
-[data-theme="dark"] .bg-white { background-color: var(--bg-secondary) !important; }
+/* Override Tailwind classes con !important */
 [data-theme="dark"] .text-slate-800 { color: var(--text-primary) !important; }
 [data-theme="dark"] .text-slate-700 { color: var(--text-primary) !important; }
 [data-theme="dark"] .text-slate-600 { color: var(--text-secondary) !important; }
