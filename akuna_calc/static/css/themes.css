@@ -140,25 +140,46 @@ body {
 /* Dark theme specific adjustments */
 [data-theme="dark"] {
     /* Hero section */
-    .bg-gradient-to-br.from-primary {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    .bg-gradient-to-br {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    }
+    
+    /* Text colors */
+    .text-slate-200 {
+        color: #e2e8f0 !important;
+    }
+    
+    .text-white {
+        color: #ffffff !important;
     }
     
     /* Stats cards gradients */
     .bg-gradient-to-br.from-slate-500 {
-        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
     }
     
     .bg-gradient-to-br.from-emerald-500 {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
     }
     
     .bg-gradient-to-br.from-violet-500 {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
     }
     
     .bg-gradient-to-br.from-amber-500 {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    }
+    
+    /* Buttons */
+    .bg-white {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Glass effect buttons */
+    .glass-effect {
+        background: rgba(30, 41, 59, 0.8) !important;
+        color: white !important;
     }
 }
 
@@ -167,6 +188,13 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Override Tailwind's dark mode if it conflicts */
-.dark .bg-white { background-color: var(--bg-secondary) !important; }
-.dark .text-slate-800 { color: var(--text-primary) !important; }
+/* Override Tailwind classes with !important */
+[data-theme="dark"] .bg-white { background-color: var(--bg-secondary) !important; }
+[data-theme="dark"] .text-slate-800 { color: var(--text-primary) !important; }
+[data-theme="dark"] .text-slate-700 { color: var(--text-primary) !important; }
+[data-theme="dark"] .text-slate-600 { color: var(--text-secondary) !important; }
+[data-theme="dark"] .text-slate-500 { color: var(--text-tertiary) !important; }
+[data-theme="dark"] .text-slate-400 { color: var(--text-tertiary) !important; }
+[data-theme="dark"] .bg-slate-50 { background-color: var(--bg-tertiary) !important; }
+[data-theme="dark"] .border-slate-200 { border-color: var(--border-primary) !important; }
+[data-theme="dark"] .border-slate-300 { border-color: var(--border-secondary) !important; }

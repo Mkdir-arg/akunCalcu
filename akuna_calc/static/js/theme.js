@@ -12,6 +12,17 @@ class ThemeManager {
 
     applyTheme() {
         document.documentElement.setAttribute('data-theme', this.theme);
+        
+        // Add/remove dark class for Tailwind
+        if (this.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+        }
+        
+        // Update body class
         document.body.className = document.body.className.replace(/theme-\w+/g, '');
         document.body.classList.add(`theme-${this.theme}`);
         
