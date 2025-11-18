@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from productos.models import Producto, Cotizacion
 from django.contrib.auth import get_user_model
@@ -6,6 +6,11 @@ from django.db.models import Sum
 from datetime import datetime
 
 User = get_user_model()
+
+def index(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    return redirect('login')
 
 @login_required
 def home(request):
