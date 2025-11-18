@@ -12,10 +12,10 @@ ALLOWED_HOSTS = ['akun.pythonanywhere.com', 'AKUN.pythonanywhere.com', 'localhos
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'YOURUSERNAME$default',
-        'USER': 'YOURUSERNAME',
-        'PASSWORD': 'YOUR_DB_PASSWORD',
-        'HOST': 'YOURUSERNAME.mysql.pythonanywhere-services.com',
+        'NAME': 'AKUN$default',
+        'USER': 'AKUN',
+        'PASSWORD': 'AKUN1234!',
+        'HOST': 'AKUN.mysql.pythonanywhere-services.com',
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
