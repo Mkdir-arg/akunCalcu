@@ -40,6 +40,16 @@
                 {% endif %}
             </div>
 
+            <div class="mb-4">
+                <label for="{{ form.formula.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.formula.label }}
+                </label>
+                {{ form.formula }}
+                {% if form.formula.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.formula.errors.0 }}</p>
+                {% endif %}
+            </div>
+
             <div class="mb-6">
                 <div class="flex items-center">
                     {{ form.activo }}
