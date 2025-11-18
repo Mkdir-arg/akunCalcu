@@ -1,0 +1,250 @@
+/* Mobile First Responsive Design */
+
+/* Base mobile styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Mobile sidebar */
+@media (max-width: 1023px) {
+    .sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 16rem;
+        height: 100vh;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        z-index: 99999;
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    .sidebar.translate-x-0 {
+        transform: translateX(0) !important;
+    }
+}
+
+/* Mobile overlay */
+#mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99998;
+    display: none;
+}
+
+#mobile-overlay:not(.hidden) {
+    display: block !important;
+}
+
+/* Mobile grid */
+.grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.grid-cols-3 {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+/* Mobile text */
+.text-2xl { font-size: 1.25rem; }
+.text-3xl { font-size: 1.5rem; }
+.text-4xl { font-size: 1.75rem; }
+.text-5xl { font-size: 2rem; }
+
+/* Mobile spacing */
+.p-8 { padding: 1rem; }
+.px-6 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.py-4 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.mb-8 { margin-bottom: 1rem; }
+.gap-6 { gap: 0.75rem; }
+
+/* Mobile flex */
+.flex-col { flex-direction: column; }
+.lg\:flex-row { flex-direction: column; }
+
+/* Mobile menu button */
+.mobile-menu-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+/* Hide desktop elements on mobile */
+.lg\:hidden { display: none; }
+.sm\:hidden { display: none; }
+
+/* Tablet styles */
+@media (min-width: 640px) {
+    body { font-size: 16px; }
+    
+    .grid-cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .sm\:flex-row { flex-direction: row; }
+    .sm\:block { display: block; }
+    .sm\:hidden { display: block; }
+    .sm\:text-sm { font-size: 0.875rem; }
+    .sm\:px-4 { padding-left: 1rem; padding-right: 1rem; }
+    
+    .text-2xl { font-size: 1.5rem; }
+    .text-3xl { font-size: 1.875rem; }
+    .text-4xl { font-size: 2.25rem; }
+    .text-5xl { font-size: 3rem; }
+    
+    .p-8 { padding: 1.5rem; }
+    .px-6 { padding-left: 1rem; padding-right: 1rem; }
+    .mb-8 { margin-bottom: 1.5rem; }
+    .gap-6 { gap: 1rem; }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+    .sidebar {
+        position: static;
+        width: 16rem;
+        transform: translateX(0);
+    }
+    
+    .mobile-menu-btn {
+        display: none;
+    }
+    
+    .grid-cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .lg\:grid-cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .lg\:grid-cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .lg\:flex-row { flex-direction: row; }
+    .lg\:text-left { text-align: left; }
+    .lg\:mb-0 { margin-bottom: 0; }
+    .lg\:mt-0 { margin-top: 0; }
+    .lg\:p-6 { padding: 1.5rem; }
+    .lg\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .lg\:text-4xl { font-size: 2.25rem; }
+    .lg\:text-6xl { font-size: 3.75rem; }
+    
+    .text-2xl { font-size: 1.5rem; }
+    .text-3xl { font-size: 1.875rem; }
+    .text-4xl { font-size: 2.25rem; }
+    .text-5xl { font-size: 3rem; }
+    
+    .p-8 { padding: 2rem; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .gap-6 { gap: 1.5rem; }
+}
+
+/* Container responsive */
+.container {
+    width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+    .container { max-width: 640px; }
+}
+
+@media (min-width: 768px) {
+    .container { max-width: 768px; }
+}
+
+@media (min-width: 1024px) {
+    .container { max-width: 1024px; }
+}
+
+@media (min-width: 1280px) {
+    .container { max-width: 1280px; }
+}
+
+/* Form responsive */
+@media (max-width: 640px) {
+    .input-elegant {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Login specific mobile */
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Mobile viewport adjustments */
+    .min-h-screen {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+    
+    /* Touch targets */
+    input, button {
+        min-height: 44px;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"], input[type="password"] {
+        font-size: 16px;
+    }
+}
+
+/* Card responsive */
+@media (max-width: 640px) {
+    .card-elegant {
+        padding: 1rem;
+        border-radius: 0.75rem;
+    }
+}
+
+/* Login background responsive */
+@media (max-width: 640px) {
+    .bg-gradient-to-br {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+    
+    /* Reduce background elements on mobile */
+    .absolute.top-10, .absolute.top-1\/2, .absolute.bottom-10 {
+        opacity: 0.1;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+    .min-h-screen {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    .mb-8 { margin-bottom: 1rem; }
+    .mb-12 { margin-bottom: 1.5rem; }
+}

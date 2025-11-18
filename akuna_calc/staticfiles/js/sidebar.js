@@ -1,67 +1,93 @@
+// Global functions for mobile menu
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar && overlay) {
+        const isOpen = sidebar.style.transform === 'translateX(0px)' || sidebar.classList.contains('translate-x-0');
+        
+        if (isOpen) {
+            closeMobileMenu();
+        } else {
+            openMobileMenu();
+        }
+    }
+}
+
+function openMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar) {
+        sidebar.style.transform = 'translateX(0)';
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+    }
+    
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.style.display = 'block';
+    }
+    
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar) {
+        sidebar.style.transform = 'translateX(-100%)';
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+    }
+    
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+    }
+    
+    document.body.style.overflow = '';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const sidebarClose = document.getElementById('sidebar-close');
     const mobileOverlay = document.getElementById('mobile-overlay');
-    const sidebarTexts = document.querySelectorAll('.sidebar-text');
     
-    let isMobile = window.innerWidth < 1024;
-    
-    // Detectar cambios de tamaño de pantalla
-    window.addEventListener('resize', function() {
-        const wasMobile = isMobile;
-        isMobile = window.innerWidth < 1024;
-        
-        if (wasMobile && !isMobile) {
-            // Cambió de móvil a desktop
-            closeMobileSidebar();
-        }
-    });
-    
-    // Abrir sidebar en móvil
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', function() {
-            openMobileSidebar();
-        });
-    }
-    
-    // Cerrar sidebar en móvil
+    // Cerrar sidebar con botón X
     if (sidebarClose) {
-        sidebarClose.addEventListener('click', function() {
-            closeMobileSidebar();
+        sidebarClose.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeMobileMenu();
         });
     }
     
     // Cerrar sidebar al hacer click en overlay
     if (mobileOverlay) {
         mobileOverlay.addEventListener('click', function() {
-            closeMobileSidebar();
+            closeMobileMenu();
         });
     }
     
-    // Cerrar sidebar al hacer click en un enlace (móvil)
+    // Cerrar sidebar al hacer click en un enlace
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', function() {
-            if (isMobile) {
-                setTimeout(() => closeMobileSidebar(), 150);
+            if (window.innerWidth < 1024) {
+                setTimeout(() => closeMobileMenu(), 150);
             }
         });
     });
     
-    function openMobileSidebar() {
-        sidebar.classList.remove('-translate-x-full');
-        sidebar.classList.add('translate-x-0');
-        mobileOverlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    function closeMobileSidebar() {
-        sidebar.classList.add('-translate-x-full');
-        sidebar.classList.remove('translate-x-0');
-        mobileOverlay.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
+    // Cerrar sidebar al cambiar a desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 1024) {
+            closeMobileMenu();
+        }
+    });
+
     
     // Animaciones de entrada
     const animatedElements = document.querySelectorAll('.animate-fade-in, .card-hover');

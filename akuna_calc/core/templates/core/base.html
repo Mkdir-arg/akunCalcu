@@ -87,7 +87,7 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 min-h-screen">
+<body class="layout-shell min-h-screen">
     <!-- Mobile Menu Overlay -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
     
@@ -203,9 +203,6 @@
                             </div>
                             <span class="text-sm font-semibold text-slate-700">{{ user.username }}</span>
                         </div>
-                        <button id="theme-toggle" class="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-105" title="Cambiar tema">
-                            <i id="theme-toggle-icon" class="fas fa-moon text-lg"></i>
-                        </button>
                         <a href="{% url 'logout' %}" class="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white px-4 py-2 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg font-medium">
                             <i class="fas fa-sign-out-alt mr-2"></i>
                             <span class="hidden sm:inline">Salir</span>

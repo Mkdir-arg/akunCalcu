@@ -34,6 +34,12 @@
         }
     </script>
     <style>
+        :root {
+            --login-bg-1: #eef2ff;
+            --login-bg-2: #c7d2fe;
+            --login-bg-3: #e0e7ff;
+            --login-deep: #0f172a;
+        }
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-15px); }
@@ -46,35 +52,239 @@
             from { opacity: 0; transform: scale(0.9); }
             to { opacity: 1; transform: scale(1); }
         }
+        @keyframes gradientPulse {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
+        }
+        @keyframes orbOrbit {
+            0% { transform: rotate(0deg) translateX(0); opacity: 0.4; }
+            50% { opacity: 0.8; }
+            100% { transform: rotate(360deg) translateX(0); opacity: 0.4; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.35); }
+            50% { box-shadow: 0 0 35px rgba(37, 99, 235, 0.55); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes particleDrift {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.25; }
+            50% { transform: translateY(-40px) translateX(20px) scale(1.05); opacity: 0.6; }
+            100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.25; }
+        }
+        @keyframes meshMove {
+            0% { transform: translateY(0) translateX(0) scale(1); }
+            50% { transform: translateY(-30px) translateX(40px) scale(1.1); }
+            100% { transform: translateY(0) translateX(0) scale(1); }
+        }
+        body.login-page {
+            background: linear-gradient(135deg, #e8ecfb, #f4f6ff);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .login-background {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .login-background::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.15), rgba(56, 189, 248, 0.15));
+            filter: blur(120px);
+            opacity: 0.8;
+            animation: gradientPulse 16s ease-in-out infinite;
+        }
+        .login-background::after {
+            content: "";
+            position: absolute;
+            inset: -20%;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.18), transparent 40%),
+                radial-gradient(circle at 50% 70%, rgba(37, 99, 235, 0.15), transparent 35%);
+            filter: blur(90px);
+            opacity: 0.75;
+            animation: gradientPulse 20s ease-in-out infinite reverse;
+        }
+        .login-background .particle {
+            position: absolute;
+            width: 8rem;
+            height: 8rem;
+            border-radius: 1.5rem;
+            background: rgba(148, 163, 184, 0.2);
+            filter: blur(15px);
+            animation: particleDrift 12s ease-in-out infinite;
+        }
+        .particle.one { top: 20%; left: 15%; animation-delay: -2s; }
+        .particle.two { bottom: 18%; right: 18%; animation-duration: 14s; }
+        .particle.three { top: 65%; left: 5%; animation-duration: 16s; animation-delay: -6s; }
+        .orb {
+            position: absolute;
+            width: 18rem;
+            height: 18rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.05));
+            filter: blur(4px);
+            animation: orbOrbit 18s linear infinite;
+            opacity: 0.5;
+        }
+        .orb.orb-sm {
+            width: 10rem;
+            height: 10rem;
+            animation-duration: 22s;
+            opacity: 0.7;
+        }
+        .orb.one { top: 5%; left: 10%; }
+        .orb.two { top: 40%; right: -5%; animation-delay: -4s; }
+        .orb.three { bottom: -8%; left: 20%; animation-delay: -8s; }
+        .orb.four { top: 15%; right: 25%; animation-delay: -12s; }
+        .mesh {
+            position: absolute;
+            width: 35rem;
+            height: 35rem;
+            border-radius: 40% 60% 55% 45% / 55% 35% 65% 45%;
+            opacity: 0.22;
+            filter: blur(40px);
+            animation: meshMove 18s ease-in-out infinite;
+        }
+        .mesh-one {
+            top: -10%;
+            left: -5%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.6), rgba(14, 165, 233, 0.4));
+        }
+        .mesh-two {
+            bottom: -15%;
+            right: -10%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.6), rgba(37, 99, 235, 0.4));
+            animation-duration: 22s;
+        }
+        .mesh-three {
+            top: 25%;
+            right: 30%;
+            width: 25rem;
+            height: 25rem;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.4), rgba(14, 165, 233, 0.25));
+            animation-duration: 26s;
+        }
         .glass-effect {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .login-card {
+            position: relative;
+            border-radius: 1.75rem;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.3), rgba(59, 130, 246, 0.25), rgba(14, 165, 233, 0.25));
+            mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .login-pulse {
+            animation: pulseGlow 4s ease-in-out infinite;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .login-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: rgba(30, 64, 175, 0.08);
+            color: var(--accent-primary);
+        }
+        .login-heading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .login-heading h1 {
+            margin-bottom: 0.35rem;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            background-image: linear-gradient(135deg, #1e3a8a, #2563eb);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+            pointer-events: none;
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(37, 99, 235, 0.4);
+        }
+        .login-chips {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+        .login-chip {
+            border-radius: 1rem;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-body);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .login-chip i {
+            color: var(--accent-primary);
         }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-100 via-gray-50 to-slate-200 overflow-x-hidden">
-    <!-- Background Elements -->
-    <div class="absolute inset-0">
-        <div class="absolute top-10 left-10 w-72 h-72 bg-gradient-to-br from-slate-300 to-slate-400 opacity-20 rounded-full animate-float"></div>
-        <div class="absolute top-1/2 right-10 w-96 h-96 bg-gradient-to-br from-slate-200 to-slate-300 opacity-15 rounded-full animate-float" style="animation-delay: -2s;"></div>
-        <div class="absolute bottom-10 left-1/3 w-64 h-64 bg-gradient-to-br from-slate-400 to-slate-500 opacity-25 rounded-full animate-float" style="animation-delay: -4s;"></div>
+<body class="login-page overflow-x-hidden">
+    <div class="login-background">
+        <span class="mesh mesh-one"></span>
+        <span class="mesh mesh-two"></span>
+        <span class="mesh mesh-three"></span>
+        <span class="orb one"></span>
+        <span class="orb two"></span>
+        <span class="orb three"></span>
+        <span class="orb orb-sm four"></span>
+        <span class="particle one"></span>
+        <span class="particle two"></span>
+        <span class="particle three"></span>
     </div>
 
     <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10">
         <div class="w-full max-w-xs sm:max-w-md">
             <!-- Logo Section -->
-            <div class="text-center mb-8 sm:mb-12 animate-fade-in">
-                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-primary to-accent rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 lg:mb-8 shadow-2xl">
+            <div class="text-center mb-8 sm:mb-12 animate-fade-in login-heading">
+                <div class="login-pill mb-3 sm:mb-4 inline-flex animate-fade-in">
+                    <i class="fas fa-star"></i> Nuevo portal
+                </div>
+                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-primary to-accent rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 lg:mb-8 shadow-2xl login-pulse">
                     <i class="fas fa-calculator text-white text-2xl sm:text-3xl lg:text-4xl"></i>
                 </div>
                 <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-800 mb-2 sm:mb-3 tracking-tight">Akun</h1>
@@ -83,7 +293,7 @@
             </div>
 
             <!-- Login Form -->
-            <div class="glass-effect rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl animate-scale-in">
+            <div class="glass-effect login-card p-6 sm:p-8 lg:p-10 shadow-2xl animate-scale-in">
                 {% if form.errors %}
                     <div class="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl mb-6 sm:mb-8">
                         <div class="flex items-center">
@@ -136,6 +346,21 @@
                         Ingresar al Sistema
                     </button>
                 </form>
+
+                <div class="login-chips mt-6 sm:mt-8">
+                    <div class="login-chip">
+                        <i class="fas fa-bolt"></i> Cálculos inmediatos
+                    </div>
+                    <div class="login-chip">
+                        <i class="fas fa-lock"></i> Seguridad 24/7
+                    </div>
+                    <div class="login-chip">
+                        <i class="fas fa-cloud"></i> Datos sincronizados
+                    </div>
+                    <div class="login-chip">
+                        <i class="fas fa-wand-magic-sparkles"></i> Experiencia premium
+                    </div>
+                </div>
 
                 <!-- Footer -->
                 <div class="text-center mt-6 sm:mt-8 lg:mt-10 pt-6 sm:pt-8 border-t border-slate-200">
