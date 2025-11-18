@@ -12,20 +12,36 @@ body {
 
 /* Mobile sidebar */
 .sidebar {
-    position: fixed;
+    position: fixed !important;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 16rem;
     height: 100vh;
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
     color: white;
-    z-index: 50;
+    z-index: 9999;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
 }
 
 .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+}
+
+/* Mobile overlay */
+#mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: none;
+}
+
+#mobile-overlay.show {
+    display: block !important;
 }
 
 /* Mobile grid */
@@ -176,6 +192,28 @@ body {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
     }
+    
+    /* Login specific mobile */
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Mobile viewport adjustments */
+    .min-h-screen {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+    
+    /* Touch targets */
+    input, button {
+        min-height: 44px;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"], input[type="password"] {
+        font-size: 16px;
+    }
 }
 
 /* Card responsive */
@@ -184,4 +222,27 @@ body {
         padding: 1rem;
         border-radius: 0.75rem;
     }
+}
+
+/* Login background responsive */
+@media (max-width: 640px) {
+    .bg-gradient-to-br {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+    
+    /* Reduce background elements on mobile */
+    .absolute.top-10, .absolute.top-1\/2, .absolute.bottom-10 {
+        opacity: 0.1;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+    .min-h-screen {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    .mb-8 { margin-bottom: 1rem; }
+    .mb-12 { margin-bottom: 1.5rem; }
 }
