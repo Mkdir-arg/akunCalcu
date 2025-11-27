@@ -67,6 +67,7 @@ class CompraForm(forms.ModelForm):
 
 class ReporteForm(forms.Form):
     MESES = [
+        ('', 'Todos los meses'),
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
@@ -74,16 +75,37 @@ class ReporteForm(forms.Form):
     
     mes = forms.ChoiceField(
         choices=MESES,
+        required=False,
         widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
     año = forms.IntegerField(
         min_value=2020,
         max_value=2030,
-        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Año'})
     )
     tipo_cuenta = forms.ModelChoiceField(
         queryset=TipoCuenta.objects.filter(activo=True),
         required=False,
         empty_label="Todas las cuentas",
         widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    cliente = forms.ModelChoiceField(
+        queryset=Cliente.objects.all(),
+        required=False,
+        empty_label="Todos los clientes",
+        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    estado_venta = forms.ChoiceField(
+        choices=[('', 'Todos los estados')] + Venta.ESTADO_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    monto_min = forms.DecimalField(
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Monto mínimo', 'step': '0.01'})
+    )
+    monto_max = forms.DecimalField(
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Monto máximo', 'step': '0.01'})
     )

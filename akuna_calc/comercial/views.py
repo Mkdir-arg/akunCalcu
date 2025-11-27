@@ -171,22 +171,47 @@ def reportes(request):
     if request.method == 'POST':
         form = ReporteForm(request.POST)
         if form.is_valid():
-            mes = form.cleaned_data['mes']
-            año = form.cleaned_data['año']
-            tipo_cuenta = form.cleaned_data['tipo_cuenta']
+            mes = form.cleaned_data.get('mes')
+            año = form.cleaned_data.get('año')
+            tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
+            cliente = form.cleaned_data.get('cliente')
+            estado_venta = form.cleaned_data.get('estado_venta')
+            monto_min = form.cleaned_data.get('monto_min')
+            monto_max = form.cleaned_data.get('monto_max')
             
-            # Filtrar compras por mes y año
-            compras_query = Compra.objects.filter(
-                fecha_pago__month=mes,
-                fecha_pago__year=año
-            )
-            
+            # Filtrar compras
+            compras_query = Compra.objects.all()
+            if mes:
+                compras_query = compras_query.filter(fecha_pago__month=mes)
+            if año:
+                compras_query = compras_query.filter(fecha_pago__year=año)
             if tipo_cuenta:
                 compras_query = compras_query.filter(cuenta__tipo_cuenta=tipo_cuenta)
             
-            # Agrupar por tipo de cuenta
-            reporte_data = {}
-            total_general = 0
+            # Filtrar ventas
+            ventas_query = Venta.objects.all()
+            if mes:
+                ventas_query = ventas_query.filter(fecha_pago__month=mes)
+            if año:
+                ventas_query = ventas_query.filter(fecha_pago__year=año)
+            if cliente:
+                ventas_query = ventas_query.filter(cliente=cliente)
+            if estado_venta:
+                ventas_query = ventas_query.filter(estado=estado_venta)
+            if monto_min:
+                ventas_query = ventas_query.filter(valor_total__gte=monto_min)
+            if monto_max:
+                ventas_query = ventas_query.filter(valor_total__lte=monto_max)
+            
+            # Estadísticas de ventas
+            total_ventas = ventas_query.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+            total_cobrado = ventas_query.aggregate(Sum('monto_cobrado'))['monto_cobrado__sum'] or 0
+            total_saldo = ventas_query.aggregate(Sum('saldo'))['saldo__sum'] or 0
+            cantidad_ventas = ventas_query.count()
+            
+            # Agrupar compras por tipo de cuenta
+            compras_por_tipo = {}
+            total_compras = 0
             
             for tipo in TipoCuenta.objects.filter(activo=True):
                 if tipo_cuenta and tipo != tipo_cuenta:
@@ -195,13 +220,24 @@ def reportes(request):
                 compras_tipo = compras_query.filter(cuenta__tipo_cuenta=tipo)
                 total_tipo = compras_tipo.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
                 
-                reporte_data[tipo.get_tipo_display()] = {
+                compras_por_tipo[tipo.get_tipo_display()] = {
                     'total': total_tipo,
                     'compras': compras_tipo.select_related('cuenta')
                 }
-                total_general += total_tipo
+                total_compras += total_tipo
             
-            reporte_data['total_general'] = total_general
+            reporte_data = {
+                'ventas': {
+                    'total': total_ventas,
+                    'cobrado': total_cobrado,
+                    'saldo': total_saldo,
+                    'cantidad': cantidad_ventas,
+                    'lista': ventas_query.select_related('cliente')[:50]
+                },
+                'compras': compras_por_tipo,
+                'total_compras': total_compras,
+                'balance': total_ventas - total_compras,
+            }
     
     context = {
         'form': form,
