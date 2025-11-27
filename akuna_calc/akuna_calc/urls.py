@@ -8,6 +8,7 @@ urlpatterns = [
     path('', include('core.urls')),
     path('productos/', include('productos.urls')),
     path('admin-usuarios/', include('usuarios.urls')),
+    path('comercial/', include('comercial.urls')),
 ]
 
 # Serve static files in development

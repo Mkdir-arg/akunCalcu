@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Comercial{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative overflow-hidden bg-gradient-to-br from-primary to-accent rounded-3xl mb-12 p-8 lg:p-12 text-white shadow-2xl animate-fade-in">
+    <div class="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
+    <div class="relative z-10">
+        <h1 class="text-4xl lg:text-5xl font-bold mb-4 tracking-tight">Administración Comercial</h1>
+        <p class="text-xl text-slate-200 font-medium">Gestión integral de ventas, compras y reportes</p>
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-scale-in">
+    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
+                <p class="text-3xl font-bold text-slate-700">${{ total_ventas|floatformat:0 }}</p>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-dollar-sign text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-slate-500 mb-2 font-medium">Total Compras</p>
+                <p class="text-3xl font-bold text-slate-700">${{ total_compras|floatformat:0 }}</p>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-shopping-cart text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-slate-500 mb-2 font-medium">Pendientes</p>
+                <p class="text-3xl font-bold text-slate-700">{{ ventas_pendientes }}</p>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-clock text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-slate-500 mb-2 font-medium">Clientes</p>
+                <p class="text-3xl font-bold text-slate-700">{{ clientes_count }}</p>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-users text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
+        <div class="flex items-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
+                <i class="fas fa-chart-line text-white text-2xl"></i>
+            </div>
+            <div class="ml-6">
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Ventas</h3>
+                <p class="text-sm text-slate-500 font-medium">Gestión completa</p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <a href="{% url 'comercial:ventas_list' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
+                <i class="fas fa-list mr-2"></i>Ver Ventas
+            </a>
+            <a href="{% url 'comercial:venta_create' %}" class="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-plus mr-2"></i>Nueva Venta
+            </a>
+            <a href="{% url 'comercial:clientes_list' %}" class="inline-flex items-center justify-center w-full bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-users mr-2"></i>Clientes
+            </a>
+        </div>
+    </div>
+
+    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
+        <div class="flex items-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
+                <i class="fas fa-shopping-cart text-white text-2xl"></i>
+            </div>
+            <div class="ml-6">
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Compras</h3>
+                <p class="text-sm text-slate-500 font-medium">Control de gastos</p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <a href="{% url 'comercial:compras_list' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
+                <i class="fas fa-list mr-2"></i>Ver Compras
+            </a>
+            <a href="{% url 'comercial:compra_create' %}" class="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-plus mr-2"></i>Nueva Compra
+            </a>
+            <a href="{% url 'comercial:cuentas_list' %}" class="inline-flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-folder mr-2"></i>Cuentas
+            </a>
+        </div>
+    </div>
+
+    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
+        <div class="flex items-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
+                <i class="fas fa-chart-bar text-white text-2xl"></i>
+            </div>
+            <div class="ml-6">
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Reportes</h3>
+                <p class="text-sm text-slate-500 font-medium">Análisis contable</p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <a href="{% url 'comercial:reportes' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
+                <i class="fas fa-file-alt mr-2"></i>Reporte Mensual
+            </a>
+            <a href="{% url 'comercial:reportes' %}" class="inline-flex items-center justify-center w-full bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-search-dollar mr-2"></i>Por Cuenta
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

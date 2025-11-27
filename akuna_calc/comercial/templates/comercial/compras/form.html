@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto animate-fade-in">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
+            <p class="text-slate-500 font-medium mt-1">Complete los datos del formulario</p>
+        </div>
+        <a href="{% url 'comercial:compras_list' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Pedido</label>
+                        {{ form.numero_pedido }}
+                        {% if form.numero_pedido.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cuenta</label>
+                        {{ form.cuenta }}
+                        <a href="{% url 'comercial:cuenta_create' %}" class="text-sm text-blue-600 hover:text-blue-800 ml-2">+ Nueva Cuenta</a>
+                        {% if form.cuenta.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.cuenta.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
+                        {{ form.fecha_pago }}
+                        {% if form.fecha_pago.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Importe Abonado</label>
+                        {{ form.importe_abonado }}
+                        {% if form.importe_abonado.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.importe_abonado.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comprobante</label>
+                    {{ form.comprobante }}
+                    {% if form.comprobante.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.comprobante.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8">
+                    <a href="{% url 'comercial:compras_list' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+                        <i class="fas fa-save mr-2"></i>Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
