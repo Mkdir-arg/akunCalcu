@@ -18,19 +18,19 @@
     <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razón Social</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Teléfono</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for cuenta in cuentas %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {{ cuenta.nombre }}
                         </td>
@@ -70,8 +70,9 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                            No hay cuentas registradas
+                        <td colspan="6" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay cuentas registradas</p>
                         </td>
                     </tr>
                     {% endfor %}
