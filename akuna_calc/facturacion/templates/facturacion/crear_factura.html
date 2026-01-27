@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto animate-fade-in">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
+            <p class="text-slate-500 font-medium mt-1">Complete los datos de la factura electrónica</p>
+        </div>
+        <a href="{% url 'facturacion:lista_facturas' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
+        <form method="post" class="space-y-6" id="facturaForm">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Cliente <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.cliente }}
+                    {% if form.cliente.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.cliente.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Punto de Venta <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.punto_venta }}
+                    {% if form.punto_venta.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.punto_venta.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.tipo }}
+                    {% if form.tipo.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-6">
+
+            <div class="mb-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Items de la Factura</h3>
+            </div>
+
+            {{ formset.management_form }}
+            
+            <div id="items-container" class="space-y-4">
+                {% for item_form in formset %}
+                <div class="item-form border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    {{ item_form.id }}
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                            {{ item_form.descripcion }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad <span class="text-red-500">*</span></label>
+                            {{ item_form.cantidad }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Precio Unit. <span class="text-red-500">*</span></label>
+                            {{ item_form.precio_unitario }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">IVA % <span class="text-red-500">*</span></label>
+                            {{ item_form.alicuota_iva }}
+                        </div>
+                        <div class="flex items-end">
+                            {{ item_form.DELETE }}
+                            <label class="ml-2 text-sm text-red-600">Eliminar</label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" onclick="addItem()" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all">
+                <i class="fas fa-plus mr-2"></i>Agregar Item
+            </button>
+
+            <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8">
+                <a href="{% url 'facturacion:lista_facturas' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+                    <i class="fas fa-file-invoice mr-2"></i>Generar Factura
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let itemIndex = {{ formset.total_form_count }};
+
+function addItem() {
+    const container = document.getElementById('items-container');
+    const totalForms = document.querySelector('#id_items-TOTAL_FORMS');
+    
+    const newForm = document.querySelector('.item-form').cloneNode(true);
+    
+    // Actualizar índices
+    newForm.innerHTML = newForm.innerHTML.replace(/items-\d+-/g, `items-${itemIndex}-`);
+    newForm.querySelectorAll('input, select').forEach(input => {
+        input.value = '';
+        if (input.type === 'checkbox') {
+            input.checked = false;
+        }
+    });
+    
+    container.appendChild(newForm);
+    itemIndex++;
+    totalForms.value = itemIndex;
+    
+    // Reinicializar Select2 en nuevos elementos
+    $(newForm).find('select').select2({
+        theme: 'classic',
+        width: '100%'
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('facturaForm');
+    
+    form.addEventListener('submit', function(e) {
+        setFormLoading(form, true);
+    });
+});
+</script>
+{% endblock %}

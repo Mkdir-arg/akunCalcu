@@ -57,6 +57,21 @@
     </div>
 
     {% if reporte_data %}
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Gráfico Ventas vs Compras -->
+        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Compras</h3>
+            <canvas id="ventasComprasChart" height="250"></canvas>
+        </div>
+        
+        <!-- Gráfico Distribución Compras -->
+        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Distribución de Compras</h3>
+            <canvas id="comprasDistChart" height="250"></canvas>
+        </div>
+    </div>
+    
     <!-- Resumen General -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Ventas Blanco -->
@@ -231,9 +246,12 @@
     </div>
 
     <!-- Botón de Exportación -->
-    <div class="mt-8 text-center">
-        <button onclick="window.print()" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-print mr-2"></i>Imprimir Reporte
+    <div class="mt-8 flex justify-center gap-4">
+        <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
+            <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
+        </a>
+        <button onclick="window.print()" class="inline-flex items-center bg-slate-600 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl transition-all">
+            <i class="fas fa-print mr-2"></i>Imprimir
         </button>
     </div>
     {% endif %}
@@ -246,4 +264,129 @@
     .container { max-width: none; margin: 0; padding: 0; }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico Ventas vs Compras (Barras)
+    const ctx1 = document.getElementById('ventasComprasChart');
+    if (ctx1) {
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Blanco', 'Negro', 'Total'],
+                datasets: [
+                    {
+                        label: 'Ventas',
+                        data: [
+                            {{ reporte_data.ventas.total_blanco|floatformat:2 }},
+                            {{ reporte_data.ventas.total_negro|floatformat:2 }},
+                            {{ reporte_data.ventas.total|floatformat:2 }}
+                        ],
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Compras',
+                        data: [
+                            {{ reporte_data.total_compras_blanco|floatformat:2 }},
+                            {{ reporte_data.total_compras_negro|floatformat:2 }},
+                            {{ reporte_data.total_compras|floatformat:2 }}
+                        ],
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: { size: 12, weight: 'bold' },
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-AR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico Distribución de Compras (Torta)
+    const ctx2 = document.getElementById('comprasDistChart');
+    if (ctx2) {
+        const labels = [];
+        const data = [];
+        const colors = [
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(168, 85, 247, 0.7)',
+            'rgba(236, 72, 153, 0.7)',
+            'rgba(251, 146, 60, 0.7)',
+            'rgba(34, 197, 94, 0.7)',
+            'rgba(234, 179, 8, 0.7)'
+        ];
+        
+        {% for tipo, data_tipo in reporte_data.compras.items %}
+            labels.push('{{ tipo }}');
+            data.push({{ data_tipo.total|floatformat:2 }});
+        {% endfor %}
+        
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderColor: '#ffffff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: { size: 11 },
+                            padding: 10,
+                            boxWidth: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': $' + context.parsed.toLocaleString('es-AR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

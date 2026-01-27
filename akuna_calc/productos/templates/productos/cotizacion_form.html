@@ -1,115 +1,252 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Nueva Cotización</h1>
-        <p class="text-gray-600 mt-2">Ingresá las medidas para crear y guardar una cotización.</p>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {{ message }}
+<!-- Header Section -->
+<div class="mb-8 animate-fade-in">
+    <div class="bg-gradient-to-r from-primary to-accent rounded-3xl p-6 lg:p-8 text-white shadow-2xl">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between">
+            <div>
+                <h1 class="text-2xl lg:text-4xl font-bold mb-2 tracking-tight">
+                    <i class="fas fa-file-invoice mr-3 animate-float"></i>Nueva Cotización
+                </h1>
+                <p class="text-slate-200 text-sm lg:text-base font-medium">Ingresá las medidas para crear y guardar una cotización</p>
             </div>
-        {% endfor %}
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %}
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alto (mm)</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ancho (mm)</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área (m²)</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio m²</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for producto in productos %}
-                    <tr data-precio="{{ producto.precio_m2 }}">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ producto.nombre }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="number" 
-                                   name="alto_{{ producto.id }}"
-                                   class="alto-input w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                   min="0" 
-                                   placeholder="0">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="number" 
-                                   name="ancho_{{ producto.id }}"
-                                   class="ancho-input w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                   min="0" 
-                                   placeholder="0">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <span class="area-display">0.000</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${{ producto.precio_m2|floatformat:2 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            $<span class="subtotal-display">0.00</span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot class="bg-gray-50">
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                            TOTAL GENERAL:
-                        </td>
-                        <td class="px-6 py-4 text-sm font-bold text-gray-900">
-                            $<span id="total-general">0.00</span>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="mt-4 lg:mt-0">
+                <div class="glass-effect total-display rounded-3xl p-6 shadow-xl">
+                    <div class="text-center">
+                        <p class="text-sm text-slate-200 mb-2 font-medium">Total Calculado</p>
+                        <p class="text-2xl lg:text-3xl font-bold text-white">$<span id="total-general-header">0.00</span></p>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="mt-6 flex justify-end space-x-3">
-            <a href="{% url 'productos:cotizacion_list' %}" 
-               class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors">
-                Cancelar
-            </a>
-            <button type="submit" 
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
-                Guardar Cotización
-            </button>
-        </div>
-    </form>
+    </div>
 </div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl mb-4 animate-fade-in">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Add Product Button -->
+<div class="mb-6 sm:mb-8 animate-scale-in">
+    <button id="add-product-btn" class="btn-primary w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
+        <i class="fas fa-plus mr-2 sm:mr-3"></i>
+        Agregar Producto
+    </button>
+</div>
+
+<!-- Product Selection Modal -->
+<div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden backdrop-blur-sm">
+    <div class="flex items-center justify-center min-h-screen p-2 sm:p-4">
+        <div class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[80vh] shadow-2xl animate-scale-in">
+            <div class="flex justify-between items-center mb-4 sm:mb-8">
+                <h3 class="text-lg sm:text-2xl font-bold text-slate-800 tracking-tight">Seleccionar Producto</h3>
+                <button id="close-modal" class="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100">
+                    <i class="fas fa-times text-lg sm:text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="products-container" class="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
+                {% for producto in productos %}
+                <button class="product-option card-elegant w-full text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 transition-all" 
+                        data-id="{{ producto.id }}"
+                        data-nombre="{{ producto.nombre }}"
+                        data-categoria="{{ producto.categoria }}"
+                        data-precio="{{ producto.precio_m2 }}"
+                        data-formula="{{ producto.formula }}">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+                            <i class="fas fa-box text-white text-sm sm:text-base"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-slate-900 mb-1 text-sm sm:text-base truncate">{{ producto.nombre }}</div>
+                            <div class="text-xs sm:text-sm text-slate-500 font-medium truncate">{{ producto.categoria }} - ${{ producto.precio_m2|floatformat:2 }}/m²</div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <i class="fas fa-plus text-slate-400 text-sm sm:text-base"></i>
+                        </div>
+                    </div>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="cotizacion-form">
+    {% csrf_token %}
+    
+    <!-- Calculator Items Container -->
+    <div id="calculator-items" class="space-y-4"></div>
+    
+    <!-- Total Section -->
+    <div id="total-section" class="total-display rounded-3xl p-8 mt-8 hidden shadow-2xl animate-fade-in">
+        <div class="flex flex-col lg:flex-row items-center justify-between text-white">
+            <div class="mb-6 lg:mb-0">
+                <h3 class="text-2xl font-bold mb-2 tracking-tight">
+                    <i class="fas fa-calculator mr-3"></i>Total General
+                </h3>
+                <p class="text-slate-200 font-medium">Cálculo en tiempo real</p>
+            </div>
+            <div class="glass-effect total-display rounded-3xl p-8 shadow-xl">
+                <div class="text-center">
+                    <p class="text-slate-200 mb-3 font-medium">Monto Total</p>
+                    <p class="text-4xl font-bold text-white tracking-tight">$<span id="total-general">0.00</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
+        <a href="{% url 'productos:cotizacion_list' %}" class="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl sm:rounded-2xl border-2 border-slate-300 hover:border-slate-400 transition-all duration-300 shadow-lg text-sm sm:text-base">
+            Cancelar
+        </a>
+        <button type="submit" class="btn-primary inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
+            <i class="fas fa-save mr-2 sm:mr-3"></i>
+            Guardar Cotización
+        </button>
+    </div>
+</form>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const rows = document.querySelectorAll('tbody tr');
+    let itemCounter = 0;
+    
+    const addProductBtn = document.getElementById('add-product-btn');
+    const productModal = document.getElementById('product-modal');
+    const closeModal = document.getElementById('close-modal');
+    const calculatorItems = document.getElementById('calculator-items');
+    const totalSection = document.getElementById('total-section');
+    const form = document.getElementById('cotizacion-form');
     
     function formatNumber(num) {
         return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     
-    function calcularFila(row) {
-        const altoInput = row.querySelector('.alto-input');
-        const anchoInput = row.querySelector('.ancho-input');
-        const areaDisplay = row.querySelector('.area-display');
-        const subtotalDisplay = row.querySelector('.subtotal-display');
-        const precio = parseFloat(row.dataset.precio);
+    function createProductItem(producto) {
+        itemCounter++;
+        const itemId = `item-${itemCounter}`;
+        
+        const itemHTML = `
+            <div id="${itemId}" class="card-elegant bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl" data-precio="${producto.precio}" data-formula="${producto.formula}" data-producto-id="${producto.id}">
+                <div class="flex items-center mb-4 sm:mb-6">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl sm:rounded-2xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+                        <i class="fas fa-box text-white text-sm sm:text-base"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-slate-800 text-base sm:text-lg truncate">${producto.nombre}</h3>
+                        <p class="text-xs sm:text-sm text-slate-500 font-medium">${producto.categoria}</p>
+                    </div>
+                    <div class="text-right mr-2 sm:mr-4 hidden sm:block">
+                        <p class="text-xs sm:text-sm text-slate-500 font-medium">Precio m²</p>
+                        <p class="font-bold text-slate-700 text-sm sm:text-lg">$${formatNumber(parseFloat(producto.precio))}</p>
+                    </div>
+                    <button type="button" class="remove-item text-slate-400 hover:text-red-500 p-2 transition-colors rounded-lg flex-shrink-0" data-item="${itemId}">
+                        <i class="fas fa-trash text-sm sm:text-base"></i>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">
+                            <i class="fas fa-arrows-alt-v mr-1 sm:mr-2"></i>Alto (mm)
+                        </label>
+                        <input type="number" 
+                               name="alto_${producto.id}_${itemCounter}"
+                               class="alto-input input-elegant w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl focus:outline-none text-sm sm:text-base" 
+                               min="0" 
+                               placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">
+                            <i class="fas fa-arrows-alt-h mr-1 sm:mr-2"></i>Ancho (mm)
+                        </label>
+                        <input type="number" 
+                               name="ancho_${producto.id}_${itemCounter}"
+                               class="ancho-input input-elegant w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl focus:outline-none text-sm sm:text-base" 
+                               min="0" 
+                               placeholder="0">
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-200">
+                    <div class="flex justify-between items-center mb-2 sm:mb-3">
+                        <span class="text-xs sm:text-sm text-slate-600 font-medium">${producto.formula === 'perimetro' ? 'Perímetro calculado:' : 'Área calculada:'}</span>
+                        <span class="font-semibold text-slate-800 text-sm sm:text-base"><span class="area-display">0.000</span> ${producto.formula === 'perimetro' ? 'm' : 'm²'}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-base sm:text-lg font-bold text-slate-800">Subtotal:</span>
+                        <span class="text-lg sm:text-xl font-bold text-slate-700">$<span class="subtotal-display">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        calculatorItems.insertAdjacentHTML('beforeend', itemHTML);
+        
+        const newItem = document.getElementById(itemId);
+        setupItemEvents(newItem);
+        
+        totalSection.classList.remove('hidden');
+        
+        newItem.style.opacity = '0';
+        newItem.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            newItem.style.transition = 'all 0.3s ease';
+            newItem.style.opacity = '1';
+            newItem.style.transform = 'translateY(0)';
+        }, 10);
+    }
+    
+    function setupItemEvents(item) {
+        const altoInput = item.querySelector('.alto-input');
+        const anchoInput = item.querySelector('.ancho-input');
+        const removeBtn = item.querySelector('.remove-item');
+        
+        altoInput.addEventListener('input', () => calcularItem(item));
+        anchoInput.addEventListener('input', () => calcularItem(item));
+        
+        removeBtn.addEventListener('click', () => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '0';
+            item.style.transform = 'translateX(-100%)';
+            setTimeout(() => {
+                item.remove();
+                calcularTotal();
+                if (calculatorItems.children.length === 0) {
+                    totalSection.classList.add('hidden');
+                }
+            }, 300);
+        });
+    }
+    
+    function calcularItem(item) {
+        const altoInput = item.querySelector('.alto-input');
+        const anchoInput = item.querySelector('.ancho-input');
+        const areaDisplay = item.querySelector('.area-display');
+        const subtotalDisplay = item.querySelector('.subtotal-display');
+        const precio = parseFloat(item.dataset.precio);
         
         const alto = parseFloat(altoInput.value) || 0;
         const ancho = parseFloat(anchoInput.value) || 0;
+        const formula = item.dataset.formula || 'area';
         
         if (alto > 0 && ancho > 0) {
-            const area = (alto / 1000) * (ancho / 1000);
-            const subtotal = area * precio;
+            let calculo;
+            if (formula === 'perimetro') {
+                calculo = ((alto / 1000) * 2) + ((ancho / 1000) * 2);
+            } else {
+                calculo = (alto / 1000) * (ancho / 1000);
+            }
             
-            areaDisplay.textContent = area.toFixed(3);
+            const subtotal = calculo * precio;
+            
+            areaDisplay.textContent = calculo.toFixed(3);
             subtotalDisplay.textContent = formatNumber(subtotal);
         } else {
             areaDisplay.textContent = '0.000';
@@ -121,23 +258,55 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function calcularTotal() {
         let total = 0;
-        rows.forEach(row => {
-            const subtotalText = row.querySelector('.subtotal-display').textContent;
+        const items = calculatorItems.querySelectorAll('[data-precio]');
+        
+        items.forEach(item => {
+            const subtotalText = item.querySelector('.subtotal-display').textContent;
             const subtotal = parseFloat(subtotalText.replace(/[.,]/g, match => match === ',' ? '.' : ''));
             if (!isNaN(subtotal)) {
                 total += subtotal;
             }
         });
         
-        document.getElementById('total-general').textContent = formatNumber(total);
+        const totalFormatted = formatNumber(total);
+        document.getElementById('total-general').textContent = totalFormatted;
+        document.getElementById('total-general-header').textContent = totalFormatted;
     }
     
-    rows.forEach(row => {
-        const altoInput = row.querySelector('.alto-input');
-        const anchoInput = row.querySelector('.ancho-input');
-        
-        altoInput.addEventListener('input', () => calcularFila(row));
-        anchoInput.addEventListener('input', () => calcularFila(row));
+    addProductBtn.addEventListener('click', () => {
+        productModal.classList.remove('hidden');
+    });
+    
+    closeModal.addEventListener('click', () => {
+        productModal.classList.add('hidden');
+    });
+    
+    productModal.addEventListener('click', (e) => {
+        if (e.target === productModal) {
+            productModal.classList.add('hidden');
+        }
+    });
+    
+    document.querySelectorAll('.product-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const producto = {
+                id: option.dataset.id,
+                nombre: option.dataset.nombre,
+                categoria: option.dataset.categoria,
+                precio: option.dataset.precio,
+                formula: option.dataset.formula || 'area'
+            };
+            
+            createProductItem(producto);
+            productModal.classList.add('hidden');
+        });
+    });
+    
+    form.addEventListener('submit', (e) => {
+        if (calculatorItems.children.length === 0) {
+            e.preventDefault();
+            showNotification('warning', 'Atención', 'Debe agregar al menos un producto');
+        }
     });
 });
 </script>

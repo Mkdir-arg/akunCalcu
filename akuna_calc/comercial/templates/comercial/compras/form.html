@@ -30,8 +30,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cuenta</label>
-                        {{ form.cuenta }}
-                        <a href="{% url 'comercial:cuenta_create' %}" class="text-sm text-blue-600 hover:text-blue-800 ml-2">+ Nueva Cuenta</a>
+                        <div class="flex gap-2">
+                            {{ form.cuenta }}
+                            <button type="button" onclick="openCuentaModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
                         {% if form.cuenta.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.cuenta.errors.0 }}</p>
                         {% endif %}
@@ -52,6 +56,24 @@
                         {{ form.importe_abonado }}
                         {% if form.importe_abonado.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.importe_abonado.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex items-center">
+                        {{ form.con_factura }}
+                        <label class="ml-2 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
+                        {% if form.con_factura.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.con_factura.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Factura</label>
+                        {{ form.numero_factura }}
+                        {% if form.numero_factura.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -84,4 +106,158 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Crear Cuenta -->
+<div id="cuentaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-slate-800">Nueva Cuenta</h2>
+            <button type="button" onclick="closeCuentaModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <form id="cuentaForm" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cuenta *</label>
+                <select name="tipo_cuenta" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Seleccione...</option>
+                    <option value="colocadores">Colocadores</option>
+                    <option value="colaboradores">Colaboradores</option>
+                    <option value="fletes">Fletes</option>
+                    <option value="retiros_propios">Retiros Propios</option>
+                    <option value="varios">Varios</option>
+                    <option value="proveedores">Proveedores</option>
+                </select>
+                <span class="text-red-600 text-sm error-tipo_cuenta"></span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input type="text" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="text-red-600 text-sm error-nombre"></span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
+                <input type="text" name="razon_social" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+                    <input type="text" name="cuit" maxlength="11" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Condición IVA</label>
+                    <select name="condicion_iva" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccione...</option>
+                        <option value="CF">Consumidor Final</option>
+                        <option value="RI">Responsable Inscripto</option>
+                        <option value="MONO">Monotributista</option>
+                        <option value="EX">Exento</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input type="text" name="telefono" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <textarea name="direccion" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div class="flex items-center">
+                <input type="checkbox" name="activo" checked class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                <label class="ml-2 text-sm font-medium text-gray-700">Cuenta Activa</label>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeCuentaModal()" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                    <i class="fas fa-save mr-2"></i>Guardar Cuenta
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCuentaModal() {
+    document.getElementById('cuentaModal').classList.remove('hidden');
+    document.getElementById('cuentaForm').reset();
+    document.querySelectorAll('[class^="error-"]').forEach(el => el.textContent = '');
+    
+    // Inicializar Select2 en el modal
+    $('#cuentaModal select').select2({
+        theme: 'classic',
+        width: '100%',
+        dropdownParent: $('#cuentaModal')
+    });
+}
+
+function closeCuentaModal() {
+    document.getElementById('cuentaModal').classList.add('hidden');
+    $('#cuentaModal select').select2('destroy');
+}
+
+document.getElementById('cuentaModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCuentaModal();
+    }
+});
+
+document.getElementById('cuentaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+    
+    try {
+        const response = await fetch('{% url "comercial:cuenta_create" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const cuentaSelect = document.querySelector('select[name="cuenta"]');
+            const option = new Option(data.cuenta.nombre, data.cuenta.id, true, true);
+            cuentaSelect.add(option);
+            $(cuentaSelect).trigger('change');
+            
+            closeCuentaModal();
+            showNotification('success', 'Cuenta creada', 'La cuenta se creó exitosamente');
+        } else {
+            document.querySelectorAll('[class^="error-"]').forEach(el => el.textContent = '');
+            for (const [field, errors] of Object.entries(data.errors)) {
+                const errorEl = document.querySelector(`.error-${field}`);
+                if (errorEl) {
+                    errorEl.textContent = errors[0];
+                    errorEl.classList.add('animate-pulse');
+                    setTimeout(() => errorEl.classList.remove('animate-pulse'), 1000);
+                }
+            }
+        }
+    } catch (error) {
+        showNotification('error', 'Error', 'No se pudo crear la cuenta. Intente nuevamente.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cuenta';
+    }
+});
+</script>
 {% endblock %}

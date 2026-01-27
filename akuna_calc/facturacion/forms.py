@@ -3,6 +3,17 @@ from .models import Factura, FacturaItem, PuntoVenta
 from comercial.models import Cliente
 
 
+class PuntoVentaForm(forms.ModelForm):
+    class Meta:
+        model = PuntoVenta
+        fields = '__all__'
+        widgets = {
+            'numero': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
+        }
+
+
 class FacturaForm(forms.ModelForm):
     class Meta:
         model = Factura

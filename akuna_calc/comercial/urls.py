@@ -29,6 +29,7 @@ urlpatterns = [
     
     # Reportes
     path('reportes/', views.reportes, name='reportes'),
+    path('reportes/exportar-excel/', views.exportar_reporte_excel, name='exportar_reporte_excel'),
     
     # API
     path('api/cuentas-by-tipo/', views.get_cuentas_by_tipo, name='cuentas_by_tipo'),

@@ -27,6 +27,15 @@
         }
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -163,6 +172,16 @@
                         </div>
                     </a>
                     
+                    <a href="{% url 'comercial:clientes_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
+                            <i class="fas fa-users text-lg"></i>
+                        </div>
+                        <div class="sidebar-text">
+                            <span class="font-semibold">Clientes</span>
+                            <p class="text-xs text-slate-300">Gestión de clientes</p>
+                        </div>
+                    </a>
+                    
                     <a href="{% url 'facturacion:lista_facturas' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
                         <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-file-invoice-dollar text-lg"></i>
@@ -170,6 +189,16 @@
                         <div class="sidebar-text">
                             <span class="font-semibold">Facturación</span>
                             <p class="text-xs text-slate-300">Facturas AFIP</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'facturacion:puntos_venta_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
+                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
+                            <i class="fas fa-store text-lg"></i>
+                        </div>
+                        <div class="sidebar-text">
+                            <span class="font-semibold">Puntos de Venta</span>
+                            <p class="text-xs text-slate-300">Config. AFIP</p>
                         </div>
                     </a>
                     
@@ -244,6 +273,107 @@
     {% load static %}
     <script src="{% static 'js/sidebar.js' %}"></script>
     <script src="{% static 'js/theme.js' %}"></script>
+    
+    <!-- Inicializar Select2 y Confirmaciones -->
+    <script>
+    // Función global para notificaciones
+    function showNotification(type, title, text) {
+        Swal.fire({
+            icon: type,
+            title: title,
+            text: text,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    }
+    
+    // Función global para loading en formularios
+    function setFormLoading(form, loading) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            if (loading) {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+            }
+        }
+    }
+    
+    $(document).ready(function() {
+        // Inicializar Select2 en todos los selects
+        $('select').not('.no-select2').select2({
+            theme: 'classic',
+            width: '100%',
+            placeholder: 'Seleccione...',
+            allowClear: true,
+            language: {
+                noResults: function() {
+                    return "No se encontraron resultados";
+                },
+                searching: function() {
+                    return "Buscando...";
+                }
+            }
+        });
+        
+        // Confirmación antes de eliminar
+        $('.btn-delete, .delete-btn, [data-confirm-delete]').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href') || $(this).data('url');
+            const itemName = $(this).data('item-name') || 'este elemento';
+            
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Deseas eliminar ${itemName}? Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+        
+        // Loading state en formularios principales
+        $('form').not('.no-loading').on('submit', function() {
+            setFormLoading(this, true);
+        });
+        
+        // Validación en tiempo real para campos numéricos
+        $('input[type="number"], input[step]').on('input', function() {
+            const value = parseFloat($(this).val());
+            if (value < 0) {
+                $(this).addClass('border-red-500');
+                $(this).removeClass('border-gray-300');
+            } else {
+                $(this).removeClass('border-red-500');
+                $(this).addClass('border-gray-300');
+            }
+        });
+        
+        // Atajo Ctrl+S para guardar
+        $(document).on('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                const form = $('form').first();
+                if (form.length) {
+                    form.submit();
+                }
+            }
+        });
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

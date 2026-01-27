@@ -21,7 +21,9 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Pedido</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Número de Pedido <span class="text-red-500">*</span>
+                        </label>
                         {{ form.numero_pedido }}
                         {% if form.numero_pedido.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
@@ -29,18 +31,26 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
-                        {{ form.cliente }}
-                        <a href="{% url 'comercial:cliente_create' %}" class="text-sm text-blue-600 hover:text-blue-800 ml-2">+ Nuevo Cliente</a>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Cliente <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-2">
+                            {{ form.cliente }}
+                            <button type="button" onclick="openClienteModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all" title="Crear nuevo cliente">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
                         {% if form.cliente.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.cliente.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor Total</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Valor Total <span class="text-red-500">*</span>
+                        </label>
                         {{ form.valor_total }}
                         {% if form.valor_total.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.valor_total.errors.0 }}</p>
@@ -52,14 +62,6 @@
                         {{ form.sena }}
                         {% if form.sena.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Monto Cobrado</label>
-                        {{ form.monto_cobrado }}
-                        {% if form.monto_cobrado.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.monto_cobrado.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -85,7 +87,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="flex items-center">
                         {{ form.con_factura }}
-                        <label class="ml-2 text-sm font-medium text-gray-700">Con Factura</label>
+                        <label class="ml-2 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
                         {% if form.con_factura.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.con_factura.errors.0 }}</p>
                         {% endif %}
@@ -137,18 +139,192 @@
     </div>
 </div>
 
+<!-- Modal Crear Cliente -->
+<div id="clienteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-slate-800">Nuevo Cliente</h2>
+            <button type="button" onclick="closeClienteModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <form id="clienteForm" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input type="text" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="text-red-600 text-sm error-nombre"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                    <input type="text" name="apellido" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="text-red-600 text-sm error-apellido"></span>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
+                <input type="text" name="razon_social" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+                    <input type="text" name="cuit" maxlength="11" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="text-red-600 text-sm error-cuit"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                    <input type="text" name="dni" maxlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Condición IVA</label>
+                <select name="condicion_iva" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="CF">Consumidor Final</option>
+                    <option value="RI">Responsable Inscripto</option>
+                    <option value="MONO">Monotributista</option>
+                    <option value="EX">Exento</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                <textarea name="direccion" required rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <span class="text-red-600 text-sm error-direccion"></span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Localidad *</label>
+                <input type="text" name="localidad" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="text-red-600 text-sm error-localidad"></span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input type="text" name="telefono" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="text-red-600 text-sm error-email"></span>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeClienteModal()" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                    <i class="fas fa-save mr-2"></i>Guardar Cliente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function openClienteModal() {
+    document.getElementById('clienteModal').classList.remove('hidden');
+    document.getElementById('clienteForm').reset();
+    document.querySelectorAll('[class^="error-"]').forEach(el => el.textContent = '');
+    
+    // Inicializar Select2 en el modal
+    $('#clienteModal select').select2({
+        theme: 'classic',
+        width: '100%',
+        dropdownParent: $('#clienteModal')
+    });
+}
+
+function closeClienteModal() {
+    document.getElementById('clienteModal').classList.add('hidden');
+    $('#clienteModal select').select2('destroy');
+}
+
+document.getElementById('clienteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeClienteModal();
+    }
+});
+
+document.getElementById('clienteForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+    
+    try {
+        const response = await fetch('{% url "comercial:cliente_create" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const clienteSelect = document.querySelector('select[name="cliente"]');
+            const option = new Option(data.cliente.nombre, data.cliente.id, true, true);
+            clienteSelect.add(option);
+            $(clienteSelect).trigger('change');
+            
+            closeClienteModal();
+            showNotification('success', 'Cliente creado', 'El cliente se creó exitosamente');
+        } else {
+            document.querySelectorAll('[class^="error-"]').forEach(el => el.textContent = '');
+            for (const [field, errors] of Object.entries(data.errors)) {
+                const errorEl = document.querySelector(`.error-${field}`);
+                if (errorEl) {
+                    errorEl.textContent = errors[0];
+                    errorEl.classList.add('animate-pulse');
+                    setTimeout(() => errorEl.classList.remove('animate-pulse'), 1000);
+                }
+            }
+        }
+    } catch (error) {
+        showNotification('error', 'Error', 'No se pudo crear el cliente. Intente nuevamente.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cliente';
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const formaPagoSelect = document.querySelector('select[name="forma_pago"]');
     const conFacturaCheckbox = document.querySelector('input[name="con_factura"]');
     
     function showFacturaAlert() {
-        if (formaPagoSelect.value && !conFacturaCheckbox.checked) {
-            alert('¿Esta venta es sin factura?');
+        if (formaPagoSelect && formaPagoSelect.value && conFacturaCheckbox && !conFacturaCheckbox.checked) {
+            Swal.fire({
+                icon: 'question',
+                title: 'Confirmación',
+                text: '¿Esta venta es sin factura (en negro)?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, sin factura',
+                cancelButtonText: 'No, con factura',
+                confirmButtonColor: '#6b7280',
+                cancelButtonColor: '#3b82f6'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    conFacturaCheckbox.checked = true;
+                }
+            });
         }
     }
     
-    formaPagoSelect.addEventListener('change', showFacturaAlert);
+    if (formaPagoSelect) {
+        formaPagoSelect.addEventListener('change', showFacturaAlert);
+    }
 });
 </script>
 {% endblock %}

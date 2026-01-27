@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from .models import Factura, FacturaItem, PuntoVenta, LibroIVAVentas
-from .forms import FacturaForm, FacturaItemFormSet
+from .forms import FacturaForm, FacturaItemFormSet, PuntoVentaForm
 from .afip_service import AFIPService, determinar_tipo_factura, calcular_importes_factura
 from comercial.models import Venta
 
@@ -273,3 +273,37 @@ def registrar_en_libro_iva(factura):
         exento=factura.exento,
         total=factura.total
     )
+
+
+# PUNTOS DE VENTA
+@login_required
+def puntos_venta_list(request):
+    puntos = PuntoVenta.objects.all()
+    return render(request, 'facturacion/puntos_venta/list.html', {'puntos': puntos})
+
+
+@login_required
+def punto_venta_create(request):
+    if request.method == 'POST':
+        form = PuntoVentaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Punto de venta creado exitosamente.')
+            return redirect('facturacion:puntos_venta_list')
+    else:
+        form = PuntoVentaForm()
+    return render(request, 'facturacion/puntos_venta/form.html', {'form': form, 'titulo': 'Nuevo Punto de Venta'})
+
+
+@login_required
+def punto_venta_edit(request, pk):
+    punto = get_object_or_404(PuntoVenta, pk=pk)
+    if request.method == 'POST':
+        form = PuntoVentaForm(request.POST, instance=punto)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Punto de venta actualizado exitosamente.')
+            return redirect('facturacion:puntos_venta_list')
+    else:
+        form = PuntoVentaForm(instance=punto)
+    return render(request, 'facturacion/puntos_venta/form.html', {'form': form, 'titulo': 'Editar Punto de Venta'})
