@@ -5,9 +5,19 @@ from decimal import Decimal
 
 
 class Cliente(models.Model):
+    CONDICION_IVA_CHOICES = [
+        ('RI', 'Responsable Inscripto'),
+        ('MONO', 'Monotributista'),
+        ('EX', 'Exento'),
+        ('CF', 'Consumidor Final'),
+    ]
+    
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
     razon_social = models.CharField(max_length=200, blank=True)
+    cuit = models.CharField(max_length=11, blank=True, null=True, unique=True)
+    dni = models.CharField(max_length=8, blank=True)
+    condicion_iva = models.CharField(max_length=4, choices=CONDICION_IVA_CHOICES, default='CF')
     direccion = models.TextField()
     localidad = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20, blank=True)
@@ -15,6 +25,11 @@ class Cliente(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
+        return f"{self.nombre} {self.apellido}"
+    
+    def get_nombre_completo(self):
+        if self.razon_social:
+            return self.razon_social
         return f"{self.nombre} {self.apellido}"
     
     class Meta:
@@ -40,15 +55,14 @@ class Venta(models.Model):
         ('colocado', 'Colocado'),
     ]
     
-    numero_pedido = models.CharField(max_length=50, unique=True)
+    numero_pedido = models.CharField(max_length=50)  # Permite duplicados (PVC, PVC, etc.)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     valor_total = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    monto_cobrado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     fecha_pago = models.DateField(null=True, blank=True)
     forma_pago = models.CharField(max_length=20, choices=FORMA_PAGO_CHOICES, blank=True)
-    con_factura = models.BooleanField(default=False)
+    con_factura = models.BooleanField(default=True, verbose_name="Venta en blanco (con factura)")
     tipo_factura = models.CharField(max_length=2, choices=TIPO_FACTURA_CHOICES, blank=True)
     numero_factura = models.CharField(max_length=50, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
@@ -57,8 +71,15 @@ class Venta(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
-        self.saldo = self.valor_total - self.sena - self.monto_cobrado
+        # Saldo = Total - Seña (sin monto_cobrado confuso)
+        self.saldo = self.valor_total - self.sena
         super().save(*args, **kwargs)
+    
+    def get_numero_factura_display(self):
+        """Obtiene número de factura (electrónica o manual)"""
+        if hasattr(self, 'factura_electronica'):
+            return self.factura_electronica.get_numero_completo()
+        return self.numero_factura or '-'
     
     def __str__(self):
         return f"Pedido {self.numero_pedido} - {self.cliente}"
@@ -92,9 +113,18 @@ class TipoCuenta(models.Model):
 
 
 class Cuenta(models.Model):
+    CONDICION_IVA_CHOICES = [
+        ('RI', 'Responsable Inscripto'),
+        ('MONO', 'Monotributista'),
+        ('EX', 'Exento'),
+        ('CF', 'Consumidor Final'),
+    ]
+    
     tipo_cuenta = models.ForeignKey(TipoCuenta, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     razon_social = models.CharField(max_length=200, blank=True)
+    cuit = models.CharField(max_length=11, blank=True)
+    condicion_iva = models.CharField(max_length=4, choices=CONDICION_IVA_CHOICES, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     direccion = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
@@ -113,6 +143,8 @@ class Compra(models.Model):
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE)
     fecha_pago = models.DateField()
     importe_abonado = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    con_factura = models.BooleanField(default=True, verbose_name="Compra en blanco (con factura)")
+    numero_factura = models.CharField(max_length=50, blank=True)
     descripcion = models.TextField(blank=True)
     comprobante = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

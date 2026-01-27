@@ -1,0 +1,110 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">{{ titulo }}</h1>
+        <a href="{% url 'facturacion:lista_facturas' %}" class="text-blue-600 hover:text-blue-800">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <form method="get" class="flex gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
+                <input type="month" name="periodo" value="{{ periodo }}" class="form-input rounded-lg border-gray-300">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                <i class="fas fa-filter mr-2"></i>Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Neto Gravado 21%</p>
+            <p class="text-2xl font-bold text-gray-800">${{ totales.neto_21|floatformat:2 }}</p>
+            <p class="text-sm text-green-600">IVA: ${{ totales.iva_21|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Neto Gravado 10.5%</p>
+            <p class="text-2xl font-bold text-gray-800">${{ totales.neto_105|floatformat:2 }}</p>
+            <p class="text-sm text-green-600">IVA: ${{ totales.iva_105|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Exento</p>
+            <p class="text-2xl font-bold text-gray-800">${{ totales.exento|floatformat:2 }}</p>
+        </div>
+        <div class="bg-blue-600 rounded-lg shadow p-4 text-white">
+            <p class="text-sm">Total Facturado</p>
+            <p class="text-2xl font-bold">${{ totales.total|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <!-- Tabla detallada -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Factura</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Neto 21%</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">IVA 21%</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Neto 10.5%</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">IVA 10.5%</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Exento</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for registro in registros %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ registro.factura.fecha|date:"d/m/Y" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">
+                        <a href="{% url 'facturacion:detalle_factura' registro.factura.id %}" class="text-blue-600 hover:text-blue-800">
+                            {{ registro.factura.get_numero_completo }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ registro.factura.cliente.get_nombre_completo }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ registro.neto_gravado_21|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-green-600 text-right">${{ registro.iva_21|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ registro.neto_gravado_105|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-green-600 text-right">${{ registro.iva_105|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ registro.exento|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right font-semibold">${{ registro.total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="px-4 py-4 text-center text-gray-500">
+                        No hay registros para el período seleccionado
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if registros %}
+            <tfoot class="bg-gray-100 font-bold">
+                <tr>
+                    <td colspan="3" class="px-4 py-3 text-sm text-gray-900">TOTALES</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ totales.neto_21|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-green-600 text-right">${{ totales.iva_21|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ totales.neto_105|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-green-600 text-right">${{ totales.iva_105|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ totales.exento|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-sm text-blue-600 text-right">${{ totales.total|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="mt-6 text-sm text-gray-600">
+        <p><i class="fas fa-info-circle mr-2"></i>Este reporte muestra el detalle de IVA Ventas para presentación ante AFIP</p>
+    </div>
+</div>
+{% endblock %}

@@ -14,9 +14,17 @@ class Producto(models.Model):
         ('perimetro', 'Perímetro (Alto×2 + Ancho×2)'),
     ]
     
+    ALICUOTA_IVA_CHOICES = [
+        ('21.00', '21%'),
+        ('10.50', '10.5%'),
+        ('27.00', '27%'),
+        ('0.00', 'Exento'),
+    ]
+    
     nombre = models.CharField(max_length=200)
     categoria = models.CharField(max_length=100, choices=CATEGORIA_CHOICES)
     precio_m2 = models.DecimalField(max_digits=10, decimal_places=2)
+    alicuota_iva = models.DecimalField(max_digits=5, decimal_places=2, default=21.00)
     formula = models.CharField(max_length=20, choices=FORMULA_CHOICES, default='area')
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

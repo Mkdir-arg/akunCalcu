@@ -1,0 +1,144 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">{{ titulo }}</h1>
+        <a href="{% url 'facturacion:lista_facturas' %}" class="text-blue-600 hover:text-blue-800">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <!-- Encabezado Factura -->
+        <div class="border-b pb-6 mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                        FACTURA {{ factura.tipo }} {{ factura.get_numero_completo }}
+                    </h2>
+                    <p class="text-gray-600">Fecha: {{ factura.fecha|date:"d/m/Y" }}</p>
+                </div>
+                <div class="text-right">
+                    {% if factura.estado == 'autorizada' %}
+                        <span class="inline-block px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>AUTORIZADA
+                        </span>
+                    {% elif factura.estado == 'rechazada' %}
+                        <span class="inline-block px-4 py-2 bg-red-100 text-red-800 rounded-lg font-semibold">
+                            <i class="fas fa-times-circle mr-2"></i>RECHAZADA
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos Cliente -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Cliente</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="font-semibold">{{ factura.cliente.get_nombre_completo }}</p>
+                {% if factura.cliente.cuit %}
+                <p class="text-gray-600">CUIT: {{ factura.cliente.cuit }}</p>
+                {% endif %}
+                <p class="text-gray-600">{{ factura.cliente.direccion }}, {{ factura.cliente.localidad }}</p>
+                <p class="text-gray-600">Condición IVA: {{ factura.cliente.get_condicion_iva_display }}</p>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Detalle</h3>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio Unit.</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">IVA</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in items %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ item.descripcion }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{{ item.cantidad }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">${{ item.precio_unitario|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600 text-right">{{ item.alicuota_iva }}%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right font-semibold">${{ item.total|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="border-t pt-6">
+            <div class="flex justify-end">
+                <div class="w-64">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Subtotal Neto:</span>
+                        <span class="font-semibold">${{ factura.subtotal_neto|floatformat:2 }}</span>
+                    </div>
+                    {% if factura.iva_21 > 0 %}
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">IVA 21%:</span>
+                        <span class="font-semibold">${{ factura.iva_21|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if factura.iva_105 > 0 %}
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">IVA 10.5%:</span>
+                        <span class="font-semibold">${{ factura.iva_105|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if factura.iva_27 > 0 %}
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">IVA 27%:</span>
+                        <span class="font-semibold">${{ factura.iva_27|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if factura.exento > 0 %}
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Exento:</span>
+                        <span class="font-semibold">${{ factura.exento|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between pt-4 border-t-2 border-gray-300">
+                        <span class="text-lg font-bold">TOTAL:</span>
+                        <span class="text-lg font-bold text-blue-600">${{ factura.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAE -->
+        {% if factura.cae %}
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-600">Código de Autorización Electrónico (CAE)</p>
+                    <p class="text-xl font-mono font-bold text-gray-800">{{ factura.cae }}</p>
+                    <p class="text-sm text-gray-600">Vencimiento: {{ factura.cae_vencimiento|date:"d/m/Y" }}</p>
+                </div>
+                <div class="text-right">
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                        <i class="fas fa-print mr-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if factura.observaciones_afip %}
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Observaciones AFIP:</p>
+            <p class="text-sm text-gray-800">{{ factura.observaciones_afip }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
