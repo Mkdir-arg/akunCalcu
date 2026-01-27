@@ -48,6 +48,71 @@ def producto_toggle_active(request, pk):
 @login_required
 def calculadora_rapida(request):
     productos = Producto.objects.filter(activo=True)
+    
+    if request.method == 'POST':
+        import json
+        from comercial.models import Cliente
+        
+        try:
+            data = json.loads(request.body)
+            cliente_id = data.get('cliente_id')
+            items = data.get('items', [])
+            
+            if not cliente_id:
+                return JsonResponse({'success': False, 'error': 'Debe seleccionar un cliente'}, status=400)
+            
+            if not items:
+                return JsonResponse({'success': False, 'error': 'Debe agregar al menos un producto'}, status=400)
+            
+            cliente = Cliente.objects.get(id=cliente_id)
+            
+            # Crear cotización
+            cotizacion = Cotizacion.objects.create(
+                usuario=request.user,
+                cliente=cliente,
+                total_general=Decimal('0.00')
+            )
+            
+            total_general = Decimal('0.00')
+            
+            for item_data in items:
+                producto = Producto.objects.get(id=item_data['producto_id'])
+                alto = int(item_data['alto'])
+                ancho = int(item_data['ancho'])
+                cantidad = int(item_data.get('cantidad', 1))
+                
+                # Calcular área
+                if producto.formula == 'perimetro':
+                    area = Decimal(str((alto / 1000) * 2 + (ancho / 1000) * 2))
+                else:
+                    area = Decimal(str((alto / 1000) * (ancho / 1000)))
+                
+                subtotal = area * producto.precio_m2 * cantidad
+                
+                CotizacionItem.objects.create(
+                    cotizacion=cotizacion,
+                    producto=producto,
+                    alto_mm=alto,
+                    ancho_mm=ancho,
+                    cantidad=cantidad,
+                    area_m2=area,
+                    subtotal=subtotal
+                )
+                
+                total_general += subtotal
+            
+            cotizacion.total_general = total_general
+            cotizacion.save()
+            
+            return JsonResponse({
+                'success': True,
+                'cotizacion_id': cotizacion.id,
+                'redirect_url': f'/productos/cotizaciones/{cotizacion.id}/'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
     return render(request, 'productos/calculadora.html', {'productos': productos})
 
 @login_required
@@ -111,10 +176,74 @@ def crear_cotizacion(request):
 
 @login_required
 def cotizacion_list(request):
-    cotizaciones = Cotizacion.objects.all()
-    return render(request, 'productos/cotizacion_list.html', {'cotizaciones': cotizaciones})
+    from django.db.models import Q, Sum, Count
+    from datetime import datetime
+    from decimal import Decimal
+    
+    cotizaciones = Cotizacion.objects.select_related('usuario', 'cliente').all()
+    
+    # Filtros
+    buscar = request.GET.get('q')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    if buscar:
+        cotizaciones = cotizaciones.filter(
+            Q(id__icontains=buscar) |
+            Q(cliente__nombre__icontains=buscar) |
+            Q(cliente__apellido__icontains=buscar)
+        )
+    
+    if fecha_desde:
+        cotizaciones = cotizaciones.filter(fecha__date__gte=fecha_desde)
+    
+    if fecha_hasta:
+        cotizaciones = cotizaciones.filter(fecha__date__lte=fecha_hasta)
+    
+    # Indicadores del mes actual
+    mes_actual = datetime.now().month
+    anio_actual = datetime.now().year
+    
+    cotizaciones_mes = Cotizacion.objects.filter(
+        fecha__month=mes_actual,
+        fecha__year=anio_actual
+    )
+    
+    total_cotizado_mes = cotizaciones_mes.aggregate(Sum('total_general'))['total_general__sum'] or Decimal('0')
+    total_vendido_mes = cotizaciones_mes.filter(estado='vendido').aggregate(Sum('total_general'))['total_general__sum'] or Decimal('0')
+    
+    count_cotizaciones_mes = cotizaciones_mes.count()
+    promedio_cotizado = total_cotizado_mes / count_cotizaciones_mes if count_cotizaciones_mes > 0 else Decimal('0')
+    
+    count_vendidas_mes = cotizaciones_mes.filter(estado='vendido').count()
+    tasa_conversion = (count_vendidas_mes / count_cotizaciones_mes * 100) if count_cotizaciones_mes > 0 else 0
+    
+    context = {
+        'cotizaciones': cotizaciones,
+        'buscar': buscar,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'total_cotizado_mes': total_cotizado_mes,
+        'total_vendido_mes': total_vendido_mes,
+        'promedio_cotizado': promedio_cotizado,
+        'tasa_conversion': tasa_conversion,
+    }
+    return render(request, 'productos/cotizacion_list.html', context)
 
 @login_required
 def cotizacion_detail(request, pk):
     cotizacion = get_object_or_404(Cotizacion, pk=pk)
     return render(request, 'productos/cotizacion_detail.html', {'cotizacion': cotizacion})
+
+
+@login_required
+def cambiar_estado_cotizacion(request, pk):
+    cotizacion = get_object_or_404(Cotizacion, pk=pk)
+    nuevo_estado = request.POST.get('estado')
+    
+    if nuevo_estado in ['creado', 'vendido', 'desestimado']:
+        cotizacion.estado = nuevo_estado
+        cotizacion.save()
+        messages.success(request, f'Estado cambiado a {cotizacion.get_estado_display()}')
+    
+    return redirect('productos:cotizacion_list')

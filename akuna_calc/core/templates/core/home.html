@@ -31,50 +31,50 @@
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-scale-in">
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="card-elegant bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 shadow-xl">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Productos</p>
-                <p class="text-3xl font-bold text-slate-700">{{ productos_count|default:"0" }}</p>
+                <p class="text-sm text-blue-100 mb-2 font-medium">Cotizado Este Mes</p>
+                <p class="text-3xl font-bold text-white">${{ total_cotizado_mes|floatformat:0 }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-box text-white text-xl"></i>
+            <div class="w-14 h-14 bg-slate-700 bg-opacity-40 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-file-invoice text-white text-2xl"></i>
             </div>
         </div>
     </div>
     
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="card-elegant bg-gradient-to-br from-green-500 to-green-600 rounded-3xl p-6 shadow-xl">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Cotizaciones</p>
-                <p class="text-3xl font-bold text-slate-700">{{ cotizaciones_count|default:"0" }}</p>
+                <p class="text-sm text-green-100 mb-2 font-medium">Vendido Este Mes</p>
+                <p class="text-3xl font-bold text-white">${{ total_vendido_mes|floatformat:0 }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-file-invoice text-white text-xl"></i>
+            <div class="w-14 h-14 bg-slate-700 bg-opacity-40 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-check-circle text-white text-2xl"></i>
             </div>
         </div>
     </div>
     
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="card-elegant bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl p-6 shadow-xl">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Este Mes</p>
-                <p class="text-3xl font-bold text-slate-700">${{ total_mes|default:"0" }}</p>
+                <p class="text-sm text-purple-100 mb-2 font-medium">Promedio Cotizado</p>
+                <p class="text-3xl font-bold text-white">${{ promedio_cotizado|floatformat:0 }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-chart-line text-white text-xl"></i>
+            <div class="w-14 h-14 bg-slate-700 bg-opacity-40 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-chart-line text-white text-2xl"></i>
             </div>
         </div>
     </div>
     
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="card-elegant bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-6 shadow-xl">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Promedio</p>
-                <p class="text-3xl font-bold text-slate-700">${{ promedio|default:"0" }}</p>
+                <p class="text-sm text-orange-100 mb-2 font-medium">Tasa Conversión</p>
+                <p class="text-3xl font-bold text-white">{{ tasa_conversion|floatformat:0 }}%</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-calculator text-white text-xl"></i>
+            <div class="w-14 h-14 bg-slate-700 bg-opacity-40 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-percentage text-white text-2xl"></i>
             </div>
         </div>
     </div>

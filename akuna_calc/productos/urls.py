@@ -12,4 +12,5 @@ urlpatterns = [
     path('cotizaciones/', views.cotizacion_list, name='cotizacion_list'),
     path('cotizaciones/nueva/', views.crear_cotizacion, name='cotizacion_create'),
     path('cotizaciones/<int:pk>/', views.cotizacion_detail, name='cotizacion_detail'),
+    path('cotizaciones/<int:pk>/cambiar-estado/', views.cambiar_estado_cotizacion, name='cambiar_estado_cotizacion'),
 ]

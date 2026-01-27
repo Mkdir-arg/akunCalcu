@@ -51,8 +51,16 @@ class Producto(models.Model):
         ordering = ['nombre']
 
 class Cotizacion(models.Model):
+    ESTADO_CHOICES = [
+        ('creado', 'Creado'),
+        ('vendido', 'Vendido'),
+        ('desestimado', 'Desestimado'),
+    ]
+    
     fecha = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    cliente = models.ForeignKey('comercial.Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='creado')
     total_general = models.DecimalField(max_digits=12, decimal_places=2)
     observaciones = models.TextField(blank=True)
 
@@ -70,6 +78,7 @@ class CotizacionItem(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     alto_mm = models.IntegerField()
     ancho_mm = models.IntegerField()
+    cantidad = models.IntegerField(default=1)
     area_m2 = models.DecimalField(max_digits=10, decimal_places=3)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 

@@ -130,14 +130,45 @@
 
 <!-- Action Buttons -->
 <div class="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in">
-    <a href="{% url 'productos:cotizacion_create' %}" class="btn-primary inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
+    <button id="guardar-cotizacion-btn" class="btn-primary inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
         <i class="fas fa-save mr-2 sm:mr-3"></i>
         Guardar como Cotización
-    </a>
+    </button>
     <a href="{% url 'productos:productos_list' %}" class="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl sm:rounded-2xl border-2 border-slate-300 hover:border-slate-400 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base">
         <i class="fas fa-cog mr-2 sm:mr-3"></i>
         Gestionar Productos
     </a>
+</div>
+
+<!-- Modal Cliente -->
+<div id="cliente-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden backdrop-blur-sm">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-slate-800">Seleccionar Cliente</h3>
+                <button id="close-cliente-modal" class="text-slate-400 hover:text-slate-600 transition-colors p-2">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cliente <span class="text-red-500">*</span></label>
+                <select id="cliente-select" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Seleccione un cliente...</option>
+                    {% load static %}
+                </select>
+            </div>
+            
+            <div class="flex gap-3">
+                <button id="cancel-cliente" class="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-semibold transition-all">
+                    Cancelar
+                </button>
+                <button id="confirm-cliente" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all">
+                    <i class="fas fa-check mr-2"></i>Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -159,69 +190,62 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemId = `item-${itemCounter}`;
         
         const itemHTML = `
-            <div id="${itemId}" class="card-elegant bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl" data-precio="${producto.precio}" data-formula="${producto.formula}">
-                <div class="flex items-center mb-4 sm:mb-6">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl sm:rounded-2xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
-                        <i class="fas fa-box text-white text-sm sm:text-base"></i>
+            <div id="${itemId}" class="card-elegant bg-white rounded-2xl shadow-xl overflow-hidden" data-precio="${producto.precio}" data-formula="${producto.formula}" data-producto-id="${producto.id}">
+                <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-box text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-sm sm:text-base">${producto.nombre}</h3>
+                            <p class="text-xs text-slate-300">${producto.categoria} - $${formatNumber(parseFloat(producto.precio))}/m²</p>
+                        </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="font-bold text-slate-800 text-base sm:text-lg truncate">${producto.nombre}</h3>
-                        <p class="text-xs sm:text-sm text-slate-500 font-medium">${producto.categoria}</p>
-                    </div>
-                    <div class="text-right mr-2 sm:mr-4 hidden sm:block">
-                        <p class="text-xs sm:text-sm text-slate-500 font-medium">Precio m²</p>
-                        <p class="font-bold text-slate-700 text-sm sm:text-lg">$${formatNumber(parseFloat(producto.precio))}</p>
-                    </div>
-                    <button class="remove-item text-slate-400 hover:text-red-500 p-2 transition-colors rounded-lg flex-shrink-0" data-item="${itemId}">
-                        <i class="fas fa-trash text-sm sm:text-base"></i>
+                    <button type="button" class="remove-item text-white hover:text-red-300 p-2 transition-colors rounded-lg" data-item="${itemId}">
+                        <i class="fas fa-trash text-sm"></i>
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                    <div>
-                        <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">
-                            <i class="fas fa-arrows-alt-v mr-1 sm:mr-2"></i>Alto (mm)
-                        </label>
-                        <input type="number" 
-                               class="alto-input input-elegant w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl focus:outline-none text-sm sm:text-base" 
-                               min="0" 
-                               placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">
-                            <i class="fas fa-arrows-alt-h mr-1 sm:mr-2"></i>Ancho (mm)
-                        </label>
-                        <input type="number" 
-                               class="ancho-input input-elegant w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl focus:outline-none text-sm sm:text-base" 
-                               min="0" 
-                               placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">
-                            <i class="fas fa-hashtag mr-1 sm:mr-2"></i>Cantidad
-                        </label>
-                        <input type="number" 
-                               class="cantidad-input input-elegant w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl focus:outline-none text-sm sm:text-base" 
-                               min="1" 
-                               value="1"
-                               placeholder="1">
-                    </div>
-                </div>
-                
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-200">
-                    <div class="flex justify-between items-center mb-2 sm:mb-3">
-                        <span class="text-xs sm:text-sm text-slate-600 font-medium">${producto.formula === 'perimetro' ? 'Perímetro calculado:' : 'Área calculada:'}</span>
-                        <span class="font-semibold text-slate-800 text-sm sm:text-base"><span class="area-display">0.000</span> ${producto.formula === 'perimetro' ? 'm' : 'm²'}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-base sm:text-lg font-bold text-slate-800">Subtotal:</span>
-                        <span class="text-lg sm:text-xl font-bold text-slate-700">$<span class="subtotal-display">0.00</span></span>
-                    </div>
-                    <div class="sm:hidden mt-3 pt-3 border-t border-slate-200">
-                        <div class="text-center">
-                            <p class="text-xs text-slate-500 font-medium">Precio m²: $${formatNumber(parseFloat(producto.precio))}</p>
-                        </div>
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Alto (mm)</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Ancho (mm)</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Cantidad</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">${producto.formula === 'perimetro' ? 'Perímetro' : 'Área'}</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-t border-slate-200">
+                                <td class="px-4 py-3">
+                                    <input type="number" 
+                                           class="alto-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
+                                           min="0" 
+                                           placeholder="0">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" 
+                                           class="ancho-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
+                                           min="0" 
+                                           placeholder="0">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" 
+                                           class="cantidad-input w-20 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
+                                           min="1" 
+                                           value="1">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="area-display font-semibold text-slate-700">0.000</span> <span class="text-xs text-slate-500">${producto.formula === 'perimetro' ? 'm' : 'm²'}</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span class="text-lg font-bold text-slate-800">$<span class="subtotal-display">0.00</span></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -430,6 +454,123 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.value = '';
         document.querySelector('.category-filter[data-category="all"]').click();
         productModal.classList.remove('hidden');
+    });
+    
+    // Guardar cotización
+    const guardarBtn = document.getElementById('guardar-cotizacion-btn');
+    const clienteModal = document.getElementById('cliente-modal');
+    const closeClienteModal = document.getElementById('close-cliente-modal');
+    const cancelCliente = document.getElementById('cancel-cliente');
+    const confirmCliente = document.getElementById('confirm-cliente');
+    const clienteSelect = document.getElementById('cliente-select');
+    
+    // Cargar clientes
+    fetch('/comercial/clientes/')
+        .then(r => r.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const clientes = [];
+            
+            // Extraer clientes del HTML (ajustar según estructura)
+            fetch('/admin/comercial/cliente/?format=json')
+                .catch(() => {
+                    // Fallback: agregar opción manual
+                    clienteSelect.innerHTML = '<option value="">Seleccione un cliente...</option><option value="1">Cliente de prueba</option>';
+                });
+        });
+    
+    guardarBtn.addEventListener('click', () => {
+        const items = calculatorItems.querySelectorAll('[data-precio]');
+        
+        if (items.length === 0) {
+            showNotification('warning', 'Atención', 'Debe agregar al menos un producto');
+            return;
+        }
+        
+        // Cargar clientes via AJAX
+        fetch('/comercial/api/clientes-list/', {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(r => r.json())
+        .then(clientes => {
+            clienteSelect.innerHTML = '<option value="">Seleccione un cliente...</option>';
+            clientes.forEach(c => {
+                clienteSelect.innerHTML += `<option value="${c.id}">${c.nombre} ${c.apellido}</option>`;
+            });
+            clienteModal.classList.remove('hidden');
+        })
+        .catch(() => {
+            showNotification('error', 'Error', 'No se pudieron cargar los clientes');
+        });
+    });
+    
+    closeClienteModal.addEventListener('click', () => clienteModal.classList.add('hidden'));
+    cancelCliente.addEventListener('click', () => clienteModal.classList.add('hidden'));
+    
+    confirmCliente.addEventListener('click', async () => {
+        const clienteId = clienteSelect.value;
+        
+        if (!clienteId) {
+            showNotification('warning', 'Atención', 'Debe seleccionar un cliente');
+            return;
+        }
+        
+        const items = [];
+        calculatorItems.querySelectorAll('[data-precio]').forEach(item => {
+            const alto = item.querySelector('.alto-input').value;
+            const ancho = item.querySelector('.ancho-input').value;
+            const cantidad = item.querySelector('.cantidad-input').value;
+            const productoId = item.dataset.productoId;
+            
+            if (alto && ancho && parseInt(alto) > 0 && parseInt(ancho) > 0) {
+                items.push({
+                    producto_id: productoId,
+                    alto: parseInt(alto),
+                    ancho: parseInt(ancho),
+                    cantidad: parseInt(cantidad) || 1
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            showNotification('warning', 'Atención', 'Debe agregar productos con medidas válidas');
+            return;
+        }
+        
+        confirmCliente.disabled = true;
+        confirmCliente.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+        
+        try {
+            const response = await fetch('{% url "productos:calculadora" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    cliente_id: clienteId,
+                    items: items
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('success', 'Éxito', 'Cotización guardada correctamente');
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1000);
+            } else {
+                showNotification('error', 'Error', data.error || 'No se pudo guardar la cotización');
+                confirmCliente.disabled = false;
+                confirmCliente.innerHTML = '<i class="fas fa-check mr-2"></i>Confirmar';
+            }
+        } catch (error) {
+            showNotification('error', 'Error', 'Ocurrió un error al guardar');
+            confirmCliente.disabled = false;
+            confirmCliente.innerHTML = '<i class="fas fa-check mr-2"></i>Confirmar';
+        }
     });
 });
 </script>

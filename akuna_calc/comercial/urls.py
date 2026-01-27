@@ -33,4 +33,5 @@ urlpatterns = [
     
     # API
     path('api/cuentas-by-tipo/', views.get_cuentas_by_tipo, name='cuentas_by_tipo'),
+    path('api/clientes-list/', views.get_clientes_list, name='clientes_list_api'),
 ]
