@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cliente, Venta, TipoCuenta, Cuenta, Compra
+from .models import Cliente, Venta, TipoCuenta, SubTipoCuenta, Cuenta, Compra, PagoVenta
 
 
 @admin.register(Cliente)
@@ -23,6 +23,13 @@ class TipoCuentaAdmin(admin.ModelAdmin):
     list_filter = ['activo']
 
 
+@admin.register(SubTipoCuenta)
+class SubTipoCuentaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'tipo_cuenta', 'descripcion', 'activo']
+    list_filter = ['tipo_cuenta', 'activo']
+    search_fields = ['nombre', 'descripcion']
+
+
 @admin.register(Cuenta)
 class CuentaAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'tipo_cuenta', 'razon_social', 'activo']
@@ -35,3 +42,11 @@ class CompraAdmin(admin.ModelAdmin):
     list_display = ['numero_pedido', 'cuenta', 'fecha_pago', 'importe_abonado', 'created_by']
     list_filter = ['cuenta__tipo_cuenta', 'fecha_pago', 'created_by']
     search_fields = ['numero_pedido', 'cuenta__nombre']
+
+
+@admin.register(PagoVenta)
+class PagoVentaAdmin(admin.ModelAdmin):
+    list_display = ['venta', 'monto', 'fecha_pago', 'forma_pago', 'created_by', 'created_at']
+    list_filter = ['forma_pago', 'fecha_pago', 'created_by']
+    search_fields = ['venta__numero_pedido', 'venta__cliente__nombre']
+    readonly_fields = ['created_at', 'created_by']

@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -48,7 +49,7 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ factura.cliente.nombre }} {{ factura.cliente.apellido }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ factura.fecha|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-slate-800">${{ factura.total|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-base font-bold text-slate-800">${{ factura.total|formato_numero }}</td>
                         <td class="px-6 py-4">
                             {% if factura.estado == 'autorizada' %}
                                 <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">

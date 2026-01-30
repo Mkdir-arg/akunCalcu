@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Ventas{% endblock %}
 
@@ -64,13 +65,48 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Pedido</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Factura</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Valor Total</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Seña</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Saldo</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'numero_pedido' %}-numero_pedido{% else %}numero_pedido{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Pedido
+                                {% if orden_actual == 'numero_pedido' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-numero_pedido' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'numero_factura' %}-numero_factura{% else %}numero_factura{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Factura
+                                {% if orden_actual == 'numero_factura' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-numero_factura' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'cliente__nombre' %}-cliente__nombre{% else %}cliente__nombre{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Cliente
+                                {% if orden_actual == 'cliente__nombre' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-cliente__nombre' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'valor_total' %}-valor_total{% else %}valor_total{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Valor Total
+                                {% if orden_actual == 'valor_total' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-valor_total' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'sena' %}-sena{% else %}sena{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Seña
+                                {% if orden_actual == 'sena' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-sena' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'saldo' %}-saldo{% else %}saldo{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Saldo Pendiente
+                                {% if orden_actual == 'saldo' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-saldo' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'estado' %}-estado{% else %}estado{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
+                                Estado
+                                {% if orden_actual == 'estado' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-estado' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                            </a>
+                        </th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -88,13 +124,13 @@
                             {{ venta.cliente }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ venta.valor_total|floatformat:2 }}
+                            ${{ venta.valor_total|formato_numero }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ venta.sena|floatformat:2 }}
+                            ${{ venta.sena|formato_numero }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
-                            ${{ venta.saldo|floatformat:2 }}
+                            ${{ venta.saldo|formato_numero }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if venta.estado == 'pendiente' %}
@@ -123,20 +159,31 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{% url 'comercial:venta_edit' venta.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            {% if venta.con_factura %}
-                                {% if venta.factura_electronica %}
-                                    <a href="{% url 'facturacion:detalle_factura' venta.factura_electronica.id %}" class="text-green-600 hover:text-green-900" title="Ver Factura">
-                                        <i class="fas fa-file-invoice"></i>
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'facturacion:crear_factura_desde_venta' venta.id %}" class="text-blue-600 hover:text-blue-900" title="Generar Factura Electrónica">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                    </a>
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'comercial:venta_detail' venta.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Descargar PDF" target="_blank">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                                <a href="{% url 'comercial:venta_edit' venta.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmarEliminacion('{% url 'comercial:venta_delete' venta.pk %}', 'Venta #{{ venta.numero_pedido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% if venta.con_factura %}
+                                    {% if venta.factura_electronica %}
+                                        <a href="{% url 'facturacion:detalle_factura' venta.factura_electronica.id %}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Ver Factura">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'facturacion:crear_factura_desde_venta' venta.id %}" class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Generar Factura Electrónica">
+                                            <i class="fas fa-file-invoice-dollar"></i>
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

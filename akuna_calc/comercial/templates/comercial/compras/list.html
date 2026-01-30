@@ -1,17 +1,18 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
-{% block title %}Compras{% endblock %}
+{% block title %}{{ titulo|default:"Gastos" }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto animate-fade-in">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Compras</h1>
-            <p class="text-slate-500 font-medium mt-1">Control de gastos y proveedores</p>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Gastos</h1>
+            <p class="text-slate-500 font-medium mt-1">Control de egresos y proveedores</p>
         </div>
         <a href="{% url 'comercial:compra_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nueva Compra
+            <i class="fas fa-plus mr-2"></i>Nuevo Gasto
         </a>
     </div>
 
@@ -100,7 +101,7 @@
                             {{ compra.fecha_pago|date:"d/m/Y" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ compra.importe_abonado|floatformat:2 }}
+                            ${{ compra.importe_abonado|formato_numero }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             {% if compra.con_factura %}
@@ -123,7 +124,7 @@
                     <tr>
                         <td colspan="8" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay compras registradas</p>
+                            <p class="text-slate-500 font-medium">No hay gastos registrados</p>
                         </td>
                     </tr>
                     {% endfor %}

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from datetime import datetime
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, SubTipoCuenta, PagoVenta
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 
 
@@ -63,12 +63,13 @@ def dashboard_comercial(request):
 def ventas_list(request):
     from django.core.paginator import Paginator
     
-    ventas = Venta.objects.select_related('cliente').all()
+    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').all()
     
     # Filtros
-    estado = request.GET.get('estado')
-    con_factura = request.GET.get('con_factura')
-    buscar = request.GET.get('q')
+    estado = request.GET.get('estado', '')
+    con_factura = request.GET.get('con_factura', '')
+    buscar = request.GET.get('q', '')
+    orden = request.GET.get('orden', '-created_at')
     
     if estado:
         ventas = ventas.filter(estado=estado)
@@ -86,11 +87,11 @@ def ventas_list(request):
             Q(numero_factura__icontains=buscar)
         )
     
-    # Ordenar por número de pedido
-    ventas = ventas.order_by('numero_pedido', '-created_at')
+    # Ordenamiento
+    ventas = ventas.order_by(orden)
     
     # Paginación
-    paginator = Paginator(ventas, 20)  # 20 items por página
+    paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -100,7 +101,8 @@ def ventas_list(request):
         'estados': Venta.ESTADO_CHOICES,
         'filtro_estado': estado,
         'filtro_factura': con_factura,
-        'buscar': buscar
+        'buscar': buscar,
+        'orden_actual': orden
     }
     return render(request, 'comercial/ventas/list.html', context)
 
@@ -132,10 +134,254 @@ def venta_edit(request, pk):
     return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
 
 
+@login_required
+def venta_delete(request, pk):
+    venta = get_object_or_404(Venta, pk=pk)
+    if request.method == 'POST':
+        venta.delete()  # Eliminado lógico
+        messages.success(request, 'Venta eliminada exitosamente.')
+        return redirect('comercial:ventas_list')
+    return redirect('comercial:ventas_list')
+
+
+@login_required
+def venta_detail(request, pk):
+    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
+    pagos = venta.pagos.all().order_by('-fecha_pago')
+    
+    context = {
+        'venta': venta,
+        'pagos': pagos,
+        'total_pagado': venta.sena + sum(p.monto for p in pagos)
+    }
+    return render(request, 'comercial/ventas/detail.html', context)
+
+
+@login_required
+def registrar_pago(request, pk):
+    venta = get_object_or_404(Venta, pk=pk)
+    
+    if request.method == 'POST':
+        monto = request.POST.get('monto')
+        fecha_pago = request.POST.get('fecha_pago')
+        forma_pago = request.POST.get('forma_pago')
+        observaciones = request.POST.get('observaciones', '')
+        
+        try:
+            from decimal import Decimal
+            monto_decimal = Decimal(monto)
+            
+            if monto_decimal <= 0:
+                messages.error(request, 'El monto debe ser mayor a 0')
+                return redirect('comercial:venta_detail', pk=pk)
+            
+            if monto_decimal > venta.saldo:
+                messages.error(request, f'El monto no puede ser mayor al saldo pendiente (${venta.saldo})')
+                return redirect('comercial:venta_detail', pk=pk)
+            
+            pago = PagoVenta.objects.create(
+                venta=venta,
+                monto=monto_decimal,
+                fecha_pago=fecha_pago,
+                forma_pago=forma_pago,
+                observaciones=observaciones,
+                created_by=request.user
+            )
+            
+            # Recalcular saldo
+            venta.save()
+            
+            messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente')
+            return redirect('comercial:venta_detail', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al registrar el pago: {str(e)}')
+            return redirect('comercial:venta_detail', pk=pk)
+    
+    return redirect('comercial:venta_detail', pk=pk)
+
+
+@login_required
+def generar_pdf_venta(request, pk):
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    from reportlab.pdfgen import canvas
+    from decimal import Decimal
+    
+    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
+    pagos = venta.pagos.all().order_by('-fecha_pago')
+    total_pagado = venta.sena + sum(p.monto for p in pagos)
+    
+    # Crear respuesta HTTP
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="venta_{venta.numero_pedido}.pdf"'
+    
+    # Crear PDF
+    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Estilos personalizados
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=6,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#64748b'),
+        spaceAfter=20,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=12,
+        spaceBefore=20,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Encabezado
+    elements.append(Paragraph("AKUNA ABERTURAS", title_style))
+    elements.append(Paragraph("Detalle de Venta", subtitle_style))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Información de la venta
+    info_data = [
+        ['Pedido N°:', venta.numero_pedido, 'Fecha:', venta.created_at.strftime('%d/%m/%Y')],
+        ['Cliente:', f"{venta.cliente}", 'Estado:', venta.get_estado_display()],
+    ]
+    
+    if venta.numero_factura:
+        info_data.append(['Factura:', venta.get_numero_factura_display(), 'Tipo:', 'Blanco' if venta.con_factura else 'Negro'])
+    
+    info_table = Table(info_data, colWidths=[1.2*inch, 2.5*inch, 1*inch, 1.8*inch])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f1f5f9')),
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f1f5f9')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1e293b')),
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Resumen financiero
+    elements.append(Paragraph("Resumen Financiero", heading_style))
+    
+    def format_currency(value):
+        return f"${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    
+    resumen_data = [
+        ['Concepto', 'Monto'],
+        ['Valor Total', format_currency(venta.valor_total)],
+        ['Seña Inicial', format_currency(venta.sena)],
+        ['Pagos Adicionales', format_currency(sum(p.monto for p in pagos))],
+        ['Total Pagado', format_currency(total_pagado)],
+        ['Saldo Pendiente', format_currency(venta.saldo)],
+    ]
+    
+    resumen_table = Table(resumen_data, colWidths=[4*inch, 2.5*inch])
+    resumen_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#dbeafe')),
+        ('BACKGROUND', (0, 4), (-1, 4), colors.HexColor('#dcfce7')),
+        ('FONTNAME', (0, 4), (-1, 4), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 5), (-1, 5), colors.HexColor('#fef3c7') if venta.saldo > 0 else colors.HexColor('#dcfce7')),
+        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 5), (-1, 5), 12),
+    ]))
+    elements.append(resumen_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Historial de pagos
+    if pagos.exists() or venta.sena > 0:
+        elements.append(Paragraph("Historial de Pagos", heading_style))
+        
+        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'Monto']]
+        
+        # Seña inicial
+        pagos_data.append([
+            venta.created_at.strftime('%d/%m/%Y'),
+            'Seña Inicial',
+            '-',
+            format_currency(venta.sena)
+        ])
+        
+        # Pagos adicionales
+        for pago in pagos:
+            pagos_data.append([
+                pago.fecha_pago.strftime('%d/%m/%Y'),
+                'Pago',
+                pago.get_forma_pago_display(),
+                format_currency(pago.monto)
+            ])
+        
+        pagos_table = Table(pagos_data, colWidths=[1.3*inch, 2*inch, 1.8*inch, 1.4*inch])
+        pagos_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ]))
+        elements.append(pagos_table)
+    
+    # Pie de página
+    elements.append(Spacer(1, 0.5*inch))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#64748b'),
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph(f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", footer_style))
+    elements.append(Paragraph("Akuna Aberturas - Sistema de Gestión", footer_style))
+    
+    # Construir PDF
+    doc.build(elements)
+    return response
+
+
 # CLIENTES
 @login_required
 def clientes_list(request):
-    clientes = Cliente.objects.all()
+    clientes = Cliente.objects.filter(deleted_at__isnull=True).all()
     return render(request, 'comercial/clientes/list.html', {'clientes': clientes})
 
 
@@ -184,17 +430,27 @@ def cliente_edit(request, pk):
     return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Editar Cliente'})
 
 
+@login_required
+def cliente_delete(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    if request.method == 'POST':
+        cliente.delete()  # Eliminado lógico
+        messages.success(request, 'Cliente eliminado exitosamente.')
+        return redirect('comercial:clientes_list')
+    return redirect('comercial:clientes_list')
+
+
 # COMPRAS
 @login_required
 def compras_list(request):
     from django.core.paginator import Paginator
     
-    compras = Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta').all()
+    compras = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta').all()
     
     # Filtros
-    tipo_cuenta = request.GET.get('tipo_cuenta')
-    con_factura = request.GET.get('con_factura')
-    buscar = request.GET.get('q')
+    tipo_cuenta = request.GET.get('tipo_cuenta', '')
+    con_factura = request.GET.get('con_factura', '')
+    buscar = request.GET.get('q', '')
     
     if tipo_cuenta:
         compras = compras.filter(cuenta__tipo_cuenta_id=tipo_cuenta)
@@ -225,7 +481,8 @@ def compras_list(request):
         'tipos_cuenta': TipoCuenta.objects.filter(activo=True),
         'filtro_tipo': tipo_cuenta,
         'filtro_factura': con_factura,
-        'buscar': buscar
+        'buscar': buscar,
+        'titulo': 'Gastos'
     }
     return render(request, 'comercial/compras/list.html', context)
 
@@ -238,11 +495,11 @@ def compra_create(request):
             compra = form.save(commit=False)
             compra.created_by = request.user
             compra.save()
-            messages.success(request, 'Compra registrada exitosamente.')
+            messages.success(request, 'Gasto registrado exitosamente.')
             return redirect('comercial:compras_list')
     else:
         form = CompraForm()
-    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Nueva Compra'})
+    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Nuevo Gasto'})
 
 
 @login_required
@@ -252,17 +509,27 @@ def compra_edit(request, pk):
         form = CompraForm(request.POST, instance=compra)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Compra actualizada exitosamente.')
+            messages.success(request, 'Gasto actualizado exitosamente.')
             return redirect('comercial:compras_list')
     else:
         form = CompraForm(instance=compra)
-    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Editar Compra'})
+    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Editar Gasto'})
+
+
+@login_required
+def compra_delete(request, pk):
+    compra = get_object_or_404(Compra, pk=pk)
+    if request.method == 'POST':
+        compra.delete()  # Eliminado lógico
+        messages.success(request, 'Gasto eliminado exitosamente.')
+        return redirect('comercial:compras_list')
+    return redirect('comercial:compras_list')
 
 
 # CUENTAS
 @login_required
 def cuentas_list(request):
-    cuentas = Cuenta.objects.select_related('tipo_cuenta').all()
+    cuentas = Cuenta.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
     return render(request, 'comercial/cuentas/list.html', {'cuentas': cuentas})
 
 
@@ -309,6 +576,91 @@ def cuenta_edit(request, pk):
     else:
         form = CuentaForm(instance=cuenta)
     return render(request, 'comercial/cuentas/form.html', {'form': form, 'title': 'Editar Cuenta'})
+
+
+@login_required
+def cuenta_delete(request, pk):
+    cuenta = get_object_or_404(Cuenta, pk=pk)
+    if request.method == 'POST':
+        cuenta.delete()  # Eliminado lógico
+        messages.success(request, 'Cuenta eliminada exitosamente.')
+        return redirect('comercial:cuentas_list')
+    return redirect('comercial:cuentas_list')
+
+
+# TIPOS DE CUENTA
+@login_required
+def tipos_cuenta_list(request):
+    tipos = TipoCuenta.objects.filter(deleted_at__isnull=True).all()
+    return render(request, 'comercial/tipos_cuenta/list.html', {'tipos': tipos})
+
+
+@login_required
+def tipo_cuenta_delete(request, pk):
+    tipo = get_object_or_404(TipoCuenta, pk=pk)
+    if request.method == 'POST':
+        tipo.delete()
+        messages.success(request, 'Tipo de cuenta eliminado exitosamente.')
+        return redirect('comercial:tipos_cuenta_list')
+    return redirect('comercial:tipos_cuenta_list')
+
+
+# SUB TIPOS DE CUENTA
+@login_required
+def subtipos_cuenta_list(request):
+    subtipos = SubTipoCuenta.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
+    return render(request, 'comercial/subtipos_cuenta/list.html', {'subtipos': subtipos})
+
+
+@login_required
+def subtipo_cuenta_create(request):
+    if request.method == 'POST':
+        tipo_cuenta_id = request.POST.get('tipo_cuenta')
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion', '')
+        
+        if tipo_cuenta_id and nombre:
+            SubTipoCuenta.objects.create(
+                tipo_cuenta_id=tipo_cuenta_id,
+                nombre=nombre,
+                descripcion=descripcion
+            )
+            messages.success(request, 'Sub tipo de cuenta creado exitosamente.')
+            return redirect('comercial:subtipos_cuenta_list')
+    
+    tipos = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    return render(request, 'comercial/subtipos_cuenta/form.html', {'tipos': tipos, 'title': 'Nuevo Sub Tipo'})
+
+
+@login_required
+def subtipo_cuenta_edit(request, pk):
+    subtipo = get_object_or_404(SubTipoCuenta, pk=pk)
+    
+    if request.method == 'POST':
+        tipo_cuenta_id = request.POST.get('tipo_cuenta')
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion', '')
+        
+        if tipo_cuenta_id and nombre:
+            subtipo.tipo_cuenta_id = tipo_cuenta_id
+            subtipo.nombre = nombre
+            subtipo.descripcion = descripcion
+            subtipo.save()
+            messages.success(request, 'Sub tipo de cuenta actualizado exitosamente.')
+            return redirect('comercial:subtipos_cuenta_list')
+    
+    tipos = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    return render(request, 'comercial/subtipos_cuenta/form.html', {'tipos': tipos, 'subtipo': subtipo, 'title': 'Editar Sub Tipo'})
+
+
+@login_required
+def subtipo_cuenta_delete(request, pk):
+    subtipo = get_object_or_404(SubTipoCuenta, pk=pk)
+    if request.method == 'POST':
+        subtipo.delete()
+        messages.success(request, 'Sub tipo de cuenta eliminado exitosamente.')
+        return redirect('comercial:subtipos_cuenta_list')
+    return redirect('comercial:subtipos_cuenta_list')
 
 
 # REPORTES

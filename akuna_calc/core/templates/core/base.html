@@ -126,92 +126,125 @@
                         <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
                             <i class="fas fa-home text-lg"></i>
                         </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Dashboard</span>
-                            <p class="text-xs text-slate-300">Panel principal</p>
-                        </div>
+                        <span class="font-semibold sidebar-text">Dashboard</span>
                     </a>
                     
-                    <a href="{% url 'comercial:clientes_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-users text-lg"></i>
+                    <!-- Comercial -->
+                    <div class="menu-category">
+                        <button onclick="toggleMenu('comercial')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
+                                    <i class="fas fa-chart-line text-lg"></i>
+                                </div>
+                                <span class="font-semibold sidebar-text">Comercial</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="comercial-icon"></i>
+                        </button>
+                        <div id="comercial-menu" class="ml-6 mt-2 space-y-1 hidden">
+                            <a href="{% url 'comercial:dashboard' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-tachometer-alt mr-3 text-xs"></i>
+                                <span class="sidebar-text">Dashboard</span>
+                            </a>
+                            <a href="{% url 'comercial:clientes_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-users mr-3 text-xs"></i>
+                                <span class="sidebar-text">Clientes</span>
+                            </a>
+                            <a href="{% url 'comercial:ventas_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-shopping-cart mr-3 text-xs"></i>
+                                <span class="sidebar-text">Ventas</span>
+                            </a>
+                            <a href="{% url 'comercial:compras_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-shopping-bag mr-3 text-xs"></i>
+                                <span class="sidebar-text">Gastos</span>
+                            </a>
+                            <a href="{% url 'comercial:cuentas_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-folder mr-3 text-xs"></i>
+                                <span class="sidebar-text">Cuentas</span>
+                            </a>
+                            <a href="{% url 'comercial:reportes' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-file-alt mr-3 text-xs"></i>
+                                <span class="sidebar-text">Reportes</span>
+                            </a>
                         </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Clientes</span>
-                            <p class="text-xs text-slate-300">Gestión de clientes</p>
-                        </div>
-                    </a>
+                    </div>
                     
-                    <a href="{% url 'productos:productos_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-box text-lg"></i>
+                    <!-- Productos -->
+                    <div class="menu-category">
+                        <button onclick="toggleMenu('productos')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
+                                    <i class="fas fa-box text-lg"></i>
+                                </div>
+                                <span class="font-semibold sidebar-text">Productos</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="productos-icon"></i>
+                        </button>
+                        <div id="productos-menu" class="ml-6 mt-2 space-y-1 hidden">
+                            <a href="{% url 'productos:productos_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-list mr-3 text-xs"></i>
+                                <span class="sidebar-text">Lista de Productos</span>
+                            </a>
+                            <a href="{% url 'productos:calculadora' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-calculator mr-3 text-xs"></i>
+                                <span class="sidebar-text">Calculadora</span>
+                            </a>
+                            <a href="{% url 'productos:cotizacion_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-file-invoice mr-3 text-xs"></i>
+                                <span class="sidebar-text">Cotizaciones</span>
+                            </a>
                         </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Productos</span>
-                            <p class="text-xs text-slate-300">Gestión de catálogo</p>
-                        </div>
-                    </a>
+                    </div>
                     
-                    <a href="{% url 'productos:calculadora' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-calculator text-lg"></i>
+                    <!-- Facturación -->
+                    <div class="menu-category">
+                        <button onclick="toggleMenu('facturacion')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
+                                    <i class="fas fa-file-invoice-dollar text-lg"></i>
+                                </div>
+                                <span class="font-semibold sidebar-text">Facturación</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="facturacion-icon"></i>
+                        </button>
+                        <div id="facturacion-menu" class="ml-6 mt-2 space-y-1 hidden">
+                            <a href="{% url 'facturacion:lista_facturas' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-list mr-3 text-xs"></i>
+                                <span class="sidebar-text">Facturas</span>
+                            </a>
+                            <a href="{% url 'facturacion:puntos_venta_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-store mr-3 text-xs"></i>
+                                <span class="sidebar-text">Puntos de Venta</span>
+                            </a>
                         </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Calculadora</span>
-                            <p class="text-xs text-slate-300">Cálculo rápido</p>
-                        </div>
-                    </a>
+                    </div>
                     
-                    <a href="{% url 'productos:cotizacion_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-file-invoice text-lg"></i>
-                        </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Cotizaciones</span>
-                            <p class="text-xs text-slate-300">Historial y gestión</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{% url 'comercial:dashboard' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-chart-line text-lg"></i>
-                        </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Comercial</span>
-                            <p class="text-xs text-slate-300">Ventas y compras</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{% url 'facturacion:lista_facturas' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-file-invoice-dollar text-lg"></i>
-                        </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Facturación</span>
-                            <p class="text-xs text-slate-300">Facturas AFIP</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{% url 'facturacion:puntos_venta_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-store text-lg"></i>
-                        </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Puntos de Venta</span>
-                            <p class="text-xs text-slate-300">Config. AFIP</p>
-                        </div>
-                    </a>
-                    
+                    <!-- Configuración -->
                     {% if request.user.is_staff %}
-                    <a href="{% url 'user_list' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-users-cog text-lg"></i>
+                    <div class="menu-category">
+                        <button onclick="toggleMenu('configuracion')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
+                                    <i class="fas fa-cog text-lg"></i>
+                                </div>
+                                <span class="font-semibold sidebar-text">Configuración</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="configuracion-icon"></i>
+                        </button>
+                        <div id="configuracion-menu" class="ml-6 mt-2 space-y-1 hidden">
+                            <a href="{% url 'user_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-users-cog mr-3 text-xs"></i>
+                                <span class="sidebar-text">Usuarios</span>
+                            </a>
+                            <a href="{% url 'comercial:tipos_cuenta_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-folder mr-3 text-xs"></i>
+                                <span class="sidebar-text">Tipos de Cuenta</span>
+                            </a>
+                            <a href="{% url 'comercial:subtipos_cuenta_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
+                                <i class="fas fa-folder-open mr-3 text-xs"></i>
+                                <span class="sidebar-text">Sub Tipos de Cuenta</span>
+                            </a>
                         </div>
-                        <div class="sidebar-text">
-                            <span class="font-semibold">Usuarios</span>
-                            <p class="text-xs text-slate-300">Gestión de accesos</p>
-                        </div>
-                    </a>
+                    </div>
                     {% endif %}
                 </div>
             </nav>
@@ -270,9 +303,52 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmación de Eliminación Global -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden backdrop-blur-sm">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-scale-in">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">¿Eliminar registro?</h3>
+                    <p class="text-slate-600" id="deleteMessage">Esta acción no se puede deshacer.</p>
+                </div>
+                <form id="deleteForm" method="post">
+                    {% csrf_token %}
+                    <div class="flex gap-3">
+                        <button type="button" onclick="cerrarModal()" class="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-semibold transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all">
+                            <i class="fas fa-trash mr-2"></i>Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {% load static %}
     <script src="{% static 'js/sidebar.js' %}"></script>
     <script src="{% static 'js/theme.js' %}"></script>
+    <script src="{% static 'js/delete-modal.js' %}"></script>
+    
+    <script>
+    // Menú colapsable
+    function toggleMenu(menuId) {
+        const menu = document.getElementById(menuId + '-menu');
+        const icon = document.getElementById(menuId + '-icon');
+        
+        if (menu.classList.contains('hidden')) {
+            menu.classList.remove('hidden');
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            menu.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+    </script>
     
     <!-- Inicializar Select2 y Confirmaciones -->
     <script>

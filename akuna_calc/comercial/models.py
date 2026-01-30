@@ -23,6 +23,7 @@ class Cliente(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
@@ -31,6 +32,12 @@ class Cliente(models.Model):
         if self.razon_social:
             return self.razon_social
         return f"{self.nombre} {self.apellido}"
+    
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.save()
     
     class Meta:
         verbose_name = "Cliente"
@@ -69,11 +76,23 @@ class Venta(models.Model):
     observaciones = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     def save(self, *args, **kwargs):
-        # Saldo = Total - Seña (sin monto_cobrado confuso)
-        self.saldo = self.valor_total - self.sena
+        # Calcular saldo: Total - Seña - Pagos realizados
+        if self.pk:  # Solo calcular pagos si la venta ya existe
+            total_pagos = sum(pago.monto for pago in self.pagos.all())
+            self.saldo = self.valor_total - self.sena - total_pagos
+        else:
+            # Nueva venta: saldo = total - seña
+            self.saldo = self.valor_total - self.sena
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.save()
     
     def get_numero_factura_display(self):
         """Obtiene número de factura (electrónica o manual)"""
@@ -103,13 +122,45 @@ class TipoCuenta(models.Model):
     tipo = models.CharField(max_length=20, choices=TIPOS_CUENTA, unique=True)
     descripcion = models.CharField(max_length=100)
     activo = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return self.get_tipo_display()
     
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.activo = False
+        self.save()
+    
     class Meta:
         verbose_name = "Tipo de Cuenta"
         verbose_name_plural = "Tipos de Cuenta"
+
+
+class SubTipoCuenta(models.Model):
+    tipo_cuenta = models.ForeignKey(TipoCuenta, on_delete=models.CASCADE, related_name='subtipos')
+    nombre = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200, blank=True)
+    activo = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.tipo_cuenta})"
+    
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.activo = False
+        self.save()
+    
+    class Meta:
+        verbose_name = "Sub Tipo de Cuenta"
+        verbose_name_plural = "Sub Tipos de Cuenta"
+        ordering = ['nombre']
 
 
 class Cuenta(models.Model):
@@ -129,9 +180,17 @@ class Cuenta(models.Model):
     direccion = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.nombre} ({self.tipo_cuenta})"
+    
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.activo = False
+        self.save()
     
     class Meta:
         verbose_name = "Cuenta"
@@ -149,11 +208,43 @@ class Compra(models.Model):
     comprobante = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return f"Compra {self.numero_pedido} - {self.cuenta}"
     
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.save()
+    
     class Meta:
         verbose_name = "Compra"
         verbose_name_plural = "Compras"
+        ordering = ['-fecha_pago']
+
+
+class PagoVenta(models.Model):
+    FORMA_PAGO_CHOICES = [
+        ('transferencia', 'Transferencia'),
+        ('efectivo', 'Efectivo'),
+        ('cheque', 'Cheque'),
+        ('tarjeta', 'Tarjeta'),
+    ]
+    
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='pagos')
+    monto = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    fecha_pago = models.DateField()
+    forma_pago = models.CharField(max_length=20, choices=FORMA_PAGO_CHOICES)
+    observaciones = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"Pago ${self.monto} - Venta {self.venta.numero_pedido}"
+    
+    class Meta:
+        verbose_name = "Pago de Venta"
+        verbose_name_plural = "Pagos de Ventas"
         ordering = ['-fecha_pago']

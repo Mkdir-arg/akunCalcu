@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto animate-fade-in">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-folder mr-3"></i>Tipos de Cuenta
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Gestión de tipos de cuenta</p>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-2xl animate-fade-in bg-green-100 text-green-800">
+            <i class="fas fa-check-circle mr-2"></i>{{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for tipo in tipos %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ tipo.get_tipo_display }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ tipo.descripcion }}</td>
+                        <td class="px-6 py-4">
+                            {% if tipo.activo %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-check-circle mr-1"></i>Activo
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-times-circle mr-1"></i>Inactivo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="confirmarEliminacion('{% url 'comercial:tipo_cuenta_delete' tipo.pk %}', '{{ tipo.get_tipo_display }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay tipos de cuenta registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

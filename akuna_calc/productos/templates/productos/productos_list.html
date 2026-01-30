@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto animate-fade-in">
@@ -49,7 +50,7 @@
                             {{ producto.get_categoria_display }}
                         </td>
                         <td class="px-6 py-4 text-base font-bold text-slate-800">
-                            ${{ producto.precio_m2|floatformat:2 }}
+                            ${{ producto.precio_m2|formato_numero }}
                         </td>
                         <td class="px-6 py-4">
                             {% if producto.activo %}

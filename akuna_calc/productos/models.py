@@ -63,12 +63,19 @@ class Cotizacion(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='creado')
     total_general = models.DecimalField(max_digits=12, decimal_places=2)
     observaciones = models.TextField(blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Cotización #{self.id} - {self.fecha.strftime('%d/%m/%Y')}"
 
     def calcular_total(self):
         return sum(item.subtotal for item in self.items.all())
+    
+    def delete(self, *args, **kwargs):
+        """Eliminado lógico"""
+        from django.utils import timezone
+        self.deleted_at = timezone.now()
+        self.save()
 
     class Meta:
         ordering = ['-fecha']

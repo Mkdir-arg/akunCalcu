@@ -180,7 +180,7 @@ def cotizacion_list(request):
     from datetime import datetime
     from decimal import Decimal
     
-    cotizaciones = Cotizacion.objects.select_related('usuario', 'cliente').all()
+    cotizaciones = Cotizacion.objects.filter(deleted_at__isnull=True).select_related('usuario', 'cliente').all()
     
     # Filtros
     buscar = request.GET.get('q')
@@ -246,4 +246,14 @@ def cambiar_estado_cotizacion(request, pk):
         cotizacion.save()
         messages.success(request, f'Estado cambiado a {cotizacion.get_estado_display()}')
     
+    return redirect('productos:cotizacion_list')
+
+
+@login_required
+def cotizacion_delete(request, pk):
+    cotizacion = get_object_or_404(Cotizacion, pk=pk)
+    if request.method == 'POST':
+        cotizacion.delete()  # Eliminado lógico
+        messages.success(request, 'Cotización eliminada exitosamente.')
+        return redirect('productos:cotizacion_list')
     return redirect('productos:cotizacion_list')

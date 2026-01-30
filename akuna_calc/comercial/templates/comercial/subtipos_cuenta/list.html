@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto animate-fade-in">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-folder-open mr-3"></i>Sub Tipos de Cuenta
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Gestión de sub tipos de cuenta</p>
+        </div>
+        <a href="{% url 'comercial:subtipo_cuenta_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+            <i class="fas fa-plus mr-2"></i>Nuevo Sub Tipo
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-2xl animate-fade-in bg-green-100 text-green-800">
+            <i class="fas fa-check-circle mr-2"></i>{{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo Cuenta</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for subtipo in subtipos %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ subtipo.nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ subtipo.tipo_cuenta }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ subtipo.descripcion|default:"-" }}</td>
+                        <td class="px-6 py-4">
+                            {% if subtipo.activo %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-check-circle mr-1"></i>Activo
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                                    <i class="fas fa-times-circle mr-1"></i>Inactivo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'comercial:subtipo_cuenta_edit' subtipo.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmarEliminacion('{% url 'comercial:subtipo_cuenta_delete' subtipo.pk %}', '{{ subtipo.nombre }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay sub tipos de cuenta registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
