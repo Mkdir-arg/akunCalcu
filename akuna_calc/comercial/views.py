@@ -615,12 +615,23 @@ def tipo_cuenta_create(request):
         activo = request.POST.get('activo') == 'on'
         
         if tipo and descripcion:
-            TipoCuenta.objects.create(
-                tipo=tipo,
-                descripcion=descripcion,
-                activo=activo
-            )
-            messages.success(request, 'Tipo de cuenta creado exitosamente.')
+            # Verificar si existe un registro eliminado
+            tipo_existente = TipoCuenta.objects.filter(tipo=tipo).first()
+            if tipo_existente:
+                # Reactivar el registro eliminado
+                tipo_existente.descripcion = descripcion
+                tipo_existente.activo = activo
+                tipo_existente.deleted_at = None
+                tipo_existente.save()
+                messages.success(request, 'Tipo de cuenta reactivado exitosamente.')
+            else:
+                # Crear nuevo registro
+                TipoCuenta.objects.create(
+                    tipo=tipo,
+                    descripcion=descripcion,
+                    activo=activo
+                )
+                messages.success(request, 'Tipo de cuenta creado exitosamente.')
             return redirect('comercial:tipos_cuenta_list')
     
     return render(request, 'comercial/tipos_cuenta/form.html', {'title': 'Nuevo Tipo de Cuenta'})
