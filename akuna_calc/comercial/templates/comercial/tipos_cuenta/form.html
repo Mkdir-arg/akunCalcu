@@ -17,15 +17,7 @@
                 <label for="tipo" class="block text-sm font-semibold text-slate-700 mb-2">
                     <i class="fas fa-tag mr-2"></i>Tipo
                 </label>
-                <select name="tipo" id="tipo" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all">
-                    <option value="">Seleccione un tipo</option>
-                    <option value="colocadores" {% if tipo and tipo.tipo == 'colocadores' %}selected{% endif %}>Colocadores</option>
-                    <option value="colaboradores" {% if tipo and tipo.tipo == 'colaboradores' %}selected{% endif %}>Colaboradores</option>
-                    <option value="fletes" {% if tipo and tipo.tipo == 'fletes' %}selected{% endif %}>Fletes</option>
-                    <option value="retiros_propios" {% if tipo and tipo.tipo == 'retiros_propios' %}selected{% endif %}>Retiros Propios</option>
-                    <option value="varios" {% if tipo and tipo.tipo == 'varios' %}selected{% endif %}>Varios</option>
-                    <option value="proveedores" {% if tipo and tipo.tipo == 'proveedores' %}selected{% endif %}>Proveedores</option>
-                </select>
+                <input type="text" name="tipo" id="tipo" value="{{ tipo.get_tipo_display|default:'' }}" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all" placeholder="Nombre del tipo de cuenta">
             </div>
 
             <div>
