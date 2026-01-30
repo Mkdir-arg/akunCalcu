@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto
 
 
 class ClienteForm(forms.ModelForm):
@@ -63,7 +63,8 @@ class CompraForm(forms.ModelForm):
         exclude = ['created_at', 'created_by']
         widgets = {
             'numero_pedido': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
-            'cuenta': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'cuenta': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_cuenta'}),
+            'tipo_gasto': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_gasto'}),
             'fecha_pago': forms.DateInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'}),
             'importe_abonado': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
             'con_factura': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
@@ -73,6 +74,7 @@ class CompraForm(forms.ModelForm):
         }
         labels = {
             'con_factura': 'Compra en blanco (con factura)',
+            'tipo_gasto': 'Tipo de Gasto',
         }
 
 

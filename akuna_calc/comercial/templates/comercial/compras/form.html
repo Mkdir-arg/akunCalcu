@@ -28,6 +28,7 @@
                         {% endif %}
                     </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cuenta</label>
                         <div class="flex gap-2">
@@ -38,6 +39,14 @@
                         </div>
                         {% if form.cuenta.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.cuenta.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Gasto</label>
+                        {{ form.tipo_gasto }}
+                        {% if form.tipo_gasto.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.tipo_gasto.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -257,6 +266,31 @@ document.getElementById('cuentaForm').addEventListener('submit', async function(
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cuenta';
+    }
+});
+
+// Cargar tipos de gasto cuando cambia la cuenta
+$('#id_cuenta').on('change', function() {
+    const cuentaId = $(this).val();
+    const tipoGastoSelect = $('#id_tipo_gasto');
+    
+    if (cuentaId) {
+        $.ajax({
+            url: '{% url "comercial:tipos_gasto_by_cuenta" %}',
+            data: { cuenta_id: cuentaId },
+            success: function(data) {
+                tipoGastoSelect.empty();
+                tipoGastoSelect.append('<option value="">---------</option>');
+                data.forEach(function(tipo) {
+                    tipoGastoSelect.append(`<option value="${tipo.id}">${tipo.nombre}</option>`);
+                });
+                tipoGastoSelect.prop('disabled', false);
+            }
+        });
+    } else {
+        tipoGastoSelect.empty();
+        tipoGastoSelect.append('<option value="">---------</option>');
+        tipoGastoSelect.prop('disabled', true);
     }
 });
 </script>

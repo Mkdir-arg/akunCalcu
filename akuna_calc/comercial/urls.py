@@ -38,17 +38,18 @@ urlpatterns = [
     path('tipos-cuenta/', views.tipos_cuenta_list, name='tipos_cuenta_list'),
     path('tipos-cuenta/<int:pk>/eliminar/', views.tipo_cuenta_delete, name='tipo_cuenta_delete'),
     
-    # Sub Tipos de Cuenta
-    path('subtipos-cuenta/', views.subtipos_cuenta_list, name='subtipos_cuenta_list'),
-    path('subtipos-cuenta/nuevo/', views.subtipo_cuenta_create, name='subtipo_cuenta_create'),
-    path('subtipos-cuenta/<int:pk>/editar/', views.subtipo_cuenta_edit, name='subtipo_cuenta_edit'),
-    path('subtipos-cuenta/<int:pk>/eliminar/', views.subtipo_cuenta_delete, name='subtipo_cuenta_delete'),
+    # Tipos de Gasto
+    path('tipos-gasto/', views.tipos_gasto_list, name='tipos_gasto_list'),
+    path('tipos-gasto/nuevo/', views.tipo_gasto_create, name='tipo_gasto_create'),
+    path('tipos-gasto/<int:pk>/editar/', views.tipo_gasto_edit, name='tipo_gasto_edit'),
+    path('tipos-gasto/<int:pk>/eliminar/', views.tipo_gasto_delete, name='tipo_gasto_delete'),
     
     # Reportes
     path('reportes/', views.reportes, name='reportes'),
     path('reportes/exportar-excel/', views.exportar_reporte_excel, name='exportar_reporte_excel'),
     
     # API
+    path('api/tipos-gasto-by-cuenta/', views.get_tipos_gasto_by_cuenta, name='tipos_gasto_by_cuenta'),
     path('api/cuentas-by-tipo/', views.get_cuentas_by_tipo, name='cuentas_by_tipo'),
     path('api/clientes-list/', views.get_clientes_list, name='clientes_list_api'),
 ]

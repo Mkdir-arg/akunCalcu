@@ -139,8 +139,8 @@ class TipoCuenta(models.Model):
         verbose_name_plural = "Tipos de Cuenta"
 
 
-class SubTipoCuenta(models.Model):
-    tipo_cuenta = models.ForeignKey(TipoCuenta, on_delete=models.CASCADE, related_name='subtipos')
+class TipoGasto(models.Model):
+    tipo_cuenta = models.ForeignKey(TipoCuenta, on_delete=models.CASCADE, related_name='tipos_gasto')
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=200, blank=True)
     activo = models.BooleanField(default=True)
@@ -158,9 +158,10 @@ class SubTipoCuenta(models.Model):
         self.save()
     
     class Meta:
-        verbose_name = "Sub Tipo de Cuenta"
-        verbose_name_plural = "Sub Tipos de Cuenta"
+        verbose_name = "Tipo de Gasto"
+        verbose_name_plural = "Tipos de Gasto"
         ordering = ['nombre']
+        db_table = 'comercial_subtipocuenta'
 
 
 class Cuenta(models.Model):
@@ -200,6 +201,7 @@ class Cuenta(models.Model):
 class Compra(models.Model):
     numero_pedido = models.CharField(max_length=50)
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE)
+    tipo_gasto = models.ForeignKey(TipoGasto, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_pago = models.DateField()
     importe_abonado = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     con_factura = models.BooleanField(default=True, verbose_name="Compra en blanco (con factura)")

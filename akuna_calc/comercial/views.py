@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from datetime import datetime
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, SubTipoCuenta, PagoVenta
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 
 
@@ -605,36 +605,36 @@ def tipo_cuenta_delete(request, pk):
     return redirect('comercial:tipos_cuenta_list')
 
 
-# SUB TIPOS DE CUENTA
+# TIPOS DE GASTO
 @login_required
-def subtipos_cuenta_list(request):
-    subtipos = SubTipoCuenta.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
-    return render(request, 'comercial/subtipos_cuenta/list.html', {'subtipos': subtipos})
+def tipos_gasto_list(request):
+    tipos = TipoGasto.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
+    return render(request, 'comercial/tipos_gasto/list.html', {'tipos': tipos})
 
 
 @login_required
-def subtipo_cuenta_create(request):
+def tipo_gasto_create(request):
     if request.method == 'POST':
         tipo_cuenta_id = request.POST.get('tipo_cuenta')
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion', '')
         
         if tipo_cuenta_id and nombre:
-            SubTipoCuenta.objects.create(
+            TipoGasto.objects.create(
                 tipo_cuenta_id=tipo_cuenta_id,
                 nombre=nombre,
                 descripcion=descripcion
             )
-            messages.success(request, 'Sub tipo de cuenta creado exitosamente.')
-            return redirect('comercial:subtipos_cuenta_list')
+            messages.success(request, 'Tipo de gasto creado exitosamente.')
+            return redirect('comercial:tipos_gasto_list')
     
-    tipos = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
-    return render(request, 'comercial/subtipos_cuenta/form.html', {'tipos': tipos, 'title': 'Nuevo Sub Tipo'})
+    tipos_cuenta = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    return render(request, 'comercial/tipos_gasto/form.html', {'tipos_cuenta': tipos_cuenta, 'title': 'Nuevo Tipo de Gasto'})
 
 
 @login_required
-def subtipo_cuenta_edit(request, pk):
-    subtipo = get_object_or_404(SubTipoCuenta, pk=pk)
+def tipo_gasto_edit(request, pk):
+    tipo = get_object_or_404(TipoGasto, pk=pk)
     
     if request.method == 'POST':
         tipo_cuenta_id = request.POST.get('tipo_cuenta')
@@ -642,25 +642,25 @@ def subtipo_cuenta_edit(request, pk):
         descripcion = request.POST.get('descripcion', '')
         
         if tipo_cuenta_id and nombre:
-            subtipo.tipo_cuenta_id = tipo_cuenta_id
-            subtipo.nombre = nombre
-            subtipo.descripcion = descripcion
-            subtipo.save()
-            messages.success(request, 'Sub tipo de cuenta actualizado exitosamente.')
-            return redirect('comercial:subtipos_cuenta_list')
+            tipo.tipo_cuenta_id = tipo_cuenta_id
+            tipo.nombre = nombre
+            tipo.descripcion = descripcion
+            tipo.save()
+            messages.success(request, 'Tipo de gasto actualizado exitosamente.')
+            return redirect('comercial:tipos_gasto_list')
     
-    tipos = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
-    return render(request, 'comercial/subtipos_cuenta/form.html', {'tipos': tipos, 'subtipo': subtipo, 'title': 'Editar Sub Tipo'})
+    tipos_cuenta = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    return render(request, 'comercial/tipos_gasto/form.html', {'tipos_cuenta': tipos_cuenta, 'tipo': tipo, 'title': 'Editar Tipo de Gasto'})
 
 
 @login_required
-def subtipo_cuenta_delete(request, pk):
-    subtipo = get_object_or_404(SubTipoCuenta, pk=pk)
+def tipo_gasto_delete(request, pk):
+    tipo = get_object_or_404(TipoGasto, pk=pk)
     if request.method == 'POST':
-        subtipo.delete()
-        messages.success(request, 'Sub tipo de cuenta eliminado exitosamente.')
-        return redirect('comercial:subtipos_cuenta_list')
-    return redirect('comercial:subtipos_cuenta_list')
+        tipo.delete()
+        messages.success(request, 'Tipo de gasto eliminado exitosamente.')
+        return redirect('comercial:tipos_gasto_list')
+    return redirect('comercial:tipos_gasto_list')
 
 
 # REPORTES
@@ -783,6 +783,21 @@ def reportes(request):
         'reporte_data': reporte_data,
     }
     return render(request, 'comercial/reportes/reportes.html', context)
+
+
+@login_required
+def get_tipos_gasto_by_cuenta(request):
+    cuenta_id = request.GET.get('cuenta_id')
+    if cuenta_id:
+        cuenta = Cuenta.objects.filter(id=cuenta_id).first()
+        if cuenta:
+            tipos_gasto = TipoGasto.objects.filter(
+                tipo_cuenta=cuenta.tipo_cuenta,
+                activo=True,
+                deleted_at__isnull=True
+            ).values('id', 'nombre')
+            return JsonResponse(list(tipos_gasto), safe=False)
+    return JsonResponse([], safe=False)
 
 
 @login_required

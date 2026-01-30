@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cliente, Venta, TipoCuenta, SubTipoCuenta, Cuenta, Compra, PagoVenta
+from .models import Cliente, Venta, TipoCuenta, TipoGasto, Cuenta, Compra, PagoVenta
 
 
 @admin.register(Cliente)
@@ -23,8 +23,8 @@ class TipoCuentaAdmin(admin.ModelAdmin):
     list_filter = ['activo']
 
 
-@admin.register(SubTipoCuenta)
-class SubTipoCuentaAdmin(admin.ModelAdmin):
+@admin.register(TipoGasto)
+class TipoGastoAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'tipo_cuenta', 'descripcion', 'activo']
     list_filter = ['tipo_cuenta', 'activo']
     search_fields = ['nombre', 'descripcion']
