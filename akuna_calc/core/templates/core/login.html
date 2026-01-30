@@ -83,7 +83,7 @@
         body.login-page {
             background: linear-gradient(135deg, #e8ecfb, #f4f6ff);
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         .login-background {
             position: absolute;
@@ -277,103 +277,103 @@
         <span class="particle three"></span>
     </div>
 
-    <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10">
+    <div class="min-h-screen flex items-center justify-center px-4 py-4 relative z-10">
         <div class="w-full max-w-xs sm:max-w-md">
             <!-- Logo Section -->
-            <div class="text-center mb-8 sm:mb-12 animate-fade-in login-heading">
-                <div class="login-pill mb-3 sm:mb-4 inline-flex animate-fade-in">
+            <div class="text-center mb-3 sm:mb-6 animate-fade-in login-heading">
+                <div class="login-pill mb-2 inline-flex animate-fade-in">
                     <i class="fas fa-star"></i> Nuevo portal
                 </div>
-                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-primary to-accent rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 lg:mb-8 shadow-2xl login-pulse">
-                    <i class="fas fa-calculator text-white text-2xl sm:text-3xl lg:text-4xl"></i>
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary to-accent rounded-2xl mb-2 sm:mb-3 shadow-2xl login-pulse">
+                    <i class="fas fa-calculator text-white text-xl sm:text-2xl"></i>
                 </div>
-                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-800 mb-2 sm:mb-3 tracking-tight">Akun</h1>
-                <p class="text-slate-600 text-lg sm:text-xl font-medium">Sistema de Cotizaciones</p>
-                <div class="w-24 sm:w-32 h-1 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full mx-auto mt-4 sm:mt-6"></div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-1 tracking-tight">Akun</h1>
+                <p class="text-slate-600 text-sm sm:text-base font-medium">Sistema de Cotizaciones</p>
+                <div class="w-16 sm:w-24 h-1 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full mx-auto mt-2"></div>
             </div>
 
             <!-- Login Form -->
-            <div class="glass-effect login-card p-6 sm:p-8 lg:p-10 shadow-2xl animate-scale-in">
+            <div class="glass-effect login-card p-4 sm:p-6 shadow-2xl animate-scale-in">
                 {% if form.errors %}
-                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl mb-6 sm:mb-8">
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-xl mb-3">
                         <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle mr-2 sm:mr-3 text-red-500 text-sm sm:text-base"></i>
-                            <p class="font-medium text-sm sm:text-base">Usuario o contraseña incorrectos</p>
+                            <i class="fas fa-exclamation-triangle mr-2 text-red-500 text-xs"></i>
+                            <p class="font-medium text-xs">Usuario o contraseña incorrectos</p>
                         </div>
                     </div>
                 {% endif %}
 
-                <form method="post" class="space-y-6 sm:space-y-8">
+                <form method="post" class="space-y-3 sm:space-y-4">
                     {% csrf_token %}
                     
-                    <div class="space-y-2 sm:space-y-3">
-                        <label for="{{ form.username.id_for_label }}" class="block text-slate-700 text-xs sm:text-sm font-semibold">
-                            <i class="fas fa-user mr-1 sm:mr-2"></i>Usuario
+                    <div class="space-y-1">
+                        <label for="{{ form.username.id_for_label }}" class="block text-slate-700 text-xs font-semibold">
+                            <i class="fas fa-user mr-1"></i>Usuario
                         </label>
                         <div class="relative">
                             <input type="text" 
                                    name="{{ form.username.name }}" 
                                    id="{{ form.username.id_for_label }}"
-                                   class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-white border-2 border-slate-200 rounded-xl sm:rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 sm:focus:ring-4 focus:ring-slate-100 transition-all duration-300 text-sm sm:text-base"
+                                   class="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all duration-300 text-sm"
                                    placeholder="Ingresa tu usuario"
                                    required>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 sm:pr-6">
-                                <i class="fas fa-user text-slate-400 text-sm sm:text-base"></i>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <i class="fas fa-user text-slate-400 text-xs"></i>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="space-y-2 sm:space-y-3">
-                        <label for="{{ form.password.id_for_label }}" class="block text-slate-700 text-xs sm:text-sm font-semibold">
-                            <i class="fas fa-lock mr-1 sm:mr-2"></i>Contraseña
+                    <div class="space-y-1">
+                        <label for="{{ form.password.id_for_label }}" class="block text-slate-700 text-xs font-semibold">
+                            <i class="fas fa-lock mr-1"></i>Contraseña
                         </label>
                         <div class="relative">
                             <input type="password" 
                                    name="{{ form.password.name }}" 
                                    id="{{ form.password.id_for_label }}"
-                                   class="w-full px-4 sm:px-6 py-3 sm:py-4 bg-white border-2 border-slate-200 rounded-xl sm:rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 sm:focus:ring-4 focus:ring-slate-100 transition-all duration-300 text-sm sm:text-base"
+                                   class="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all duration-300 text-sm"
                                    placeholder="Ingresa tu contraseña"
                                    required>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 sm:pr-6">
-                                <i class="fas fa-lock text-slate-400 text-sm sm:text-base"></i>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <i class="fas fa-lock text-slate-400 text-xs"></i>
                             </div>
                         </div>
                     </div>
                     
                     <button type="submit" 
-                            class="btn-primary w-full text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
-                        <i class="fas fa-sign-in-alt mr-2 sm:mr-3"></i>
+                            class="btn-primary w-full text-white font-bold py-2 px-4 rounded-xl shadow-xl text-sm">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
                         Ingresar al Sistema
                     </button>
                 </form>
 
-                <div class="login-chips mt-6 sm:mt-8">
-                    <div class="login-chip">
+                <div class="login-chips mt-3 sm:mt-4">
+                    <div class="login-chip text-xs">
                         <i class="fas fa-bolt"></i> Cálculos inmediatos
                     </div>
-                    <div class="login-chip">
+                    <div class="login-chip text-xs">
                         <i class="fas fa-lock"></i> Seguridad 24/7
                     </div>
-                    <div class="login-chip">
+                    <div class="login-chip text-xs">
                         <i class="fas fa-cloud"></i> Datos sincronizados
                     </div>
-                    <div class="login-chip">
+                    <div class="login-chip text-xs">
                         <i class="fas fa-wand-magic-sparkles"></i> Experiencia premium
                     </div>
                 </div>
 
                 <!-- Footer -->
-                <div class="text-center mt-6 sm:mt-8 lg:mt-10 pt-6 sm:pt-8 border-t border-slate-200">
-                    <p class="text-slate-500 text-xs sm:text-sm font-medium">
-                        <i class="fas fa-shield-alt mr-1 sm:mr-2"></i>
+                <div class="text-center mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-200">
+                    <p class="text-slate-500 text-xs font-medium">
+                        <i class="fas fa-shield-alt mr-1"></i>
                         Acceso seguro y protegido
                     </p>
                 </div>
             </div>
 
             <!-- Additional Info -->
-            <div class="text-center mt-6 sm:mt-8 lg:mt-10 animate-fade-in">
-                <p class="text-slate-600 text-xs sm:text-sm font-medium">
+            <div class="text-center mt-3 sm:mt-4 animate-fade-in">
+                <p class="text-slate-600 text-xs font-medium">
                     © 2024 Akun Aberturas - Sistema de Cotizaciones
                 </p>
             </div>
