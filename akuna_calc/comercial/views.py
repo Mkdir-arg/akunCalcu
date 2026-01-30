@@ -12,48 +12,60 @@ from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 def dashboard_comercial(request):
     from datetime import datetime, timedelta
     from django.db.models.functions import TruncMonth
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
     
     # Estadísticas generales
-    total_ventas = Venta.objects.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    total_compras = Compra.objects.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
-    ventas_pendientes = Venta.objects.filter(estado='pendiente').count()
+    total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
+    ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     
     # Últimos 6 meses
     hace_6_meses = datetime.now() - timedelta(days=180)
     
     # Ventas por mes
-    ventas_por_mes = Venta.objects.filter(created_at__gte=hace_6_meses).annotate(
+    ventas_por_mes = Venta.objects.filter(deleted_at__isnull=True, created_at__gte=hace_6_meses).annotate(
         mes=TruncMonth('created_at')
     ).values('mes').annotate(
         total=Sum('valor_total')
     ).order_by('mes')
     
     # Compras por mes
-    compras_por_mes = Compra.objects.filter(fecha_pago__gte=hace_6_meses).annotate(
+    compras_por_mes = Compra.objects.filter(deleted_at__isnull=True, fecha_pago__gte=hace_6_meses).annotate(
         mes=TruncMonth('fecha_pago')
     ).values('mes').annotate(
         total=Sum('importe_abonado')
     ).order_by('mes')
     
     # Top 5 clientes
-    top_clientes = Venta.objects.values('cliente__nombre', 'cliente__apellido').annotate(
+    top_clientes = Venta.objects.filter(deleted_at__isnull=True).values('cliente__nombre', 'cliente__apellido').annotate(
         total=Sum('valor_total')
     ).order_by('-total')[:5]
     
-    # Compras por tipo
-    compras_por_tipo = Compra.objects.values('cuenta__tipo_cuenta__tipo').annotate(
+    # Compras por tipo de cuenta
+    compras_por_tipo_raw = Compra.objects.filter(deleted_at__isnull=True).values('cuenta__tipo_cuenta__id', 'cuenta__tipo_cuenta__tipo').annotate(
         total=Sum('importe_abonado')
     ).order_by('-total')
+    
+    # Formatear datos para el gráfico
+    compras_por_tipo = []
+    for item in compras_por_tipo_raw:
+        tipo_cuenta = TipoCuenta.objects.filter(id=item['cuenta__tipo_cuenta__id']).first()
+        if tipo_cuenta:
+            compras_por_tipo.append({
+                'tipo': tipo_cuenta.get_tipo_display(),
+                'total': float(item['total'])
+            })
     
     context = {
         'total_ventas': total_ventas,
         'total_compras': total_compras,
         'ventas_pendientes': ventas_pendientes,
-        'clientes_count': Cliente.objects.count(),
-        'ventas_por_mes': list(ventas_por_mes),
-        'compras_por_mes': list(compras_por_mes),
+        'clientes_count': Cliente.objects.filter(deleted_at__isnull=True).count(),
+        'ventas_por_mes': json.dumps(list(ventas_por_mes), cls=DjangoJSONEncoder),
+        'compras_por_mes': json.dumps(list(compras_por_mes), cls=DjangoJSONEncoder),
         'top_clientes': list(top_clientes),
-        'compras_por_tipo': list(compras_por_tipo),
+        'compras_por_tipo': json.dumps(compras_por_tipo),
     }
     return render(request, 'comercial/dashboard.html', context)
 

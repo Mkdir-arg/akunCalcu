@@ -5,7 +5,7 @@
 {% block title %}{{ titulo|default:"Gastos" }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in">
+<div class="max-w-full mx-auto px-4 animate-fade-in">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Gastos</h1>
@@ -115,9 +115,14 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{% url 'comercial:compra_edit' compra.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'comercial:compra_edit' compra.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmarEliminacion('{% url 'comercial:compra_delete' compra.pk %}', 'Gasto #{{ compra.numero_pedido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

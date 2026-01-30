@@ -67,19 +67,19 @@
 
 <!-- Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-in">
-    <!-- Evolución Ventas/Compras -->
+    <!-- Evolución Ventas -->
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-        <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-line mr-2"></i>Evolución Últimos 6 Meses</h3>
+        <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-line mr-2"></i>Evolución Ventas - Últimos 6 Meses</h3>
         <div style="height: 300px; position: relative;">
             <canvas id="evolucionChart"></canvas>
         </div>
     </div>
     
-    <!-- Top 5 Clientes -->
+    <!-- Gastos por Tipo -->
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-        <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-trophy mr-2"></i>Top 5 Clientes</h3>
+        <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Gastos por Tipo de Cuenta</h3>
         <div style="height: 300px; position: relative;">
-            <canvas id="topClientesChart"></canvas>
+            <canvas id="gastosChart"></canvas>
         </div>
     </div>
 </div>
@@ -155,154 +155,126 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico Evolución (Líneas)
+    // Gráfico Evolución Ventas (solo ventas)
     const ctx1 = document.getElementById('evolucionChart');
     if (ctx1) {
-        const ventasMeses = {{ ventas_por_mes|safe }};
-        const comprasMeses = {{ compras_por_mes|safe }};
+        const ventasMeses = JSON.parse('{{ ventas_por_mes|escapejs }}');
         
-        // Crear mapa de meses
-        const mesesMap = new Map();
-        ventasMeses.forEach(v => {
-            const fecha = new Date(v.mes);
-            const key = fecha.toLocaleDateString('es-AR', {month: 'short', year: 'numeric'});
-            mesesMap.set(key, {ventas: v.total, compras: 0});
-        });
-        comprasMeses.forEach(c => {
-            const fecha = new Date(c.mes);
-            const key = fecha.toLocaleDateString('es-AR', {month: 'short', year: 'numeric'});
-            if (mesesMap.has(key)) {
-                mesesMap.get(key).compras = c.total;
-            } else {
-                mesesMap.set(key, {ventas: 0, compras: c.total});
-            }
-        });
-        
-        const labels = Array.from(mesesMap.keys());
-        const ventasData = Array.from(mesesMap.values()).map(v => v.ventas);
-        const comprasData = Array.from(mesesMap.values()).map(v => v.compras);
-        
-        new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
+        if (ventasMeses.length === 0) {
+            ctx1.parentElement.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-slate-400 text-center"><i class="fas fa-chart-line text-4xl mb-2"></i><br>No hay datos para mostrar</p></div>';
+        } else {
+            const labels = ventasMeses.map(v => {
+                const fecha = new Date(v.mes);
+                return fecha.toLocaleDateString('es-AR', {month: 'short', year: 'numeric'});
+            });
+            const data = ventasMeses.map(v => v.total);
+            
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
                         label: 'Ventas',
-                        data: ventasData,
+                        data: data,
                         borderColor: 'rgba(34, 197, 94, 1)',
                         backgroundColor: 'rgba(34, 197, 94, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4
-                    },
-                    {
-                        label: 'Gastos',
-                        data: comprasData,
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: { size: 12, weight: 'bold' },
-                            padding: 15
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const parts = context.parsed.y.toFixed(2).split('.');
-                                const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                return context.dataset.label + ': $' + integerPart + ',' + parts[1];
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const parts = context.parsed.y.toFixed(2).split('.');
+                                    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                    return 'Ventas: $' + integerPart + ',' + parts[1];
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     }
     
-    // Gráfico Top Clientes (Barras Horizontales)
-    const ctx2 = document.getElementById('topClientesChart');
+    // Gráfico Gastos por Tipo (Dona)
+    const ctx2 = document.getElementById('gastosChart');
     if (ctx2) {
-        const topClientes = {{ top_clientes|safe }};
-        const labels = topClientes.map(c => c.cliente__nombre + ' ' + c.cliente__apellido);
-        const data = topClientes.map(c => c.total);
+        const gastosPorTipo = JSON.parse('{{ compras_por_tipo|escapejs }}');
         
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Total Ventas',
-                    data: data,
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.7)',
-                        'rgba(168, 85, 247, 0.7)',
-                        'rgba(236, 72, 153, 0.7)',
-                        'rgba(251, 146, 60, 0.7)',
-                        'rgba(34, 197, 94, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(59, 130, 246, 1)',
-                        'rgba(168, 85, 247, 1)',
-                        'rgba(236, 72, 153, 1)',
-                        'rgba(251, 146, 60, 1)',
-                        'rgba(34, 197, 94, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const parts = context.parsed.x.toFixed(2).split('.');
-                                const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                return '$' + integerPart + ',' + parts[1];
-                            }
-                        }
-                    }
+        if (gastosPorTipo.length === 0) {
+            ctx2.parentElement.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-slate-400 text-center"><i class="fas fa-chart-pie text-4xl mb-2"></i><br>No hay datos para mostrar</p></div>';
+        } else {
+            const labels = gastosPorTipo.map(g => g.tipo);
+            const data = gastosPorTipo.map(g => g.total);
+            
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(168, 85, 247, 0.7)',
+                            'rgba(236, 72, 153, 0.7)',
+                            'rgba(251, 146, 60, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(234, 179, 8, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(168, 85, 247, 1)',
+                            'rgba(236, 72, 153, 1)',
+                            'rgba(251, 146, 60, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(234, 179, 8, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
                 },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { size: 11 },
+                                padding: 10
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const parts = context.parsed.toFixed(2).split('.');
+                                    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                    return context.label + ': $' + integerPart + ',' + parts[1];
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 });
 </script>
