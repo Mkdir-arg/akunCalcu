@@ -4,29 +4,6 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-def check_and_add_tipo_gasto(apps, schema_editor):
-    """Agregar campo tipo_gasto solo si no existe"""
-    from django.db import connection
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'comercial_compra'
-            AND COLUMN_NAME = 'tipo_gasto_id'
-        """)
-        exists = cursor.fetchone()[0]
-        
-        if not exists:
-            cursor.execute("""
-                ALTER TABLE comercial_compra
-                ADD COLUMN tipo_gasto_id bigint NULL,
-                ADD CONSTRAINT comercial_compra_tipo_gasto_id_fk
-                FOREIGN KEY (tipo_gasto_id) REFERENCES comercial_subtipocuenta(id)
-                ON DELETE SET NULL
-            """)
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -34,29 +11,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Primero asegurarse que la tabla existe
-        migrations.CreateModel(
-            name='TipoGasto',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=100)),
-                ('descripcion', models.CharField(blank=True, max_length=200)),
-                ('activo', models.BooleanField(default=True)),
-                ('deleted_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('tipo_cuenta', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tipos_gasto', to='comercial.tipocuenta')),
-            ],
-            options={
-                'verbose_name': 'Tipo de Gasto',
-                'verbose_name_plural': 'Tipos de Gasto',
-                'db_table': 'comercial_subtipocuenta',
-                'ordering': ['nombre'],
-            },
+        # Solo agregar el campo tipo_gasto a Compra
+        migrations.AddField(
+            model_name='compra',
+            name='tipo_gasto',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='comercial.subtipocuenta'),
         ),
-        # Eliminar el modelo viejo de Django (no la tabla)
-        migrations.DeleteModel(
-            name='SubTipoCuenta',
-        ),
-        # Agregar campo tipo_gasto a Compra solo si no existe
-        migrations.RunPython(check_and_add_tipo_gasto, migrations.RunPython.noop),
     ]
