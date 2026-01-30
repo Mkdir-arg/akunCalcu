@@ -608,6 +608,40 @@ def tipos_cuenta_list(request):
 
 
 @login_required
+def tipo_cuenta_create(request):
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo')
+        descripcion = request.POST.get('descripcion')
+        activo = request.POST.get('activo') == 'on'
+        
+        if tipo and descripcion:
+            TipoCuenta.objects.create(
+                tipo=tipo,
+                descripcion=descripcion,
+                activo=activo
+            )
+            messages.success(request, 'Tipo de cuenta creado exitosamente.')
+            return redirect('comercial:tipos_cuenta_list')
+    
+    return render(request, 'comercial/tipos_cuenta/form.html', {'title': 'Nuevo Tipo de Cuenta'})
+
+
+@login_required
+def tipo_cuenta_edit(request, pk):
+    tipo = get_object_or_404(TipoCuenta, pk=pk)
+    
+    if request.method == 'POST':
+        tipo.tipo = request.POST.get('tipo')
+        tipo.descripcion = request.POST.get('descripcion')
+        tipo.activo = request.POST.get('activo') == 'on'
+        tipo.save()
+        messages.success(request, 'Tipo de cuenta actualizado exitosamente.')
+        return redirect('comercial:tipos_cuenta_list')
+    
+    return render(request, 'comercial/tipos_cuenta/form.html', {'tipo': tipo, 'title': 'Editar Tipo de Cuenta'})
+
+
+@login_required
 def tipo_cuenta_delete(request, pk):
     tipo = get_object_or_404(TipoCuenta, pk=pk)
     if request.method == 'POST':

@@ -9,6 +9,9 @@
             </h1>
             <p class="text-slate-500 font-medium mt-1">Gestión de tipos de cuenta</p>
         </div>
+        <a href="{% url 'comercial:tipo_cuenta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
+            <i class="fas fa-plus mr-2"></i>Nuevo Tipo
+        </a>
     </div>
 
     {% if messages %}
@@ -47,9 +50,14 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <button onclick="confirmarEliminacion('{% url 'comercial:tipo_cuenta_delete' tipo.pk %}', '{{ tipo.get_tipo_display }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'comercial:tipo_cuenta_edit' tipo.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmarEliminacion('{% url 'comercial:tipo_cuenta_delete' tipo.pk %}', '{{ tipo.get_tipo_display }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

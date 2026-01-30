@@ -36,6 +36,8 @@ urlpatterns = [
     
     # Tipos de Cuenta
     path('tipos-cuenta/', views.tipos_cuenta_list, name='tipos_cuenta_list'),
+    path('tipos-cuenta/nuevo/', views.tipo_cuenta_create, name='tipo_cuenta_create'),
+    path('tipos-cuenta/<int:pk>/editar/', views.tipo_cuenta_edit, name='tipo_cuenta_edit'),
     path('tipos-cuenta/<int:pk>/eliminar/', views.tipo_cuenta_delete, name='tipo_cuenta_delete'),
     
     # Tipos de Gasto
