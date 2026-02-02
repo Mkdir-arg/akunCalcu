@@ -16,10 +16,10 @@
     </div>
 
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
-            <form method="post" class="space-y-6">
+            <form method="post" class="space-y-8">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Número de Pedido</label>
                         {{ form.numero_pedido }}
@@ -27,8 +27,17 @@
                             <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
                         {% endif %}
                     </div>
+                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Cuenta</label>
+                        {{ form.tipo_cuenta_filter }}
+                        {% if form.tipo_cuenta_filter.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.tipo_cuenta_filter.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cuenta</label>
                         <div class="flex gap-2">
@@ -51,7 +60,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
                         {{ form.fecha_pago }}
@@ -69,7 +78,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="flex items-center">
                         {{ form.con_factura }}
                         <label class="ml-2 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
@@ -266,6 +275,57 @@ document.getElementById('cuentaForm').addEventListener('submit', async function(
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cuenta';
+    }
+});
+
+// Filtrar cuentas por tipo de cuenta
+$('#id_tipo_cuenta_filter').on('change', function() {
+    const tipoCuentaId = $(this).val();
+    const cuentaSelect = $('#id_cuenta');
+    const tipoGastoSelect = $('#id_tipo_gasto');
+    
+    if (tipoCuentaId) {
+        $.ajax({
+            url: '{% url "comercial:cuentas_by_tipo" %}',
+            data: { tipo_id: tipoCuentaId },
+            success: function(data) {
+                const cuentaActual = cuentaSelect.val();
+                cuentaSelect.empty();
+                cuentaSelect.append('<option value="">---------</option>');
+                data.forEach(function(cuenta) {
+                    cuentaSelect.append(`<option value="${cuenta.id}">${cuenta.nombre}</option>`);
+                });
+                
+                // Restaurar selección si existe
+                if (cuentaActual) {
+                    cuentaSelect.val(cuentaActual);
+                }
+                cuentaSelect.prop('disabled', false);
+                
+                // Limpiar tipo de gasto si no hay cuenta seleccionada
+                if (!cuentaActual) {
+                    tipoGastoSelect.empty();
+                    tipoGastoSelect.append('<option value="">---------</option>');
+                    tipoGastoSelect.prop('disabled', true);
+                }
+            }
+        });
+    } else {
+        cuentaSelect.empty();
+        cuentaSelect.append('<option value="">---------</option>');
+        cuentaSelect.prop('disabled', true);
+        
+        tipoGastoSelect.empty();
+        tipoGastoSelect.append('<option value="">---------</option>');
+        tipoGastoSelect.prop('disabled', true);
+    }
+});
+
+// Cargar cuentas al cargar la página si hay tipo de cuenta seleccionado
+$(document).ready(function() {
+    const tipoCuentaId = $('#id_tipo_cuenta_filter').val();
+    if (tipoCuentaId) {
+        $('#id_tipo_cuenta_filter').trigger('change');
     }
 });
 

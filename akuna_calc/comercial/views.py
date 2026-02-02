@@ -511,7 +511,14 @@ def compra_create(request):
             return redirect('comercial:compras_list')
     else:
         form = CompraForm()
-    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Nuevo Gasto'})
+    
+    # Pasar tipos de cuenta al contexto
+    context = {
+        'form': form,
+        'title': 'Nuevo Gasto',
+        'tipos_cuenta': TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    }
+    return render(request, 'comercial/compras/form.html', context)
 
 
 @login_required
@@ -525,7 +532,17 @@ def compra_edit(request, pk):
             return redirect('comercial:compras_list')
     else:
         form = CompraForm(instance=compra)
-    return render(request, 'comercial/compras/form.html', {'form': form, 'title': 'Editar Gasto'})
+        # Pre-seleccionar el tipo de cuenta
+        if compra.cuenta:
+            form.fields['tipo_cuenta_filter'].initial = compra.cuenta.tipo_cuenta
+    
+    context = {
+        'form': form,
+        'title': 'Editar Gasto',
+        'tipos_cuenta': TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True),
+        'compra': compra
+    }
+    return render(request, 'comercial/compras/form.html', context)
 
 
 @login_required
