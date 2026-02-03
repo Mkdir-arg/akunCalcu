@@ -81,6 +81,8 @@ def ventas_list(request):
     estado = request.GET.get('estado', '')
     con_factura = request.GET.get('con_factura', '')
     buscar = request.GET.get('q', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
     orden = request.GET.get('orden', '-created_at')
     
     if estado:
@@ -96,8 +98,15 @@ def ventas_list(request):
             Q(numero_pedido__icontains=buscar) |
             Q(cliente__nombre__icontains=buscar) |
             Q(cliente__apellido__icontains=buscar) |
+            Q(cliente__razon_social__icontains=buscar) |
             Q(numero_factura__icontains=buscar)
         )
+    
+    if fecha_desde:
+        ventas = ventas.filter(created_at__date__gte=fecha_desde)
+    
+    if fecha_hasta:
+        ventas = ventas.filter(created_at__date__lte=fecha_hasta)
     
     # Ordenamiento
     ventas = ventas.order_by(orden)
@@ -114,6 +123,8 @@ def ventas_list(request):
         'filtro_estado': estado,
         'filtro_factura': con_factura,
         'buscar': buscar,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
         'orden_actual': orden
     }
     return render(request, 'comercial/ventas/list.html', context)
@@ -177,6 +188,7 @@ def registrar_pago(request, pk):
         monto = request.POST.get('monto')
         fecha_pago = request.POST.get('fecha_pago')
         forma_pago = request.POST.get('forma_pago')
+        numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
         
         try:
@@ -196,6 +208,7 @@ def registrar_pago(request, pk):
                 monto=monto_decimal,
                 fecha_pago=fecha_pago,
                 forma_pago=forma_pago,
+                numero_factura=numero_factura,
                 observaciones=observaciones,
                 created_by=request.user
             )
@@ -339,13 +352,14 @@ def generar_pdf_venta(request, pk):
     if pagos.exists() or venta.sena > 0:
         elements.append(Paragraph("Historial de Pagos", heading_style))
         
-        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'Monto']]
+        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'N° Factura', 'Monto']]
         
         # Seña inicial
         pagos_data.append([
             venta.created_at.strftime('%d/%m/%Y'),
             'Seña Inicial',
             '-',
+            venta.numero_factura or '-',
             format_currency(venta.sena)
         ])
         
@@ -355,15 +369,16 @@ def generar_pdf_venta(request, pk):
                 pago.fecha_pago.strftime('%d/%m/%Y'),
                 'Pago',
                 pago.get_forma_pago_display(),
+                pago.numero_factura or '-',
                 format_currency(pago.monto)
             ])
         
-        pagos_table = Table(pagos_data, colWidths=[1.3*inch, 2*inch, 1.8*inch, 1.4*inch])
+        pagos_table = Table(pagos_data, colWidths=[1.1*inch, 1.5*inch, 1.3*inch, 1.3*inch, 1.3*inch])
         pagos_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+            ('ALIGN', (4, 0), (4, -1), 'RIGHT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
@@ -885,6 +900,51 @@ def get_cuentas_by_tipo(request):
 def get_clientes_list(request):
     clientes = Cliente.objects.all().values('id', 'nombre', 'apellido')
     return JsonResponse(list(clientes), safe=False)
+
+
+@login_required
+def editar_pago(request, pk):
+    if request.method == 'POST':
+        import json
+        pago = get_object_or_404(PagoVenta, pk=pk)
+        
+        try:
+            data = json.loads(request.body)
+            monto = Decimal(data.get('monto'))
+            fecha_pago = data.get('fecha_pago')
+            forma_pago = data.get('forma_pago')
+            numero_factura = data.get('numero_factura', '')
+            observaciones = data.get('observaciones', '')
+            
+            if monto <= 0:
+                return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
+            
+            pago.monto = monto
+            pago.fecha_pago = fecha_pago
+            pago.forma_pago = forma_pago
+            pago.numero_factura = numero_factura
+            pago.observaciones = observaciones
+            pago.save()
+            
+            # Recalcular saldo de la venta
+            pago.venta.save()
+            
+            return JsonResponse({
+                'success': True,
+                'pago': {
+                    'id': pago.id,
+                    'monto': float(pago.monto),
+                    'fecha_pago': pago.fecha_pago.strftime('%d/%m/%Y'),
+                    'forma_pago': pago.get_forma_pago_display(),
+                    'numero_factura': pago.numero_factura or '-',
+                    'observaciones': pago.observaciones or '-'
+                },
+                'saldo': float(pago.venta.saldo)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
 
 @login_required
