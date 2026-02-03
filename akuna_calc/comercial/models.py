@@ -65,6 +65,8 @@ class Venta(models.Model):
     numero_pedido = models.CharField(max_length=50)  # Permite duplicados (PVC, PVC, etc.)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     valor_total = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    tiene_retenciones = models.BooleanField(default=False, verbose_name="Tiene retenciones")
+    monto_retenciones = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Monto de retenciones")
     sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     fecha_pago = models.DateField(null=True, blank=True)
@@ -79,13 +81,14 @@ class Venta(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     
     def save(self, *args, **kwargs):
-        # Calcular saldo: Total - Seña - Pagos realizados
+        # Calcular saldo: Total - Retenciones - Seña - Pagos realizados
+        valor_neto = self.valor_total - self.monto_retenciones
         if self.pk:  # Solo calcular pagos si la venta ya existe
             total_pagos = sum(pago.monto for pago in self.pagos.all())
-            self.saldo = self.valor_total - self.sena - total_pagos
+            self.saldo = valor_neto - self.sena - total_pagos
         else:
-            # Nueva venta: saldo = total - seña
-            self.saldo = self.valor_total - self.sena
+            # Nueva venta: saldo = total neto - seña
+            self.saldo = valor_neto - self.sena
         super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):

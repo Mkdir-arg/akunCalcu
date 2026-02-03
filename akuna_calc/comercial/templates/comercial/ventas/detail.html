@@ -114,6 +114,16 @@
                     <span class="text-slate-600 font-medium">Seña Inicial:</span>
                     <span class="font-bold text-slate-800">${{ venta.sena|formato_numero }}</span>
                 </div>
+                {% if venta.tiene_retenciones %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Retenciones:</span>
+                    <span class="font-bold text-red-600">-${{ venta.monto_retenciones|formato_numero }}</span>
+                </div>
+                <div class="flex justify-between border-t pt-2">
+                    <span class="text-slate-600 font-medium">Valor Neto:</span>
+                    <span class="font-bold text-slate-800">${{ venta.valor_total|add:venta.monto_retenciones|formato_numero|floatformat:2|default:"0.00" }}</span>
+                </div>
+                {% endif %}
                 {% if venta.fecha_pago %}
                 <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Fecha Pago:</span>

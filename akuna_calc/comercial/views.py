@@ -74,6 +74,7 @@ def dashboard_comercial(request):
 @login_required
 def ventas_list(request):
     from django.core.paginator import Paginator
+    from django.db.models import Case, When, Value, IntegerField
     
     ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').all()
     
@@ -108,8 +109,22 @@ def ventas_list(request):
     if fecha_hasta:
         ventas = ventas.filter(created_at__date__lte=fecha_hasta)
     
-    # Ordenamiento
-    ventas = ventas.order_by(orden)
+    # Ordenamiento especial para numero_factura (manejar valores vacíos)
+    if orden in ['numero_factura', '-numero_factura']:
+        ventas = ventas.annotate(
+            factura_order=Case(
+                When(numero_factura='', then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        )
+        if orden == 'numero_factura':
+            ventas = ventas.order_by('factura_order', 'numero_factura')
+        else:
+            ventas = ventas.order_by('factura_order', '-numero_factura')
+    else:
+        # Ordenamiento normal
+        ventas = ventas.order_by(orden)
     
     # Paginación
     paginator = Paginator(ventas, 20)
