@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from productos.models import Producto, Cotizacion
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from datetime import datetime
@@ -15,35 +14,19 @@ def index(request):
 
 @login_required
 def home(request):
-    # Estadísticas para el dashboard
-    productos_count = Producto.objects.filter(activo=True).count()
-    cotizaciones_count = Cotizacion.objects.count()
+    from comercial.models import Venta, Compra, Cliente
     
-    # Indicadores del mes actual
-    mes_actual = datetime.now().month
-    anio_actual = datetime.now().year
-    
-    cotizaciones_mes = Cotizacion.objects.filter(
-        fecha__month=mes_actual,
-        fecha__year=anio_actual
-    )
-    
-    total_cotizado_mes = cotizaciones_mes.aggregate(Sum('total_general'))['total_general__sum'] or Decimal('0')
-    total_vendido_mes = cotizaciones_mes.filter(estado='vendido').aggregate(Sum('total_general'))['total_general__sum'] or Decimal('0')
-    
-    count_cotizaciones_mes = cotizaciones_mes.count()
-    promedio_cotizado = total_cotizado_mes / count_cotizaciones_mes if count_cotizaciones_mes > 0 else Decimal('0')
-    
-    count_vendidas_mes = cotizaciones_mes.filter(estado='vendido').count()
-    tasa_conversion = (count_vendidas_mes / count_cotizaciones_mes * 100) if count_cotizaciones_mes > 0 else 0
+    # Estadísticas comerciales
+    total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0')
+    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or Decimal('0')
+    ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
+    clientes_count = Cliente.objects.filter(deleted_at__isnull=True).count()
     
     context = {
-        'productos_count': productos_count,
-        'cotizaciones_count': cotizaciones_count,
-        'total_cotizado_mes': total_cotizado_mes,
-        'total_vendido_mes': total_vendido_mes,
-        'promedio_cotizado': promedio_cotizado,
-        'tasa_conversion': tasa_conversion,
+        'total_ventas': total_ventas,
+        'total_compras': total_compras,
+        'ventas_pendientes': ventas_pendientes,
+        'clientes_count': clientes_count,
     }
     
     return render(request, 'core/home.html', context)

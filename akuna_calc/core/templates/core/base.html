@@ -2,247 +2,149 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akun Aberturas - Calculadora</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AKUN - Sistema de Gestión</title>
     {% load static %}
     
-    <!-- Fallback CSS -->
-    <link href="{% static 'css/fallback.css' %}" rel="stylesheet">
-    <link href="{% static 'css/responsive.css' %}" rel="stylesheet">
-    <link href="{% static 'css/themes.css' %}" rel="stylesheet">
-    
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': 'var(--accent-primary)',
-                        'accent': 'var(--accent-secondary)',
-                    }
-                }
-            }
-        }
-    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        'primary': '#1e293b',
-                        'primary-light': '#334155',
-                        'accent': '#0f172a',
-                        'surface': '#f8fafc',
-                        'border': '#e2e8f0',
-                    },
-                    animation: {
-                        'slide-in': 'slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                        'fade-in': 'fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                        'scale-in': 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        'float': 'float 3s ease-in-out infinite',
-                    }
+                screens: {
+                    'xs': '475px',
+                    'sm': '640px',
+                    'md': '768px',
+                    'lg': '1024px',
+                    'xl': '1280px',
+                    '2xl': '1536px',
                 }
             }
         }
     </script>
+    
     <style>
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        * {
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        body {
+            touch-action: manipulation;
         }
-        @keyframes scaleIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        #sidebar.collapsed {
+            width: 80px !important;
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+        #sidebar.collapsed .sidebar-text,
+        #sidebar.collapsed .sidebar-submenu {
+            display: none;
         }
-        /* Efectos visuales respetando el sistema de temas */
-        .glass-effect {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-elegant {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-elegant:hover {
-            transform: translateY(-4px);
+        #sidebar.collapsed .sidebar-logo {
+            height: 40px;
         }
         .btn-primary {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(to right, #3B82F6, #9333EA);
+            color: white;
         }
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
-        }
-        .input-elegant {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(to right, #2563EB, #7E22CE);
         }
     </style>
 </head>
-<body class="layout-shell min-h-screen">
-    <!-- Mobile Menu Overlay -->
-    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+<body class="min-h-screen bg-gray-50">
+    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden" onclick="toggleMobileMenu()"></div>
     
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-64 bg-gradient-to-b from-primary to-accent text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl">
-            <!-- Logo Section -->
-            <div class="flex items-center justify-between p-6 border-b border-slate-600 border-opacity-30">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-calculator text-white text-lg"></i>
-                    </div>
-                    <div class="sidebar-text">
-                        <h1 class="text-xl font-bold tracking-wide">Akun</h1>
-                        <p class="text-xs text-slate-300 font-medium">Calculadora Pro</p>
-                    </div>
-                </div>
-                <button id="sidebar-close" class="lg:hidden text-white hover:text-slate-300 transition-colors">
-                    <i class="fas fa-times text-xl"></i>
+        <aside id="sidebar" class="bg-white shadow-lg flex flex-col fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 -translate-x-full lg:translate-x-0" style="width: 256px;">
+            <!-- Logo -->
+            <div class="p-6 border-b text-center flex items-center justify-between">
+                <img src="{% static 'imagenes/AKUN-LOGO.webp' %}" alt="AKUN" class="h-16 w-auto mx-auto sidebar-logo" onerror="this.onerror=null; this.src='{% static 'imagenes/AKUN-LOGO.png' %}'">
+                <button onclick="toggleSidebar()" class="hidden lg:block text-gray-600 hover:text-gray-900 sidebar-toggle">
+                    <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
 
             <!-- Navigation -->
-            <nav class="mt-6 px-4">
+            <nav class="flex-1 overflow-y-auto p-4">
                 <div class="space-y-2">
-                    <a href="{% url 'home' %}" class="nav-item flex items-center px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 group">
-                        <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3 group-hover:bg-opacity-70 transition-all">
-                            <i class="fas fa-home text-lg"></i>
-                        </div>
-                        <span class="font-semibold sidebar-text">Dashboard</span>
+                    <a href="{% url 'home' %}" class="w-full flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-home w-5 mr-3"></i>
+                        <span class="sidebar-text">Dashboard</span>
                     </a>
                     
                     <!-- Comercial -->
-                    <div class="menu-category">
-                        <button onclick="toggleMenu('comercial')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                    <div>
+                        <button onclick="toggleMenu('comercial')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
-                                    <i class="fas fa-chart-line text-lg"></i>
-                                </div>
-                                <span class="font-semibold sidebar-text">Comercial</span>
+                                <i class="fas fa-chart-line w-5 mr-3"></i>
+                                <span class="sidebar-text">Comercial</span>
                             </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="comercial-icon"></i>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="comercial-icon"></i>
                         </button>
-                        <div id="comercial-menu" class="ml-6 mt-2 space-y-1 hidden">
-                            <a href="{% url 'comercial:dashboard' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-tachometer-alt mr-3 text-xs"></i>
-                                <span class="sidebar-text">Dashboard</span>
-                            </a>
-                            <a href="{% url 'comercial:clientes_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-users mr-3 text-xs"></i>
-                                <span class="sidebar-text">Clientes</span>
-                            </a>
-                            <a href="{% url 'comercial:ventas_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-shopping-cart mr-3 text-xs"></i>
-                                <span class="sidebar-text">Ventas</span>
-                            </a>
-                            <a href="{% url 'comercial:compras_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-shopping-bag mr-3 text-xs"></i>
-                                <span class="sidebar-text">Gastos</span>
-                            </a>
-                            <a href="{% url 'comercial:cuentas_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-folder mr-3 text-xs"></i>
-                                <span class="sidebar-text">Cuentas</span>
-                            </a>
-                            <a href="{% url 'comercial:reportes' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-file-alt mr-3 text-xs"></i>
-                                <span class="sidebar-text">Reportes</span>
-                            </a>
+                        <div id="comercial-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'comercial:dashboard' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Dashboard</a>
+                            <a href="{% url 'comercial:clientes_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Clientes</a>
+                            <a href="{% url 'comercial:ventas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Ventas</a>
+                            <a href="{% url 'comercial:compras_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Gastos</a>
+                            <a href="{% url 'comercial:cuentas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Cuentas</a>
+                            <a href="{% url 'comercial:reportes' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reportes</a>
                         </div>
                     </div>
                     
                     <!-- Productos -->
-                    <div class="menu-category">
-                        <button onclick="toggleMenu('productos')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                    <div>
+                        <button onclick="toggleMenu('productos')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
-                                    <i class="fas fa-box text-lg"></i>
-                                </div>
-                                <span class="font-semibold sidebar-text">Productos</span>
+                                <i class="fas fa-box w-5 mr-3"></i>
+                                <span class="sidebar-text">Productos</span>
                             </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="productos-icon"></i>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="productos-icon"></i>
                         </button>
-                        <div id="productos-menu" class="ml-6 mt-2 space-y-1 hidden">
-                            <a href="{% url 'productos:productos_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-list mr-3 text-xs"></i>
-                                <span class="sidebar-text">Lista de Productos</span>
-                            </a>
-                            <a href="{% url 'productos:calculadora' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-calculator mr-3 text-xs"></i>
-                                <span class="sidebar-text">Calculadora</span>
-                            </a>
-                            <a href="{% url 'productos:cotizacion_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-file-invoice mr-3 text-xs"></i>
-                                <span class="sidebar-text">Cotizaciones</span>
-                            </a>
+                        <div id="productos-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'productos:productos_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Lista de Productos</a>
+                            <a href="{% url 'productos:calculadora' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Calculadora</a>
+                            <a href="{% url 'productos:cotizacion_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Cotizaciones</a>
                         </div>
                     </div>
                     
                     <!-- Facturación -->
-                    <div class="menu-category">
-                        <button onclick="toggleMenu('facturacion')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                    <div>
+                        <button onclick="toggleMenu('facturacion')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
-                                    <i class="fas fa-file-invoice-dollar text-lg"></i>
-                                </div>
-                                <span class="font-semibold sidebar-text">Facturación</span>
+                                <i class="fas fa-file-invoice-dollar w-5 mr-3"></i>
+                                <span class="sidebar-text">Facturación</span>
                             </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="facturacion-icon"></i>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="facturacion-icon"></i>
                         </button>
-                        <div id="facturacion-menu" class="ml-6 mt-2 space-y-1 hidden">
-                            <a href="{% url 'facturacion:lista_facturas' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-list mr-3 text-xs"></i>
-                                <span class="sidebar-text">Facturas</span>
-                            </a>
-                            <a href="{% url 'facturacion:puntos_venta_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-store mr-3 text-xs"></i>
-                                <span class="sidebar-text">Puntos de Venta</span>
-                            </a>
+                        <div id="facturacion-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'facturacion:lista_facturas' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Facturas</a>
+                            <a href="{% url 'facturacion:puntos_venta_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Puntos de Venta</a>
                         </div>
                     </div>
                     
-                    <!-- Configuración -->
                     {% if request.user.is_staff %}
-                    <div class="menu-category">
-                        <button onclick="toggleMenu('configuracion')" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                    <!-- Configuración -->
+                    <div>
+                        <button onclick="toggleMenu('configuracion')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-slate-600 bg-opacity-50 rounded-xl flex items-center justify-center mr-3">
-                                    <i class="fas fa-cog text-lg"></i>
-                                </div>
-                                <span class="font-semibold sidebar-text">Configuración</span>
+                                <i class="fas fa-cog w-5 mr-3"></i>
+                                <span class="sidebar-text">Configuración</span>
                             </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300" id="configuracion-icon"></i>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="configuracion-icon"></i>
                         </button>
-                        <div id="configuracion-menu" class="ml-6 mt-2 space-y-1 hidden">
-                            <a href="{% url 'user_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-users-cog mr-3 text-xs"></i>
-                                <span class="sidebar-text">Usuarios</span>
-                            </a>
-                            <a href="{% url 'comercial:tipos_cuenta_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-folder mr-3 text-xs"></i>
-                                <span class="sidebar-text">Tipos de Cuenta</span>
-                            </a>
-                            <a href="{% url 'comercial:tipos_gasto_list' %}" class="flex items-center px-4 py-2 rounded-xl hover:bg-white hover:bg-opacity-10 transition-all text-sm">
-                                <i class="fas fa-tags mr-3 text-xs"></i>
-                                <span class="sidebar-text">Tipos de Gasto</span>
-                            </a>
+                        <div id="configuracion-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'user_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Usuarios</a>
+                            <a href="{% url 'comercial:tipos_cuenta_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Tipos de Cuenta</a>
+                            <a href="{% url 'comercial:tipos_gasto_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Tipos de Gasto</a>
                         </div>
                     </div>
                     {% endif %}
@@ -250,42 +152,42 @@
             </nav>
 
             <!-- User Section -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-600 border-opacity-30">
-                <div class="flex items-center space-x-3 sidebar-text">
-                    <div class="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-500 rounded-full flex items-center justify-center shadow-lg">
-                        <i class="fas fa-user text-sm"></i>
+            <div class="p-4 border-t sidebar-user">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-medium text-blue-700">{{ user.username|slice:":1"|upper }}</span>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-semibold truncate">{{ user.username }}</p>
-                        <p class="text-xs text-slate-300">Usuario activo</p>
+                    <div class="flex-1 min-w-0 sidebar-text">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ user.username }}</p>
+                        <p class="text-xs text-gray-600">Usuario activo</p>
                     </div>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col lg:ml-0">
-            <!-- Top Bar -->
-            <header class="glass-effect border-b border-slate-200 sticky top-0 z-30">
-                <div class="flex items-center justify-between px-4 lg:px-6 py-4">
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b px-4 lg:px-6 py-4">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        <button id="mobile-menu-btn" class="lg:hidden text-slate-600 hover:text-slate-900 transition-colors p-2 rounded-lg hover:bg-slate-100" onclick="toggleMobileMenu()">
+                        <button id="mobile-menu-btn" class="lg:hidden text-gray-600 hover:text-gray-900" onclick="toggleMobileMenu()">
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         <div>
-                            <h2 class="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">Akun Aberturas</h2>
-                            <p class="text-sm text-slate-500 hidden sm:block font-medium">Sistema de Cotizaciones</p>
+                            <h2 class="text-xl lg:text-2xl font-bold text-gray-900">AKUN</h2>
+                            <p class="text-sm text-gray-600 hidden sm:block">Sistema de Gestión de Aberturas</p>
                         </div>
                     </div>
                     
-                    <div class="flex items-center space-x-2 lg:space-x-4">
-                        <div class="hidden sm:flex items-center space-x-3 bg-slate-50 rounded-2xl px-4 py-2 border border-slate-200">
-                            <div class="w-8 h-8 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user text-white text-xs"></i>
+                    <div class="flex items-center space-x-4">
+                        <div class="hidden sm:flex items-center space-x-3 bg-gray-50 rounded-2xl px-4 py-2">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-blue-700">{{ user.username|slice:":1"|upper }}</span>
                             </div>
-                            <span class="text-sm font-semibold text-slate-700">{{ user.username }}</span>
+                            <span class="text-sm font-semibold text-gray-700">{{ user.username }}</span>
                         </div>
-                        <a href="{% url 'logout' %}" class="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white px-4 py-2 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg font-medium">
+                        <a href="{% url 'logout' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-2xl transition-all duration-200 font-semibold">
                             <i class="fas fa-sign-out-alt mr-2"></i>
                             <span class="hidden sm:inline">Salir</span>
                         </a>
@@ -295,47 +197,13 @@
 
             <!-- Content -->
             <main class="flex-1 p-4 lg:p-6 overflow-x-hidden">
-                <div class="animate-fade-in">
-                    {% block content %}
-                    {% endblock %}
-                </div>
+                {% block content %}
+                {% endblock %}
             </main>
         </div>
     </div>
 
-    <!-- Modal de Confirmación de Eliminación Global -->
-    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden backdrop-blur-sm">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-scale-in">
-                <div class="text-center mb-6">
-                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold text-slate-800 mb-2">¿Eliminar registro?</h3>
-                    <p class="text-slate-600" id="deleteMessage">Esta acción no se puede deshacer.</p>
-                </div>
-                <form id="deleteForm" method="post">
-                    {% csrf_token %}
-                    <div class="flex gap-3">
-                        <button type="button" onclick="cerrarModal()" class="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-semibold transition-all">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all">
-                            <i class="fas fa-trash mr-2"></i>Eliminar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {% load static %}
-    <script src="{% static 'js/sidebar.js' %}"></script>
-    <script src="{% static 'js/theme.js' %}"></script>
-    <script src="{% static 'js/delete-modal.js' %}"></script>
-    
     <script>
-    // Menú colapsable
     function toggleMenu(menuId) {
         const menu = document.getElementById(menuId + '-menu');
         const icon = document.getElementById(menuId + '-icon');
@@ -348,104 +216,34 @@
             icon.style.transform = 'rotate(0deg)';
         }
     }
-    </script>
-    
-    <!-- Inicializar Select2 y Confirmaciones -->
-    <script>
-    // Función global para notificaciones
-    function showNotification(type, title, text) {
-        Swal.fire({
-            icon: type,
-            title: title,
-            text: text,
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true
-        });
+
+    function toggleMobileMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
     }
-    
-    // Función global para loading en formularios
-    function setFormLoading(form, loading) {
-        const btn = form.querySelector('button[type="submit"]');
-        if (btn) {
-            if (loading) {
-                btn.disabled = true;
-                btn.dataset.originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
-            }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            document.getElementById('sidebar').classList.add('collapsed');
         }
-    }
-    
+    });
+
     $(document).ready(function() {
-        // Inicializar Select2 en todos los selects
         $('select').not('.no-select2').select2({
             theme: 'classic',
             width: '100%',
             placeholder: 'Seleccione...',
-            allowClear: true,
-            language: {
-                noResults: function() {
-                    return "No se encontraron resultados";
-                },
-                searching: function() {
-                    return "Buscando...";
-                }
-            }
-        });
-        
-        // Confirmación antes de eliminar
-        $('.btn-delete, .delete-btn, [data-confirm-delete]').on('click', function(e) {
-            e.preventDefault();
-            const url = $(this).attr('href') || $(this).data('url');
-            const itemName = $(this).data('item-name') || 'este elemento';
-            
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: `¿Deseas eliminar ${itemName}? Esta acción no se puede deshacer.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = url;
-                }
-            });
-        });
-        
-        // Loading state en formularios principales
-        $('form').not('.no-loading').on('submit', function() {
-            setFormLoading(this, true);
-        });
-        
-        // Validación en tiempo real para campos numéricos
-        $('input[type="number"], input[step]').on('input', function() {
-            const value = parseFloat($(this).val());
-            if (value < 0) {
-                $(this).addClass('border-red-500');
-                $(this).removeClass('border-gray-300');
-            } else {
-                $(this).removeClass('border-red-500');
-                $(this).addClass('border-gray-300');
-            }
-        });
-        
-        // Atajo Ctrl+S para guardar
-        $(document).on('keydown', function(e) {
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                const form = $('form').first();
-                if (form.length) {
-                    form.submit();
-                }
-            }
+            allowClear: true
         });
     });
     </script>
