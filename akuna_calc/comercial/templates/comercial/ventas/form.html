@@ -4,7 +4,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto animate-fade-in">
+<div class="max-w-6xl mx-auto animate-fade-in px-4">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
@@ -16,122 +16,171 @@
     </div>
 
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
-            <form method="post" class="space-y-6">
+            <form method="post" class="space-y-8">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Número de Pedido <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.numero_pedido }}
-                        {% if form.numero_pedido.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Cliente <span class="text-red-500">*</span>
-                        </label>
-                        <div class="flex gap-2">
-                            {{ form.cliente }}
-                            <button type="button" onclick="openClienteModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all" title="Crear nuevo cliente">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                <!-- Información Básica -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                        <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                        Información Básica
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Número de Pedido <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.numero_pedido }}
+                            {% if form.numero_pedido.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
+                            {% endif %}
                         </div>
-                        {% if form.cliente.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.cliente.errors.0 }}</p>
-                        {% endif %}
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Cliente <span class="text-red-500">*</span>
+                            </label>
+                            <div class="flex gap-2">
+                                {{ form.cliente }}
+                                <button type="button" onclick="openClienteModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all" title="Crear nuevo cliente">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            {% if form.cliente.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.cliente.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Valor Total <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.valor_total }}
-                        {% if form.valor_total.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.valor_total.errors.0 }}</p>
-                        {% endif %}
+                <!-- Valores y Montos -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                        <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
+                        Valores y Montos
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Valor Total <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.valor_total }}
+                            {% if form.valor_total.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.valor_total.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Seña</label>
+                            {{ form.sena }}
+                            {% if form.sena.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Seña</label>
-                        {{ form.sena }}
-                        {% if form.sena.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="flex items-center bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            {{ form.tiene_retenciones }}
+                            <label class="ml-3 text-sm font-medium text-gray-700">{{ form.tiene_retenciones.label }}</label>
+                            {% if form.tiene_retenciones.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.tiene_retenciones.errors.0 }}</p>
+                            {% endif %}
+                        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
-                        {{ form.fecha_pago }}
-                        {% if form.fecha_pago.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago</label>
-                        {{ form.forma_pago }}
-                        {% if form.forma_pago.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.forma_pago.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="flex items-center">
-                        {{ form.con_factura }}
-                        <label class="ml-2 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
-                        {% if form.con_factura.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.con_factura.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Factura</label>
-                        {{ form.tipo_factura }}
-                        {% if form.tipo_factura.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.tipo_factura.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Factura</label>
-                        {{ form.numero_factura }}
-                        {% if form.numero_factura.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.0 }}</p>
-                        {% endif %}
+                        <div id="monto_retenciones_container" style="display: none;">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Monto de Retenciones</label>
+                            {{ form.monto_retenciones }}
+                            <p class="text-xs text-slate-500 mt-1">Monto que el cliente retiene por ganancias o ingresos brutos</p>
+                            {% if form.monto_retenciones.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.monto_retenciones.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
+                <!-- Pago y Facturación -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                        <i class="fas fa-credit-card mr-2 text-purple-600"></i>
+                        Pago y Facturación
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Pago</label>
+                            {{ form.fecha_pago }}
+                            {% if form.fecha_pago.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago</label>
+                            {{ form.forma_pago }}
+                            {% if form.forma_pago.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.forma_pago.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        <div class="flex items-center bg-green-50 p-4 rounded-lg border border-green-200">
+                            {{ form.con_factura }}
+                            <label class="ml-3 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
+                            {% if form.con_factura.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.con_factura.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Factura</label>
+                            {{ form.tipo_factura }}
+                            {% if form.tipo_factura.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.tipo_factura.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Número de Factura</label>
+                            {{ form.numero_factura }}
+                            {% if form.numero_factura.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado y Observaciones -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                    {{ form.estado }}
-                    {% if form.estado.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.estado.errors.0 }}</p>
-                    {% endif %}
+                    <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                        <i class="fas fa-clipboard-list mr-2 text-indigo-600"></i>
+                        Estado y Observaciones
+                    </h2>
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                            {{ form.estado }}
+                            {% if form.estado.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.estado.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+                            {{ form.observaciones }}
+                            {% if form.observaciones.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.observaciones.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-                    {{ form.observaciones }}
-                    {% if form.observaciones.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.observaciones.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8">
+                <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8 pt-6 border-t">
                     <a href="{% url 'comercial:ventas_list' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                        Cancelar
+                        <i class="fas fa-times mr-2"></i>Cancelar
                     </a>
                     <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                        <i class="fas fa-save mr-2"></i>Guardar
+                        <i class="fas fa-save mr-2"></i>Guardar Venta
                     </button>
                 </div>
             </form>
@@ -302,6 +351,28 @@ document.getElementById('clienteForm').addEventListener('submit', async function
 document.addEventListener('DOMContentLoaded', function() {
     const formaPagoSelect = document.querySelector('select[name="forma_pago"]');
     const conFacturaCheckbox = document.querySelector('input[name="con_factura"]');
+    const tieneRetencionesCheckbox = document.getElementById('id_tiene_retenciones');
+    const montoRetencionesContainer = document.getElementById('monto_retenciones_container');
+    const montoRetencionesInput = document.getElementById('id_monto_retenciones');
+    
+    // Mostrar/ocultar campo de monto de retenciones
+    if (tieneRetencionesCheckbox) {
+        // Verificar estado inicial
+        if (tieneRetencionesCheckbox.checked) {
+            montoRetencionesContainer.style.display = 'block';
+        }
+        
+        tieneRetencionesCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                montoRetencionesContainer.style.display = 'block';
+                montoRetencionesInput.required = true;
+            } else {
+                montoRetencionesContainer.style.display = 'none';
+                montoRetencionesInput.value = '0';
+                montoRetencionesInput.required = false;
+            }
+        });
+    }
     
     function showFacturaAlert() {
         if (formaPagoSelect && formaPagoSelect.value && conFacturaCheckbox && !conFacturaCheckbox.checked) {
