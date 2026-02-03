@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
 
 {% block content %}
 <!-- Hero Section -->
@@ -21,7 +22,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-600 mb-2 font-medium">Total Ventas</p>
-                <p class="text-3xl font-bold text-gray-900">${{ total_ventas|floatformat:2 }}</p>
+                <p class="text-3xl font-bold text-gray-900">${{ total_ventas|formato_numero }}</p>
             </div>
             <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
                 <i class="fas fa-dollar-sign text-green-600 text-2xl"></i>
@@ -33,7 +34,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-600 mb-2 font-medium">Total Gastos</p>
-                <p class="text-3xl font-bold text-gray-900">${{ total_compras|floatformat:2 }}</p>
+                <p class="text-3xl font-bold text-gray-900">${{ total_compras|formato_numero }}</p>
             </div>
             <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
                 <i class="fas fa-shopping-cart text-red-600 text-2xl"></i>
