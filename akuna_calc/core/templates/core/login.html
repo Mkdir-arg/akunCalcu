@@ -2,414 +2,118 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Akun Aberturas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Login - AKUN</title>
     {% load static %}
     
-    <!-- Fallback CSS -->
-    <link href="{% static 'css/fallback.css' %}" rel="stylesheet">
-    <link href="{% static 'css/responsive.css' %}" rel="stylesheet">
-    <link href="{% static 'css/themes.css' %}" rel="stylesheet">
-    
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        'primary': '#1e293b',
-                        'primary-light': '#334155',
-                        'accent': '#0f172a',
-                        'surface': '#f8fafc',
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'fade-in': 'fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-                        'scale-in': 'scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }
+                screens: {
+                    'xs': '475px',
+                    'sm': '640px',
+                    'md': '768px',
+                    'lg': '1024px',
+                    'xl': '1280px',
+                    '2xl': '1536px',
                 }
             }
         }
     </script>
+    
     <style>
-        :root {
-            --login-bg-1: #eef2ff;
-            --login-bg-2: #c7d2fe;
-            --login-bg-3: #e0e7ff;
-            --login-deep: #0f172a;
+        * {
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes gradientPulse {
-            0% { background-position: 0% 0%; }
-            50% { background-position: 100% 100%; }
-            100% { background-position: 0% 0%; }
-        }
-        @keyframes orbOrbit {
-            0% { transform: rotate(0deg) translateX(0); opacity: 0.4; }
-            50% { opacity: 0.8; }
-            100% { transform: rotate(360deg) translateX(0); opacity: 0.4; }
-        }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.35); }
-            50% { box-shadow: 0 0 35px rgba(37, 99, 235, 0.55); }
-        }
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        @keyframes particleDrift {
-            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.25; }
-            50% { transform: translateY(-40px) translateX(20px) scale(1.05); opacity: 0.6; }
-            100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.25; }
-        }
-        @keyframes meshMove {
-            0% { transform: translateY(0) translateX(0) scale(1); }
-            50% { transform: translateY(-30px) translateX(40px) scale(1.1); }
-            100% { transform: translateY(0) translateX(0) scale(1); }
-        }
-        body.login-page {
-            background: linear-gradient(135deg, #e8ecfb, #f4f6ff);
-            height: 100vh;
-            overflow: hidden;
-        }
-        .login-background {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-            z-index: 0;
-        }
-        .login-background::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.15), rgba(56, 189, 248, 0.15));
-            filter: blur(120px);
-            opacity: 0.8;
-            animation: gradientPulse 16s ease-in-out infinite;
-        }
-        .login-background::after {
-            content: "";
-            position: absolute;
-            inset: -20%;
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18), transparent 45%),
-                radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.18), transparent 40%),
-                radial-gradient(circle at 50% 70%, rgba(37, 99, 235, 0.15), transparent 35%);
-            filter: blur(90px);
-            opacity: 0.75;
-            animation: gradientPulse 20s ease-in-out infinite reverse;
-        }
-        .login-background .particle {
-            position: absolute;
-            width: 8rem;
-            height: 8rem;
-            border-radius: 1.5rem;
-            background: rgba(148, 163, 184, 0.2);
-            filter: blur(15px);
-            animation: particleDrift 12s ease-in-out infinite;
-        }
-        .particle.one { top: 20%; left: 15%; animation-delay: -2s; }
-        .particle.two { bottom: 18%; right: 18%; animation-duration: 14s; }
-        .particle.three { top: 65%; left: 5%; animation-duration: 16s; animation-delay: -6s; }
-        .orb {
-            position: absolute;
-            width: 18rem;
-            height: 18rem;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.05));
-            filter: blur(4px);
-            animation: orbOrbit 18s linear infinite;
-            opacity: 0.5;
-        }
-        .orb.orb-sm {
-            width: 10rem;
-            height: 10rem;
-            animation-duration: 22s;
-            opacity: 0.7;
-        }
-        .orb.one { top: 5%; left: 10%; }
-        .orb.two { top: 40%; right: -5%; animation-delay: -4s; }
-        .orb.three { bottom: -8%; left: 20%; animation-delay: -8s; }
-        .orb.four { top: 15%; right: 25%; animation-delay: -12s; }
-        .mesh {
-            position: absolute;
-            width: 35rem;
-            height: 35rem;
-            border-radius: 40% 60% 55% 45% / 55% 35% 65% 45%;
-            opacity: 0.22;
-            filter: blur(40px);
-            animation: meshMove 18s ease-in-out infinite;
-        }
-        .mesh-one {
-            top: -10%;
-            left: -5%;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.6), rgba(14, 165, 233, 0.4));
-        }
-        .mesh-two {
-            bottom: -15%;
-            right: -10%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.6), rgba(37, 99, 235, 0.4));
-            animation-duration: 22s;
-        }
-        .mesh-three {
-            top: 25%;
-            right: 30%;
-            width: 25rem;
-            height: 25rem;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.4), rgba(14, 165, 233, 0.25));
-            animation-duration: 26s;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-        }
-        .login-card {
-            position: relative;
-            border-radius: 1.75rem;
-            overflow: hidden;
-        }
-        .login-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(30, 64, 175, 0.3), rgba(59, 130, 246, 0.25), rgba(14, 165, 233, 0.25));
-            mask:
-                linear-gradient(#fff 0 0) content-box,
-                linear-gradient(#fff 0 0);
-            mask-composite: exclude;
-            pointer-events: none;
-        }
-        .login-pulse {
-            animation: pulseGlow 4s ease-in-out infinite;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-        .login-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.85rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            background: rgba(30, 64, 175, 0.08);
-            color: var(--accent-primary);
-        }
-        .login-heading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.35rem;
-        }
-        .login-heading h1 {
-            margin-bottom: 0.35rem;
-        }
-        .btn-primary {
-            background-image: linear-gradient(135deg, #1e3a8a, #2563eb);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.35);
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-primary::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
-            pointer-events: none;
-        }
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 40px rgba(37, 99, 235, 0.4);
-        }
-        .login-chips {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.75rem;
-        }
-        .login-chip {
-            border-radius: 1rem;
-            padding: 0.75rem;
-            background: rgba(15, 23, 42, 0.04);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-body);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .login-chip i {
-            color: var(--accent-primary);
+        body {
+            touch-action: manipulation;
         }
     </style>
 </head>
-<body class="login-page overflow-x-hidden">
-    <div class="login-background">
-        <span class="mesh mesh-one"></span>
-        <span class="mesh mesh-two"></span>
-        <span class="mesh mesh-three"></span>
-        <span class="orb one"></span>
-        <span class="orb two"></span>
-        <span class="orb three"></span>
-        <span class="orb orb-sm four"></span>
-        <span class="particle one"></span>
-        <span class="particle two"></span>
-        <span class="particle three"></span>
-    </div>
+<body class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 pb-32 overflow-hidden">
+    <!-- Wave decorativa -->
+    <svg class="absolute inset-x-0 bottom-0 w-full pointer-events-none select-none" viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <path fill="#3B82F6" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+    </svg>
 
-    <div class="h-screen flex items-center justify-center px-4 py-2 relative z-10 overflow-y-auto">
-        <div class="w-full max-w-xs sm:max-w-md">
-            <!-- Logo Section -->
-            <div class="text-center mb-2 sm:mb-4 animate-fade-in login-heading">
-                <div class="login-pill mb-1 inline-flex animate-fade-in text-xs">
-                    <i class="fas fa-star text-xs"></i> Nuevo portal
-                </div>
-                <div class="inline-flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-primary to-accent rounded-xl mb-1 sm:mb-2 shadow-2xl login-pulse">
-                    <i class="fas fa-calculator text-white text-lg sm:text-xl"></i>
-                </div>
-                <h1 class="text-xl sm:text-2xl font-bold text-slate-800 mb-0.5 tracking-tight">Akun</h1>
-                <p class="text-slate-600 text-xs sm:text-sm font-medium">Sistema de Cotizaciones</p>
-                <div class="w-12 sm:w-20 h-0.5 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full mx-auto mt-1"></div>
-            </div>
+    <div class="w-full max-w-md">
+        <!-- Logo Section -->
+        <div class="text-center mb-8">
+            <img src="{% static 'imagenes/AKUN-LOGO.webp' %}" alt="AKUN" class="w-24 h-24 sm:w-32 sm:h-32 mx-auto" onerror="this.onerror=null; this.src='{% static 'imagenes/AKUN-LOGO.png' %}'">
+        </div>
 
-            <!-- Login Form -->
-            <div class="glass-effect login-card p-3 sm:p-5 shadow-2xl animate-scale-in">
-                {% if form.errors %}
-                    <div class="bg-red-50 border border-red-200 text-red-700 px-2 py-1.5 rounded-lg mb-2">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle mr-1.5 text-red-500 text-xs"></i>
-                            <p class="font-medium text-xs">Usuario o contraseña incorrectos</p>
-                        </div>
-                    </div>
-                {% endif %}
-
-                <form method="post" class="space-y-2 sm:space-y-3">
-                    {% csrf_token %}
-                    
-                    <div>
-                        <label for="{{ form.username.id_for_label }}" class="block text-slate-700 text-xs font-semibold mb-0.5">
-                            <i class="fas fa-user mr-1"></i>Usuario
-                        </label>
-                        <div class="relative">
-                            <input type="text" 
-                                   name="{{ form.username.name }}" 
-                                   id="{{ form.username.id_for_label }}"
-                                   class="w-full px-2.5 py-1.5 bg-white border-2 border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 transition-all duration-300 text-xs"
-                                   placeholder="Ingresa tu usuario"
-                                   required>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-2">
-                                <i class="fas fa-user text-slate-400 text-xs"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.password.id_for_label }}" class="block text-slate-700 text-xs font-semibold mb-0.5">
-                            <i class="fas fa-lock mr-1"></i>Contraseña
-                        </label>
-                        <div class="relative">
-                            <input type="password" 
-                                   name="{{ form.password.name }}" 
-                                   id="{{ form.password.id_for_label }}"
-                                   class="w-full px-2.5 py-1.5 bg-white border-2 border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 transition-all duration-300 text-xs"
-                                   placeholder="Ingresa tu contraseña"
-                                   required>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-2">
-                                <i class="fas fa-lock text-slate-400 text-xs"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" 
-                            class="btn-primary w-full text-white font-bold py-1.5 px-3 rounded-lg shadow-xl text-xs">
-                        <i class="fas fa-sign-in-alt mr-1.5"></i>
-                        Ingresar al Sistema
-                    </button>
-                </form>
-
-                <div class="login-chips mt-2 sm:mt-3 gap-1.5">
-                    <div class="login-chip text-xs py-1.5 px-2">
-                        <i class="fas fa-bolt text-xs"></i> <span class="text-xs">Cálculos</span>
-                    </div>
-                    <div class="login-chip text-xs py-1.5 px-2">
-                        <i class="fas fa-lock text-xs"></i> <span class="text-xs">Seguridad</span>
-                    </div>
-                    <div class="login-chip text-xs py-1.5 px-2">
-                        <i class="fas fa-cloud text-xs"></i> <span class="text-xs">Sincronizado</span>
-                    </div>
-                    <div class="login-chip text-xs py-1.5 px-2">
-                        <i class="fas fa-wand-magic-sparkles text-xs"></i> <span class="text-xs">Premium</span>
+        <!-- Login Card -->
+        <div class="bg-white/80 backdrop-blur-sm shadow-2xl rounded-3xl p-6 sm:p-8 border border-white/20">
+            {% if form.errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+                        <p class="font-medium text-sm">Usuario o contraseña incorrectos</p>
                     </div>
                 </div>
+            {% endif %}
 
-                <!-- Footer -->
-                <div class="text-center mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-200">
-                    <p class="text-slate-500 text-xs font-medium">
-                        <i class="fas fa-shield-alt mr-1 text-xs"></i>
-                        Acceso seguro
-                    </p>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Email
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                        <input type="text" 
+                               name="{{ form.username.name }}" 
+                               id="{{ form.username.id_for_label }}"
+                               class="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 text-sm sm:text-base"
+                               placeholder="tu@email.com"
+                               required>
+                    </div>
                 </div>
-            </div>
+                
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Contraseña
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                        <input type="password" 
+                               name="{{ form.password.name }}" 
+                               id="{{ form.password.id_for_label }}"
+                               class="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 text-sm sm:text-base"
+                               placeholder="••••••••"
+                               required>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-gray-600">Recordarme</span>
+                    </label>
+                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">¿Olvidaste tu contraseña?</a>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 sm:py-4 rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed">
+                    Iniciar Sesión
+                </button>
+            </form>
 
-            <!-- Additional Info -->
-            <div class="text-center mt-2 sm:mt-3 animate-fade-in">
-                <p class="text-slate-600 text-xs">
-                    © 2024 Akun Aberturas
+            <div class="text-center mt-6">
+                <p class="text-sm text-gray-600">
+                    ¿No tienes cuenta? <a href="#" class="text-blue-600 hover:text-blue-700 font-semibold">Regístrate</a>
                 </p>
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animaciones de entrada suaves
-            const fadeElements = document.querySelectorAll('.animate-fade-in');
-            fadeElements.forEach((el, index) => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(30px)';
-                
-                setTimeout(() => {
-                    el.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                    el.style.opacity = '1';
-                    el.style.transform = 'translateY(0)';
-                }, index * 150);
-            });
-            
-            // Efecto focus en inputs
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.parentElement.style.transform = 'scale(1.02)';
-                });
-                
-                input.addEventListener('blur', function() {
-                    this.parentElement.style.transform = 'scale(1)';
-                });
-            });
-        });
-    </script>
-    
-    <!-- Theme Management -->
-    <script src="{% static 'js/theme.js' %}"></script>
 </body>
 </html>

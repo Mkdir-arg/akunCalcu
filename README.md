@@ -1,12 +1,13 @@
-# Akuna Calc - Sistema de Cotizaciones
+# Akuna Calc - Sistema de Gestión Comercial
 
-Aplicación Django completa para gestionar productos, usuarios y crear cotizaciones de aberturas.
+Aplicación Django completa para gestionar productos, usuarios, ventas y gastos de aberturas.
 
 ## 🚀 Características
 
 - **Gestión de Productos**: CRUD completo con categorías y precios por m²
-- **Calculadora Rápida**: Cálculo en tiempo real sin guardar cotizaciones
-- **Sistema de Cotizaciones**: Crear, guardar y consultar cotizaciones completas
+- **Calculadora Rápida**: Cálculo en tiempo real de precios
+- **Módulo Comercial**: Gestión de ventas, gastos, clientes y cuentas
+- **Facturación**: Sistema de facturación electrónica integrado
 - **ABM de Usuarios**: Gestión completa de usuarios (solo para staff)
 - **Autenticación**: Sistema de login integrado
 - **Interfaz Moderna**: UI 100% responsive con Tailwind CSS
@@ -81,16 +82,17 @@ El sistema incluye estos productos iniciales:
 - Activación/desactivación
 
 ### 🧮 Calculadora
-- **Rápida**: Cálculos sin guardar
-- **Cotizaciones**: Cálculos guardados en BD
+- Cálculo rápido de precios
 - Conversión automática mm → m²
 - Cálculos en tiempo real
+- Soporte para múltiples productos
 
-### 📋 Sistema de Cotizaciones
-- Crear cotizaciones detalladas
-- Historial completo
-- Exportación de datos
-- Seguimiento por usuario
+### 💼 Módulo Comercial
+- Gestión de ventas y gastos
+- Control de clientes
+- Administración de cuentas
+- Reportes y estadísticas
+- Dashboard con indicadores clave
 
 ## 🏗️ Estructura del Proyecto
 
@@ -98,7 +100,9 @@ El sistema incluye estos productos iniciales:
 akuna_calc/
 ├── akuna_calc/          # Configuración Django
 ├── core/                # App principal (auth, home)
-├── productos/           # App productos y cotizaciones
+├── productos/           # App productos y calculadora
+├── comercial/           # App ventas, gastos, clientes
+├── facturacion/         # App facturación electrónica
 ├── usuarios/            # App gestión de usuarios
 ├── static/              # Archivos estáticos
 ├── docker-compose.yml   # Orquestación Docker

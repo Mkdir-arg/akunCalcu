@@ -6,60 +6,57 @@
 
 {% block content %}
 <!-- Hero Section -->
-<div class="relative overflow-hidden bg-gradient-to-br from-primary to-accent rounded-3xl mb-12 p-8 lg:p-12 text-white shadow-2xl animate-fade-in">
-    <div class="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
-    <div class="relative z-10">
-        <h1 class="text-4xl lg:text-5xl font-bold mb-4 tracking-tight">Administración Comercial</h1>
-        <p class="text-xl text-slate-200 font-medium">Gestión integral de ventas, gastos y reportes</p>
-    </div>
+<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12 mb-6 border-l-4 border-blue-500">
+    <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Administración Comercial</h1>
+    <p class="text-lg text-gray-600">Gestión integral de ventas, gastos y reportes</p>
 </div>
 
 <!-- Estadísticas -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-scale-in">
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-green-500">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
-                <p class="text-3xl font-bold text-slate-700">${{ total_ventas|formato_numero }}</p>
+                <p class="text-sm text-gray-600 mb-2 font-medium">Total Ventas</p>
+                <p class="text-3xl font-bold text-gray-900">${{ total_ventas|formato_numero }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-dollar-sign text-white text-xl"></i>
+            <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-red-500">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Total Gastos</p>
-                <p class="text-3xl font-bold text-slate-700">${{ total_compras|formato_numero }}</p>
+                <p class="text-sm text-gray-600 mb-2 font-medium">Total Gastos</p>
+                <p class="text-3xl font-bold text-gray-900">${{ total_compras|formato_numero }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-shopping-cart text-white text-xl"></i>
+            <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-shopping-cart text-red-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-yellow-500">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Pendientes</p>
-                <p class="text-3xl font-bold text-slate-700">{{ ventas_pendientes }}</p>
+                <p class="text-sm text-gray-600 mb-2 font-medium">Pendientes</p>
+                <p class="text-3xl font-bold text-gray-900">{{ ventas_pendientes }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-clock text-white text-xl"></i>
+            <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
+    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-slate-500 mb-2 font-medium">Clientes</p>
-                <p class="text-3xl font-bold text-slate-700">{{ clientes_count }}</p>
+                <p class="text-sm text-gray-600 mb-2 font-medium">Clientes</p>
+                <p class="text-3xl font-bold text-gray-900">{{ clientes_count }}</p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-users text-white text-xl"></i>
+            <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
             </div>
         </div>
     </div>

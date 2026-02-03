@@ -84,7 +84,6 @@
 Dashboard
 Calculadora
 Productos
-Cotizaciones
 Comercial
 Facturación  ← 🆕 NUEVO
 Usuarios (staff)
