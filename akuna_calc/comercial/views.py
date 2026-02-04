@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from datetime import datetime
+from decimal import Decimal
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 
@@ -207,7 +208,6 @@ def registrar_pago(request, pk):
         observaciones = request.POST.get('observaciones', '')
         
         try:
-            from decimal import Decimal
             monto_decimal = Decimal(monto)
             
             if monto_decimal <= 0:
@@ -251,7 +251,6 @@ def generar_pdf_venta(request, pk):
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
     from reportlab.pdfgen import canvas
-    from decimal import Decimal
     
     venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
     pagos = venta.pagos.all().order_by('-fecha_pago')
@@ -1031,13 +1030,14 @@ def get_clientes_list(request):
 
 @login_required
 def editar_pago(request, pk):
+    import json
+    
     if request.method == 'POST':
-        import json
         pago = get_object_or_404(PagoVenta, pk=pk)
         
         try:
             data = json.loads(request.body)
-            monto = Decimal(data.get('monto'))
+            monto = Decimal(str(data.get('monto')))
             fecha_pago = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
             numero_factura = data.get('numero_factura', '')
@@ -1079,7 +1079,6 @@ def exportar_reporte_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
-    from decimal import Decimal
     
     # Recuperar filtros de la sesión
     filtros = request.session.get('reporte_filtros', {})
@@ -1090,8 +1089,8 @@ def exportar_reporte_excel(request):
     tipo_cuenta_id = filtros.get('tipo_cuenta_id')
     cliente_id = filtros.get('cliente_id')
     estado_venta = filtros.get('estado_venta')
-    monto_min = Decimal(filtros.get('monto_min')) if filtros.get('monto_min') else None
-    monto_max = Decimal(filtros.get('monto_max')) if filtros.get('monto_max') else None
+    monto_min = Decimal(str(filtros.get('monto_min'))) if filtros.get('monto_min') else None
+    monto_max = Decimal(str(filtros.get('monto_max'))) if filtros.get('monto_max') else None
     
     # Filtrar ventas
     ventas_query = Venta.objects.all()
