@@ -103,6 +103,14 @@ class Venta(models.Model):
             return self.factura_electronica.get_numero_completo()
         return self.numero_factura or '-'
     
+    def get_total_percepciones(self):
+        """Calcula el total de percepciones"""
+        return sum(p.importe for p in self.percepciones.all())
+    
+    def get_total_con_percepciones(self):
+        """Calcula el total de la venta incluyendo percepciones"""
+        return self.valor_total + self.get_total_percepciones()
+    
     def __str__(self):
         return f"Pedido {self.numero_pedido} - {self.cliente}"
     
@@ -247,6 +255,14 @@ class PagoVenta(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     
+    def get_total_retenciones(self):
+        """Calcula el total de retenciones aplicadas a este pago"""
+        return sum(r.importe_retenido for r in self.retenciones.all())
+    
+    def get_monto_neto(self):
+        """Calcula el monto neto cobrado (monto - retenciones)"""
+        return self.monto - self.get_total_retenciones()
+    
     def __str__(self):
         return f"Pago ${self.monto} - Venta {self.venta.numero_pedido}"
     
@@ -254,3 +270,56 @@ class PagoVenta(models.Model):
         verbose_name = "Pago de Venta"
         verbose_name_plural = "Pagos de Ventas"
         ordering = ['-fecha_pago']
+
+
+class Percepcion(models.Model):
+    """Percepciones aplicadas a las ventas (se suman al total)"""
+    
+    TIPO_CHOICES = [
+        ('ganancias', 'Ganancias'),
+        ('iibb_ba', 'Ingresos Brutos Buenos Aires'),
+        ('iibb_caba', 'Ingresos Brutos CABA'),
+        ('iva', 'IVA'),
+    ]
+    
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='percepciones')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    observaciones = models.TextField(blank=True)
+    importe = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - ${self.importe}"
+    
+    class Meta:
+        verbose_name = "Percepción"
+        verbose_name_plural = "Percepciones"
+
+
+class Retencion(models.Model):
+    """Retenciones aplicadas a los pagos (se descuentan del cobro)"""
+    
+    TIPO_CHOICES = [
+        ('ganancias', 'Ganancias'),
+        ('iibb', 'Ingresos Brutos'),
+        ('iva', 'IVA'),
+        ('seguridad_social', 'Seguridad Social'),
+        ('otros', 'Otros'),
+    ]
+    
+    pago = models.ForeignKey(PagoVenta, on_delete=models.CASCADE, related_name='retenciones')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    concepto = models.CharField(max_length=200, blank=True)
+    descripcion = models.TextField(blank=True)
+    numero_comprobante = models.CharField(max_length=100, blank=True)
+    importe_isar = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Importe ISAR (Base)')
+    importe_retenido = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))], verbose_name='Importe Retenido')
+    fecha_comprobante = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - ${self.importe_retenido}"
+    
+    class Meta:
+        verbose_name = "Retención"
+        verbose_name_plural = "Retenciones"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cliente, Venta, TipoCuenta, TipoGasto, Cuenta, Compra, PagoVenta
+from .models import Cliente, Venta, TipoCuenta, TipoGasto, Cuenta, Compra, PagoVenta, Percepcion, Retencion
 
 
 @admin.register(Cliente)
@@ -50,3 +50,17 @@ class PagoVentaAdmin(admin.ModelAdmin):
     list_filter = ['forma_pago', 'fecha_pago', 'created_by']
     search_fields = ['venta__numero_pedido', 'venta__cliente__nombre']
     readonly_fields = ['created_at', 'created_by']
+
+
+@admin.register(Percepcion)
+class PercepcionAdmin(admin.ModelAdmin):
+    list_display = ['venta', 'tipo', 'importe', 'created_at']
+    list_filter = ['tipo', 'created_at']
+    search_fields = ['venta__numero_pedido']
+
+
+@admin.register(Retencion)
+class RetencionAdmin(admin.ModelAdmin):
+    list_display = ['pago', 'tipo', 'importe_retenido', 'numero_comprobante', 'fecha_comprobante']
+    list_filter = ['tipo', 'fecha_comprobante']
+    search_fields = ['pago__venta__numero_pedido', 'numero_comprobante']

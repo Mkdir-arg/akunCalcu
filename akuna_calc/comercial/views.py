@@ -150,7 +150,29 @@ def venta_create(request):
     if request.method == 'POST':
         form = VentaForm(request.POST)
         if form.is_valid():
-            form.save()
+            venta = form.save()
+            
+            # Procesar percepciones
+            from .models import Percepcion
+            for key in request.POST:
+                if key.startswith('percepcion_tipo_'):
+                    id_percepcion = key.split('_')[-1]
+                    tipo = request.POST.get(f'percepcion_tipo_{id_percepcion}')
+                    observaciones = request.POST.get(f'percepcion_obs_{id_percepcion}', '')
+                    importe = request.POST.get(f'percepcion_importe_{id_percepcion}')
+                    
+                    if tipo and importe:
+                        try:
+                            from decimal import Decimal
+                            Percepcion.objects.create(
+                                venta=venta,
+                                tipo=tipo,
+                                observaciones=observaciones,
+                                importe=Decimal(importe)
+                            )
+                        except:
+                            pass
+            
             messages.success(request, 'Venta creada exitosamente.')
             return redirect('comercial:ventas_list')
     else:
@@ -164,7 +186,31 @@ def venta_edit(request, pk):
     if request.method == 'POST':
         form = VentaForm(request.POST, instance=venta)
         if form.is_valid():
-            form.save()
+            venta = form.save()
+            
+            # Eliminar percepciones existentes y crear nuevas
+            from .models import Percepcion
+            venta.percepciones.all().delete()
+            
+            for key in request.POST:
+                if key.startswith('percepcion_tipo_'):
+                    id_percepcion = key.split('_')[-1]
+                    tipo = request.POST.get(f'percepcion_tipo_{id_percepcion}')
+                    observaciones = request.POST.get(f'percepcion_obs_{id_percepcion}', '')
+                    importe = request.POST.get(f'percepcion_importe_{id_percepcion}')
+                    
+                    if tipo and importe:
+                        try:
+                            from decimal import Decimal
+                            Percepcion.objects.create(
+                                venta=venta,
+                                tipo=tipo,
+                                observaciones=observaciones,
+                                importe=Decimal(importe)
+                            )
+                        except:
+                            pass
+            
             messages.success(request, 'Venta actualizada exitosamente.')
             return redirect('comercial:ventas_list')
     else:
@@ -228,6 +274,32 @@ def registrar_pago(request, pk):
                 created_by=request.user
             )
             
+            # Procesar retenciones
+            from .models import Retencion
+            for key in request.POST:
+                if key.startswith('retencion_tipo_'):
+                    id_retencion = key.split('_')[-1]
+                    tipo = request.POST.get(f'retencion_tipo_{id_retencion}')
+                    concepto = request.POST.get(f'retencion_concepto_{id_retencion}', '')
+                    nro_comprob = request.POST.get(f'retencion_nro_comprob_{id_retencion}', '')
+                    importe_isar = request.POST.get(f'retencion_isar_{id_retencion}', '0')
+                    importe_retenido = request.POST.get(f'retencion_retenido_{id_retencion}')
+                    fecha_comprob = request.POST.get(f'retencion_fecha_{id_retencion}', None)
+                    
+                    if tipo and importe_retenido:
+                        try:
+                            Retencion.objects.create(
+                                pago=pago,
+                                tipo=tipo,
+                                concepto=concepto,
+                                numero_comprobante=nro_comprob,
+                                importe_isar=Decimal(importe_isar) if importe_isar else Decimal('0'),
+                                importe_retenido=Decimal(importe_retenido),
+                                fecha_comprobante=fecha_comprob if fecha_comprob else None
+                            )
+                        except:
+                            pass
+            
             # Recalcular saldo
             venta.save()
             
@@ -244,176 +316,300 @@ def registrar_pago(request, pk):
 @login_required
 def generar_pdf_venta(request, pk):
     from django.http import HttpResponse
-    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
-    from reportlab.lib.units import inch
+    from reportlab.lib.units import inch, cm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-    from reportlab.pdfgen import canvas
     from decimal import Decimal
+    from django.conf import settings
+    import os
     
-    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
+    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos__retenciones', 'percepciones'), pk=pk)
     pagos = venta.pagos.all().order_by('-fecha_pago')
     total_pagado = venta.sena + sum(p.monto for p in pagos)
     
     # Crear respuesta HTTP
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="venta_{venta.numero_pedido}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="factura_{venta.numero_pedido}.pdf"'
     
     # Crear PDF
-    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm, leftMargin=1.5*cm, rightMargin=1.5*cm)
     elements = []
     styles = getSampleStyleSheet()
     
     # Estilos personalizados
     title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#1e40af'),
+        'Title',
+        parent=styles['Normal'],
+        fontSize=32,
+        textColor=colors.HexColor('#2c3e50'),
         spaceAfter=6,
-        alignment=TA_CENTER,
+        alignment=TA_RIGHT,
         fontName='Helvetica-Bold'
     )
     
     subtitle_style = ParagraphStyle(
-        'CustomSubtitle',
+        'Subtitle',
         parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#64748b'),
-        spaceAfter=20,
-        alignment=TA_CENTER
+        fontSize=10,
+        textColor=colors.HexColor('#7f8c8d'),
+        alignment=TA_RIGHT
     )
     
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=14,
-        textColor=colors.HexColor('#1e293b'),
-        spaceAfter=12,
-        spaceBefore=20,
-        fontName='Helvetica-Bold'
-    )
+    # Header con logo y título
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'AKUN-LOGO.png')
+    try:
+        if os.path.exists(logo_path):
+            logo = Image(logo_path, width=3.5*cm, height=1.8*cm, kind='proportional')
+            header_data = [[logo, Paragraph('FACTURA', title_style)]]
+        else:
+            raise FileNotFoundError
+    except:
+        header_data = [[
+            Paragraph('<b><font size=16 color="#3498db">AKUN</font></b><br/><font size=8 color="#7f8c8d">ABERTURAS</font>', styles['Normal']),
+            Paragraph('FACTURA', title_style)
+        ]]
     
-    # Encabezado
-    elements.append(Paragraph("AKUNA ABERTURAS", title_style))
-    elements.append(Paragraph("Detalle de Venta", subtitle_style))
-    elements.append(Spacer(1, 0.2*inch))
+    header_table = Table(header_data, colWidths=[4*cm, 14*cm])
+    header_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(header_table)
     
-    # Información de la venta
-    info_data = [
-        ['Pedido N°:', venta.numero_pedido, 'Fecha:', venta.created_at.strftime('%d/%m/%Y')],
-        ['Cliente:', f"{venta.cliente}", 'Estado:', venta.get_estado_display()],
-    ]
+    # Número de factura
+    elements.append(Spacer(1, 0.3*cm))
+    numero_info = Paragraph(f'<font size=9 color="#7f8c8d">N. {venta.numero_pedido}<br/>Del {venta.created_at.strftime("%d/%m/%Y")}</font>', subtitle_style)
+    elements.append(numero_info)
     
-    if venta.numero_factura:
-        info_data.append(['Factura:', venta.get_numero_factura_display(), 'Tipo:', 'Blanco' if venta.con_factura else 'Negro'])
+    elements.append(Spacer(1, 1*cm))
     
-    info_table = Table(info_data, colWidths=[1.2*inch, 2.5*inch, 1*inch, 1.8*inch])
+    # Información del Cliente y Venta
+    cliente_info = Paragraph(f'''
+        <font size=10><b>CLIENTE</b></font><br/>
+        <font size=9>{venta.cliente.get_nombre_completo()}</font><br/>
+        <font size=8 color="#7f8c8d">
+        {f"CUIT: {venta.cliente.cuit}<br/>" if venta.cliente.cuit else ""}
+        {f"DNI: {venta.cliente.dni}<br/>" if venta.cliente.dni else ""}
+        Condición IVA: {venta.cliente.get_condicion_iva_display()}<br/>
+        {venta.cliente.direccion}, {venta.cliente.localidad}<br/>
+        {f"Tel: {venta.cliente.telefono}<br/>" if venta.cliente.telefono else ""}
+        {f"Email: {venta.cliente.email}" if venta.cliente.email else ""}
+        </font>
+    ''', styles['Normal'])
+    
+    venta_info = Paragraph(f'''
+        <font size=10><b>DATOS DE LA VENTA</b></font><br/>
+        <font size=8 color="#7f8c8d">
+        Estado: <b>{venta.get_estado_display()}</b><br/>
+        Tipo: <b>{"Factura " + venta.tipo_factura if venta.tipo_factura else "Sin factura"}</b><br/>
+        {f"N° Factura: {venta.numero_factura}<br/>" if venta.numero_factura else ""}
+        Operación: <b>{"En Blanco" if venta.con_factura else "En Negro"}</b><br/>
+        {f"Forma de Pago: {venta.get_forma_pago_display()}<br/>" if venta.forma_pago else ""}
+        {f"Fecha de Pago: {venta.fecha_pago.strftime('%d/%m/%Y')}<br/>" if venta.fecha_pago else ""}
+        </font>
+    ''', styles['Normal'])
+    
+    info_table = Table([[cliente_info, venta_info]], colWidths=[9*cm, 9*cm])
     info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f1f5f9')),
-        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f1f5f9')),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1e293b')),
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
     ]))
     elements.append(info_table)
-    elements.append(Spacer(1, 0.3*inch))
     
-    # Resumen financiero
-    elements.append(Paragraph("Resumen Financiero", heading_style))
+    elements.append(Spacer(1, 0.5*cm))
     
-    def format_currency(value):
-        return f"${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    # Resumen Financiero
+    resumen_data = [[
+        Paragraph('<font size=9><b>CONCEPTO</b></font>', styles['Normal']),
+        Paragraph('<font size=9><b>MONTO</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+    ]]
     
-    resumen_data = [
-        ['Concepto', 'Monto'],
-        ['Valor Total', format_currency(venta.valor_total)],
-        ['Seña Inicial', format_currency(venta.sena)],
-        ['Pagos Adicionales', format_currency(sum(p.monto for p in pagos))],
-        ['Total Pagado', format_currency(total_pagado)],
-        ['Saldo Pendiente', format_currency(venta.saldo)],
-    ]
+    resumen_data.append([
+        Paragraph('<font size=9>Valor Total</font>', styles['Normal']),
+        Paragraph(f'<font size=9>${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+    ])
     
-    resumen_table = Table(resumen_data, colWidths=[4*inch, 2.5*inch])
+    if venta.percepciones.exists():
+        for percepcion in venta.percepciones.all():
+            resumen_data.append([
+                Paragraph(f'<font size=8 color="#3498db">+ Percepción {percepcion.get_tipo_display()}</font>', styles['Normal']),
+                Paragraph(f'<font size=8 color="#3498db">${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+            ])
+    
+    if venta.tiene_retenciones:
+        resumen_data.append([
+            Paragraph(f'<font size=8 color="#e74c3c">- Retenciones del Cliente</font>', styles['Normal']),
+            Paragraph(f'<font size=8 color="#e74c3c">-${venta.monto_retenciones:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+        ])
+    
+    resumen_data.append([
+        Paragraph('<font size=9><b>Seña Pagada</b></font>', styles['Normal']),
+        Paragraph(f'<font size=9 color="#27ae60"><b>${venta.sena:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+    ])
+    
+    resumen_data.append([
+        Paragraph('<font size=9><b>Total Pagado</b></font>', styles['Normal']),
+        Paragraph(f'<font size=9 color="#27ae60"><b>${total_pagado:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+    ])
+    
+    resumen_data.append([
+        Paragraph('<font size=10><b>SALDO PENDIENTE</b></font>', styles['Normal']),
+        Paragraph(f'<font size=11 color="{"#e74c3c" if venta.saldo > 0 else "#27ae60"}"><b>${venta.saldo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
+    ])
+    
+    resumen_table = Table(resumen_data, colWidths=[12*cm, 5.5*cm])
     resumen_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 11),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-        ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#dbeafe')),
-        ('BACKGROUND', (0, 4), (-1, 4), colors.HexColor('#dcfce7')),
-        ('FONTNAME', (0, 4), (-1, 4), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, 5), (-1, 5), colors.HexColor('#fef3c7') if venta.saldo > 0 else colors.HexColor('#dcfce7')),
-        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 5), (-1, 5), 12),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ecf0f1')),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#bdc3c7')),
+        ('LINEABOVE', (0, -1), (-1, -1), 1.5, colors.HexColor('#2c3e50')),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     elements.append(resumen_table)
-    elements.append(Spacer(1, 0.3*inch))
     
-    # Historial de pagos
+    elements.append(Spacer(1, 0.8*cm))
+    
+    # Tabla de items
+    items_data = [['Cantidad', 'Descripción', 'Precio', 'IVA', 'Importe']]
+    
+    # Item principal
+    items_data.append([
+        '1,00',
+        f'Pedido {venta.numero_pedido}',
+        f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+        '21%',
+        f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    ])
+    
+    # Agregar percepciones como items
+    for percepcion in venta.percepciones.all():
+        items_data.append([
+            '1,00',
+            f'Percepción {percepcion.get_tipo_display()}',
+            f'${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
+            '-',
+            f'${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+        ])
+    
+    # Agregar filas vacías
+    for _ in range(max(0, 8 - len(items_data))):
+        items_data.append(['', '', '', '', ''])
+    
+    items_table = Table(items_data, colWidths=[2*cm, 8*cm, 2.5*cm, 2*cm, 3*cm])
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#2c3e50')),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#2c3e50')),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#2c3e50')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#ecf0f1')),
+    ]))
+    elements.append(items_table)
+    
+    elements.append(Spacer(1, 0.5*cm))
+    
+    # Historial de Pagos
     if pagos.exists() or venta.sena > 0:
-        elements.append(Paragraph("Historial de Pagos", heading_style))
+        elements.append(Paragraph('<font size=11><b>Historial de Pagos</b></font>', styles['Normal']))
+        elements.append(Spacer(1, 0.3*cm))
         
-        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'N° Factura', 'Monto']]
+        pagos_data = [['Fecha', 'Monto', 'Forma de Pago', 'Observaciones']]
         
         # Seña inicial
         pagos_data.append([
             venta.created_at.strftime('%d/%m/%Y'),
+            f"${venta.sena:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
             'Seña Inicial',
-            '-',
-            venta.numero_factura or '-',
-            format_currency(venta.sena)
+            'Pago inicial de la venta'
         ])
         
         # Pagos adicionales
         for pago in pagos:
+            monto_str = f"${pago.monto:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            if pago.retenciones.exists():
+                total_ret = pago.get_total_retenciones()
+                neto = pago.get_monto_neto()
+                monto_str += f"\nRet: ${total_ret:,.2f} → Neto: ${neto:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            
+            obs = pago.observaciones or '-'
+            if pago.retenciones.exists():
+                obs += '\n' + ', '.join([f"{r.get_tipo_display()}: ${r.importe_retenido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') for r in pago.retenciones.all()])
+            
             pagos_data.append([
                 pago.fecha_pago.strftime('%d/%m/%Y'),
-                'Pago',
+                monto_str,
                 pago.get_forma_pago_display(),
-                pago.numero_factura or '-',
-                format_currency(pago.monto)
+                obs
             ])
         
-        pagos_table = Table(pagos_data, colWidths=[1.1*inch, 1.5*inch, 1.3*inch, 1.3*inch, 1.3*inch])
+        pagos_table = Table(pagos_data, colWidths=[2.5*cm, 4*cm, 3*cm, 8*cm])
         pagos_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (4, 0), (4, -1), 'RIGHT'),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ecf0f1')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
         ]))
         elements.append(pagos_table)
+        elements.append(Spacer(1, 0.5*cm))
+    
+    # Footer con dirección y totales
+    total_con_percepciones = venta.get_total_con_percepciones()
+    
+    footer_data = [[
+        Paragraph('<font size=8 color="#7f8c8d"><b>Dirección:</b><br/>Elpidio González 5326, C1408 Cdad. Autónoma<br/>de Buenos Aires, Argentina<br/><b>Teléfono:</b> +54 11 4228-6559</font>', styles['Normal']),
+        Table([
+            ['Imponible', f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')],
+            ['IVA', 'xxxxx'],
+            ['Total', f'${total_con_percepciones:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')]
+        ], colWidths=[3*cm, 3*cm], style=TableStyle([
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, 1), 9),
+            ('FONTSIZE', (0, 2), (-1, 2), 11),
+            ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+    ]]
+    
+    footer_table = Table(footer_data, colWidths=[9*cm, 6*cm])
+    footer_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(footer_table)
+    
+    elements.append(Spacer(1, 1*cm))
     
     # Pie de página
-    elements.append(Spacer(1, 0.5*inch))
-    footer_style = ParagraphStyle(
-        'Footer',
-        parent=styles['Normal'],
-        fontSize=9,
-        textColor=colors.HexColor('#64748b'),
-        alignment=TA_CENTER
-    )
-    elements.append(Paragraph(f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", footer_style))
-    elements.append(Paragraph("Akuna Aberturas - Sistema de Gestión", footer_style))
+    elements.append(Paragraph('<font size=8 color="#7f8c8d">AKUN ABERTURAS</font>', ParagraphStyle('Footer', parent=styles['Normal'], alignment=TA_CENTER, fontSize=8, textColor=colors.HexColor('#7f8c8d'))))
     
     # Construir PDF
     doc.build(elements)
