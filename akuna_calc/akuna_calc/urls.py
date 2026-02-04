@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin-usuarios/', include('usuarios.urls')),
     path('comercial/', include('comercial.urls')),
     path('facturacion/', include('facturacion.urls')),
+    path('security/', include('security.urls')),  # Módulo de seguridad y backups
 ]
 
 # Serve static files in development
