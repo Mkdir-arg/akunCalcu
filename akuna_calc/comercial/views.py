@@ -424,6 +424,17 @@ def generar_pdf_venta(request, pk):
 @login_required
 def clientes_list(request):
     clientes = Cliente.objects.filter(deleted_at__isnull=True).all()
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    if buscar:
+        clientes = clientes.filter(
+            Q(nombre__icontains=buscar) | 
+            Q(apellido__icontains=buscar) | 
+            Q(razon_social__icontains=buscar) |
+            Q(localidad__icontains=buscar)
+        )
+    
     return render(request, 'comercial/clientes/list.html', {'clientes': clientes})
 
 
@@ -476,8 +487,17 @@ def cliente_edit(request, pk):
 def cliente_delete(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == 'POST':
-        cliente.delete()  # Eliminado lógico
-        messages.success(request, 'Cliente eliminado exitosamente.')
+        # Contar ventas relacionadas
+        ventas_relacionadas = Venta.objects.filter(cliente=cliente, deleted_at__isnull=True).count()
+        
+        # Eliminar el cliente (lógico)
+        cliente.delete()
+        
+        if ventas_relacionadas > 0:
+            messages.success(request, f'Cliente eliminado. Hay {ventas_relacionadas} ventas que usaban este cliente.')
+        else:
+            messages.success(request, 'Cliente eliminado exitosamente.')
+        
         return redirect('comercial:clientes_list')
     return redirect('comercial:clientes_list')
 
@@ -589,7 +609,31 @@ def compra_delete(request, pk):
 @login_required
 def cuentas_list(request):
     cuentas = Cuenta.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
-    return render(request, 'comercial/cuentas/list.html', {'cuentas': cuentas})
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    tipo_cuenta_id = request.GET.get('tipo_cuenta', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        cuentas = cuentas.filter(
+            Q(nombre__icontains=buscar) | Q(razon_social__icontains=buscar)
+        )
+    
+    if tipo_cuenta_id:
+        cuentas = cuentas.filter(tipo_cuenta_id=tipo_cuenta_id)
+    
+    if estado == 'activo':
+        cuentas = cuentas.filter(activo=True)
+    elif estado == 'inactivo':
+        cuentas = cuentas.filter(activo=False)
+    
+    tipos_cuenta_filtro = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    
+    return render(request, 'comercial/cuentas/list.html', {
+        'cuentas': cuentas,
+        'tipos_cuenta_filtro': tipos_cuenta_filtro
+    })
 
 
 @login_required
@@ -641,8 +685,17 @@ def cuenta_edit(request, pk):
 def cuenta_delete(request, pk):
     cuenta = get_object_or_404(Cuenta, pk=pk)
     if request.method == 'POST':
-        cuenta.delete()  # Eliminado lógico
-        messages.success(request, 'Cuenta eliminada exitosamente.')
+        # Contar compras relacionadas
+        compras_relacionadas = Compra.objects.filter(cuenta=cuenta, deleted_at__isnull=True).count()
+        
+        # Eliminar la cuenta (lógico)
+        cuenta.delete()
+        
+        if compras_relacionadas > 0:
+            messages.success(request, f'Cuenta eliminada. Hay {compras_relacionadas} compras que usaban esta cuenta.')
+        else:
+            messages.success(request, 'Cuenta eliminada exitosamente.')
+        
         return redirect('comercial:cuentas_list')
     return redirect('comercial:cuentas_list')
 
