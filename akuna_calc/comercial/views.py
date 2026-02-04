@@ -1031,6 +1031,7 @@ def get_clientes_list(request):
 @login_required
 def editar_pago(request, pk):
     import json
+    from datetime import datetime
     
     if request.method == 'POST':
         pago = get_object_or_404(PagoVenta, pk=pk)
@@ -1038,13 +1039,19 @@ def editar_pago(request, pk):
         try:
             data = json.loads(request.body)
             monto = Decimal(str(data.get('monto')))
-            fecha_pago = data.get('fecha_pago')
+            fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
             numero_factura = data.get('numero_factura', '')
             observaciones = data.get('observaciones', '')
             
             if monto <= 0:
                 return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
+            
+            # Convertir fecha string a objeto date
+            if isinstance(fecha_pago_str, str):
+                fecha_pago = datetime.strptime(fecha_pago_str, '%Y-%m-%d').date()
+            else:
+                fecha_pago = fecha_pago_str
             
             pago.monto = monto
             pago.fecha_pago = fecha_pago
