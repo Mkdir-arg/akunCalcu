@@ -16,7 +16,8 @@ def dashboard_comercial(request):
     from django.core.serializers.json import DjangoJSONEncoder
     
     # Estadísticas generales
-    total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    ventas_activas = Venta.objects.filter(deleted_at__isnull=True)
+    total_ventas = sum(v.get_total_con_percepciones() for v in ventas_activas)
     total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     

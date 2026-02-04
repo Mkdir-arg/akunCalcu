@@ -170,7 +170,7 @@
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|floatformat:0 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.get_total_con_percepciones|floatformat:0 }}</td>
                         <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ venta.monto_cobrado|floatformat:0 }}</td>
                         <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|floatformat:0 }}</td>
                         <td class="px-6 py-4">

@@ -138,7 +138,10 @@
                             {{ venta.cliente }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ venta.valor_total|formato_numero }}
+                            ${{ venta.get_total_con_percepciones|formato_numero }}
+                            {% if venta.percepciones.exists %}
+                            <span class="text-xs text-blue-600 block">+Perc: ${{ venta.get_total_percepciones|formato_numero }}</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             ${{ venta.sena|formato_numero }}

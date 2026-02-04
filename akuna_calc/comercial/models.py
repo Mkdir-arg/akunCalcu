@@ -81,8 +81,13 @@ class Venta(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     
     def save(self, *args, **kwargs):
-        # Calcular saldo: Total - Retenciones - Seña - Pagos realizados
-        valor_neto = self.valor_total - self.monto_retenciones
+        # Calcular saldo: Total + Percepciones - Retenciones - Seña - Pagos realizados
+        total_con_percepciones = self.valor_total
+        if self.pk:  # Solo si la venta ya existe, calcular percepciones
+            total_con_percepciones += self.get_total_percepciones()
+        
+        valor_neto = total_con_percepciones - self.monto_retenciones
+        
         if self.pk:  # Solo calcular pagos si la venta ya existe
             total_pagos = sum(pago.monto for pago in self.pagos.all())
             self.saldo = valor_neto - self.sena - total_pagos
