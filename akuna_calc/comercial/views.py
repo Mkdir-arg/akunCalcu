@@ -651,6 +651,21 @@ def cuenta_delete(request, pk):
 @login_required
 def tipos_cuenta_list(request):
     tipos = TipoCuenta.objects.filter(deleted_at__isnull=True).all()
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        tipos = tipos.filter(
+            Q(descripcion__icontains=buscar) | Q(tipo__icontains=buscar)
+        )
+    
+    if estado == 'activo':
+        tipos = tipos.filter(activo=True)
+    elif estado == 'inactivo':
+        tipos = tipos.filter(activo=False)
+    
     return render(request, 'comercial/tipos_cuenta/list.html', {'tipos': tipos})
 
 
@@ -724,7 +739,31 @@ def tipo_cuenta_delete(request, pk):
 @login_required
 def tipos_gasto_list(request):
     tipos = TipoGasto.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
-    return render(request, 'comercial/tipos_gasto/list.html', {'tipos': tipos})
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    tipo_cuenta_id = request.GET.get('tipo_cuenta', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        tipos = tipos.filter(
+            Q(nombre__icontains=buscar) | Q(descripcion__icontains=buscar)
+        )
+    
+    if tipo_cuenta_id:
+        tipos = tipos.filter(tipo_cuenta_id=tipo_cuenta_id)
+    
+    if estado == 'activo':
+        tipos = tipos.filter(activo=True)
+    elif estado == 'inactivo':
+        tipos = tipos.filter(activo=False)
+    
+    tipos_cuenta_filtro = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    
+    return render(request, 'comercial/tipos_gasto/list.html', {
+        'tipos': tipos,
+        'tipos_cuenta_filtro': tipos_cuenta_filtro
+    })
 
 
 @login_required
