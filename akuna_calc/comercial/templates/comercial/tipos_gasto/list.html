@@ -75,4 +75,31 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmarEliminacion(url, nombre) {
+    Swal.fire({
+        title: '¿Eliminar tipo de gasto?',
+        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">Las compras asociadas mantendrán su referencia pero este tipo no estará disponible.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
 {% endblock %}

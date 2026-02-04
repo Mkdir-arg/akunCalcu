@@ -703,8 +703,19 @@ def tipo_cuenta_edit(request, pk):
 def tipo_cuenta_delete(request, pk):
     tipo = get_object_or_404(TipoCuenta, pk=pk)
     if request.method == 'POST':
+        # Desactivar cuentas relacionadas
+        cuentas_afectadas = Cuenta.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
+        for cuenta in cuentas_afectadas:
+            cuenta.delete()  # Eliminado lógico
+        
+        # Desactivar tipos de gasto relacionados
+        tipos_gasto_afectados = TipoGasto.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
+        for tipo_gasto in tipos_gasto_afectados:
+            tipo_gasto.delete()  # Eliminado lógico
+        
+        # Eliminar el tipo de cuenta
         tipo.delete()
-        messages.success(request, 'Tipo de cuenta eliminado exitosamente.')
+        messages.success(request, f'Tipo de cuenta eliminado. Se desactivaron {cuentas_afectadas.count()} cuentas y {tipos_gasto_afectados.count()} tipos de gasto.')
         return redirect('comercial:tipos_cuenta_list')
     return redirect('comercial:tipos_cuenta_list')
 
@@ -761,8 +772,17 @@ def tipo_gasto_edit(request, pk):
 def tipo_gasto_delete(request, pk):
     tipo = get_object_or_404(TipoGasto, pk=pk)
     if request.method == 'POST':
+        # Contar compras relacionadas
+        compras_relacionadas = Compra.objects.filter(tipo_gasto=tipo, deleted_at__isnull=True).count()
+        
+        # Eliminar el tipo de gasto (lógico)
         tipo.delete()
-        messages.success(request, 'Tipo de gasto eliminado exitosamente.')
+        
+        if compras_relacionadas > 0:
+            messages.success(request, f'Tipo de gasto eliminado. Hay {compras_relacionadas} compras que usaban este tipo.')
+        else:
+            messages.success(request, 'Tipo de gasto eliminado exitosamente.')
+        
         return redirect('comercial:tipos_gasto_list')
     return redirect('comercial:tipos_gasto_list')
 
