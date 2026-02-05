@@ -92,39 +92,35 @@ class CompraForm(forms.ModelForm):
 
 class ReporteForm(forms.Form):
     MESES = [
-        ('', 'Todos los meses'),
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
     ]
     
-    mes = forms.ChoiceField(
+    mes = forms.MultipleChoiceField(
         choices=MESES,
         required=False,
-        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
-    año = forms.IntegerField(
-        min_value=2020,
-        max_value=2030,
+    anio = forms.MultipleChoiceField(
+        choices=[(y, y) for y in range(2020, 2031)],
         required=False,
-        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Año'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
-    tipo_cuenta = forms.ModelChoiceField(
+    tipo_cuenta = forms.ModelMultipleChoiceField(
         queryset=TipoCuenta.objects.filter(activo=True),
         required=False,
-        empty_label="Todas las cuentas",
-        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
-    cliente = forms.ModelChoiceField(
+    cliente = forms.ModelMultipleChoiceField(
         queryset=Cliente.objects.all(),
         required=False,
-        empty_label="Todos los clientes",
-        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
-    estado_venta = forms.ChoiceField(
-        choices=[('', 'Todos los estados')] + Venta.ESTADO_CHOICES,
+    estado_venta = forms.MultipleChoiceField(
+        choices=Venta.ESTADO_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
     monto_min = forms.DecimalField(
         required=False,

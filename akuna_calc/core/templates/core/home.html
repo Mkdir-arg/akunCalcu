@@ -17,54 +17,8 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-green-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-600 mb-2 font-medium">Total Ventas</p>
-                <p class="text-3xl font-bold text-gray-900">${{ total_ventas|formato_numero }}</p>
-            </div>
-            <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                <i class="fas fa-dollar-sign text-green-600 text-2xl"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-red-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-600 mb-2 font-medium">Total Gastos</p>
-                <p class="text-3xl font-bold text-gray-900">${{ total_compras|formato_numero }}</p>
-            </div>
-            <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
-                <i class="fas fa-shopping-cart text-red-600 text-2xl"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-yellow-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-600 mb-2 font-medium">Pendientes</p>
-                <p class="text-3xl font-bold text-gray-900">{{ ventas_pendientes }}</p>
-            </div>
-            <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <i class="fas fa-clock text-yellow-600 text-2xl"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-600 mb-2 font-medium">Clientes</p>
-                <p class="text-3xl font-bold text-gray-900">{{ clientes_count }}</p>
-            </div>
-            <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                <i class="fas fa-users text-blue-600 text-2xl"></i>
-            </div>
-        </div>
-    </div>
+<div class="grid grid-cols-1 gap-6 mb-6">
+    <!-- Stats removed -->
 </div>
 
 <!-- Main Actions -->

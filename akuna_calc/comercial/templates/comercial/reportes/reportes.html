@@ -1,5 +1,11 @@
-{% extends 'core/base.html' %}
+﻿{% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
+{% load l10n %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block title %}Reportes Contables{% endblock %}
 
@@ -7,7 +13,7 @@
 <div class="max-w-7xl mx-auto animate-fade-in">
     <div class="mb-8">
         <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes Contables</h1>
-        <p class="text-slate-500 font-medium mt-1">Análisis financiero y control de gastos</p>
+        <p class="text-slate-500 font-medium mt-1">AnÃ¡lisis financiero y control de gastos</p>
     </div>
 
     <!-- Formulario de Filtros -->
@@ -21,8 +27,8 @@
                     {{ form.mes }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Año</label>
-                    {{ form.año }}
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">AÃ±o</label>
+                    {{ form.anio }}
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
@@ -37,11 +43,11 @@
                     {{ form.tipo_cuenta }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Mínimo</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Minimo</label>
                     {{ form.monto_min }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Máximo</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Maximo</label>
                     {{ form.monto_max }}
                 </div>
             </div>
@@ -57,20 +63,28 @@
     </div>
 
     {% if reporte_data %}
-    <!-- Gráficos -->
+    <!-- GrÃ¡ficos -->
+    {% if reporte_data.ventas.total > 0 or reporte_data.total_compras > 0 %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Gráfico Ventas vs Compras -->
+        <!-- GrÃ¡fico Ventas vs Compras -->
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Compras</h3>
-            <canvas id="ventasComprasChart" height="250"></canvas>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Gastos</h3>
+            <div class="h-64">
+                <canvas id="ventasComprasChart" class="w-full h-full"></canvas>
+            </div>
         </div>
         
-        <!-- Gráfico Distribución Compras -->
+        <!-- GrÃ¡fico DistribuciÃ³n Compras -->
+        {% if reporte_data.total_compras > 0 %}
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Distribución de Compras</h3>
-            <canvas id="comprasDistChart" height="250"></canvas>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>DistribuciÃ³n de Gastos</h3>
+            <div class="h-64">
+                <canvas id="comprasDistChart" class="w-full h-full"></canvas>
+            </div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
     
     <!-- Resumen General -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -79,7 +93,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Blanco</p>
-                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|formato_numero }}</p>
                     <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_blanco }} ventas</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -93,7 +107,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Negro</p>
-                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|formato_numero }}</p>
                     <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_negro }} ventas</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -107,7 +121,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Compras Blanco</p>
-                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras_blanco|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras_blanco|formato_numero }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-file-invoice text-white text-xl"></i>
@@ -120,7 +134,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Compras Negro</p>
-                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.total_compras_negro|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.total_compras_negro|formato_numero }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-receipt text-white text-xl"></i>
@@ -133,24 +147,27 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
-            <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|floatformat:2 }}</p>
+            <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</p>
         </div>
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Total Compras</p>
-            <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras|floatformat:2 }}</p>
+            <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras|formato_numero }}</p>
         </div>
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Balance</p>
-            <p class="text-3xl font-bold {% if reporte_data.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">${{ reporte_data.balance|floatformat:2 }}</p>
+            <p class="text-3xl font-bold {% if reporte_data.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">${{ reporte_data.balance|formato_numero }}</p>
         </div>
     </div>
     
     <!-- Ventas -->
-    {% if reporte_data.ventas.lista %}
     <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-slate-200">
-            <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-chart-line mr-2"></i>Ventas</h3>
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-chart-line mr-2"></i>Ventas</h3>
+                <span class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</span>
+            </div>
         </div>
+        {% if reporte_data.ventas.lista_blanco or reporte_data.ventas.lista_negro %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -159,20 +176,36 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cobrado</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Saldo</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for venta in reporte_data.ventas.lista %}
+                    {% for venta in reporte_data.ventas.lista_blanco %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.get_total_con_percepciones|floatformat:0 }}</td>
-                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ venta.monto_cobrado|floatformat:0 }}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|floatformat:0 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
+                        <td class="px-6 py-4">
+                            {% if venta.estado == 'pendiente' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
+                            {% elif venta.estado == 'entregado' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Entregado</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Colocado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% for venta in reporte_data.ventas.lista_negro %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
                         <td class="px-6 py-4">
                             {% if venta.estado == 'pendiente' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
@@ -187,21 +220,30 @@
                 </tbody>
             </table>
         </div>
+        {% if reporte_data.ventas.cantidad > 10 %}
+        <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+            Mostrando 10 de {{ reporte_data.ventas.cantidad }} ventas. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="px-6 py-4 text-center text-gray-500">
+            No hay ventas registradas
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-
-    <!-- Detalle por Tipo de Cuenta -->
+    
+    <!-- Detalle por Tipo de Cuenta (Gastos) -->
     <div class="space-y-6">
         {% for tipo, data in reporte_data.compras.items %}
             <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
                 <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
                     <div class="flex justify-between items-center">
                         <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{{ tipo }}</h3>
-                        <span class="text-3xl font-bold text-slate-900">${{ data.total|floatformat:0 }}</span>
+                        <span class="text-3xl font-bold text-slate-900">${{ data.total|formato_numero }}</span>
                     </div>
                 </div>
                 
-                {% if data.compras %}
+                {% if data.compras_blanco.exists or data.compras_negro.exists %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -210,11 +252,11 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cuenta</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importe</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DescripciÃ³n</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for compra in data.compras %}
+                            {% for compra in data.compras_blanco %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ compra.numero_pedido }}
@@ -226,7 +268,26 @@
                                     {{ compra.fecha_pago|date:"d/m/Y" }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ compra.importe_abonado|floatformat:0 }}
+                                    ${{ compra.importe_abonado|formato_numero }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                    {{ compra.descripcion|default:"-" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% for compra in data.compras_negro %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ compra.numero_pedido }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ compra.cuenta.nombre }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ compra.fecha_pago|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ${{ compra.importe_abonado|formato_numero }}
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                                     {{ compra.descripcion|default:"-" }}
@@ -236,6 +297,11 @@
                         </tbody>
                     </table>
                 </div>
+                {% if data.compras_blanco.count > 10 or data.compras_negro.count > 10 %}
+                <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+                    Mostrando primeros 10 registros. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
+                </div>
+                {% endif %}
                 {% else %}
                 <div class="px-6 py-4 text-center text-gray-500">
                     No hay compras registradas para este tipo de cuenta
@@ -245,7 +311,7 @@
         {% endfor %}
     </div>
 
-    <!-- Botón de Exportación -->
+    <!-- BotÃ³n de ExportaciÃ³n -->
     <div class="mt-8 flex justify-center gap-4">
         <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
             <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
@@ -267,7 +333,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico Ventas vs Compras (Barras)
+    // GrÃ¡fico Ventas vs Compras (Barras)
     const ctx1 = document.getElementById('ventasComprasChart');
     if (ctx1) {
         new Chart(ctx1, {
@@ -278,20 +344,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     {
                         label: 'Ventas',
                         data: [
-                            {{ reporte_data.ventas.total_blanco|floatformat:2 }},
-                            {{ reporte_data.ventas.total_negro|floatformat:2 }},
-                            {{ reporte_data.ventas.total|floatformat:2 }}
+                            parseFloat('{{ reporte_data.ventas.total_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.ventas.total_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.ventas.total|floatformat:2 }}'.replace('.', '').replace(',', '.'))
                         ],
                         backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2
                     },
                     {
-                        label: 'Compras',
+                        label: 'Gastos',
                         data: [
-                            {{ reporte_data.total_compras_blanco|floatformat:2 }},
-                            {{ reporte_data.total_compras_negro|floatformat:2 }},
-                            {{ reporte_data.total_compras|floatformat:2 }}
+                            parseFloat('{{ reporte_data.total_compras_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.total_compras_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.total_compras|floatformat:2 }}'.replace('.', '').replace(',', '.'))
                         ],
                         backgroundColor: 'rgba(239, 68, 68, 0.7)',
                         borderColor: 'rgba(239, 68, 68, 1)',
@@ -332,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gráfico Distribución de Compras (Torta)
+    // GrÃ¡fico DistribuciÃ³n de Compras (Torta)
     const ctx2 = document.getElementById('comprasDistChart');
     if (ctx2) {
         const labels = [];
@@ -348,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         {% for tipo, data_tipo in reporte_data.compras.items %}
             labels.push('{{ tipo }}');
-            data.push({{ data_tipo.total|floatformat:2 }});
+            data.push(parseFloat('{{ data_tipo.total|floatformat:2 }}'.replace('.', '').replace(',', '.')));
         {% endfor %}
         
         new Chart(ctx2, {
@@ -390,3 +456,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+

@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from datetime import datetime
+from decimal import Decimal
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 
@@ -16,8 +17,7 @@ def dashboard_comercial(request):
     from django.core.serializers.json import DjangoJSONEncoder
     
     # Estadísticas generales
-    ventas_activas = Venta.objects.filter(deleted_at__isnull=True)
-    total_ventas = sum(v.get_total_con_percepciones() for v in ventas_activas)
+    total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     
@@ -151,29 +151,7 @@ def venta_create(request):
     if request.method == 'POST':
         form = VentaForm(request.POST)
         if form.is_valid():
-            venta = form.save()
-            
-            # Procesar percepciones
-            from .models import Percepcion
-            for key in request.POST:
-                if key.startswith('percepcion_tipo_'):
-                    id_percepcion = key.split('_')[-1]
-                    tipo = request.POST.get(f'percepcion_tipo_{id_percepcion}')
-                    observaciones = request.POST.get(f'percepcion_obs_{id_percepcion}', '')
-                    importe = request.POST.get(f'percepcion_importe_{id_percepcion}')
-                    
-                    if tipo and importe:
-                        try:
-                            from decimal import Decimal
-                            Percepcion.objects.create(
-                                venta=venta,
-                                tipo=tipo,
-                                observaciones=observaciones,
-                                importe=Decimal(importe)
-                            )
-                        except:
-                            pass
-            
+            form.save()
             messages.success(request, 'Venta creada exitosamente.')
             return redirect('comercial:ventas_list')
     else:
@@ -187,31 +165,7 @@ def venta_edit(request, pk):
     if request.method == 'POST':
         form = VentaForm(request.POST, instance=venta)
         if form.is_valid():
-            venta = form.save()
-            
-            # Eliminar percepciones existentes y crear nuevas
-            from .models import Percepcion
-            venta.percepciones.all().delete()
-            
-            for key in request.POST:
-                if key.startswith('percepcion_tipo_'):
-                    id_percepcion = key.split('_')[-1]
-                    tipo = request.POST.get(f'percepcion_tipo_{id_percepcion}')
-                    observaciones = request.POST.get(f'percepcion_obs_{id_percepcion}', '')
-                    importe = request.POST.get(f'percepcion_importe_{id_percepcion}')
-                    
-                    if tipo and importe:
-                        try:
-                            from decimal import Decimal
-                            Percepcion.objects.create(
-                                venta=venta,
-                                tipo=tipo,
-                                observaciones=observaciones,
-                                importe=Decimal(importe)
-                            )
-                        except:
-                            pass
-            
+            form.save()
             messages.success(request, 'Venta actualizada exitosamente.')
             return redirect('comercial:ventas_list')
     else:
@@ -254,7 +208,6 @@ def registrar_pago(request, pk):
         observaciones = request.POST.get('observaciones', '')
         
         try:
-            from decimal import Decimal
             monto_decimal = Decimal(monto)
             
             if monto_decimal <= 0:
@@ -275,32 +228,6 @@ def registrar_pago(request, pk):
                 created_by=request.user
             )
             
-            # Procesar retenciones
-            from .models import Retencion
-            for key in request.POST:
-                if key.startswith('retencion_tipo_'):
-                    id_retencion = key.split('_')[-1]
-                    tipo = request.POST.get(f'retencion_tipo_{id_retencion}')
-                    concepto = request.POST.get(f'retencion_concepto_{id_retencion}', '')
-                    nro_comprob = request.POST.get(f'retencion_nro_comprob_{id_retencion}', '')
-                    importe_isar = request.POST.get(f'retencion_isar_{id_retencion}', '0')
-                    importe_retenido = request.POST.get(f'retencion_retenido_{id_retencion}')
-                    fecha_comprob = request.POST.get(f'retencion_fecha_{id_retencion}', None)
-                    
-                    if tipo and importe_retenido:
-                        try:
-                            Retencion.objects.create(
-                                pago=pago,
-                                tipo=tipo,
-                                concepto=concepto,
-                                numero_comprobante=nro_comprob,
-                                importe_isar=Decimal(importe_isar) if importe_isar else Decimal('0'),
-                                importe_retenido=Decimal(importe_retenido),
-                                fecha_comprobante=fecha_comprob if fecha_comprob else None
-                            )
-                        except:
-                            pass
-            
             # Recalcular saldo
             venta.save()
             
@@ -317,300 +244,175 @@ def registrar_pago(request, pk):
 @login_required
 def generar_pdf_venta(request, pk):
     from django.http import HttpResponse
-    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
-    from reportlab.lib.units import inch, cm
+    from reportlab.lib.units import inch
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-    from decimal import Decimal
-    from django.conf import settings
-    import os
+    from reportlab.pdfgen import canvas
     
-    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos__retenciones', 'percepciones'), pk=pk)
+    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
     pagos = venta.pagos.all().order_by('-fecha_pago')
     total_pagado = venta.sena + sum(p.monto for p in pagos)
     
     # Crear respuesta HTTP
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="factura_{venta.numero_pedido}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="venta_{venta.numero_pedido}.pdf"'
     
     # Crear PDF
-    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=1*cm, bottomMargin=1*cm, leftMargin=1.5*cm, rightMargin=1.5*cm)
+    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     styles = getSampleStyleSheet()
     
     # Estilos personalizados
     title_style = ParagraphStyle(
-        'Title',
-        parent=styles['Normal'],
-        fontSize=32,
-        textColor=colors.HexColor('#2c3e50'),
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e40af'),
         spaceAfter=6,
-        alignment=TA_RIGHT,
+        alignment=TA_CENTER,
         fontName='Helvetica-Bold'
     )
     
     subtitle_style = ParagraphStyle(
-        'Subtitle',
+        'CustomSubtitle',
         parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.HexColor('#7f8c8d'),
-        alignment=TA_RIGHT
+        fontSize=11,
+        textColor=colors.HexColor('#64748b'),
+        spaceAfter=20,
+        alignment=TA_CENTER
     )
     
-    # Header con logo y título
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'AKUN-LOGO.png')
-    try:
-        if os.path.exists(logo_path):
-            logo = Image(logo_path, width=3.5*cm, height=1.8*cm, kind='proportional')
-            header_data = [[logo, Paragraph('FACTURA', title_style)]]
-        else:
-            raise FileNotFoundError
-    except:
-        header_data = [[
-            Paragraph('<b><font size=16 color="#3498db">AKUN</font></b><br/><font size=8 color="#7f8c8d">ABERTURAS</font>', styles['Normal']),
-            Paragraph('FACTURA', title_style)
-        ]]
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=12,
+        spaceBefore=20,
+        fontName='Helvetica-Bold'
+    )
     
-    header_table = Table(header_data, colWidths=[4*cm, 14*cm])
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
-    elements.append(header_table)
+    # Encabezado
+    elements.append(Paragraph("AKUNA ABERTURAS", title_style))
+    elements.append(Paragraph("Detalle de Venta", subtitle_style))
+    elements.append(Spacer(1, 0.2*inch))
     
-    # Número de factura
-    elements.append(Spacer(1, 0.3*cm))
-    numero_info = Paragraph(f'<font size=9 color="#7f8c8d">N. {venta.numero_pedido}<br/>Del {venta.created_at.strftime("%d/%m/%Y")}</font>', subtitle_style)
-    elements.append(numero_info)
+    # Información de la venta
+    info_data = [
+        ['Pedido N°:', venta.numero_pedido, 'Fecha:', venta.created_at.strftime('%d/%m/%Y')],
+        ['Cliente:', f"{venta.cliente}", 'Estado:', venta.get_estado_display()],
+    ]
     
-    elements.append(Spacer(1, 1*cm))
+    if venta.numero_factura:
+        info_data.append(['Factura:', venta.get_numero_factura_display(), 'Tipo:', 'Blanco' if venta.con_factura else 'Negro'])
     
-    # Información del Cliente y Venta
-    cliente_info = Paragraph(f'''
-        <font size=10><b>CLIENTE</b></font><br/>
-        <font size=9>{venta.cliente.get_nombre_completo()}</font><br/>
-        <font size=8 color="#7f8c8d">
-        {f"CUIT: {venta.cliente.cuit}<br/>" if venta.cliente.cuit else ""}
-        {f"DNI: {venta.cliente.dni}<br/>" if venta.cliente.dni else ""}
-        Condición IVA: {venta.cliente.get_condicion_iva_display()}<br/>
-        {venta.cliente.direccion}, {venta.cliente.localidad}<br/>
-        {f"Tel: {venta.cliente.telefono}<br/>" if venta.cliente.telefono else ""}
-        {f"Email: {venta.cliente.email}" if venta.cliente.email else ""}
-        </font>
-    ''', styles['Normal'])
-    
-    venta_info = Paragraph(f'''
-        <font size=10><b>DATOS DE LA VENTA</b></font><br/>
-        <font size=8 color="#7f8c8d">
-        Estado: <b>{venta.get_estado_display()}</b><br/>
-        Tipo: <b>{"Factura " + venta.tipo_factura if venta.tipo_factura else "Sin factura"}</b><br/>
-        {f"N° Factura: {venta.numero_factura}<br/>" if venta.numero_factura else ""}
-        Operación: <b>{"En Blanco" if venta.con_factura else "En Negro"}</b><br/>
-        {f"Forma de Pago: {venta.get_forma_pago_display()}<br/>" if venta.forma_pago else ""}
-        {f"Fecha de Pago: {venta.fecha_pago.strftime('%d/%m/%Y')}<br/>" if venta.fecha_pago else ""}
-        </font>
-    ''', styles['Normal'])
-    
-    info_table = Table([[cliente_info, venta_info]], colWidths=[9*cm, 9*cm])
+    info_table = Table(info_data, colWidths=[1.2*inch, 2.5*inch, 1*inch, 1.8*inch])
     info_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f1f5f9')),
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f1f5f9')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1e293b')),
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
     ]))
     elements.append(info_table)
+    elements.append(Spacer(1, 0.3*inch))
     
-    elements.append(Spacer(1, 0.5*cm))
+    # Resumen financiero
+    elements.append(Paragraph("Resumen Financiero", heading_style))
     
-    # Resumen Financiero
-    resumen_data = [[
-        Paragraph('<font size=9><b>CONCEPTO</b></font>', styles['Normal']),
-        Paragraph('<font size=9><b>MONTO</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-    ]]
+    def format_currency(value):
+        return f"${value:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     
-    resumen_data.append([
-        Paragraph('<font size=9>Valor Total</font>', styles['Normal']),
-        Paragraph(f'<font size=9>${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-    ])
+    resumen_data = [
+        ['Concepto', 'Monto'],
+        ['Valor Total', format_currency(venta.valor_total)],
+        ['Seña Inicial', format_currency(venta.sena)],
+        ['Pagos Adicionales', format_currency(sum(p.monto for p in pagos))],
+        ['Total Pagado', format_currency(total_pagado)],
+        ['Saldo Pendiente', format_currency(venta.saldo)],
+    ]
     
-    if venta.percepciones.exists():
-        for percepcion in venta.percepciones.all():
-            resumen_data.append([
-                Paragraph(f'<font size=8 color="#3498db">+ Percepción {percepcion.get_tipo_display()}</font>', styles['Normal']),
-                Paragraph(f'<font size=8 color="#3498db">${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-            ])
-    
-    if venta.tiene_retenciones:
-        resumen_data.append([
-            Paragraph(f'<font size=8 color="#e74c3c">- Retenciones del Cliente</font>', styles['Normal']),
-            Paragraph(f'<font size=8 color="#e74c3c">-${venta.monto_retenciones:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-        ])
-    
-    resumen_data.append([
-        Paragraph('<font size=9><b>Seña Pagada</b></font>', styles['Normal']),
-        Paragraph(f'<font size=9 color="#27ae60"><b>${venta.sena:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-    ])
-    
-    resumen_data.append([
-        Paragraph('<font size=9><b>Total Pagado</b></font>', styles['Normal']),
-        Paragraph(f'<font size=9 color="#27ae60"><b>${total_pagado:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-    ])
-    
-    resumen_data.append([
-        Paragraph('<font size=10><b>SALDO PENDIENTE</b></font>', styles['Normal']),
-        Paragraph(f'<font size=11 color="{"#e74c3c" if venta.saldo > 0 else "#27ae60"}"><b>${venta.saldo:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + '</b></font>', ParagraphStyle('Right', parent=styles['Normal'], alignment=TA_RIGHT))
-    ])
-    
-    resumen_table = Table(resumen_data, colWidths=[12*cm, 5.5*cm])
+    resumen_table = Table(resumen_data, colWidths=[4*inch, 2.5*inch])
     resumen_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ecf0f1')),
-        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#bdc3c7')),
-        ('LINEABOVE', (0, -1), (-1, -1), 1.5, colors.HexColor('#2c3e50')),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#dbeafe')),
+        ('BACKGROUND', (0, 4), (-1, 4), colors.HexColor('#dcfce7')),
+        ('FONTNAME', (0, 4), (-1, 4), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 5), (-1, 5), colors.HexColor('#fef3c7') if venta.saldo > 0 else colors.HexColor('#dcfce7')),
+        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 5), (-1, 5), 12),
     ]))
     elements.append(resumen_table)
+    elements.append(Spacer(1, 0.3*inch))
     
-    elements.append(Spacer(1, 0.8*cm))
-    
-    # Tabla de items
-    items_data = [['Cantidad', 'Descripción', 'Precio', 'IVA', 'Importe']]
-    
-    # Item principal
-    items_data.append([
-        '1,00',
-        f'Pedido {venta.numero_pedido}',
-        f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-        '21%',
-        f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-    ])
-    
-    # Agregar percepciones como items
-    for percepcion in venta.percepciones.all():
-        items_data.append([
-            '1,00',
-            f'Percepción {percepcion.get_tipo_display()}',
-            f'${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.'),
-            '-',
-            f'${percepcion.importe:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-        ])
-    
-    # Agregar filas vacías
-    for _ in range(max(0, 8 - len(items_data))):
-        items_data.append(['', '', '', '', ''])
-    
-    items_table = Table(items_data, colWidths=[2*cm, 8*cm, 2.5*cm, 2*cm, 3*cm])
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#2c3e50')),
-        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
-        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#2c3e50')),
-        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#2c3e50')),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#ecf0f1')),
-    ]))
-    elements.append(items_table)
-    
-    elements.append(Spacer(1, 0.5*cm))
-    
-    # Historial de Pagos
+    # Historial de pagos
     if pagos.exists() or venta.sena > 0:
-        elements.append(Paragraph('<font size=11><b>Historial de Pagos</b></font>', styles['Normal']))
-        elements.append(Spacer(1, 0.3*cm))
+        elements.append(Paragraph("Historial de Pagos", heading_style))
         
-        pagos_data = [['Fecha', 'Monto', 'Forma de Pago', 'Observaciones']]
+        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'N° Factura', 'Monto']]
         
         # Seña inicial
         pagos_data.append([
             venta.created_at.strftime('%d/%m/%Y'),
-            f"${venta.sena:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
             'Seña Inicial',
-            'Pago inicial de la venta'
+            '-',
+            venta.numero_factura or '-',
+            format_currency(venta.sena)
         ])
         
         # Pagos adicionales
         for pago in pagos:
-            monto_str = f"${pago.monto:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-            if pago.retenciones.exists():
-                total_ret = pago.get_total_retenciones()
-                neto = pago.get_monto_neto()
-                monto_str += f"\nRet: ${total_ret:,.2f} → Neto: ${neto:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-            
-            obs = pago.observaciones or '-'
-            if pago.retenciones.exists():
-                obs += '\n' + ', '.join([f"{r.get_tipo_display()}: ${r.importe_retenido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') for r in pago.retenciones.all()])
-            
             pagos_data.append([
                 pago.fecha_pago.strftime('%d/%m/%Y'),
-                monto_str,
+                'Pago',
                 pago.get_forma_pago_display(),
-                obs
+                pago.numero_factura or '-',
+                format_currency(pago.monto)
             ])
         
-        pagos_table = Table(pagos_data, colWidths=[2.5*cm, 4*cm, 3*cm, 8*cm])
+        pagos_table = Table(pagos_data, colWidths=[1.1*inch, 1.5*inch, 1.3*inch, 1.3*inch, 1.3*inch])
         pagos_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ecf0f1')),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#bdc3c7')),
+            ('ALIGN', (4, 0), (4, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
         ]))
         elements.append(pagos_table)
-        elements.append(Spacer(1, 0.5*cm))
-    
-    # Footer con dirección y totales
-    total_con_percepciones = venta.get_total_con_percepciones()
-    
-    footer_data = [[
-        Paragraph('<font size=8 color="#7f8c8d"><b>Dirección:</b><br/>Elpidio González 5326, C1408 Cdad. Autónoma<br/>de Buenos Aires, Argentina<br/><b>Teléfono:</b> +54 11 4228-6559</font>', styles['Normal']),
-        Table([
-            ['Imponible', f'${venta.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')],
-            ['IVA', 'xxxxx'],
-            ['Total', f'${total_con_percepciones:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')]
-        ], colWidths=[3*cm, 3*cm], style=TableStyle([
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, 1), 9),
-            ('FONTSIZE', (0, 2), (-1, 2), 11),
-            ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ]))
-    ]]
-    
-    footer_table = Table(footer_data, colWidths=[9*cm, 6*cm])
-    footer_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
-    elements.append(footer_table)
-    
-    elements.append(Spacer(1, 1*cm))
     
     # Pie de página
-    elements.append(Paragraph('<font size=8 color="#7f8c8d">AKUN ABERTURAS</font>', ParagraphStyle('Footer', parent=styles['Normal'], alignment=TA_CENTER, fontSize=8, textColor=colors.HexColor('#7f8c8d'))))
+    elements.append(Spacer(1, 0.5*inch))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#64748b'),
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph(f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", footer_style))
+    elements.append(Paragraph("Akuna Aberturas - Sistema de Gestión", footer_style))
     
     # Construir PDF
     doc.build(elements)
@@ -621,6 +423,17 @@ def generar_pdf_venta(request, pk):
 @login_required
 def clientes_list(request):
     clientes = Cliente.objects.filter(deleted_at__isnull=True).all()
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    if buscar:
+        clientes = clientes.filter(
+            Q(nombre__icontains=buscar) | 
+            Q(apellido__icontains=buscar) | 
+            Q(razon_social__icontains=buscar) |
+            Q(localidad__icontains=buscar)
+        )
+    
     return render(request, 'comercial/clientes/list.html', {'clientes': clientes})
 
 
@@ -673,8 +486,17 @@ def cliente_edit(request, pk):
 def cliente_delete(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == 'POST':
-        cliente.delete()  # Eliminado lógico
-        messages.success(request, 'Cliente eliminado exitosamente.')
+        # Contar ventas relacionadas
+        ventas_relacionadas = Venta.objects.filter(cliente=cliente, deleted_at__isnull=True).count()
+        
+        # Eliminar el cliente (lógico)
+        cliente.delete()
+        
+        if ventas_relacionadas > 0:
+            messages.success(request, f'Cliente eliminado. Hay {ventas_relacionadas} ventas que usaban este cliente.')
+        else:
+            messages.success(request, 'Cliente eliminado exitosamente.')
+        
         return redirect('comercial:clientes_list')
     return redirect('comercial:clientes_list')
 
@@ -786,7 +608,31 @@ def compra_delete(request, pk):
 @login_required
 def cuentas_list(request):
     cuentas = Cuenta.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
-    return render(request, 'comercial/cuentas/list.html', {'cuentas': cuentas})
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    tipo_cuenta_id = request.GET.get('tipo_cuenta', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        cuentas = cuentas.filter(
+            Q(nombre__icontains=buscar) | Q(razon_social__icontains=buscar)
+        )
+    
+    if tipo_cuenta_id:
+        cuentas = cuentas.filter(tipo_cuenta_id=tipo_cuenta_id)
+    
+    if estado == 'activo':
+        cuentas = cuentas.filter(activo=True)
+    elif estado == 'inactivo':
+        cuentas = cuentas.filter(activo=False)
+    
+    tipos_cuenta_filtro = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    
+    return render(request, 'comercial/cuentas/list.html', {
+        'cuentas': cuentas,
+        'tipos_cuenta_filtro': tipos_cuenta_filtro
+    })
 
 
 @login_required
@@ -838,8 +684,17 @@ def cuenta_edit(request, pk):
 def cuenta_delete(request, pk):
     cuenta = get_object_or_404(Cuenta, pk=pk)
     if request.method == 'POST':
-        cuenta.delete()  # Eliminado lógico
-        messages.success(request, 'Cuenta eliminada exitosamente.')
+        # Contar compras relacionadas
+        compras_relacionadas = Compra.objects.filter(cuenta=cuenta, deleted_at__isnull=True).count()
+        
+        # Eliminar la cuenta (lógico)
+        cuenta.delete()
+        
+        if compras_relacionadas > 0:
+            messages.success(request, f'Cuenta eliminada. Hay {compras_relacionadas} compras que usaban esta cuenta.')
+        else:
+            messages.success(request, 'Cuenta eliminada exitosamente.')
+        
         return redirect('comercial:cuentas_list')
     return redirect('comercial:cuentas_list')
 
@@ -848,6 +703,21 @@ def cuenta_delete(request, pk):
 @login_required
 def tipos_cuenta_list(request):
     tipos = TipoCuenta.objects.filter(deleted_at__isnull=True).all()
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        tipos = tipos.filter(
+            Q(descripcion__icontains=buscar) | Q(tipo__icontains=buscar)
+        )
+    
+    if estado == 'activo':
+        tipos = tipos.filter(activo=True)
+    elif estado == 'inactivo':
+        tipos = tipos.filter(activo=False)
+    
     return render(request, 'comercial/tipos_cuenta/list.html', {'tipos': tipos})
 
 
@@ -900,8 +770,19 @@ def tipo_cuenta_edit(request, pk):
 def tipo_cuenta_delete(request, pk):
     tipo = get_object_or_404(TipoCuenta, pk=pk)
     if request.method == 'POST':
+        # Desactivar cuentas relacionadas
+        cuentas_afectadas = Cuenta.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
+        for cuenta in cuentas_afectadas:
+            cuenta.delete()  # Eliminado lógico
+        
+        # Desactivar tipos de gasto relacionados
+        tipos_gasto_afectados = TipoGasto.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
+        for tipo_gasto in tipos_gasto_afectados:
+            tipo_gasto.delete()  # Eliminado lógico
+        
+        # Eliminar el tipo de cuenta
         tipo.delete()
-        messages.success(request, 'Tipo de cuenta eliminado exitosamente.')
+        messages.success(request, f'Tipo de cuenta eliminado. Se desactivaron {cuentas_afectadas.count()} cuentas y {tipos_gasto_afectados.count()} tipos de gasto.')
         return redirect('comercial:tipos_cuenta_list')
     return redirect('comercial:tipos_cuenta_list')
 
@@ -910,7 +791,31 @@ def tipo_cuenta_delete(request, pk):
 @login_required
 def tipos_gasto_list(request):
     tipos = TipoGasto.objects.filter(deleted_at__isnull=True).select_related('tipo_cuenta').all()
-    return render(request, 'comercial/tipos_gasto/list.html', {'tipos': tipos})
+    
+    # Filtros
+    buscar = request.GET.get('q', '')
+    tipo_cuenta_id = request.GET.get('tipo_cuenta', '')
+    estado = request.GET.get('estado', '')
+    
+    if buscar:
+        tipos = tipos.filter(
+            Q(nombre__icontains=buscar) | Q(descripcion__icontains=buscar)
+        )
+    
+    if tipo_cuenta_id:
+        tipos = tipos.filter(tipo_cuenta_id=tipo_cuenta_id)
+    
+    if estado == 'activo':
+        tipos = tipos.filter(activo=True)
+    elif estado == 'inactivo':
+        tipos = tipos.filter(activo=False)
+    
+    tipos_cuenta_filtro = TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+    
+    return render(request, 'comercial/tipos_gasto/list.html', {
+        'tipos': tipos,
+        'tipos_cuenta_filtro': tipos_cuenta_filtro
+    })
 
 
 @login_required
@@ -958,8 +863,17 @@ def tipo_gasto_edit(request, pk):
 def tipo_gasto_delete(request, pk):
     tipo = get_object_or_404(TipoGasto, pk=pk)
     if request.method == 'POST':
+        # Contar compras relacionadas
+        compras_relacionadas = Compra.objects.filter(tipo_gasto=tipo, deleted_at__isnull=True).count()
+        
+        # Eliminar el tipo de gasto (lógico)
         tipo.delete()
-        messages.success(request, 'Tipo de gasto eliminado exitosamente.')
+        
+        if compras_relacionadas > 0:
+            messages.success(request, f'Tipo de gasto eliminado. Hay {compras_relacionadas} compras que usaban este tipo.')
+        else:
+            messages.success(request, 'Tipo de gasto eliminado exitosamente.')
+        
         return redirect('comercial:tipos_gasto_list')
     return redirect('comercial:tipos_gasto_list')
 
@@ -974,7 +888,7 @@ def reportes(request):
         form = ReporteForm(request.POST)
         if form.is_valid():
             mes = form.cleaned_data.get('mes')
-            año = form.cleaned_data.get('año')
+            anio = form.cleaned_data.get('anio')
             tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
             cliente = form.cleaned_data.get('cliente')
             estado_venta = form.cleaned_data.get('estado_venta')
@@ -982,24 +896,24 @@ def reportes(request):
             monto_max = form.cleaned_data.get('monto_max')
             
             # Filtrar compras
-            compras_query = Compra.objects.all()
+            compras_query = Compra.objects.filter(deleted_at__isnull=True)
             if mes:
-                compras_query = compras_query.filter(fecha_pago__month=mes)
-            if año:
-                compras_query = compras_query.filter(fecha_pago__year=año)
+                compras_query = compras_query.filter(fecha_pago__month__in=mes)
+            if anio:
+                compras_query = compras_query.filter(fecha_pago__year__in=anio)
             if tipo_cuenta:
-                compras_query = compras_query.filter(cuenta__tipo_cuenta=tipo_cuenta)
+                compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
             
             # Filtrar ventas
-            ventas_query = Venta.objects.all()
+            ventas_query = Venta.objects.filter(deleted_at__isnull=True)
             if mes:
-                ventas_query = ventas_query.filter(fecha_pago__month=mes)
-            if año:
-                ventas_query = ventas_query.filter(fecha_pago__year=año)
+                ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
+            if anio:
+                ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
             if cliente:
-                ventas_query = ventas_query.filter(cliente=cliente)
+                ventas_query = ventas_query.filter(cliente__in=cliente)
             if estado_venta:
-                ventas_query = ventas_query.filter(estado=estado_venta)
+                ventas_query = ventas_query.filter(estado__in=estado_venta)
             if monto_min:
                 ventas_query = ventas_query.filter(valor_total__gte=monto_min)
             if monto_max:
@@ -1023,7 +937,7 @@ def reportes(request):
             total_compras_negro = 0
             
             for tipo in TipoCuenta.objects.filter(activo=True):
-                if tipo_cuenta and tipo != tipo_cuenta:
+                if tipo_cuenta and tipo not in tipo_cuenta:
                     continue
                     
                 compras_tipo = compras_query.filter(cuenta__tipo_cuenta=tipo)
@@ -1070,11 +984,11 @@ def reportes(request):
             
             # Guardar en sesión para exportar
             request.session['reporte_filtros'] = {
-                'mes': mes,
-                'año': año,
-                'tipo_cuenta_id': tipo_cuenta.id if tipo_cuenta else None,
-                'cliente_id': cliente.id if cliente else None,
-                'estado_venta': estado_venta,
+                'mes': list(mes) if mes else None,
+                'anio': list(anio) if anio else None,
+                'tipo_cuenta_id': [tc.id for tc in tipo_cuenta] if tipo_cuenta else None,
+                'cliente_id': [c.id for c in cliente] if cliente else None,
+                'estado_venta': list(estado_venta) if estado_venta else None,
                 'monto_min': str(monto_min) if monto_min else None,
                 'monto_max': str(monto_max) if monto_max else None,
             }
@@ -1110,26 +1024,34 @@ def get_cuentas_by_tipo(request):
 
 @login_required
 def get_clientes_list(request):
-    clientes = Cliente.objects.all().values('id', 'nombre', 'apellido')
+    clientes = Cliente.objects.filter(deleted_at__isnull=True).values('id', 'nombre', 'apellido')
     return JsonResponse(list(clientes), safe=False)
 
 
 @login_required
 def editar_pago(request, pk):
+    import json
+    from datetime import datetime
+    
     if request.method == 'POST':
-        import json
         pago = get_object_or_404(PagoVenta, pk=pk)
         
         try:
             data = json.loads(request.body)
-            monto = Decimal(data.get('monto'))
-            fecha_pago = data.get('fecha_pago')
+            monto = Decimal(str(data.get('monto')))
+            fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
             numero_factura = data.get('numero_factura', '')
             observaciones = data.get('observaciones', '')
             
             if monto <= 0:
                 return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
+            
+            # Convertir fecha string a objeto date
+            if isinstance(fecha_pago_str, str):
+                fecha_pago = datetime.strptime(fecha_pago_str, '%Y-%m-%d').date()
+            else:
+                fecha_pago = fecha_pago_str
             
             pago.monto = monto
             pago.fecha_pago = fecha_pago
@@ -1164,43 +1086,42 @@ def exportar_reporte_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
-    from decimal import Decimal
     
     # Recuperar filtros de la sesión
     filtros = request.session.get('reporte_filtros', {})
     
     # Aplicar filtros
     mes = filtros.get('mes')
-    año = filtros.get('año')
+    anio = filtros.get('anio')
     tipo_cuenta_id = filtros.get('tipo_cuenta_id')
     cliente_id = filtros.get('cliente_id')
     estado_venta = filtros.get('estado_venta')
-    monto_min = Decimal(filtros.get('monto_min')) if filtros.get('monto_min') else None
-    monto_max = Decimal(filtros.get('monto_max')) if filtros.get('monto_max') else None
+    monto_min = Decimal(str(filtros.get('monto_min'))) if filtros.get('monto_min') else None
+    monto_max = Decimal(str(filtros.get('monto_max'))) if filtros.get('monto_max') else None
     
     # Filtrar ventas
-    ventas_query = Venta.objects.all()
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True)
     if mes:
-        ventas_query = ventas_query.filter(fecha_pago__month=mes)
-    if año:
-        ventas_query = ventas_query.filter(fecha_pago__year=año)
+        ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
+    if anio:
+        ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
     if cliente_id:
-        ventas_query = ventas_query.filter(cliente_id=cliente_id)
+        ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
     if estado_venta:
-        ventas_query = ventas_query.filter(estado=estado_venta)
+        ventas_query = ventas_query.filter(estado__in=estado_venta)
     if monto_min:
         ventas_query = ventas_query.filter(valor_total__gte=monto_min)
     if monto_max:
         ventas_query = ventas_query.filter(valor_total__lte=monto_max)
     
     # Filtrar compras
-    compras_query = Compra.objects.all()
+    compras_query = Compra.objects.filter(deleted_at__isnull=True)
     if mes:
-        compras_query = compras_query.filter(fecha_pago__month=mes)
-    if año:
-        compras_query = compras_query.filter(fecha_pago__year=año)
+        compras_query = compras_query.filter(fecha_pago__month__in=mes)
+    if anio:
+        compras_query = compras_query.filter(fecha_pago__year__in=anio)
     if tipo_cuenta_id:
-        compras_query = compras_query.filter(cuenta__tipo_cuenta_id=tipo_cuenta_id)
+        compras_query = compras_query.filter(cuenta__tipo_cuenta_id__in=tipo_cuenta_id)
     
     # Crear workbook
     wb = Workbook()
@@ -1332,3 +1253,4 @@ def exportar_reporte_excel(request):
     response['Content-Disposition'] = 'attachment; filename=reporte_comercial.xlsx'
     wb.save(response)
     return response
+
