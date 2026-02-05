@@ -898,22 +898,22 @@ def reportes(request):
             # Filtrar compras
             compras_query = Compra.objects.all()
             if mes:
-                compras_query = compras_query.filter(fecha_pago__month=mes)
+                compras_query = compras_query.filter(fecha_pago__month__in=mes)
             if año:
-                compras_query = compras_query.filter(fecha_pago__year=año)
+                compras_query = compras_query.filter(fecha_pago__year__in=año)
             if tipo_cuenta:
-                compras_query = compras_query.filter(cuenta__tipo_cuenta=tipo_cuenta)
+                compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
             
             # Filtrar ventas
             ventas_query = Venta.objects.all()
             if mes:
-                ventas_query = ventas_query.filter(fecha_pago__month=mes)
+                ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
             if año:
-                ventas_query = ventas_query.filter(fecha_pago__year=año)
+                ventas_query = ventas_query.filter(fecha_pago__year__in=año)
             if cliente:
-                ventas_query = ventas_query.filter(cliente=cliente)
+                ventas_query = ventas_query.filter(cliente__in=cliente)
             if estado_venta:
-                ventas_query = ventas_query.filter(estado=estado_venta)
+                ventas_query = ventas_query.filter(estado__in=estado_venta)
             if monto_min:
                 ventas_query = ventas_query.filter(valor_total__gte=monto_min)
             if monto_max:
@@ -937,7 +937,7 @@ def reportes(request):
             total_compras_negro = 0
             
             for tipo in TipoCuenta.objects.filter(activo=True):
-                if tipo_cuenta and tipo != tipo_cuenta:
+                if tipo_cuenta and tipo not in tipo_cuenta:
                     continue
                     
                 compras_tipo = compras_query.filter(cuenta__tipo_cuenta=tipo)
@@ -984,11 +984,11 @@ def reportes(request):
             
             # Guardar en sesión para exportar
             request.session['reporte_filtros'] = {
-                'mes': mes,
-                'año': año,
-                'tipo_cuenta_id': tipo_cuenta.id if tipo_cuenta else None,
-                'cliente_id': cliente.id if cliente else None,
-                'estado_venta': estado_venta,
+                'mes': list(mes) if mes else None,
+                'año': list(año) if año else None,
+                'tipo_cuenta_id': [tc.id for tc in tipo_cuenta] if tipo_cuenta else None,
+                'cliente_id': [c.id for c in cliente] if cliente else None,
+                'estado_venta': list(estado_venta) if estado_venta else None,
                 'monto_min': str(monto_min) if monto_min else None,
                 'monto_max': str(monto_max) if monto_max else None,
             }
@@ -1102,13 +1102,13 @@ def exportar_reporte_excel(request):
     # Filtrar ventas
     ventas_query = Venta.objects.all()
     if mes:
-        ventas_query = ventas_query.filter(fecha_pago__month=mes)
+        ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
     if año:
-        ventas_query = ventas_query.filter(fecha_pago__year=año)
+        ventas_query = ventas_query.filter(fecha_pago__year__in=año)
     if cliente_id:
-        ventas_query = ventas_query.filter(cliente_id=cliente_id)
+        ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
     if estado_venta:
-        ventas_query = ventas_query.filter(estado=estado_venta)
+        ventas_query = ventas_query.filter(estado__in=estado_venta)
     if monto_min:
         ventas_query = ventas_query.filter(valor_total__gte=monto_min)
     if monto_max:
@@ -1117,11 +1117,11 @@ def exportar_reporte_excel(request):
     # Filtrar compras
     compras_query = Compra.objects.all()
     if mes:
-        compras_query = compras_query.filter(fecha_pago__month=mes)
+        compras_query = compras_query.filter(fecha_pago__month__in=mes)
     if año:
-        compras_query = compras_query.filter(fecha_pago__year=año)
+        compras_query = compras_query.filter(fecha_pago__year__in=año)
     if tipo_cuenta_id:
-        compras_query = compras_query.filter(cuenta__tipo_cuenta_id=tipo_cuenta_id)
+        compras_query = compras_query.filter(cuenta__tipo_cuenta_id__in=tipo_cuenta_id)
     
     # Crear workbook
     wb = Workbook()

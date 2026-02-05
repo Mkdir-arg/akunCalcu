@@ -160,11 +160,14 @@
     </div>
     
     <!-- Ventas -->
-    {% if reporte_data.ventas.lista %}
     <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-slate-200">
-            <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-chart-line mr-2"></i>Ventas</h3>
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-chart-line mr-2"></i>Ventas</h3>
+                <span class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</span>
+            </div>
         </div>
+        {% if reporte_data.ventas.lista_blanco or reporte_data.ventas.lista_negro %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -173,19 +176,35 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cobrado</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Saldo</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for venta in reporte_data.ventas.lista %}
+                    {% for venta in reporte_data.ventas.lista_blanco %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ venta.monto_cobrado|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
+                        <td class="px-6 py-4">
+                            {% if venta.estado == 'pendiente' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
+                            {% elif venta.estado == 'entregado' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Entregado</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Colocado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% for venta in reporte_data.ventas.lista_negro %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
                         <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
                         <td class="px-6 py-4">
                             {% if venta.estado == 'pendiente' %}
@@ -201,10 +220,14 @@
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <div class="px-6 py-4 text-center text-gray-500">
+            No hay ventas registradas
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-
-    <!-- Detalle por Tipo de Cuenta -->
+    
+    <!-- Detalle por Tipo de Cuenta (Gastos) -->
     <div class="space-y-6">
         {% for tipo, data in reporte_data.compras.items %}
             <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
