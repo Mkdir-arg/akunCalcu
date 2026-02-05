@@ -1,9 +1,10 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load l10n %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block title %}Reportes Contables{% endblock %}
@@ -63,19 +64,27 @@
 
     {% if reporte_data %}
     <!-- Gráficos -->
+    {% if reporte_data.ventas.total > 0 or reporte_data.total_compras > 0 %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <!-- Gráfico Ventas vs Compras -->
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Compras</h3>
-            <canvas id="ventasComprasChart" height="250"></canvas>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Gastos</h3>
+            <div class="h-64">
+                <canvas id="ventasComprasChart" class="w-full h-full"></canvas>
+            </div>
         </div>
         
         <!-- Gráfico Distribución Compras -->
+        {% if reporte_data.total_compras > 0 %}
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Distribución de Compras</h3>
-            <canvas id="comprasDistChart" height="250"></canvas>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Distribución de Gastos</h3>
+            <div class="h-64">
+                <canvas id="comprasDistChart" class="w-full h-full"></canvas>
+            </div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
     
     <!-- Resumen General -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -206,7 +215,7 @@
                     </div>
                 </div>
                 
-                {% if data.compras %}
+                {% if data.compras_blanco.exists or data.compras_negro.exists %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -219,7 +228,26 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for compra in data.compras %}
+                            {% for compra in data.compras_blanco %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ compra.numero_pedido }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ compra.cuenta.nombre }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ compra.fecha_pago|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ${{ compra.importe_abonado|formato_numero }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                    {{ compra.descripcion|default:"-" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% for compra in data.compras_negro %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ compra.numero_pedido }}
@@ -283,20 +311,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     {
                         label: 'Ventas',
                         data: [
-                            {{ reporte_data.ventas.total_blanco|floatformat:2 }},
-                            {{ reporte_data.ventas.total_negro|floatformat:2 }},
-                            {{ reporte_data.ventas.total|floatformat:2 }}
+                            {{ reporte_data.ventas.total_blanco|floatformat:2|unlocalize }},
+                            {{ reporte_data.ventas.total_negro|floatformat:2|unlocalize }},
+                            {{ reporte_data.ventas.total|floatformat:2|unlocalize }}
                         ],
                         backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2
                     },
                     {
-                        label: 'Compras',
+                        label: 'Gastos',
                         data: [
-                            {{ reporte_data.total_compras_blanco|floatformat:2 }},
-                            {{ reporte_data.total_compras_negro|floatformat:2 }},
-                            {{ reporte_data.total_compras|floatformat:2 }}
+                            {{ reporte_data.total_compras_blanco|floatformat:2|unlocalize }},
+                            {{ reporte_data.total_compras_negro|floatformat:2|unlocalize }},
+                            {{ reporte_data.total_compras|floatformat:2|unlocalize }}
                         ],
                         backgroundColor: 'rgba(239, 68, 68, 0.7)',
                         borderColor: 'rgba(239, 68, 68, 1)',
@@ -353,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         {% for tipo, data_tipo in reporte_data.compras.items %}
             labels.push('{{ tipo }}');
-            data.push({{ data_tipo.total|floatformat:2 }});
+            data.push({{ data_tipo.total|floatformat:2|unlocalize }});
         {% endfor %}
         
         new Chart(ctx2, {
