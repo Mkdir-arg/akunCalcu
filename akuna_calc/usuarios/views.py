@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404, redirect
+﻿from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
 from django.contrib import messages
@@ -12,7 +12,7 @@ def is_staff(user):
 @login_required
 @user_passes_test(is_staff)
 def user_list(request):
-    users = User.objects.all().order_by('username')
+    users = User.objects.filter(is_active=True).order_by('username')
     return render(request, 'usuarios/user_list.html', {'users': users})
 
 @login_required

@@ -1024,7 +1024,7 @@ def get_cuentas_by_tipo(request):
 
 @login_required
 def get_clientes_list(request):
-    clientes = Cliente.objects.all().values('id', 'nombre', 'apellido')
+    clientes = Cliente.objects.filter(deleted_at__isnull=True).values('id', 'nombre', 'apellido')
     return JsonResponse(list(clientes), safe=False)
 
 
