@@ -1,5 +1,10 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
 
 {% block title %}Reportes Contables{% endblock %}
 
@@ -79,7 +84,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Blanco</p>
-                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|formato_numero }}</p>
                     <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_blanco }} ventas</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -93,7 +98,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Negro</p>
-                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|formato_numero }}</p>
                     <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_negro }} ventas</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -107,7 +112,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Compras Blanco</p>
-                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras_blanco|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras_blanco|formato_numero }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-file-invoice text-white text-xl"></i>
@@ -120,7 +125,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-slate-500 mb-2 font-medium">Compras Negro</p>
-                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.total_compras_negro|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.total_compras_negro|formato_numero }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-receipt text-white text-xl"></i>
@@ -133,15 +138,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
-            <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|floatformat:2 }}</p>
+            <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</p>
         </div>
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Total Compras</p>
-            <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras|floatformat:2 }}</p>
+            <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras|formato_numero }}</p>
         </div>
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
             <p class="text-sm text-slate-500 mb-2 font-medium">Balance</p>
-            <p class="text-3xl font-bold {% if reporte_data.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">${{ reporte_data.balance|floatformat:2 }}</p>
+            <p class="text-3xl font-bold {% if reporte_data.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">${{ reporte_data.balance|formato_numero }}</p>
         </div>
     </div>
     
@@ -170,9 +175,9 @@
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|floatformat:0 }}</td>
-                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ venta.monto_cobrado|floatformat:0 }}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|floatformat:0 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ venta.monto_cobrado|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
                         <td class="px-6 py-4">
                             {% if venta.estado == 'pendiente' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
@@ -197,7 +202,7 @@
                 <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
                     <div class="flex justify-between items-center">
                         <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{{ tipo }}</h3>
-                        <span class="text-3xl font-bold text-slate-900">${{ data.total|floatformat:0 }}</span>
+                        <span class="text-3xl font-bold text-slate-900">${{ data.total|formato_numero }}</span>
                     </div>
                 </div>
                 
@@ -226,7 +231,7 @@
                                     {{ compra.fecha_pago|date:"d/m/Y" }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ compra.importe_abonado|floatformat:0 }}
+                                    ${{ compra.importe_abonado|formato_numero }}
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                                     {{ compra.descripcion|default:"-" }}
