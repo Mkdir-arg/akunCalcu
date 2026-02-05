@@ -1,0 +1,170 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-database mr-3 text-blue-600"></i>Gestión de Backups
+            </h1>
+            <p class="text-gray-600">Sistema de respaldo automático de base de datos</p>
+        </div>
+        <a href="{% url 'security:backup_logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
+            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-2 font-medium">Total Backups</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_backups }}</p>
+                </div>
+                <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-database text-blue-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-2 font-medium">Completados</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ completed_backups }}</p>
+                </div>
+                <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-2 font-medium">Tamaño Total</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_size }}</p>
+                </div>
+                <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-hdd text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+            <form method="post" action="{% url 'security:backup_create' %}" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">
+                    <i class="fas fa-plus mr-2"></i>Crear Backup Ahora
+                </button>
+            </form>
+            <a href="{% url 'security:backup_settings' %}" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg text-center">
+                <i class="fas fa-cog mr-2"></i>Configuración
+            </a>
+        </div>
+
+        {% if settings.auto_backup_enabled %}
+        <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <p class="text-sm text-green-800">
+                <i class="fas fa-check-circle mr-2"></i>
+                <strong>Backup automático activado:</strong> Se ejecuta cada {{ settings.backup_frequency_hours }} horas. 
+                Retención: {{ settings.backup_retention_days }} días.
+            </p>
+        </div>
+        {% else %}
+        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <p class="text-sm text-yellow-800">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <strong>Backup automático desactivado.</strong> Configure el backup automático en la sección de configuración.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lista de Backups -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">
+                <i class="fas fa-list mr-2"></i>Backups Disponibles
+            </h2>
+        </div>
+
+        {% if backups %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archivo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tamaño</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for backup in backups %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-archive text-blue-500 mr-3"></i>
+                                <span class="text-sm font-medium text-gray-900">{{ backup.filename }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ backup.created_at|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ backup.get_size_display }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if backup.status == 'completed' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Completado
+                                </span>
+                            {% elif backup.status == 'running' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>En proceso
+                                </span>
+                            {% elif backup.status == 'failed' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>Fallido
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ backup.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm font-medium">
+                            {% if backup.status == 'completed' %}
+                                <a href="{% url 'security:backup_download' backup.pk %}" class="text-blue-600 hover:text-blue-900 mr-4">
+                                    <i class="fas fa-download"></i> Descargar
+                                </a>
+                                <form method="post" action="{% url 'security:backup_delete' backup.pk %}" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este backup?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <i class="fas fa-database text-gray-300 text-6xl mb-4"></i>
+            <p class="text-gray-500 text-lg">No hay backups disponibles</p>
+            <p class="text-gray-400 text-sm mt-2">Cree su primer backup usando el botón de arriba</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

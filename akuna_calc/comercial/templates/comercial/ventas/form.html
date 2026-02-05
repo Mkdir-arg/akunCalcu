@@ -99,6 +99,30 @@
                     </div>
                 </div>
 
+                <!-- Percepciones e Impuestos -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                        <i class="fas fa-receipt mr-2 text-indigo-600"></i>
+                        Percepciones e Impuestos
+                    </h2>
+                    <div id="percepciones-container" class="space-y-4">
+                        <!-- Las percepciones se agregarán aquí dinámicamente -->
+                    </div>
+                    <button type="button" onclick="agregarPercepcion()" class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-plus mr-2"></i>Agregar Percepción
+                    </button>
+                    <div class="mt-4 p-4 bg-indigo-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-slate-700">Total Percepciones:</span>
+                            <span id="total-percepciones" class="text-lg font-bold text-indigo-700">$0,00</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-indigo-200">
+                            <span class="text-base font-bold text-slate-800">Total con Percepciones:</span>
+                            <span id="total-con-percepciones" class="text-xl font-bold text-indigo-800">$0,00</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Pago y Facturación -->
                 <div class="border-b pb-6">
                     <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
@@ -277,6 +301,72 @@
 </div>
 
 <script>
+let percepcionCounter = 0;
+const percepciones = [];
+
+function agregarPercepcion() {
+    const container = document.getElementById('percepciones-container');
+    const id = percepcionCounter++;
+    
+    const percepcionDiv = document.createElement('div');
+    percepcionDiv.id = `percepcion-${id}`;
+    percepcionDiv.className = 'grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200';
+    percepcionDiv.innerHTML = `
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+            <select name="percepcion_tipo_${id}" class="percepcion-tipo w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccione...</option>
+                <option value="ganancias">Ganancias</option>
+                <option value="iibb_ba">IIBB Buenos Aires</option>
+                <option value="iibb_caba">IIBB CABA</option>
+                <option value="iva">IVA</option>
+            </select>
+        </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+            <input type="text" name="percepcion_obs_${id}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Opcional">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Importe</label>
+            <div class="flex gap-2">
+                <input type="number" name="percepcion_importe_${id}" step="0.01" min="0" class="percepcion-importe w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00" onchange="calcularTotales()">
+                <button type="button" onclick="eliminarPercepcion(${id})" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-all" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(percepcionDiv);
+    percepciones.push(id);
+}
+
+function eliminarPercepcion(id) {
+    const element = document.getElementById(`percepcion-${id}`);
+    if (element) {
+        element.remove();
+        const index = percepciones.indexOf(id);
+        if (index > -1) {
+            percepciones.splice(index, 1);
+        }
+        calcularTotales();
+    }
+}
+
+function calcularTotales() {
+    const valorTotal = parseFloat(document.getElementById('id_valor_total').value) || 0;
+    let totalPercepciones = 0;
+    
+    document.querySelectorAll('.percepcion-importe').forEach(input => {
+        totalPercepciones += parseFloat(input.value) || 0;
+    });
+    
+    const totalConPercepciones = valorTotal + totalPercepciones;
+    
+    document.getElementById('total-percepciones').textContent = `$${totalPercepciones.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('total-con-percepciones').textContent = `$${totalConPercepciones.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+}
+
 function openClienteModal() {
     document.getElementById('clienteModal').classList.remove('hidden');
     document.getElementById('clienteForm').reset();
@@ -354,6 +444,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const tieneRetencionesCheckbox = document.getElementById('id_tiene_retenciones');
     const montoRetencionesContainer = document.getElementById('monto_retenciones_container');
     const montoRetencionesInput = document.getElementById('id_monto_retenciones');
+    const valorTotalInput = document.getElementById('id_valor_total');
+    
+    // Calcular totales cuando cambia el valor total
+    if (valorTotalInput) {
+        valorTotalInput.addEventListener('input', calcularTotales);
+    }
     
     // Mostrar/ocultar campo de monto de retenciones
     if (tieneRetencionesCheckbox) {

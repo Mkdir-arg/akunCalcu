@@ -7,7 +7,7 @@
 {% block content %}
 <div class="max-w-7xl mx-auto animate-fade-in">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-primary to-accent rounded-3xl p-6 lg:p-8 text-white shadow-2xl mb-8">
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-6 lg:p-8 text-white shadow-2xl mb-8">
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between">
             <div>
                 <h1 class="text-2xl lg:text-4xl font-bold mb-2 tracking-tight text-white">
@@ -29,11 +29,13 @@
     </div>
 
     {% if messages %}
+        <div class="space-y-3 mb-6">
         {% for message in messages %}
-        <div class="mb-4 p-4 rounded-2xl animate-fade-in {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-            <i class="fas fa-info-circle mr-2"></i>{{ message }}
+        <div class="p-4 rounded-2xl animate-fade-in {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-300{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-300{% else %}bg-blue-100 text-blue-800 border border-blue-300{% endif %}">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} mr-2"></i>{{ message }}
         </div>
         {% endfor %}
+        </div>
     {% endif %}
 
     <!-- Info Cards -->
@@ -57,7 +59,10 @@
                 </div>
                 <div>
                     <p class="text-sm text-blue-100 font-medium">Valor Total</p>
-                    <p class="text-2xl font-bold text-white">${{ venta.valor_total|formato_numero }}</p>
+                    <p class="text-2xl font-bold text-white">${{ venta.get_total_con_percepciones|formato_numero }}</p>
+                    {% if venta.percepciones.exists %}
+                    <p class="text-xs text-blue-200 mt-1">Base: ${{ venta.valor_total|formato_numero }} + Percepciones: ${{ venta.get_total_percepciones|formato_numero }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -92,6 +97,16 @@
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
             <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Información de la Venta</h3>
             <div class="space-y-3">
+                <div class="pb-3 border-b">
+                    <p class="text-xs text-slate-500 font-semibold mb-2">CLIENTE</p>
+                    <p class="font-bold text-slate-800">{{ venta.cliente.get_nombre_completo }}</p>
+                    {% if venta.cliente.cuit %}<p class="text-sm text-slate-600">CUIT: {{ venta.cliente.cuit }}</p>{% endif %}
+                    {% if venta.cliente.dni %}<p class="text-sm text-slate-600">DNI: {{ venta.cliente.dni }}</p>{% endif %}
+                    <p class="text-sm text-slate-600">{{ venta.cliente.get_condicion_iva_display }}</p>
+                    <p class="text-sm text-slate-600">{{ venta.cliente.direccion }}, {{ venta.cliente.localidad }}</p>
+                    {% if venta.cliente.telefono %}<p class="text-sm text-slate-600"><i class="fas fa-phone mr-1"></i>{{ venta.cliente.telefono }}</p>{% endif %}
+                    {% if venta.cliente.email %}<p class="text-sm text-slate-600"><i class="fas fa-envelope mr-1"></i>{{ venta.cliente.email }}</p>{% endif %}
+                </div>
                 <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Estado:</span>
                     <span class="px-3 py-1 {% if venta.estado == 'pendiente' %}bg-yellow-100 text-yellow-800{% elif venta.estado == 'entregado' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %} rounded-full text-xs font-semibold">
@@ -104,6 +119,12 @@
                         {% if venta.con_factura %}<i class="fas fa-file-invoice mr-1"></i> Blanco{% else %}Negro{% endif %}
                     </span>
                 </div>
+                {% if venta.tipo_factura %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Tipo Factura:</span>
+                    <span class="font-bold text-slate-800">Factura {{ venta.tipo_factura }}</span>
+                </div>
+                {% endif %}
                 {% if venta.numero_factura %}
                 <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Factura:</span>
@@ -112,16 +133,37 @@
                 {% endif %}
                 <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Seña Inicial:</span>
-                    <span class="font-bold text-slate-800">${{ venta.sena|formato_numero }}</span>
+                    <span class="font-bold text-green-700">${{ venta.sena|formato_numero }}</span>
                 </div>
+                {% if venta.percepciones.exists %}
+                <div class="pt-2 border-t">
+                    <p class="text-xs text-slate-500 font-semibold mb-2">PERCEPCIONES</p>
+                    {% for percepcion in venta.percepciones.all %}
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-blue-600">+ {{ percepcion.get_tipo_display }}</span>
+                        <span class="font-bold text-blue-600">${{ percepcion.importe|formato_numero }}</span>
+                    </div>
+                    {% endfor %}
+                    <div class="flex justify-between pt-2 border-t border-blue-200">
+                        <span class="text-slate-700 font-semibold">Total con Percepciones:</span>
+                        <span class="font-bold text-blue-700">${{ venta.get_total_con_percepciones|formato_numero }}</span>
+                    </div>
+                </div>
+                {% endif %}
                 {% if venta.tiene_retenciones %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Retenciones:</span>
+                <div class="flex justify-between bg-red-50 p-2 rounded">
+                    <span class="text-slate-600 font-medium">Retenciones Cliente:</span>
                     <span class="font-bold text-red-600">-${{ venta.monto_retenciones|formato_numero }}</span>
                 </div>
                 <div class="flex justify-between border-t pt-2">
                     <span class="text-slate-600 font-medium">Valor Neto:</span>
-                    <span class="font-bold text-slate-800">${{ venta.valor_total|add:venta.monto_retenciones|formato_numero|floatformat:2|default:"0.00" }}</span>
+                    <span class="font-bold text-slate-800">${{ venta.valor_total|add:venta.monto_retenciones|formato_numero }}</span>
+                </div>
+                {% endif %}
+                {% if venta.forma_pago %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Forma de Pago:</span>
+                    <span class="font-bold text-slate-800">{{ venta.get_forma_pago_display }}</span>
                 </div>
                 {% endif %}
                 {% if venta.fecha_pago %}
@@ -142,7 +184,7 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
-                        <input type="number" name="monto" step="0.01" max="{{ venta.saldo }}" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="number" name="monto" step="0.01" max="{{ venta.saldo }}" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" onchange="calcularTotalesPago()">
                         <p class="text-xs text-slate-500 mt-1">Máximo: ${{ venta.saldo|formato_numero }}</p>
                     </div>
                     <div>
@@ -167,6 +209,28 @@
                         <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
                         <textarea name="observaciones" rows="2" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
                     </div>
+                    
+                    <!-- Retenciones -->
+                    <div class="border-t pt-4">
+                        <h4 class="text-lg font-bold text-slate-800 mb-3"><i class="fas fa-file-invoice-dollar mr-2"></i>Retenciones</h4>
+                        <div id="retenciones-container" class="space-y-3">
+                            <!-- Las retenciones se agregarán aquí dinámicamente -->
+                        </div>
+                        <button type="button" onclick="agregarRetencion()" class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all text-sm">
+                            <i class="fas fa-plus mr-2"></i>Agregar Retención
+                        </button>
+                        <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-slate-700">Total Retenciones:</span>
+                                <span id="total-retenciones-pago" class="text-base font-bold text-red-700">$0,00</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
+                                <span class="text-sm font-bold text-slate-800">Monto Neto a Cobrar:</span>
+                                <span id="monto-neto-cobrar" class="text-lg font-bold text-green-700">$0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
                         <i class="fas fa-check mr-2"></i>Registrar Pago
                     </button>
@@ -206,6 +270,21 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Deuda inicial -->
+                    <tr class="bg-purple-50">
+                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-base font-bold text-purple-700">${{ venta.valor_total|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                                Deuda Adquirida
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-slate-700">-</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">Monto total de la venta</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">-</td>
+                        <td class="px-6 py-4 text-center text-sm text-slate-400">-</td>
+                    </tr>
+                    
                     <!-- Seña inicial -->
                     <tr class="bg-blue-50">
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ venta.created_at|date:"d/m/Y" }}</td>
@@ -225,14 +304,42 @@
                     {% for pago in pagos %}
                     <tr class="hover:bg-slate-50 transition-colors" id="pago-row-{{ pago.id }}">
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-green-700" data-field="monto">${{ pago.monto|formato_numero }}</td>
+                        <td class="px-6 py-4" data-field="monto">
+                            <div class="text-base font-bold text-green-700">${{ pago.monto|formato_numero }}</div>
+                            {% if pago.retenciones.exists %}
+                            <div class="text-xs text-red-600 mt-1">
+                                <i class="fas fa-minus-circle mr-1"></i>Ret: ${{ pago.get_total_retenciones|formato_numero }}
+                                <span class="text-slate-500 mx-1">→</span>
+                                <span class="text-green-600 font-semibold">Neto: ${{ pago.get_monto_neto|formato_numero }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-700" data-field="forma_pago">
                             <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                                 {{ pago.get_forma_pago_display }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-slate-700" data-field="numero_factura">{% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}-{% endif %}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600" data-field="observaciones">{{ pago.observaciones|default:"-" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600" data-field="observaciones">
+                            {{ pago.observaciones|default:"-" }}
+                            {% if pago.retenciones.exists %}
+                            <button type="button" onclick="toggleRetenciones({{ pago.id }})" class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
+                                <i class="fas fa-info-circle"></i> Ver retenciones
+                            </button>
+                            <div id="retenciones-{{ pago.id }}" class="hidden mt-2 p-2 bg-slate-50 rounded border border-slate-200 text-xs">
+                                {% for retencion in pago.retenciones.all %}
+                                <div class="flex justify-between items-center py-1 {% if not forloop.last %}border-b border-slate-200{% endif %}">
+                                    <span>
+                                        <span class="font-semibold text-slate-700">{{ retencion.get_tipo_display }}</span>
+                                        {% if retencion.concepto %}<span class="text-slate-500"> - {{ retencion.concepto }}</span>{% endif %}
+                                        {% if retencion.numero_comprobante %}<span class="text-slate-400"> ({{ retencion.numero_comprobante }})</span>{% endif %}
+                                    </span>
+                                    <span class="font-bold text-red-600">-${{ retencion.importe_retenido|formato_numero }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
                         <td class="px-6 py-4 text-center">
                             <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura }}', '{{ pago.observaciones|escapejs }}')" class="text-blue-600 hover:text-blue-800 font-medium">
@@ -318,6 +425,94 @@
 </div>
 
 <script>
+let retencionCounter = 0;
+const retenciones = [];
+
+function toggleRetenciones(pagoId) {
+    const element = document.getElementById(`retenciones-${pagoId}`);
+    element.classList.toggle('hidden');
+}
+
+function agregarRetencion() {
+    const container = document.getElementById('retenciones-container');
+    const id = retencionCounter++;
+    
+    const retencionDiv = document.createElement('div');
+    retencionDiv.id = `retencion-${id}`;
+    retencionDiv.className = 'p-4 bg-slate-50 rounded-lg border border-slate-200';
+    retencionDiv.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Tipo *</label>
+                <select name="retencion_tipo_${id}" required class="retencion-tipo w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">Seleccione...</option>
+                    <option value="ganancias">Ganancias</option>
+                    <option value="iibb">Ingresos Brutos</option>
+                    <option value="iva">IVA</option>
+                    <option value="seguridad_social">Seguridad Social</option>
+                    <option value="otros">Otros</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Concepto</label>
+                <input type="text" name="retencion_concepto_${id}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Ej: Retención Ganancias 5%">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nro. Comprobante</label>
+                <input type="text" name="retencion_nro_comprob_${id}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="0001-00001234">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Importe ISAR</label>
+                <input type="number" name="retencion_isar_${id}" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="0.00">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Importe Retenido *</label>
+                <input type="number" name="retencion_retenido_${id}" step="0.01" min="0" required class="retencion-importe w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="0.00" onchange="calcularTotalesPago()">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Fecha Comprobante</label>
+                <input type="date" name="retencion_fecha_${id}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+            <div class="flex items-end">
+                <button type="button" onclick="eliminarRetencion(${id})" class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-all" title="Eliminar retención">
+                    <i class="fas fa-trash mr-1"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(retencionDiv);
+    retenciones.push(id);
+}
+
+function eliminarRetencion(id) {
+    const element = document.getElementById(`retencion-${id}`);
+    if (element) {
+        element.remove();
+        const index = retenciones.indexOf(id);
+        if (index > -1) {
+            retenciones.splice(index, 1);
+        }
+        calcularTotalesPago();
+    }
+}
+
+function calcularTotalesPago() {
+    const montoPago = parseFloat(document.querySelector('input[name="monto"]').value) || 0;
+    let totalRetenciones = 0;
+    
+    document.querySelectorAll('.retencion-importe').forEach(input => {
+        totalRetenciones += parseFloat(input.value) || 0;
+    });
+    
+    const montoNeto = montoPago - totalRetenciones;
+    
+    document.getElementById('total-retenciones-pago').textContent = `$${totalRetenciones.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('monto-neto-cobrar').textContent = `$${montoNeto.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+}
+
 function editarPago(id, fecha, monto, formaPago, numeroFactura, observaciones) {
     document.getElementById('edit_pago_id').value = id;
     document.getElementById('edit_monto').value = monto;
@@ -421,6 +616,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fechaPagoInput && !fechaPagoInput.value) {
         fechaPagoInput.value = today;
     }
+    
+    // Calcular totales cuando cambia el monto del pago
+    const montoPagoInput = document.querySelector('input[name="monto"]');
+    if (montoPagoInput) {
+        montoPagoInput.addEventListener('input', calcularTotalesPago);
+    }
+    
+    // Auto-ocultar mensajes después de 5 segundos
+    setTimeout(() => {
+        const messages = document.querySelectorAll('[class*="bg-green-100"], [class*="bg-red-100"], [class*="bg-blue-100"]');
+        messages.forEach(msg => {
+            if (msg.textContent.includes('Backup') || msg.textContent.includes('Cliente') || msg.textContent.includes('Venta') || msg.textContent.includes('Configuración')) {
+                msg.style.transition = 'opacity 0.5s';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            }
+        });
+    }, 5000);
 });
 </script>
 {% endblock %}

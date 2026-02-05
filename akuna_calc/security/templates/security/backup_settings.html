@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'security:backup_list' %}" class="text-blue-600 hover:text-blue-800 font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>Volver a Backups
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">
+            <i class="fas fa-cog mr-3 text-blue-600"></i>Configuración de Backups
+        </h1>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Backup Automático -->
+            <div class="border-b border-gray-200 pb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Backup Automático</h3>
+                
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" 
+                           name="auto_backup_enabled" 
+                           id="auto_backup_enabled"
+                           {% if settings.auto_backup_enabled %}checked{% endif %}
+                           class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="auto_backup_enabled" class="ml-3 text-gray-700 font-medium">
+                        Activar backup automático
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Frecuencia (horas)
+                        </label>
+                        <input type="number" 
+                               name="backup_frequency_hours" 
+                               value="{{ settings.backup_frequency_hours }}"
+                               min="1"
+                               max="168"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Cada cuántas horas se ejecutará el backup (1-168)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Retención (días)
+                        </label>
+                        <input type="number" 
+                               name="backup_retention_days" 
+                               value="{{ settings.backup_retention_days }}"
+                               min="1"
+                               max="365"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Días que se mantendrán los backups antes de eliminarse</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 class="font-semibold text-blue-900 mb-2">
+                    <i class="fas fa-info-circle mr-2"></i>Información Importante
+                </h4>
+                <ul class="text-sm text-blue-800 space-y-1">
+                    <li>• Los backups se ejecutan automáticamente según la frecuencia configurada</li>
+                    <li>• Se recomienda una frecuencia de 24 horas (1 backup diario)</li>
+                    <li>• Los backups antiguos se eliminan automáticamente según el período de retención</li>
+                    <li>• Puede crear backups manuales en cualquier momento</li>
+                </ul>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-4">
+                <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">
+                    <i class="fas fa-save mr-2"></i>Guardar Configuración
+                </button>
+                <a href="{% url 'security:backup_list' %}" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg text-center">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
