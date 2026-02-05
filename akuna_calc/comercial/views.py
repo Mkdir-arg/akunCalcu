@@ -896,7 +896,7 @@ def reportes(request):
             monto_max = form.cleaned_data.get('monto_max')
             
             # Filtrar compras
-            compras_query = Compra.objects.all()
+            compras_query = Compra.objects.filter(deleted_at__isnull=True)
             if mes:
                 compras_query = compras_query.filter(fecha_pago__month__in=mes)
             if anio:
@@ -905,7 +905,7 @@ def reportes(request):
                 compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
             
             # Filtrar ventas
-            ventas_query = Venta.objects.all()
+            ventas_query = Venta.objects.filter(deleted_at__isnull=True)
             if mes:
                 ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
             if anio:
@@ -1100,7 +1100,7 @@ def exportar_reporte_excel(request):
     monto_max = Decimal(str(filtros.get('monto_max'))) if filtros.get('monto_max') else None
     
     # Filtrar ventas
-    ventas_query = Venta.objects.all()
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True)
     if mes:
         ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
     if anio:
@@ -1115,7 +1115,7 @@ def exportar_reporte_excel(request):
         ventas_query = ventas_query.filter(valor_total__lte=monto_max)
     
     # Filtrar compras
-    compras_query = Compra.objects.all()
+    compras_query = Compra.objects.filter(deleted_at__isnull=True)
     if mes:
         compras_query = compras_query.filter(fecha_pago__month__in=mes)
     if anio:
@@ -1253,3 +1253,4 @@ def exportar_reporte_excel(request):
     response['Content-Disposition'] = 'attachment; filename=reporte_comercial.xlsx'
     wb.save(response)
     return response
+
