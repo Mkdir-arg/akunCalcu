@@ -102,7 +102,7 @@ class ReporteForm(forms.Form):
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
     )
-    año = forms.MultipleChoiceField(
+    anio = forms.MultipleChoiceField(
         choices=[(y, y) for y in range(2020, 2031)],
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})

@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}
+﻿{% extends 'core/base.html' %}
 {% load static %}
 {% load custom_filters %}
 {% load l10n %}
@@ -13,7 +13,7 @@
 <div class="max-w-7xl mx-auto animate-fade-in">
     <div class="mb-8">
         <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes Contables</h1>
-        <p class="text-slate-500 font-medium mt-1">Análisis financiero y control de gastos</p>
+        <p class="text-slate-500 font-medium mt-1">AnÃ¡lisis financiero y control de gastos</p>
     </div>
 
     <!-- Formulario de Filtros -->
@@ -27,8 +27,8 @@
                     {{ form.mes }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Año</label>
-                    {{ form.año }}
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">AÃ±o</label>
+                    {{ form.anio }}
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
@@ -43,11 +43,11 @@
                     {{ form.tipo_cuenta }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Mínimo</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto MÃ­nimo</label>
                     {{ form.monto_min }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Máximo</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto MÃ¡ximo</label>
                     {{ form.monto_max }}
                 </div>
             </div>
@@ -63,10 +63,10 @@
     </div>
 
     {% if reporte_data %}
-    <!-- Gráficos -->
+    <!-- GrÃ¡ficos -->
     {% if reporte_data.ventas.total > 0 or reporte_data.total_compras > 0 %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Gráfico Ventas vs Compras -->
+        <!-- GrÃ¡fico Ventas vs Compras -->
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
             <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Gastos</h3>
             <div class="h-64">
@@ -74,10 +74,10 @@
             </div>
         </div>
         
-        <!-- Gráfico Distribución Compras -->
+        <!-- GrÃ¡fico DistribuciÃ³n Compras -->
         {% if reporte_data.total_compras > 0 %}
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>Distribución de Gastos</h3>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>DistribuciÃ³n de Gastos</h3>
             <div class="h-64">
                 <canvas id="comprasDistChart" class="w-full h-full"></canvas>
             </div>
@@ -220,6 +220,11 @@
                 </tbody>
             </table>
         </div>
+        {% if reporte_data.ventas.cantidad > 10 %}
+        <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+            Mostrando 10 de {{ reporte_data.ventas.cantidad }} ventas. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
+        </div>
+        {% endif %}
         {% else %}
         <div class="px-6 py-4 text-center text-gray-500">
             No hay ventas registradas
@@ -247,7 +252,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cuenta</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importe</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DescripciÃ³n</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -292,6 +297,11 @@
                         </tbody>
                     </table>
                 </div>
+                {% if data.compras_blanco.count > 10 or data.compras_negro.count > 10 %}
+                <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+                    Mostrando primeros 10 registros. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
+                </div>
+                {% endif %}
                 {% else %}
                 <div class="px-6 py-4 text-center text-gray-500">
                     No hay compras registradas para este tipo de cuenta
@@ -301,7 +311,7 @@
         {% endfor %}
     </div>
 
-    <!-- Botón de Exportación -->
+    <!-- BotÃ³n de ExportaciÃ³n -->
     <div class="mt-8 flex justify-center gap-4">
         <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
             <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
@@ -323,7 +333,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico Ventas vs Compras (Barras)
+    // GrÃ¡fico Ventas vs Compras (Barras)
     const ctx1 = document.getElementById('ventasComprasChart');
     if (ctx1) {
         new Chart(ctx1, {
@@ -334,9 +344,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     {
                         label: 'Ventas',
                         data: [
-                            {{ reporte_data.ventas.total_blanco|floatformat:2|unlocalize }},
-                            {{ reporte_data.ventas.total_negro|floatformat:2|unlocalize }},
-                            {{ reporte_data.ventas.total|floatformat:2|unlocalize }}
+                            parseFloat('{{ reporte_data.ventas.total_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.ventas.total_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.ventas.total|floatformat:2 }}'.replace('.', '').replace(',', '.'))
                         ],
                         backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgba(34, 197, 94, 1)',
@@ -345,9 +355,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     {
                         label: 'Gastos',
                         data: [
-                            {{ reporte_data.total_compras_blanco|floatformat:2|unlocalize }},
-                            {{ reporte_data.total_compras_negro|floatformat:2|unlocalize }},
-                            {{ reporte_data.total_compras|floatformat:2|unlocalize }}
+                            parseFloat('{{ reporte_data.total_compras_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.total_compras_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                            parseFloat('{{ reporte_data.total_compras|floatformat:2 }}'.replace('.', '').replace(',', '.'))
                         ],
                         backgroundColor: 'rgba(239, 68, 68, 0.7)',
                         borderColor: 'rgba(239, 68, 68, 1)',
@@ -388,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gráfico Distribución de Compras (Torta)
+    // GrÃ¡fico DistribuciÃ³n de Compras (Torta)
     const ctx2 = document.getElementById('comprasDistChart');
     if (ctx2) {
         const labels = [];
@@ -404,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         {% for tipo, data_tipo in reporte_data.compras.items %}
             labels.push('{{ tipo }}');
-            data.push({{ data_tipo.total|floatformat:2|unlocalize }});
+            data.push(parseFloat('{{ data_tipo.total|floatformat:2 }}'.replace('.', '').replace(',', '.')));
         {% endfor %}
         
         new Chart(ctx2, {
@@ -446,3 +456,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+

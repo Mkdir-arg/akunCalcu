@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
@@ -888,7 +888,7 @@ def reportes(request):
         form = ReporteForm(request.POST)
         if form.is_valid():
             mes = form.cleaned_data.get('mes')
-            año = form.cleaned_data.get('año')
+            anio = form.cleaned_data.get('anio')
             tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
             cliente = form.cleaned_data.get('cliente')
             estado_venta = form.cleaned_data.get('estado_venta')
@@ -899,8 +899,8 @@ def reportes(request):
             compras_query = Compra.objects.all()
             if mes:
                 compras_query = compras_query.filter(fecha_pago__month__in=mes)
-            if año:
-                compras_query = compras_query.filter(fecha_pago__year__in=año)
+            if anio:
+                compras_query = compras_query.filter(fecha_pago__year__in=anio)
             if tipo_cuenta:
                 compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
             
@@ -908,8 +908,8 @@ def reportes(request):
             ventas_query = Venta.objects.all()
             if mes:
                 ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
-            if año:
-                ventas_query = ventas_query.filter(fecha_pago__year__in=año)
+            if anio:
+                ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
             if cliente:
                 ventas_query = ventas_query.filter(cliente__in=cliente)
             if estado_venta:
@@ -985,7 +985,7 @@ def reportes(request):
             # Guardar en sesión para exportar
             request.session['reporte_filtros'] = {
                 'mes': list(mes) if mes else None,
-                'año': list(año) if año else None,
+                'anio': list(anio) if anio else None,
                 'tipo_cuenta_id': [tc.id for tc in tipo_cuenta] if tipo_cuenta else None,
                 'cliente_id': [c.id for c in cliente] if cliente else None,
                 'estado_venta': list(estado_venta) if estado_venta else None,
@@ -1092,7 +1092,7 @@ def exportar_reporte_excel(request):
     
     # Aplicar filtros
     mes = filtros.get('mes')
-    año = filtros.get('año')
+    anio = filtros.get('anio')
     tipo_cuenta_id = filtros.get('tipo_cuenta_id')
     cliente_id = filtros.get('cliente_id')
     estado_venta = filtros.get('estado_venta')
@@ -1103,8 +1103,8 @@ def exportar_reporte_excel(request):
     ventas_query = Venta.objects.all()
     if mes:
         ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
-    if año:
-        ventas_query = ventas_query.filter(fecha_pago__year__in=año)
+    if anio:
+        ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
     if cliente_id:
         ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
     if estado_venta:
@@ -1118,8 +1118,8 @@ def exportar_reporte_excel(request):
     compras_query = Compra.objects.all()
     if mes:
         compras_query = compras_query.filter(fecha_pago__month__in=mes)
-    if año:
-        compras_query = compras_query.filter(fecha_pago__year__in=año)
+    if anio:
+        compras_query = compras_query.filter(fecha_pago__year__in=anio)
     if tipo_cuenta_id:
         compras_query = compras_query.filter(cuenta__tipo_cuenta_id__in=tipo_cuenta_id)
     

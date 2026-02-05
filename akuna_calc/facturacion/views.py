@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
@@ -18,7 +18,7 @@ def lista_facturas(request):
     
     context = {
         'facturas': facturas,
-        'titulo': 'Facturas Electrónicas'
+        'titulo': 'Facturas ElectrÃ³nicas'
     }
     return render(request, 'facturacion/lista_facturas.html', context)
 
@@ -36,7 +36,7 @@ def crear_factura(request):
                     # Crear factura
                     factura = form.save(commit=False)
                     
-                    # Obtener siguiente número
+                    # Obtener siguiente nÃºmero
                     afip = AFIPService()
                     ultimo_numero = afip.obtener_ultimo_numero(
                         factura.punto_venta.numero,
@@ -114,7 +114,7 @@ def crear_factura(request):
     context = {
         'form': form,
         'formset': formset,
-        'titulo': 'Nueva Factura Electrónica'
+        'titulo': 'Nueva Factura ElectrÃ³nica'
     }
     return render(request, 'facturacion/crear_factura.html', context)
 
@@ -126,7 +126,7 @@ def crear_factura_desde_venta(request, venta_id):
     
     # Verificar que no tenga factura ya
     if hasattr(venta, 'factura_electronica'):
-        messages.warning(request, 'Esta venta ya tiene una factura electrónica asociada')
+        messages.warning(request, 'Esta venta ya tiene una factura electrÃ³nica asociada')
         return redirect('facturacion:detalle_factura', venta.factura_electronica.id)
     
     try:
@@ -138,9 +138,9 @@ def crear_factura_desde_venta(request, venta_id):
             punto_venta = PuntoVenta.objects.filter(activo=True).first()
             if not punto_venta:
                 messages.error(request, 'No hay puntos de venta configurados')
-                return redirect('comercial:detalle_venta', venta_id)
+                return redirect('comercial:venta_detail', venta_id)
             
-            # Obtener siguiente número
+            # Obtener siguiente nÃºmero
             afip = AFIPService()
             ultimo_numero = afip.obtener_ultimo_numero(punto_venta.numero, tipo)
             
@@ -156,7 +156,7 @@ def crear_factura_desde_venta(request, venta_id):
                 total=venta.valor_total * Decimal('1.21')
             )
             
-            # Crear item genérico (simplificado)
+            # Crear item genÃ©rico (simplificado)
             FacturaItem.objects.create(
                 factura=factura,
                 descripcion=f"Venta #{venta.numero_pedido}",
@@ -201,7 +201,7 @@ def crear_factura_desde_venta(request, venta_id):
     except Exception as e:
         messages.error(request, f'Error al generar factura: {str(e)}')
     
-    return redirect('comercial:detalle_venta', venta_id)
+    return redirect('comercial:venta_detail', venta_id)
 
 
 @login_required
