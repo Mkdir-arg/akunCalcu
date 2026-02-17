@@ -34,19 +34,19 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
                     {{ form.fecha_hasta }}
                 </div>
-                <div id="div_cliente">
+                <div id="div_cliente" style="display:none;">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
                     {{ form.cliente }}
                 </div>
-                <div id="div_estado_venta">
+                <div id="div_estado_venta" style="display:none;">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Estado Venta</label>
                     {{ form.estado_venta }}
                 </div>
-                <div id="div_tipo_cuenta">
+                <div id="div_tipo_cuenta" style="display:none;">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Cuenta</label>
                     {{ form.tipo_cuenta }}
                 </div>
-                <div>
+                <div id="div_tipo_factura" style="display:none;">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
                     {{ form.tipo_factura }}
                 </div>
@@ -346,23 +346,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const divCliente = document.getElementById('div_cliente');
     const divEstadoVenta = document.getElementById('div_estado_venta');
     const divTipoCuenta = document.getElementById('div_tipo_cuenta');
+    const divTipoFactura = document.getElementById('div_tipo_factura');
     
-    if (tipoOperacion && divCliente && divEstadoVenta && divTipoCuenta) {
+    if (tipoOperacion && divCliente && divEstadoVenta && divTipoCuenta && divTipoFactura) {
         function toggleFields() {
             const tipo = tipoOperacion.value;
-            console.log('Tipo seleccionado:', tipo);
             if (tipo === 'ventas') {
                 divCliente.style.display = 'block';
                 divEstadoVenta.style.display = 'block';
                 divTipoCuenta.style.display = 'none';
+                divTipoFactura.style.display = 'block';
             } else if (tipo === 'gastos') {
                 divCliente.style.display = 'none';
                 divEstadoVenta.style.display = 'none';
                 divTipoCuenta.style.display = 'block';
+                divTipoFactura.style.display = 'block';
             } else {
-                divCliente.style.display = 'block';
-                divEstadoVenta.style.display = 'block';
-                divTipoCuenta.style.display = 'block';
+                divCliente.style.display = 'none';
+                divEstadoVenta.style.display = 'none';
+                divTipoCuenta.style.display = 'none';
+                divTipoFactura.style.display = 'none';
             }
         }
         
