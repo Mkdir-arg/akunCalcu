@@ -907,9 +907,9 @@ def reportes(request):
             # Filtrar ventas
             ventas_query = Venta.objects.filter(deleted_at__isnull=True)
             if mes:
-                ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
+                ventas_query = ventas_query.filter(created_at__month__in=mes)
             if anio:
-                ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
+                ventas_query = ventas_query.filter(created_at__year__in=anio)
             if cliente:
                 ventas_query = ventas_query.filter(cliente__in=cliente)
             if estado_venta:
@@ -1102,9 +1102,9 @@ def exportar_reporte_excel(request):
     # Filtrar ventas
     ventas_query = Venta.objects.filter(deleted_at__isnull=True)
     if mes:
-        ventas_query = ventas_query.filter(fecha_pago__month__in=mes)
+        ventas_query = ventas_query.filter(created_at__month__in=mes)
     if anio:
-        ventas_query = ventas_query.filter(fecha_pago__year__in=anio)
+        ventas_query = ventas_query.filter(created_at__year__in=anio)
     if cliente_id:
         ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
     if estado_venta:
