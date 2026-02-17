@@ -91,36 +91,48 @@ class CompraForm(forms.ModelForm):
 
 
 class ReporteForm(forms.Form):
-    MESES = [
-        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
-        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
-        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+    TIPO_OPERACION_CHOICES = [
+        ('ventas', 'Ventas'),
+        ('gastos', 'Gastos'),
     ]
     
-    mes = forms.MultipleChoiceField(
-        choices=MESES,
+    TIPO_FACTURA_CHOICES = [
+        ('blanco', 'Blanco'),
+        ('negro', 'Negro'),
+    ]
+    
+    tipo_operacion = forms.ChoiceField(
+        choices=TIPO_OPERACION_CHOICES,
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_operacion'})
     )
-    anio = forms.MultipleChoiceField(
-        choices=[(y, y) for y in range(2020, 2031)],
+    fecha_desde = forms.DateField(
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.DateInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
+    )
+    fecha_hasta = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
     )
     tipo_cuenta = forms.ModelMultipleChoiceField(
         queryset=TipoCuenta.objects.filter(activo=True),
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_cuenta'})
     )
     cliente = forms.ModelMultipleChoiceField(
-        queryset=Cliente.objects.all(),
+        queryset=Cliente.objects.filter(deleted_at__isnull=True),
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_cliente'})
     )
     estado_venta = forms.MultipleChoiceField(
         choices=Venta.ESTADO_CHOICES,
         required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_estado_venta'})
+    )
+    tipo_factura = forms.MultipleChoiceField(
+        choices=TIPO_FACTURA_CHOICES,
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_factura'})
     )
     monto_min = forms.DecimalField(
         required=False,

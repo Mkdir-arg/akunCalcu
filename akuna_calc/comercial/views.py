@@ -887,29 +887,45 @@ def reportes(request):
     if request.method == 'POST':
         form = ReporteForm(request.POST)
         if form.is_valid():
-            mes = form.cleaned_data.get('mes')
-            anio = form.cleaned_data.get('anio')
+            tipo_operacion = form.cleaned_data.get('tipo_operacion')
+            fecha_desde = form.cleaned_data.get('fecha_desde')
+            fecha_hasta = form.cleaned_data.get('fecha_hasta')
             tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
             cliente = form.cleaned_data.get('cliente')
             estado_venta = form.cleaned_data.get('estado_venta')
+            tipo_factura = form.cleaned_data.get('tipo_factura')
             monto_min = form.cleaned_data.get('monto_min')
             monto_max = form.cleaned_data.get('monto_max')
             
             # Filtrar compras
             compras_query = Compra.objects.filter(deleted_at__isnull=True)
-            if mes:
-                compras_query = compras_query.filter(fecha_pago__month__in=mes)
-            if anio:
-                compras_query = compras_query.filter(fecha_pago__year__in=anio)
+            if fecha_desde:
+                compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
+            if fecha_hasta:
+                compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
             if tipo_cuenta:
                 compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
+            if tipo_factura:
+                if 'blanco' in tipo_factura:
+                    compras_query = compras_query.filter(con_factura=True)
+                elif 'negro' in tipo_factura:
+                    compras_query = compras_query.filter(con_factura=False)
             
             # Filtrar ventas
             ventas_query = Venta.objects.filter(deleted_at__isnull=True)
-            if mes:
-                ventas_query = ventas_query.filter(created_at__month__in=mes)
-            if anio:
-                ventas_query = ventas_query.filter(created_at__year__in=anio)
+            if fecha_desde:
+                ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
+            if fecha_hasta:
+                ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
+            if cliente:
+                ventas_query = ventas_query.filter(cliente__in=cliente)
+            if estado_venta:
+                ventas_query = ventas_query.filter(estado__in=estado_venta)
+            if tipo_factura:
+                if 'blanco' in tipo_factura:
+                    ventas_query = ventas_query.filter(con_factura=True)
+                elif 'negro' in tipo_factura:
+                    ventas_query = ventas_query.filter(con_factura=False)
             if cliente:
                 ventas_query = ventas_query.filter(cliente__in=cliente)
             if estado_venta:
@@ -984,11 +1000,13 @@ def reportes(request):
             
             # Guardar en sesión para exportar
             request.session['reporte_filtros'] = {
-                'mes': list(mes) if mes else None,
-                'anio': list(anio) if anio else None,
+                'tipo_operacion': tipo_operacion,
+                'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
+                'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
                 'tipo_cuenta_id': [tc.id for tc in tipo_cuenta] if tipo_cuenta else None,
                 'cliente_id': [c.id for c in cliente] if cliente else None,
                 'estado_venta': list(estado_venta) if estado_venta else None,
+                'tipo_factura': list(tipo_factura) if tipo_factura else None,
                 'monto_min': str(monto_min) if monto_min else None,
                 'monto_max': str(monto_max) if monto_max else None,
             }
@@ -1091,24 +1109,31 @@ def exportar_reporte_excel(request):
     filtros = request.session.get('reporte_filtros', {})
     
     # Aplicar filtros
-    mes = filtros.get('mes')
-    anio = filtros.get('anio')
+    tipo_operacion = filtros.get('tipo_operacion')
+    fecha_desde = filtros.get('fecha_desde')
+    fecha_hasta = filtros.get('fecha_hasta')
     tipo_cuenta_id = filtros.get('tipo_cuenta_id')
     cliente_id = filtros.get('cliente_id')
     estado_venta = filtros.get('estado_venta')
+    tipo_factura = filtros.get('tipo_factura')
     monto_min = Decimal(str(filtros.get('monto_min'))) if filtros.get('monto_min') else None
     monto_max = Decimal(str(filtros.get('monto_max'))) if filtros.get('monto_max') else None
     
     # Filtrar ventas
     ventas_query = Venta.objects.filter(deleted_at__isnull=True)
-    if mes:
-        ventas_query = ventas_query.filter(created_at__month__in=mes)
-    if anio:
-        ventas_query = ventas_query.filter(created_at__year__in=anio)
+    if fecha_desde:
+        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
+    if fecha_hasta:
+        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
     if cliente_id:
         ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
     if estado_venta:
         ventas_query = ventas_query.filter(estado__in=estado_venta)
+    if tipo_factura:
+        if 'blanco' in tipo_factura:
+            ventas_query = ventas_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura:
+            ventas_query = ventas_query.filter(con_factura=False)
     if monto_min:
         ventas_query = ventas_query.filter(valor_total__gte=monto_min)
     if monto_max:
@@ -1116,12 +1141,17 @@ def exportar_reporte_excel(request):
     
     # Filtrar compras
     compras_query = Compra.objects.filter(deleted_at__isnull=True)
-    if mes:
-        compras_query = compras_query.filter(fecha_pago__month__in=mes)
-    if anio:
-        compras_query = compras_query.filter(fecha_pago__year__in=anio)
+    if fecha_desde:
+        compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
+    if fecha_hasta:
+        compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
     if tipo_cuenta_id:
         compras_query = compras_query.filter(cuenta__tipo_cuenta_id__in=tipo_cuenta_id)
+    if tipo_factura:
+        if 'blanco' in tipo_factura:
+            compras_query = compras_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura:
+            compras_query = compras_query.filter(con_factura=False)
     
     # Crear workbook
     wb = Workbook()

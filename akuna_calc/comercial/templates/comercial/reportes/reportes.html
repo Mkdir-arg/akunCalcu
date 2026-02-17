@@ -23,24 +23,32 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Mes</label>
-                    {{ form.mes }}
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Operación</label>
+                    {{ form.tipo_operacion }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">AÃ±o</label>
-                    {{ form.anio }}
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
+                    {{ form.fecha_desde }}
                 </div>
                 <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
+                    {{ form.fecha_hasta }}
+                </div>
+                <div id="div_cliente">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
                     {{ form.cliente }}
                 </div>
-                <div>
+                <div id="div_estado_venta">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Estado Venta</label>
                     {{ form.estado_venta }}
                 </div>
-                <div>
+                <div id="div_tipo_cuenta">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Cuenta</label>
                     {{ form.tipo_cuenta }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
+                    {{ form.tipo_factura }}
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Minimo</label>
@@ -453,6 +461,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoOperacion = document.getElementById('id_tipo_operacion');
+    const divCliente = document.getElementById('div_cliente');
+    const divEstadoVenta = document.getElementById('div_estado_venta');
+    const divTipoCuenta = document.getElementById('div_tipo_cuenta');
+    
+    function toggleFields() {
+        const tipo = tipoOperacion.value;
+        if (tipo === 'ventas') {
+            divCliente.style.display = 'block';
+            divEstadoVenta.style.display = 'block';
+            divTipoCuenta.style.display = 'none';
+        } else if (tipo === 'gastos') {
+            divCliente.style.display = 'none';
+            divEstadoVenta.style.display = 'none';
+            divTipoCuenta.style.display = 'block';
+        } else {
+            divCliente.style.display = 'block';
+            divEstadoVenta.style.display = 'block';
+            divTipoCuenta.style.display = 'block';
+        }
+    }
+    
+    tipoOperacion.addEventListener('change', toggleFields);
+    toggleFields();
 });
 </script>
 {% endblock %}
