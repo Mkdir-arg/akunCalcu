@@ -341,6 +341,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Control de filtros dinámicos
+    const tipoOperacion = document.getElementById('id_tipo_operacion');
+    const divCliente = document.getElementById('div_cliente');
+    const divEstadoVenta = document.getElementById('div_estado_venta');
+    const divTipoCuenta = document.getElementById('div_tipo_cuenta');
+    
+    if (tipoOperacion) {
+        function toggleFields() {
+            const tipo = tipoOperacion.value;
+            if (tipo === 'ventas') {
+                divCliente.style.display = 'block';
+                divEstadoVenta.style.display = 'block';
+                divTipoCuenta.style.display = 'none';
+            } else if (tipo === 'gastos') {
+                divCliente.style.display = 'none';
+                divEstadoVenta.style.display = 'none';
+                divTipoCuenta.style.display = 'block';
+            } else {
+                divCliente.style.display = 'block';
+                divEstadoVenta.style.display = 'block';
+                divTipoCuenta.style.display = 'block';
+            }
+        }
+        
+        tipoOperacion.addEventListener('change', toggleFields);
+        toggleFields();
+    }
+    
     // GrÃ¡fico Ventas vs Compras (Barras)
     const ctx1 = document.getElementById('ventasComprasChart');
     if (ctx1) {
@@ -461,34 +489,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tipoOperacion = document.getElementById('id_tipo_operacion');
-    const divCliente = document.getElementById('div_cliente');
-    const divEstadoVenta = document.getElementById('div_estado_venta');
-    const divTipoCuenta = document.getElementById('div_tipo_cuenta');
-    
-    function toggleFields() {
-        const tipo = tipoOperacion.value;
-        if (tipo === 'ventas') {
-            divCliente.style.display = 'block';
-            divEstadoVenta.style.display = 'block';
-            divTipoCuenta.style.display = 'none';
-        } else if (tipo === 'gastos') {
-            divCliente.style.display = 'none';
-            divEstadoVenta.style.display = 'none';
-            divTipoCuenta.style.display = 'block';
-        } else {
-            divCliente.style.display = 'block';
-            divEstadoVenta.style.display = 'block';
-            divTipoCuenta.style.display = 'block';
-        }
-    }
-    
-    tipoOperacion.addEventListener('change', toggleFields);
-    toggleFields();
 });
 </script>
 {% endblock %}
