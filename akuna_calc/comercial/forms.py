@@ -92,6 +92,7 @@ class CompraForm(forms.ModelForm):
 
 class ReporteForm(forms.Form):
     TIPO_OPERACION_CHOICES = [
+        ('', 'Todos'),
         ('ventas', 'Ventas'),
         ('gastos', 'Gastos'),
     ]
