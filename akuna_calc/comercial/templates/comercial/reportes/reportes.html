@@ -347,9 +347,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const divEstadoVenta = document.getElementById('div_estado_venta');
     const divTipoCuenta = document.getElementById('div_tipo_cuenta');
     
-    if (tipoOperacion) {
+    if (tipoOperacion && divCliente && divEstadoVenta && divTipoCuenta) {
         function toggleFields() {
             const tipo = tipoOperacion.value;
+            console.log('Tipo seleccionado:', tipo);
             if (tipo === 'ventas') {
                 divCliente.style.display = 'block';
                 divEstadoVenta.style.display = 'block';
