@@ -191,7 +191,9 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for venta in reporte_data.ventas.lista_blanco %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            <a href="{% url 'comercial:venta_detail' venta.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ venta.numero_pedido }}</a>
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
@@ -209,7 +211,9 @@
                     {% endfor %}
                     {% for venta in reporte_data.ventas.lista_negro %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ venta.numero_pedido }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            <a href="{% url 'comercial:venta_detail' venta.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ venta.numero_pedido }}</a>
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
@@ -267,7 +271,7 @@
                             {% for compra in data.compras_blanco %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ compra.numero_pedido }}
+                                    <a href="{% url 'comercial:compra_edit' compra.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ compra.numero_pedido }}</a>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ compra.cuenta.nombre }}
@@ -286,7 +290,7 @@
                             {% for compra in data.compras_negro %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ compra.numero_pedido }}
+                                    <a href="{% url 'comercial:compra_edit' compra.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ compra.numero_pedido }}</a>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ compra.cuenta.nombre }}
