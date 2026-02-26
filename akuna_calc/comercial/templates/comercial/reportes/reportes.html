@@ -142,8 +142,8 @@
                             <a href="{% url 'comercial:venta_detail' ingreso.venta_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.pedido }}</a>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                            {% if ingreso.factura_id %}
-                                <a href="{% url 'facturacion:detalle_factura' ingreso.factura_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.numero_factura }}</a>
+                            {% if ingreso.numero_factura != '-' %}
+                                <a href="{% url 'comercial:venta_detail' ingreso.venta_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.numero_factura }}</a>
                             {% else %}
                                 <span class="text-gray-500">{{ ingreso.numero_factura }}</span>
                             {% endif %}
