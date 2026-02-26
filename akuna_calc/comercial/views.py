@@ -932,6 +932,7 @@ def reportes(request):
         ingresos.append({
             'fecha': venta.created_at.date(),
             'pedido': venta.numero_pedido,
+            'numero_factura': venta.numero_factura or '-',
             'cliente': str(venta.cliente),
             'forma_pago': 'Seña Inicial',
             'monto': venta.sena,
@@ -960,6 +961,7 @@ def reportes(request):
         ingresos.append({
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
+            'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
             'cliente': str(pago.venta.cliente),
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
