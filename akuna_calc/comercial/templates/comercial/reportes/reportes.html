@@ -1,4 +1,4 @@
-﻿{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}
 {% load static %}
 {% load custom_filters %}
 {% load l10n %}
@@ -7,25 +7,21 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
-{% block title %}Reportes Contables{% endblock %}
+{% block title %}Reportes de Ingresos{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto animate-fade-in">
     <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes Contables</h1>
-        <p class="text-slate-500 font-medium mt-1">AnÃ¡lisis financiero y control de gastos</p>
+        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes de Ingresos</h1>
+        <p class="text-slate-500 font-medium mt-1">Análisis y control de ingresos por pagos</p>
     </div>
 
     <!-- Formulario de Filtros -->
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros Avanzados</h2>
+        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
         <form method="post">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Operación</label>
-                    {{ form.tipo_operacion }}
-                </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
                     {{ form.fecha_desde }}
@@ -34,29 +30,17 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
                     {{ form.fecha_hasta }}
                 </div>
-                <div id="div_cliente" style="display:none;">
+                <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
                     {{ form.cliente }}
                 </div>
-                <div id="div_estado_venta" style="display:none;">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estado Venta</label>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estado</label>
                     {{ form.estado_venta }}
                 </div>
-                <div id="div_tipo_cuenta" style="display:none;">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Cuenta</label>
-                    {{ form.tipo_cuenta }}
-                </div>
-                <div id="div_tipo_factura" style="display:none;">
+                <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
                     {{ form.tipo_factura }}
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Minimo</label>
-                    {{ form.monto_min }}
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monto Maximo</label>
-                    {{ form.monto_max }}
                 </div>
             </div>
             <div class="flex gap-4">
@@ -71,38 +55,27 @@
     </div>
 
     {% if reporte_data %}
-    <!-- GrÃ¡ficos -->
-    {% if reporte_data.ventas.total > 0 or reporte_data.total_compras > 0 %}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- GrÃ¡fico Ventas vs Compras -->
+    <!-- Gráfico de Ventas -->
+    {% if reporte_data.ventas.total > 0 %}
+    <div class="mb-8">
         <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas vs Gastos</h3>
+            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas por Tipo</h3>
             <div class="h-64">
-                <canvas id="ventasComprasChart" class="w-full h-full"></canvas>
+                <canvas id="ventasChart" class="w-full h-full"></canvas>
             </div>
         </div>
-        
-        <!-- GrÃ¡fico DistribuciÃ³n Compras -->
-        {% if reporte_data.total_compras > 0 %}
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2"></i>DistribuciÃ³n de Gastos</h3>
-            <div class="h-64">
-                <canvas id="comprasDistChart" class="w-full h-full"></canvas>
-            </div>
-        </div>
-        {% endif %}
     </div>
     {% endif %}
     
-    <!-- Resumen General -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Ventas Blanco -->
+    <!-- Resumen de Ventas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Ingresos Blanco -->
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-green-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Blanco</p>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Ingresos Blanco</p>
                     <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_blanco }} ventas</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_blanco }} pagos</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-file-invoice text-white text-xl"></i>
@@ -110,13 +83,13 @@
             </div>
         </div>
         
-        <!-- Ventas Negro -->
+        <!-- Ingresos Negro -->
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-gray-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Negro</p>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Ingresos Negro</p>
                     <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_negro }} ventas</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_negro }} pagos</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-receipt text-white text-xl"></i>
@@ -124,107 +97,57 @@
             </div>
         </div>
         
-        <!-- Compras Blanco -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-red-500">
+        <!-- Total Ingresos -->
+        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Compras Blanco</p>
-                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras_blanco|formato_numero }}</p>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Ingresos</p>
+                    <p class="text-3xl font-bold text-blue-600">${{ reporte_data.ventas.total|formato_numero }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad }} pagos</p>
                 </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-file-invoice text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Compras Negro -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-orange-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Compras Negro</p>
-                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.total_compras_negro|formato_numero }}</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-receipt text-white text-xl"></i>
+                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Totales Generales -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
-            <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
-            <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</p>
-        </div>
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
-            <p class="text-sm text-slate-500 mb-2 font-medium">Total Compras</p>
-            <p class="text-3xl font-bold text-red-600">${{ reporte_data.total_compras|formato_numero }}</p>
-        </div>
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl">
-            <p class="text-sm text-slate-500 mb-2 font-medium">Balance</p>
-            <p class="text-3xl font-bold {% if reporte_data.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">${{ reporte_data.balance|formato_numero }}</p>
-        </div>
-    </div>
-    
-    <!-- Ventas -->
+    <!-- Tabla de Ventas -->
     <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-slate-200">
             <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-chart-line mr-2"></i>Ventas</h3>
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Ingresos</h3>
                 <span class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</span>
             </div>
         </div>
-        {% if reporte_data.ventas.lista_blanco or reporte_data.ventas.lista_negro %}
+        {% if reporte_data.ventas.lista %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Saldo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forma Pago</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for venta in reporte_data.ventas.lista_blanco %}
+                    {% for ingreso in reporte_data.ventas.lista %}
                     <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ ingreso.fecha|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                            <a href="{% url 'comercial:venta_detail' venta.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ venta.numero_pedido }}</a>
+                            <a href="{% url 'comercial:venta_detail' ingreso.venta_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.pedido }}</a>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ ingreso.cliente }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ ingreso.forma_pago }}</td>
+                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ ingreso.monto|formato_numero }}</td>
                         <td class="px-6 py-4">
-                            {% if venta.estado == 'pendiente' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
-                            {% elif venta.estado == 'entregado' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Entregado</span>
+                            {% if ingreso.tipo == 'Blanco' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
                             {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Colocado</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% for venta in reporte_data.ventas.lista_negro %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                            <a href="{% url 'comercial:venta_detail' venta.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ venta.numero_pedido }}</a>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.cliente }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ venta.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${{ venta.valor_total|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ venta.saldo|formato_numero }}</td>
-                        <td class="px-6 py-4">
-                            {% if venta.estado == 'pendiente' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
-                            {% elif venta.estado == 'entregado' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Entregado</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Colocado</span>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -232,98 +155,15 @@
                 </tbody>
             </table>
         </div>
-        {% if reporte_data.ventas.cantidad > 10 %}
-        <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
-            Mostrando 10 de {{ reporte_data.ventas.cantidad }} ventas. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
-        </div>
-        {% endif %}
         {% else %}
         <div class="px-6 py-4 text-center text-gray-500">
-            No hay ventas registradas
+            No hay ingresos registrados con los filtros seleccionados
         </div>
         {% endif %}
     </div>
-    
-    <!-- Detalle por Tipo de Cuenta (Gastos) -->
-    <div class="space-y-6">
-        {% for tipo, data in reporte_data.compras.items %}
-            <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-2xl font-bold text-slate-800 tracking-tight">{{ tipo }}</h3>
-                        <span class="text-3xl font-bold text-slate-900">${{ data.total|formato_numero }}</span>
-                    </div>
-                </div>
-                
-                {% if data.compras_blanco.exists or data.compras_negro.exists %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cuenta</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importe</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DescripciÃ³n</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for compra in data.compras_blanco %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <a href="{% url 'comercial:compra_edit' compra.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ compra.numero_pedido }}</a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ compra.cuenta.nombre }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ compra.fecha_pago|date:"d/m/Y" }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ compra.importe_abonado|formato_numero }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                    {{ compra.descripcion|default:"-" }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            {% for compra in data.compras_negro %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <a href="{% url 'comercial:compra_edit' compra.id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ compra.numero_pedido }}</a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ compra.cuenta.nombre }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ compra.fecha_pago|date:"d/m/Y" }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ compra.importe_abonado|formato_numero }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                    {{ compra.descripcion|default:"-" }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if data.compras_blanco.count > 10 or data.compras_negro.count > 10 %}
-                <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
-                    Mostrando primeros 10 registros. <a href="{% url 'comercial:exportar_reporte_excel' %}" class="text-blue-600 hover:underline">Exportar todo a Excel</a>
-                </div>
-                {% endif %}
-                {% else %}
-                <div class="px-6 py-4 text-center text-gray-500">
-                    No hay compras registradas para este tipo de cuenta
-                </div>
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
 
-    <!-- BotÃ³n de ExportaciÃ³n -->
+    <!-- Botón de Exportación -->
+    {% if reporte_data.ventas.cantidad > 0 %}
     <div class="mt-8 flex justify-center gap-4">
         <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
             <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
@@ -331,6 +171,16 @@
         <button onclick="window.print()" class="inline-flex items-center bg-slate-600 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl transition-all">
             <i class="fas fa-print mr-2"></i>Imprimir
         </button>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
+        <i class="fas fa-chart-line text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-2xl font-bold text-gray-700 mb-2">No hay ingresos registrados</h3>
+        <p class="text-gray-500 mb-6">Comienza registrando pagos en tus ventas para ver los reportes</p>
+        <a href="{% url 'comercial:ventas_list' %}" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+            <i class="fas fa-list mr-2"></i>Ver Ventas
+        </a>
     </div>
     {% endif %}
 </div>
@@ -345,85 +195,44 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Control de filtros dinámicos
-    const tipoOperacion = document.getElementById('id_tipo_operacion');
-    const divCliente = document.getElementById('div_cliente');
-    const divEstadoVenta = document.getElementById('div_estado_venta');
-    const divTipoCuenta = document.getElementById('div_tipo_cuenta');
-    const divTipoFactura = document.getElementById('div_tipo_factura');
-    
-    if (tipoOperacion && divCliente && divEstadoVenta && divTipoCuenta && divTipoFactura) {
-        function toggleFields() {
-            const tipo = tipoOperacion.value;
-            if (tipo === 'ventas') {
-                divCliente.style.display = 'block';
-                divEstadoVenta.style.display = 'block';
-                divTipoCuenta.style.display = 'none';
-                divTipoFactura.style.display = 'block';
-            } else if (tipo === 'gastos') {
-                divCliente.style.display = 'none';
-                divEstadoVenta.style.display = 'none';
-                divTipoCuenta.style.display = 'block';
-                divTipoFactura.style.display = 'block';
-            } else {
-                divCliente.style.display = 'none';
-                divEstadoVenta.style.display = 'none';
-                divTipoCuenta.style.display = 'none';
-                divTipoFactura.style.display = 'none';
-            }
-        }
-        
-        tipoOperacion.addEventListener('change', toggleFields);
-        toggleFields();
-    }
-    
-    // GrÃ¡fico Ventas vs Compras (Barras)
-    const ctx1 = document.getElementById('ventasComprasChart');
-    if (ctx1) {
-        new Chart(ctx1, {
+    // Gráfico de Ventas
+    const ctx = document.getElementById('ventasChart');
+    if (ctx) {
+        new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['Blanco', 'Negro', 'Total'],
-                datasets: [
-                    {
-                        label: 'Ventas',
-                        data: [
-                            parseFloat('{{ reporte_data.ventas.total_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
-                            parseFloat('{{ reporte_data.ventas.total_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
-                            parseFloat('{{ reporte_data.ventas.total|floatformat:2 }}'.replace('.', '').replace(',', '.'))
-                        ],
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Gastos',
-                        data: [
-                            parseFloat('{{ reporte_data.total_compras_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
-                            parseFloat('{{ reporte_data.total_compras_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
-                            parseFloat('{{ reporte_data.total_compras|floatformat:2 }}'.replace('.', '').replace(',', '.'))
-                        ],
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 2
-                    }
-                ]
+                datasets: [{
+                    label: 'Ingresos',
+                    data: [
+                        parseFloat('{{ reporte_data.ventas.total_blanco|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                        parseFloat('{{ reporte_data.ventas.total_negro|floatformat:2 }}'.replace('.', '').replace(',', '.')),
+                        parseFloat('{{ reporte_data.ventas.total|floatformat:2 }}'.replace('.', '').replace(',', '.'))
+                    ],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.7)',
+                        'rgba(107, 114, 128, 0.7)',
+                        'rgba(59, 130, 246, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(107, 114, 128, 1)',
+                        'rgba(59, 130, 246, 1)'
+                    ],
+                    borderWidth: 2
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'top',
-                        labels: {
-                            font: { size: 12, weight: 'bold' },
-                            padding: 15
-                        }
+                        display: false
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                                return '$' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
                             }
                         }
                     }
@@ -441,64 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // GrÃ¡fico DistribuciÃ³n de Compras (Torta)
-    const ctx2 = document.getElementById('comprasDistChart');
-    if (ctx2) {
-        const labels = [];
-        const data = [];
-        const colors = [
-            'rgba(59, 130, 246, 0.7)',
-            'rgba(168, 85, 247, 0.7)',
-            'rgba(236, 72, 153, 0.7)',
-            'rgba(251, 146, 60, 0.7)',
-            'rgba(34, 197, 94, 0.7)',
-            'rgba(234, 179, 8, 0.7)'
-        ];
-        
-        {% for tipo, data_tipo in reporte_data.compras.items %}
-            labels.push('{{ tipo }}');
-            data.push(parseFloat('{{ data_tipo.total|floatformat:2 }}'.replace('.', '').replace(',', '.')));
-        {% endfor %}
-        
-        new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors.slice(0, labels.length),
-                    borderColor: '#ffffff',
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            font: { size: 11 },
-                            padding: 10,
-                            boxWidth: 15
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return context.label + ': $' + context.parsed.toLocaleString('es-AR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
 });
 </script>
 {% endblock %}
-
-

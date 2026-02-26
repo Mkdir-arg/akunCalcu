@@ -97,7 +97,20 @@
                             <a href="{% url 'comercial:ventas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Ventas</a>
                             <a href="{% url 'comercial:compras_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Gastos</a>
                             <a href="{% url 'comercial:cuentas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Cuentas</a>
-                            <a href="{% url 'comercial:reportes' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reportes</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Reportes -->
+                    <div>
+                        <button onclick="toggleMenu('reportes')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                            <div class="flex items-center">
+                                <i class="fas fa-chart-bar w-5 mr-3"></i>
+                                <span class="sidebar-text">Reportes</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="reportes-icon"></i>
+                        </button>
+                        <div id="reportes-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'comercial:reportes' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Ingresos</a>
                         </div>
                     </div>
                     

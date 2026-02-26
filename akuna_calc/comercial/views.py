@@ -881,135 +881,114 @@ def tipo_gasto_delete(request, pk):
 # REPORTES
 @login_required
 def reportes(request):
+    from datetime import datetime
     form = ReporteForm()
-    reporte_data = None
+    
+    # Obtener filtros
+    fecha_desde = None
+    fecha_hasta = None
+    cliente_filtro = None
+    estado_venta_filtro = None
+    tipo_factura_filtro = None
     
     if request.method == 'POST':
         form = ReporteForm(request.POST)
         if form.is_valid():
-            tipo_operacion = form.cleaned_data.get('tipo_operacion')
             fecha_desde = form.cleaned_data.get('fecha_desde')
             fecha_hasta = form.cleaned_data.get('fecha_hasta')
-            tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
-            cliente = form.cleaned_data.get('cliente')
-            estado_venta = form.cleaned_data.get('estado_venta')
-            tipo_factura = form.cleaned_data.get('tipo_factura')
-            monto_min = form.cleaned_data.get('monto_min')
-            monto_max = form.cleaned_data.get('monto_max')
+            cliente_filtro = form.cleaned_data.get('cliente')
+            estado_venta_filtro = form.cleaned_data.get('estado_venta')
+            tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
             
-            # Filtrar compras
-            compras_query = Compra.objects.filter(deleted_at__isnull=True)
-            if fecha_desde:
-                compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
-            if fecha_hasta:
-                compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
-            if tipo_cuenta:
-                compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta)
-            if tipo_factura:
-                if 'blanco' in tipo_factura:
-                    compras_query = compras_query.filter(con_factura=True)
-                elif 'negro' in tipo_factura:
-                    compras_query = compras_query.filter(con_factura=False)
-            
-            # Filtrar ventas
-            ventas_query = Venta.objects.filter(deleted_at__isnull=True)
-            if fecha_desde:
-                ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
-            if fecha_hasta:
-                ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
-            if cliente:
-                ventas_query = ventas_query.filter(cliente__in=cliente)
-            if estado_venta:
-                ventas_query = ventas_query.filter(estado__in=estado_venta)
-            if tipo_factura:
-                if 'blanco' in tipo_factura:
-                    ventas_query = ventas_query.filter(con_factura=True)
-                elif 'negro' in tipo_factura:
-                    ventas_query = ventas_query.filter(con_factura=False)
-            if cliente:
-                ventas_query = ventas_query.filter(cliente__in=cliente)
-            if estado_venta:
-                ventas_query = ventas_query.filter(estado__in=estado_venta)
-            if monto_min:
-                ventas_query = ventas_query.filter(valor_total__gte=monto_min)
-            if monto_max:
-                ventas_query = ventas_query.filter(valor_total__lte=monto_max)
-            
-            # Estadísticas de ventas (separadas por blanco/negro)
-            ventas_blanco = ventas_query.filter(con_factura=True)
-            ventas_negro = ventas_query.filter(con_factura=False)
-            
-            total_ventas_blanco = ventas_blanco.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-            total_ventas_negro = ventas_negro.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-            total_ventas = total_ventas_blanco + total_ventas_negro
-            
-            saldo_blanco = ventas_blanco.aggregate(Sum('saldo'))['saldo__sum'] or 0
-            saldo_negro = ventas_negro.aggregate(Sum('saldo'))['saldo__sum'] or 0
-            total_saldo = saldo_blanco + saldo_negro
-            
-            # Agrupar compras por tipo de cuenta (separadas por blanco/negro)
-            compras_por_tipo = {}
-            total_compras_blanco = 0
-            total_compras_negro = 0
-            
-            for tipo in TipoCuenta.objects.filter(activo=True):
-                if tipo_cuenta and tipo not in tipo_cuenta:
-                    continue
-                    
-                compras_tipo = compras_query.filter(cuenta__tipo_cuenta=tipo)
-                compras_blanco = compras_tipo.filter(con_factura=True)
-                compras_negro_tipo = compras_tipo.filter(con_factura=False)
-                
-                total_blanco = compras_blanco.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
-                total_negro_tipo = compras_negro_tipo.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
-                
-                compras_por_tipo[tipo.get_tipo_display()] = {
-                    'total_blanco': total_blanco,
-                    'total_negro': total_negro_tipo,
-                    'total': total_blanco + total_negro_tipo,
-                    'compras_blanco': compras_blanco.select_related('cuenta'),
-                    'compras_negro': compras_negro_tipo.select_related('cuenta')
-                }
-                total_compras_blanco += total_blanco
-                total_compras_negro += total_negro_tipo
-            
-            total_compras = total_compras_blanco + total_compras_negro
-            
-            reporte_data = {
-                'ventas': {
-                    'total_blanco': total_ventas_blanco,
-                    'total_negro': total_ventas_negro,
-                    'total': total_ventas,
-                    'saldo_blanco': saldo_blanco,
-                    'saldo_negro': saldo_negro,
-                    'saldo': total_saldo,
-                    'cantidad_blanco': ventas_blanco.count(),
-                    'cantidad_negro': ventas_negro.count(),
-                    'cantidad': ventas_query.count(),
-                    'lista_blanco': ventas_blanco.select_related('cliente')[:25],
-                    'lista_negro': ventas_negro.select_related('cliente')[:25]
-                },
-                'compras': compras_por_tipo,
-                'total_compras_blanco': total_compras_blanco,
-                'total_compras_negro': total_compras_negro,
-                'total_compras': total_compras,
-                'balance_blanco': total_ventas_blanco - total_compras_blanco,
-                'balance_negro': total_ventas_negro - total_compras_negro,
-                'balance': total_ventas - total_compras,
-            }
-            
-            # Guardar en sesión para exportar
             request.session['reporte_filtros'] = {
-                'tipo_operacion': tipo_operacion,
                 'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
                 'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
-                'tipo_cuenta_id': [tc.id for tc in tipo_cuenta] if tipo_cuenta else None,
-                'cliente_id': [c.id for c in cliente] if cliente else None,
-                'estado_venta': list(estado_venta) if estado_venta else None,
-                'tipo_factura': list(tipo_factura) if tipo_factura else None,
-                'monto_min': str(monto_min) if monto_min else None,
-                'monto_max': str(monto_max) if monto_max else None,
+                'cliente_id': [c.id for c in cliente_filtro] if cliente_filtro else None,
+                'estado_venta': list(estado_venta_filtro) if estado_venta_filtro else None,
+                'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
+    
+    # Construir lista de ingresos combinando señas y pagos
+    ingresos = []
+    
+    # 1. Obtener ventas con seña
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
+    
+    if fecha_desde:
+        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
+    if fecha_hasta:
+        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
+    if cliente_filtro:
+        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
+    if estado_venta_filtro:
+        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=False)
+    
+    for venta in ventas_query:
+        ingresos.append({
+            'fecha': venta.created_at.date(),
+            'pedido': venta.numero_pedido,
+            'cliente': str(venta.cliente),
+            'forma_pago': 'Seña Inicial',
+            'monto': venta.sena,
+            'tipo': 'Blanco' if venta.con_factura else 'Negro',
+            'venta_id': venta.id
+        })
+    
+    # 2. Obtener pagos adicionales
+    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
+    
+    if fecha_desde:
+        pagos_query = pagos_query.filter(fecha_pago__gte=fecha_desde)
+    if fecha_hasta:
+        pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
+    if cliente_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
+    if estado_venta_filtro:
+        pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(venta__con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(venta__con_factura=False)
+    
+    for pago in pagos_query:
+        ingresos.append({
+            'fecha': pago.fecha_pago,
+            'pedido': pago.venta.numero_pedido,
+            'cliente': str(pago.venta.cliente),
+            'forma_pago': pago.get_forma_pago_display(),
+            'monto': pago.monto,
+            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro',
+            'venta_id': pago.venta.id
+        })
+    
+    # Ordenar por fecha descendente
+    ingresos.sort(key=lambda x: x['fecha'], reverse=True)
+    
+    # Calcular totales
+    total_blanco = sum(i['monto'] for i in ingresos if i['tipo'] == 'Blanco')
+    total_negro = sum(i['monto'] for i in ingresos if i['tipo'] == 'Negro')
+    total = total_blanco + total_negro
+    
+    cantidad_blanco = len([i for i in ingresos if i['tipo'] == 'Blanco'])
+    cantidad_negro = len([i for i in ingresos if i['tipo'] == 'Negro'])
+    
+    reporte_data = {
+        'ventas': {
+            'total_blanco': total_blanco,
+            'total_negro': total_negro,
+            'total': total,
+            'cantidad_blanco': cantidad_blanco,
+            'cantidad_negro': cantidad_negro,
+            'cantidad': len(ingresos),
+            'lista': ingresos
+        }
+    }
     
     context = {
         'form': form,

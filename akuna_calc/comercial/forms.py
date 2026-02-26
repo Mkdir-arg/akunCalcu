@@ -91,22 +91,11 @@ class CompraForm(forms.ModelForm):
 
 
 class ReporteForm(forms.Form):
-    TIPO_OPERACION_CHOICES = [
-        ('', 'Todos'),
-        ('ventas', 'Ventas'),
-        ('gastos', 'Gastos'),
-    ]
-    
     TIPO_FACTURA_CHOICES = [
         ('blanco', 'Blanco'),
         ('negro', 'Negro'),
     ]
     
-    tipo_operacion = forms.ChoiceField(
-        choices=TIPO_OPERACION_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_operacion'})
-    )
     fecha_desde = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
@@ -114,11 +103,6 @@ class ReporteForm(forms.Form):
     fecha_hasta = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
-    )
-    tipo_cuenta = forms.ModelMultipleChoiceField(
-        queryset=TipoCuenta.objects.filter(activo=True),
-        required=False,
-        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_cuenta'})
     )
     cliente = forms.ModelMultipleChoiceField(
         queryset=Cliente.objects.filter(deleted_at__isnull=True),
@@ -134,12 +118,4 @@ class ReporteForm(forms.Form):
         choices=TIPO_FACTURA_CHOICES,
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_factura'})
-    )
-    monto_min = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Monto mínimo', 'step': '0.01'})
-    )
-    monto_max = forms.DecimalField(
-        required=False,
-        widget=forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Monto máximo', 'step': '0.01'})
     )
