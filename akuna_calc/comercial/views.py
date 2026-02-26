@@ -83,6 +83,7 @@ def ventas_list(request):
     estado = request.GET.get('estado', '')
     con_factura = request.GET.get('con_factura', '')
     buscar = request.GET.get('q', '')
+    razon_social = request.GET.get('razon_social', '')
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     orden = request.GET.get('orden', '-created_at')
@@ -103,6 +104,9 @@ def ventas_list(request):
             Q(cliente__razon_social__icontains=buscar) |
             Q(numero_factura__icontains=buscar)
         )
+    
+    if razon_social:
+        ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
     
     if fecha_desde:
         ventas = ventas.filter(created_at__date__gte=fecha_desde)
@@ -139,9 +143,11 @@ def ventas_list(request):
         'filtro_estado': estado,
         'filtro_factura': con_factura,
         'buscar': buscar,
+        'razon_social': razon_social,
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
-        'orden_actual': orden
+        'orden_actual': orden,
+        'razones_sociales': Cliente.objects.filter(deleted_at__isnull=True, razon_social__isnull=False).exclude(razon_social='').values_list('razon_social', flat=True).distinct().order_by('razon_social')
     }
     return render(request, 'comercial/ventas/list.html', context)
 
@@ -151,6 +157,21 @@ def venta_create(request):
     if request.method == 'POST':
         form = VentaForm(request.POST)
         if form.is_valid():
+            # Validar factura duplicada
+            numero_factura = form.cleaned_data.get('numero_factura')
+            tipo_factura = form.cleaned_data.get('tipo_factura')
+            
+            if numero_factura:
+                venta_existente = Venta.objects.filter(
+                    numero_factura=numero_factura,
+                    tipo_factura=tipo_factura,
+                    deleted_at__isnull=True
+                ).exists()
+                
+                if venta_existente:
+                    messages.error(request, f'No se puede cargar esta factura. La factura {numero_factura} tipo {tipo_factura} ya se encuentra cargada en el sistema.')
+                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Nueva Venta'})
+            
             form.save()
             messages.success(request, 'Venta creada exitosamente.')
             return redirect('comercial:ventas_list')
@@ -165,6 +186,21 @@ def venta_edit(request, pk):
     if request.method == 'POST':
         form = VentaForm(request.POST, instance=venta)
         if form.is_valid():
+            # Validar factura duplicada (excluyendo la venta actual)
+            numero_factura = form.cleaned_data.get('numero_factura')
+            tipo_factura = form.cleaned_data.get('tipo_factura')
+            
+            if numero_factura:
+                venta_existente = Venta.objects.filter(
+                    numero_factura=numero_factura,
+                    tipo_factura=tipo_factura,
+                    deleted_at__isnull=True
+                ).exclude(pk=pk).exists()
+                
+                if venta_existente:
+                    messages.error(request, f'No se puede actualizar con esta factura. La factura {numero_factura} tipo {tipo_factura} ya se encuentra cargada en el sistema.')
+                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
+            
             form.save()
             messages.success(request, 'Venta actualizada exitosamente.')
             return redirect('comercial:ventas_list')
@@ -906,7 +942,7 @@ def reportes(request):
                 'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
                 'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
                 'cliente_id': [c.id for c in cliente_filtro] if cliente_filtro else None,
-                'razon_social': razon_social_filtro,
+                'razon_social': list(razon_social_filtro) if razon_social_filtro else None,
                 'estado_venta': list(estado_venta_filtro) if estado_venta_filtro else None,
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
@@ -924,7 +960,7 @@ def reportes(request):
     if cliente_filtro:
         ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
     if razon_social_filtro:
-        ventas_query = ventas_query.filter(cliente__razon_social__icontains=razon_social_filtro)
+        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
     if estado_venta_filtro:
         ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
     if tipo_factura_filtro:
@@ -957,7 +993,7 @@ def reportes(request):
     if cliente_filtro:
         pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
     if razon_social_filtro:
-        pagos_query = pagos_query.filter(venta__cliente__razon_social__icontains=razon_social_filtro)
+        pagos_query = pagos_query.filter(venta__cliente__razon_social__in=razon_social_filtro)
     if estado_venta_filtro:
         pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
     if tipo_factura_filtro:

@@ -109,10 +109,21 @@ class ReporteForm(forms.Form):
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_cliente'})
     )
-    razon_social = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Buscar por razón social...'})
-    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Obtener razones sociales únicas y no vacías
+        razones = Cliente.objects.filter(
+            deleted_at__isnull=True,
+            razon_social__isnull=False
+        ).exclude(razon_social='').values_list('razon_social', flat=True).distinct().order_by('razon_social')
+        
+        self.fields['razon_social'] = forms.MultipleChoiceField(
+            choices=[(r, r) for r in razones],
+            required=False,
+            widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_razon_social'})
+        )
+    
     estado_venta = forms.MultipleChoiceField(
         choices=Venta.ESTADO_CHOICES,
         required=False,
