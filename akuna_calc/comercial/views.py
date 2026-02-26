@@ -1137,14 +1137,33 @@ def exportar_reporte_excel(request):
     # Recuperar filtros de la sesión
     filtros = request.session.get('reporte_filtros', {})
     
-    fecha_desde = datetime.fromisoformat(filtros['fecha_desde']) if filtros.get('fecha_desde') else None
-    fecha_hasta = datetime.fromisoformat(filtros['fecha_hasta']) if filtros.get('fecha_hasta') else None
-    cliente_filtro = Cliente.objects.filter(id__in=filtros['cliente_id']) if filtros.get('cliente_id') else None
+    fecha_desde = None
+    fecha_hasta = None
+    cliente_filtro = None
+    razon_social_filtro = None
+    estado_venta_filtro = None
+    tipo_factura_filtro = None
+    
+    if filtros.get('fecha_desde'):
+        try:
+            fecha_desde = datetime.fromisoformat(filtros['fecha_desde']).date()
+        except:
+            fecha_desde = None
+    
+    if filtros.get('fecha_hasta'):
+        try:
+            fecha_hasta = datetime.fromisoformat(filtros['fecha_hasta']).date()
+        except:
+            fecha_hasta = None
+    
+    if filtros.get('cliente_id'):
+        cliente_filtro = Cliente.objects.filter(id__in=filtros['cliente_id'])
+    
     razon_social_filtro = filtros.get('razon_social')
     estado_venta_filtro = filtros.get('estado_venta')
     tipo_factura_filtro = filtros.get('tipo_factura')
     
-    # Construir lista de ingresos (igual que en reportes())
+    # Construir lista de ingresos
     ingresos = []
     
     # 1. Obtener ventas con seña
