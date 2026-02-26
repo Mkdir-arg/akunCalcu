@@ -55,4 +55,5 @@ urlpatterns = [
     path('api/cuentas-by-tipo/', views.get_cuentas_by_tipo, name='cuentas_by_tipo'),
     path('api/clientes-list/', views.get_clientes_list, name='clientes_list_api'),
     path('api/pago/<int:pk>/editar/', views.editar_pago, name='editar_pago'),
+    path('api/venta/<int:pk>/editar-fecha-sena/', views.editar_fecha_sena, name='editar_fecha_sena'),
 ]

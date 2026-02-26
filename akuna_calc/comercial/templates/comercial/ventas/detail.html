@@ -21,6 +21,9 @@
                 <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-semibold transition-all shadow-lg" target="_blank">
                     <i class="fas fa-file-pdf mr-2"></i>Descargar PDF
                 </a>
+                <a href="{% url 'comercial:venta_edit' venta.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-semibold transition-all shadow-lg">
+                    <i class="fas fa-edit mr-2"></i>Editar
+                </a>
                 <a href="{% url 'comercial:ventas_list' %}" class="inline-flex items-center bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl font-semibold transition-all shadow-lg">
                     <i class="fas fa-arrow-left mr-2"></i>Volver
                 </a>
@@ -270,13 +273,13 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <!-- Deuda inicial -->
+                    <!-- Venta total -->
                     <tr class="bg-purple-50">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha-venta">{{ venta.fecha_pago|date:"d/m/Y"|default:venta.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-base font-bold text-purple-700">${{ venta.valor_total|formato_numero }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
-                                Deuda Adquirida
+                                Venta total
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-slate-700">-</td>
@@ -287,7 +290,7 @@
                     
                     <!-- Seña inicial -->
                     <tr class="bg-blue-50">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha-sena">{{ venta.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-base font-bold text-blue-700">${{ venta.sena|formato_numero }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
@@ -297,7 +300,11 @@
                         <td class="px-6 py-4 text-sm font-medium text-slate-700">{% if venta.numero_factura %}{{ venta.numero_factura }}{% else %}-{% endif %}</td>
                         <td class="px-6 py-4 text-sm text-slate-600">Pago inicial de la venta</td>
                         <td class="px-6 py-4 text-sm text-slate-600">-</td>
-                        <td class="px-6 py-4 text-center text-sm text-slate-400">-</td>
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="editarSena('{{ venta.created_at|date:'Y-m-d' }}')" class="text-blue-600 hover:text-blue-800 font-medium">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                        </td>
                     </tr>
                     
                     <!-- Pagos adicionales -->
@@ -424,6 +431,35 @@
     </div>
 </div>
 
+<!-- Modal Editar Seña -->
+<div id="editarSenaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center rounded-t-2xl">
+            <h2 class="text-2xl font-bold text-white"><i class="fas fa-calendar mr-2"></i>Editar Fecha Seña</h2>
+            <button type="button" onclick="cerrarModalSena()" class="text-white hover:text-gray-200">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <form id="editarSenaForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Seña <span class="text-red-500">*</span></label>
+                <input type="date" id="edit_fecha_sena" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-slate-500 mt-2">Esta fecha también actualizará la fecha de "Venta total"</p>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="cerrarModalSena()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all">
+                    <i class="fas fa-save mr-2"></i>Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 let retencionCounter = 0;
 const retenciones = [];
@@ -528,9 +564,83 @@ function cerrarModalEditar() {
     document.getElementById('editarPagoForm').reset();
 }
 
+function editarSena(fechaActual) {
+    document.getElementById('edit_fecha_sena').value = fechaActual;
+    document.getElementById('editarSenaModal').classList.remove('hidden');
+}
+
+function cerrarModalSena() {
+    document.getElementById('editarSenaModal').classList.add('hidden');
+    document.getElementById('editarSenaForm').reset();
+}
+
 document.getElementById('editarPagoModal').addEventListener('click', function(e) {
     if (e.target === this) {
         cerrarModalEditar();
+    }
+});
+
+document.getElementById('editarSenaModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        cerrarModalSena();
+    }
+});
+
+document.getElementById('editarSenaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fechaSena = document.getElementById('edit_fecha_sena').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+    
+    try {
+        const response = await fetch(`/comercial/api/venta/{{ venta.pk }}/editar-fecha-sena/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                fecha_sena: fechaSena
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar ambas fechas en la tabla
+            const fechaFormateada = new Date(fechaSena).toLocaleDateString('es-AR');
+            document.querySelector('[data-field="fecha-venta"]').textContent = fechaFormateada;
+            document.querySelector('[data-field="fecha-sena"]').textContent = fechaFormateada;
+            
+            cerrarModalSena();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Fecha actualizada correctamente',
+                confirmButtonColor: '#3b82f6',
+                timer: 2000
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'No se pudo actualizar la fecha',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al actualizar la fecha: ' + error,
+            confirmButtonColor: '#3b82f6'
+        });
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Cambios';
     }
 });
 

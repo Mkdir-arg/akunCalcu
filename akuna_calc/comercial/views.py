@@ -1132,183 +1132,187 @@ def exportar_reporte_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
+    from datetime import datetime
     
     # Recuperar filtros de la sesión
     filtros = request.session.get('reporte_filtros', {})
     
-    # Aplicar filtros
-    tipo_operacion = filtros.get('tipo_operacion')
-    fecha_desde = filtros.get('fecha_desde')
-    fecha_hasta = filtros.get('fecha_hasta')
-    tipo_cuenta_id = filtros.get('tipo_cuenta_id')
-    cliente_id = filtros.get('cliente_id')
-    estado_venta = filtros.get('estado_venta')
-    tipo_factura = filtros.get('tipo_factura')
-    monto_min = Decimal(str(filtros.get('monto_min'))) if filtros.get('monto_min') else None
-    monto_max = Decimal(str(filtros.get('monto_max'))) if filtros.get('monto_max') else None
+    fecha_desde = datetime.fromisoformat(filtros['fecha_desde']) if filtros.get('fecha_desde') else None
+    fecha_hasta = datetime.fromisoformat(filtros['fecha_hasta']) if filtros.get('fecha_hasta') else None
+    cliente_filtro = Cliente.objects.filter(id__in=filtros['cliente_id']) if filtros.get('cliente_id') else None
+    razon_social_filtro = filtros.get('razon_social')
+    estado_venta_filtro = filtros.get('estado_venta')
+    tipo_factura_filtro = filtros.get('tipo_factura')
     
-    # Filtrar ventas
-    ventas_query = Venta.objects.filter(deleted_at__isnull=True)
+    # Construir lista de ingresos (igual que en reportes())
+    ingresos = []
+    
+    # 1. Obtener ventas con seña
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
+    
     if fecha_desde:
         ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
     if fecha_hasta:
         ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
-    if cliente_id:
-        ventas_query = ventas_query.filter(cliente_id__in=cliente_id)
-    if estado_venta:
-        ventas_query = ventas_query.filter(estado__in=estado_venta)
-    if tipo_factura:
-        if 'blanco' in tipo_factura:
+    if cliente_filtro:
+        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
+    if estado_venta_filtro:
+        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=True)
-        elif 'negro' in tipo_factura:
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=False)
-    if monto_min:
-        ventas_query = ventas_query.filter(valor_total__gte=monto_min)
-    if monto_max:
-        ventas_query = ventas_query.filter(valor_total__lte=monto_max)
     
-    # Filtrar compras
-    compras_query = Compra.objects.filter(deleted_at__isnull=True)
+    for venta in ventas_query:
+        ingresos.append({
+            'fecha': venta.created_at.date(),
+            'pedido': venta.numero_pedido,
+            'numero_factura': venta.numero_factura or '-',
+            'cliente': str(venta.cliente),
+            'razon_social': venta.cliente.razon_social or '-',
+            'forma_pago': 'Seña Inicial',
+            'monto': venta.sena,
+            'tipo': 'Blanco' if venta.con_factura else 'Negro'
+        })
+    
+    # 2. Obtener pagos adicionales
+    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
+    
     if fecha_desde:
-        compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
+        pagos_query = pagos_query.filter(fecha_pago__gte=fecha_desde)
     if fecha_hasta:
-        compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
-    if tipo_cuenta_id:
-        compras_query = compras_query.filter(cuenta__tipo_cuenta_id__in=tipo_cuenta_id)
-    if tipo_factura:
-        if 'blanco' in tipo_factura:
-            compras_query = compras_query.filter(con_factura=True)
-        elif 'negro' in tipo_factura:
-            compras_query = compras_query.filter(con_factura=False)
+        pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
+    if cliente_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__razon_social__in=razon_social_filtro)
+    if estado_venta_filtro:
+        pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(venta__con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(venta__con_factura=False)
+    
+    for pago in pagos_query:
+        ingresos.append({
+            'fecha': pago.fecha_pago,
+            'pedido': pago.venta.numero_pedido,
+            'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
+            'cliente': str(pago.venta.cliente),
+            'razon_social': pago.venta.cliente.razon_social or '-',
+            'forma_pago': pago.get_forma_pago_display(),
+            'monto': pago.monto,
+            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro'
+        })
+    
+    # Ordenar por fecha descendente
+    ingresos.sort(key=lambda x: x['fecha'], reverse=True)
+    
+    # Calcular totales
+    total_blanco = sum(i['monto'] for i in ingresos if i['tipo'] == 'Blanco')
+    total_negro = sum(i['monto'] for i in ingresos if i['tipo'] == 'Negro')
+    total = total_blanco + total_negro
     
     # Crear workbook
     wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Ingresos"
     
     # Estilos
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF", size=12)
     title_font = Font(bold=True, size=14)
     
-    # Hoja Resumen
-    ws_resumen = wb.active
-    ws_resumen.title = "Resumen"
+    # Título
+    ws['A1'] = 'REPORTE DE INGRESOS'
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:H1')
     
-    ws_resumen['A1'] = 'REPORTE COMERCIAL'
-    ws_resumen['A1'].font = title_font
-    ws_resumen.merge_cells('A1:D1')
+    # Resumen
+    ws['A3'] = 'Total Ingresos Blanco:'
+    ws['B3'] = float(total_blanco)
+    ws['B3'].number_format = '$#,##0.00'
+    ws['A3'].font = Font(bold=True)
     
-    row = 3
-    ws_resumen[f'A{row}'] = 'VENTAS'
-    ws_resumen[f'A{row}'].font = header_font
-    ws_resumen[f'A{row}'].fill = header_fill
+    ws['A4'] = 'Total Ingresos Negro:'
+    ws['B4'] = float(total_negro)
+    ws['B4'].number_format = '$#,##0.00'
+    ws['A4'].font = Font(bold=True)
     
-    ventas_blanco = ventas_query.filter(con_factura=True)
-    ventas_negro = ventas_query.filter(con_factura=False)
-    total_ventas_blanco = ventas_blanco.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    total_ventas_negro = ventas_negro.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    ws['A5'] = 'TOTAL INGRESOS:'
+    ws['B5'] = float(total)
+    ws['B5'].number_format = '$#,##0.00'
+    ws['A5'].font = Font(bold=True, size=12)
+    ws['B5'].font = Font(bold=True, size=12)
     
-    row += 1
-    ws_resumen[f'A{row}'] = 'Ventas Blanco:'
-    ws_resumen[f'B{row}'] = float(total_ventas_blanco)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    
-    row += 1
-    ws_resumen[f'A{row}'] = 'Ventas Negro:'
-    ws_resumen[f'B{row}'] = float(total_ventas_negro)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    
-    row += 1
-    ws_resumen[f'A{row}'] = 'Total Ventas:'
-    ws_resumen[f'A{row}'].font = Font(bold=True)
-    ws_resumen[f'B{row}'] = float(total_ventas_blanco + total_ventas_negro)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    ws_resumen[f'B{row}'].font = Font(bold=True)
-    
-    row += 2
-    ws_resumen[f'A{row}'] = 'COMPRAS'
-    ws_resumen[f'A{row}'].font = header_font
-    ws_resumen[f'A{row}'].fill = header_fill
-    
-    compras_blanco = compras_query.filter(con_factura=True)
-    compras_negro = compras_query.filter(con_factura=False)
-    total_compras_blanco = compras_blanco.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
-    total_compras_negro = compras_negro.aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
-    
-    row += 1
-    ws_resumen[f'A{row}'] = 'Compras Blanco:'
-    ws_resumen[f'B{row}'] = float(total_compras_blanco)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    
-    row += 1
-    ws_resumen[f'A{row}'] = 'Compras Negro:'
-    ws_resumen[f'B{row}'] = float(total_compras_negro)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    
-    row += 1
-    ws_resumen[f'A{row}'] = 'Total Compras:'
-    ws_resumen[f'A{row}'].font = Font(bold=True)
-    ws_resumen[f'B{row}'] = float(total_compras_blanco + total_compras_negro)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    ws_resumen[f'B{row}'].font = Font(bold=True)
-    
-    row += 2
-    ws_resumen[f'A{row}'] = 'BALANCE'
-    ws_resumen[f'A{row}'].font = Font(bold=True, size=12)
-    balance = (total_ventas_blanco + total_ventas_negro) - (total_compras_blanco + total_compras_negro)
-    ws_resumen[f'B{row}'] = float(balance)
-    ws_resumen[f'B{row}'].number_format = '$#,##0.00'
-    ws_resumen[f'B{row}'].font = Font(bold=True, size=12)
-    
-    # Hoja Ventas
-    ws_ventas = wb.create_sheet("Ventas")
-    headers = ['Pedido', 'Cliente', 'Fecha', 'Total', 'Seña', 'Saldo', 'Estado', 'Tipo']
+    # Headers de tabla
+    headers = ['Fecha Pago', 'Pedido', 'ID Factura', 'Cliente', 'Razón Social', 'Forma Pago', 'Monto', 'Tipo']
     for col, header in enumerate(headers, 1):
-        cell = ws_ventas.cell(1, col, header)
+        cell = ws.cell(7, col, header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal='center')
     
-    for row, venta in enumerate(ventas_query.select_related('cliente'), 2):
-        ws_ventas.cell(row, 1, venta.numero_pedido)
-        ws_ventas.cell(row, 2, str(venta.cliente))
-        ws_ventas.cell(row, 3, venta.fecha_pago.strftime('%d/%m/%Y') if venta.fecha_pago else '-')
-        ws_ventas.cell(row, 4, float(venta.valor_total)).number_format = '$#,##0.00'
-        ws_ventas.cell(row, 5, float(venta.sena)).number_format = '$#,##0.00'
-        ws_ventas.cell(row, 6, float(venta.saldo)).number_format = '$#,##0.00'
-        ws_ventas.cell(row, 7, venta.get_estado_display())
-        ws_ventas.cell(row, 8, 'Blanco' if venta.con_factura else 'Negro')
-    
-    # Hoja Compras
-    ws_compras = wb.create_sheet("Compras")
-    headers = ['Pedido', 'Cuenta', 'Tipo', 'Fecha', 'Importe', 'Tipo Operación', 'Descripción']
-    for col, header in enumerate(headers, 1):
-        cell = ws_compras.cell(1, col, header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center')
-    
-    for row, compra in enumerate(compras_query.select_related('cuenta', 'cuenta__tipo_cuenta'), 2):
-        ws_compras.cell(row, 1, compra.numero_pedido)
-        ws_compras.cell(row, 2, compra.cuenta.nombre)
-        ws_compras.cell(row, 3, compra.cuenta.tipo_cuenta.get_tipo_display())
-        ws_compras.cell(row, 4, compra.fecha_pago.strftime('%d/%m/%Y'))
-        ws_compras.cell(row, 5, float(compra.importe_abonado)).number_format = '$#,##0.00'
-        ws_compras.cell(row, 6, 'Blanco' if compra.con_factura else 'Negro')
-        ws_compras.cell(row, 7, compra.descripcion or '-')
+    # Datos
+    for row, ingreso in enumerate(ingresos, 8):
+        ws.cell(row, 1, ingreso['fecha'].strftime('%d/%m/%Y'))
+        ws.cell(row, 2, ingreso['pedido'])
+        ws.cell(row, 3, ingreso['numero_factura'])
+        ws.cell(row, 4, ingreso['cliente'])
+        ws.cell(row, 5, ingreso['razon_social'])
+        ws.cell(row, 6, ingreso['forma_pago'])
+        ws.cell(row, 7, float(ingreso['monto'])).number_format = '$#,##0.00'
+        ws.cell(row, 8, ingreso['tipo'])
     
     # Ajustar anchos
-    for ws in [ws_resumen, ws_ventas, ws_compras]:
-        for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
     
     # Respuesta HTTP
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=reporte_comercial.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=reporte_ingresos.xlsx'
     wb.save(response)
     return response
+
+
+@login_required
+def editar_fecha_sena(request, pk):
+    import json
+    from datetime import datetime
+    
+    if request.method == 'POST':
+        venta = get_object_or_404(Venta, pk=pk)
+        
+        try:
+            data = json.loads(request.body)
+            fecha_sena_str = data.get('fecha_sena')
+            
+            # Convertir fecha string a objeto datetime
+            if isinstance(fecha_sena_str, str):
+                fecha_sena = datetime.strptime(fecha_sena_str, '%Y-%m-%d')
+            else:
+                return JsonResponse({'success': False, 'error': 'Formato de fecha inválido'}, status=400)
+            
+            # Actualizar created_at (fecha de seña) y fecha_pago (fecha de venta total)
+            venta.created_at = fecha_sena
+            venta.fecha_pago = fecha_sena.date()
+            venta.save()
+            
+            return JsonResponse({
+                'success': True,
+                'fecha': fecha_sena.strftime('%d/%m/%Y')
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
