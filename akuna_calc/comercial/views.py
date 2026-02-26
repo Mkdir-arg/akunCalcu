@@ -1132,58 +1132,18 @@ def exportar_reporte_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
-    from datetime import datetime
     
     # Recuperar filtros de la sesión
     filtros = request.session.get('reporte_filtros', {})
     
-    fecha_desde = None
-    fecha_hasta = None
-    cliente_filtro = None
-    razon_social_filtro = None
-    estado_venta_filtro = None
-    tipo_factura_filtro = None
-    
-    if filtros.get('fecha_desde'):
-        try:
-            fecha_desde = datetime.fromisoformat(filtros['fecha_desde']).date()
-        except:
-            fecha_desde = None
-    
-    if filtros.get('fecha_hasta'):
-        try:
-            fecha_hasta = datetime.fromisoformat(filtros['fecha_hasta']).date()
-        except:
-            fecha_hasta = None
-    
-    if filtros.get('cliente_id'):
-        cliente_filtro = Cliente.objects.filter(id__in=filtros['cliente_id'])
-    
-    razon_social_filtro = filtros.get('razon_social')
-    estado_venta_filtro = filtros.get('estado_venta')
-    tipo_factura_filtro = filtros.get('tipo_factura')
-    
-    # Construir lista de ingresos
+    # Construir lista de ingresos usando la misma lógica que reportes()
     ingresos = []
     
-    # 1. Obtener ventas con seña
+    # Obtener ventas con seña
     ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
     
-    if fecha_desde:
-        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
-    if fecha_hasta:
-        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
-    if cliente_filtro:
-        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
-    if razon_social_filtro:
-        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
-    if estado_venta_filtro:
-        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
-    if tipo_factura_filtro:
-        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            ventas_query = ventas_query.filter(con_factura=True)
-        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            ventas_query = ventas_query.filter(con_factura=False)
+    # Obtener pagos adicionales
+    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
     
     for venta in ventas_query:
         ingresos.append({
@@ -1193,28 +1153,9 @@ def exportar_reporte_excel(request):
             'cliente': str(venta.cliente),
             'razon_social': venta.cliente.razon_social or '-',
             'forma_pago': 'Seña Inicial',
-            'monto': venta.sena,
+            'monto': float(venta.sena),
             'tipo': 'Blanco' if venta.con_factura else 'Negro'
         })
-    
-    # 2. Obtener pagos adicionales
-    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
-    
-    if fecha_desde:
-        pagos_query = pagos_query.filter(fecha_pago__gte=fecha_desde)
-    if fecha_hasta:
-        pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
-    if cliente_filtro:
-        pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
-    if razon_social_filtro:
-        pagos_query = pagos_query.filter(venta__cliente__razon_social__in=razon_social_filtro)
-    if estado_venta_filtro:
-        pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
-    if tipo_factura_filtro:
-        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=True)
-        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=False)
     
     for pago in pagos_query:
         ingresos.append({
@@ -1224,11 +1165,11 @@ def exportar_reporte_excel(request):
             'cliente': str(pago.venta.cliente),
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
-            'monto': pago.monto,
+            'monto': float(pago.monto),
             'tipo': 'Blanco' if pago.venta.con_factura else 'Negro'
         })
     
-    # Ordenar por fecha descendente
+    # Ordenar por fecha
     ingresos.sort(key=lambda x: x['fecha'], reverse=True)
     
     # Calcular totales
@@ -1253,22 +1194,22 @@ def exportar_reporte_excel(request):
     
     # Resumen
     ws['A3'] = 'Total Ingresos Blanco:'
-    ws['B3'] = float(total_blanco)
+    ws['B3'] = total_blanco
     ws['B3'].number_format = '$#,##0.00'
     ws['A3'].font = Font(bold=True)
     
     ws['A4'] = 'Total Ingresos Negro:'
-    ws['B4'] = float(total_negro)
+    ws['B4'] = total_negro
     ws['B4'].number_format = '$#,##0.00'
     ws['A4'].font = Font(bold=True)
     
     ws['A5'] = 'TOTAL INGRESOS:'
-    ws['B5'] = float(total)
+    ws['B5'] = total
     ws['B5'].number_format = '$#,##0.00'
     ws['A5'].font = Font(bold=True, size=12)
     ws['B5'].font = Font(bold=True, size=12)
     
-    # Headers de tabla
+    # Headers
     headers = ['Fecha Pago', 'Pedido', 'ID Factura', 'Cliente', 'Razón Social', 'Forma Pago', 'Monto', 'Tipo']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(7, col, header)
@@ -1284,17 +1225,19 @@ def exportar_reporte_excel(request):
         ws.cell(row, 4, ingreso['cliente'])
         ws.cell(row, 5, ingreso['razon_social'])
         ws.cell(row, 6, ingreso['forma_pago'])
-        ws.cell(row, 7, float(ingreso['monto'])).number_format = '$#,##0.00'
+        cell = ws.cell(row, 7, ingreso['monto'])
+        cell.number_format = '$#,##0.00'
         ws.cell(row, 8, ingreso['tipo'])
     
     # Ajustar anchos
-    for column in ws.columns:
-        max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            if cell.value:
-                max_length = max(max_length, len(str(cell.value)))
-        ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 25
+    ws.column_dimensions['E'].width = 25
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 15
+    ws.column_dimensions['H'].width = 10
     
     # Respuesta HTTP
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
