@@ -963,6 +963,7 @@ def reportes(request):
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
             'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
+            'factura_id': pago.venta.id if (pago.numero_factura or pago.venta.numero_factura) else None,
             'cliente': str(pago.venta.cliente),
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
