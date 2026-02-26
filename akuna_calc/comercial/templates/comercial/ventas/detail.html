@@ -349,9 +349,14 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
                         <td class="px-6 py-4 text-center">
-                            <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura }}', '{{ pago.observaciones|escapejs }}')" class="text-blue-600 hover:text-blue-800 font-medium">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura }}', '{{ pago.observaciones|escapejs }}')" class="text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button onclick="eliminarPago({{ pago.id }}, {{ pago.monto }})" class="text-red-600 hover:text-red-800 font-medium">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -572,6 +577,59 @@ function editarSena(fechaActual) {
 function cerrarModalSena() {
     document.getElementById('editarSenaModal').classList.add('hidden');
     document.getElementById('editarSenaForm').reset();
+}
+
+function eliminarPago(pagoId, monto) {
+    Swal.fire({
+        title: '¿Eliminar pago?',
+        html: `<p>¿Estás seguro de eliminar este pago de <strong>$${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong>?</p><p class="text-sm text-gray-600 mt-2">Esta acción no se puede deshacer.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/comercial/api/pago/${pagoId}/eliminar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: 'Pago eliminado correctamente',
+                        confirmButtonColor: '#3b82f6',
+                        timer: 2000
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || 'No se pudo eliminar el pago',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al eliminar el pago: ' + error,
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
+        }
+    });
 }
 
 document.getElementById('editarPagoModal').addEventListener('click', function(e) {

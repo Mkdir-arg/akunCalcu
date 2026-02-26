@@ -1278,3 +1278,28 @@ def editar_fecha_sena(request, pk):
     
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
+
+@login_required
+def eliminar_pago(request, pk):
+    import json
+    
+    if request.method == 'POST':
+        pago = get_object_or_404(PagoVenta, pk=pk)
+        venta = pago.venta
+        
+        try:
+            # Eliminar el pago
+            pago.delete()
+            
+            # Recalcular saldo de la venta
+            venta.save()
+            
+            return JsonResponse({
+                'success': True,
+                'saldo': float(venta.saldo)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
