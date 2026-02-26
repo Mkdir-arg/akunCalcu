@@ -888,6 +888,7 @@ def reportes(request):
     fecha_desde = None
     fecha_hasta = None
     cliente_filtro = None
+    razon_social_filtro = None
     estado_venta_filtro = None
     tipo_factura_filtro = None
     
@@ -897,6 +898,7 @@ def reportes(request):
             fecha_desde = form.cleaned_data.get('fecha_desde')
             fecha_hasta = form.cleaned_data.get('fecha_hasta')
             cliente_filtro = form.cleaned_data.get('cliente')
+            razon_social_filtro = form.cleaned_data.get('razon_social')
             estado_venta_filtro = form.cleaned_data.get('estado_venta')
             tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
             
@@ -904,6 +906,7 @@ def reportes(request):
                 'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
                 'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
                 'cliente_id': [c.id for c in cliente_filtro] if cliente_filtro else None,
+                'razon_social': razon_social_filtro,
                 'estado_venta': list(estado_venta_filtro) if estado_venta_filtro else None,
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
@@ -920,6 +923,8 @@ def reportes(request):
         ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
     if cliente_filtro:
         ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        ventas_query = ventas_query.filter(cliente__razon_social__icontains=razon_social_filtro)
     if estado_venta_filtro:
         ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
     if tipo_factura_filtro:
@@ -935,6 +940,7 @@ def reportes(request):
             'numero_factura': venta.numero_factura or '-',
             'factura_id': venta.id if venta.numero_factura else None,
             'cliente': str(venta.cliente),
+            'razon_social': venta.cliente.razon_social or '-',
             'forma_pago': 'Seña Inicial',
             'monto': venta.sena,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
@@ -950,6 +956,8 @@ def reportes(request):
         pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
     if cliente_filtro:
         pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__razon_social__icontains=razon_social_filtro)
     if estado_venta_filtro:
         pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
     if tipo_factura_filtro:
@@ -965,6 +973,7 @@ def reportes(request):
             'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
             'factura_id': pago.venta.id if (pago.numero_factura or pago.venta.numero_factura) else None,
             'cliente': str(pago.venta.cliente),
+            'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
             'tipo': 'Blanco' if pago.venta.con_factura else 'Negro',

@@ -109,6 +109,10 @@ class ReporteForm(forms.Form):
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_cliente'})
     )
+    razon_social = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Buscar por razón social...'})
+    )
     estado_venta = forms.MultipleChoiceField(
         choices=Venta.ESTADO_CHOICES,
         required=False,
