@@ -933,6 +933,7 @@ def reportes(request):
             'fecha': venta.created_at.date(),
             'pedido': venta.numero_pedido,
             'numero_factura': venta.numero_factura or '-',
+            'factura_id': venta.id if venta.numero_factura else None,
             'cliente': str(venta.cliente),
             'forma_pago': 'Seña Inicial',
             'monto': venta.sena,
