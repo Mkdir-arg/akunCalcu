@@ -129,7 +129,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago Puto tio</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Fractura</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
@@ -158,7 +158,7 @@
                         <td class="px-6 py-4 text-sm text-gray-900">{{ ingreso.forma_pago }}</td>
                         <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ ingreso.monto|formato_numero }}</td>
                         <td class="px-6 py-4">
-                            {% if ingreso.tipo == 'Blanco ' %}
+                            {% if ingreso.tipo == 'Blanco' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
                             {% else %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
