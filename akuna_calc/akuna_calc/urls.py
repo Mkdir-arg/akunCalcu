@@ -7,7 +7,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('productos/', include('productos.urls')),
-    path('admin-usuarios/', include('usuarios.urls')),
+    path('admin-usuarios/', include(('usuarios.urls', 'usuarios'), namespace='usuarios')),
     path('comercial/', include('comercial.urls')),
     path('facturacion/', include('facturacion.urls')),
     path('security/', include('security.urls')),  # Módulo de seguridad y backups

@@ -23,7 +23,7 @@ def user_create(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Usuario creado exitosamente.')
-            return redirect('user_list')
+            return redirect('usuarios:user_list')
     else:
         form = UserCreateForm()
     return render(request, 'usuarios/user_form.html', {'form': form, 'title': 'Nuevo Usuario'})
@@ -37,7 +37,7 @@ def user_update(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Usuario actualizado exitosamente.')
-            return redirect('user_list')
+            return redirect('usuarios:user_list')
     else:
         form = UserUpdateForm(instance=user)
     return render(request, 'usuarios/user_form.html', {'form': form, 'title': 'Editar Usuario'})
@@ -50,4 +50,4 @@ def user_toggle(request, pk):
     user.save()
     status = 'activado' if user.is_active else 'desactivado'
     messages.success(request, f'Usuario {status} exitosamente.')
-    return redirect('user_list')
+    return redirect('usuarios:user_list')
