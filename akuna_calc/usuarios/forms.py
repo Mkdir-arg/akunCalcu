@@ -52,8 +52,12 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'is_staff', 'is_active']
+        fields = ['username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active']
         widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'readonly': 'readonly'
+            }),
             'email': forms.EmailInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
