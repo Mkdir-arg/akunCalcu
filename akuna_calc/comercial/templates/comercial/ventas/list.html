@@ -12,9 +12,14 @@
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Ventas</h1>
             <p class="text-slate-500 font-medium mt-1">Gestión completa de ventas y pedidos</p>
         </div>
-        <a href="{% url 'comercial:venta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nueva Venta
-        </a>
+        <div class="flex gap-3">
+            <button onclick="mostrarCotizacionDolar()" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-xl transition-all">
+                <i class="fas fa-dollar-sign mr-2"></i>Cotización Dólar
+            </button>
+            <a href="{% url 'comercial:venta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
+                <i class="fas fa-plus mr-2"></i>Nueva Venta
+            </a>
+        </div>
     </div>
 
     <!-- Barra de Filtros -->
@@ -292,6 +297,77 @@
 </div>
 
 <script>
+function mostrarCotizacionDolar() {
+    Swal.fire({
+        title: '<i class="fas fa-spinner fa-spin"></i> Cargando cotizaciones...',
+        showConfirmButton: false,
+        allowOutsideClick: false
+    });
+    
+    Promise.all([
+        fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json()),
+        fetch('https://dolarapi.com/v1/dolares/oficial').then(r => r.json())
+    ]).then(([blue, oficial]) => {
+        const fechaActualizacion = new Date(blue.fechaActualizacion).toLocaleString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        Swal.fire({
+            html: `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
+                        <h3 class="text-2xl font-bold mb-4">Dólar Blue</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm opacity-80">Compra</p>
+                                <p class="text-3xl font-bold">$${blue.compra}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm opacity-80">Venta</p>
+                                <p class="text-3xl font-bold">$${blue.venta}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-gray-700 to-gray-800 rounded-2xl p-6 text-white">
+                        <h3 class="text-2xl font-bold mb-4">Dólar Oficial</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm opacity-80">Compra</p>
+                                <p class="text-3xl font-bold">$${oficial.compra}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm opacity-80">Venta</p>
+                                <p class="text-3xl font-bold">$${oficial.venta}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-sm text-gray-600">
+                        <p class="font-semibold">Fecha de actualización</p>
+                        <p>${fechaActualizacion}</p>
+                    </div>
+                </div>
+            `,
+            width: '600px',
+            showConfirmButton: true,
+            confirmButtonText: 'Cerrar',
+            confirmButtonColor: '#3b82f6'
+        });
+    }).catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo obtener la cotización del dólar',
+            confirmButtonColor: '#3b82f6'
+        });
+    });
+}
+
 function confirmarEliminacion(url, nombre) {
     Swal.fire({
         title: '¿Eliminar venta?',
