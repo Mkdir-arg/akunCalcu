@@ -57,7 +57,6 @@ class Command(BaseCommand):
                 '--single-transaction',
                 '--quick',
                 '--lock-tables=false',
-                '--skip-ssl',
                 db_name
             ]
             
