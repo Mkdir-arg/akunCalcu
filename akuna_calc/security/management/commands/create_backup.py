@@ -52,15 +52,18 @@ class Command(BaseCommand):
             cmd = [
                 'mysqldump',
                 f'--host={db_host}',
-                f'--port={db_port}',
                 f'--user={db_user}',
                 f'--password={db_password}',
                 '--single-transaction',
                 '--quick',
                 '--lock-tables=false',
-                '--skip-ssl',  # Desactivar SSL para evitar error de certificado
+                '--skip-ssl',
                 db_name
             ]
+            
+            # Agregar puerto solo si está definido
+            if db_port:
+                cmd.insert(3, f'--port={db_port}')
             
             # Ejecutar backup
             self.stdout.write('📦 Ejecutando mysqldump...')
