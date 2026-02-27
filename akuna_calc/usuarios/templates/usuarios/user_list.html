@@ -9,7 +9,7 @@
             </h1>
             <p class="text-slate-500 font-medium mt-1">Administración de accesos al sistema</p>
         </div>
-        <a href="{% url 'usuarios:user_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+        <a href="{% url 'user_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
             <i class="fas fa-plus mr-2"></i>Nuevo Usuario
         </a>
     </div>
@@ -72,10 +72,10 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'usuarios:user_update' user.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <a href="{% url 'user_update' user.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="{% url 'usuarios:user_toggle' user.pk %}" class="inline-flex items-center {% if user.is_active %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <a href="{% url 'user_toggle' user.pk %}" class="inline-flex items-center {% if user.is_active %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-toggle-{% if user.is_active %}off{% else %}on{% endif %}"></i>
                                 </a>
                             </div>
