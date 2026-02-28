@@ -972,10 +972,8 @@ def reportes(request):
     if tipo_factura_filtro:
         if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=True)
-            pagos_query = pagos_query.filter(con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=False)
-            pagos_query = pagos_query.filter(con_factura=False)
     
     for venta in ventas_query:
         ingresos.append({
@@ -1006,11 +1004,22 @@ def reportes(request):
         pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
     if tipo_factura_filtro:
         if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=True)
+            try:
+                pagos_query = pagos_query.filter(con_factura=True)
+            except:
+                pagos_query = pagos_query.filter(venta__con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=False)
+            try:
+                pagos_query = pagos_query.filter(con_factura=False)
+            except:
+                pagos_query = pagos_query.filter(venta__con_factura=False)
     
     for pago in pagos_query:
+        try:
+            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
+        except:
+            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
+        
         ingresos.append({
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
@@ -1020,7 +1029,7 @@ def reportes(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
-            'tipo': 'Blanco' if pago.con_factura else 'Negro',
+            'tipo': tipo_pago,
             'venta_id': pago.venta.id
         })
     
@@ -1169,6 +1178,11 @@ def exportar_reporte_excel(request):
         })
     
     for pago in pagos_query:
+        try:
+            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
+        except:
+            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
+        
         ingresos.append({
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
@@ -1177,7 +1191,7 @@ def exportar_reporte_excel(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': float(pago.monto),
-            'tipo': 'Blanco' if pago.con_factura else 'Negro'
+            'tipo': tipo_pago
         })
     
     # Ordenar por fecha
