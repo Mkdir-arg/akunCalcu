@@ -203,7 +203,7 @@ def venta_edit(request, pk):
             
             form.save()
             messages.success(request, 'Venta actualizada exitosamente.')
-            return redirect('comercial:ventas_list')
+            return redirect('comercial:venta_detail', pk=pk)
     else:
         form = VentaForm(instance=venta)
     return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
@@ -972,8 +972,10 @@ def reportes(request):
     if tipo_factura_filtro:
         if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=True)
+            pagos_query = pagos_query.filter(con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=False)
+            pagos_query = pagos_query.filter(con_factura=False)
     
     for venta in ventas_query:
         ingresos.append({
