@@ -1018,7 +1018,7 @@ def reportes(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
-            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro',
+            'tipo': 'Blanco' if pago.con_factura else 'Negro',
             'venta_id': pago.venta.id
         })
     
@@ -1093,6 +1093,7 @@ def editar_pago(request, pk):
             monto = Decimal(str(data.get('monto')))
             fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
+            con_factura = data.get('con_factura', True)
             numero_factura = data.get('numero_factura', '')
             observaciones = data.get('observaciones', '')
             
@@ -1108,6 +1109,7 @@ def editar_pago(request, pk):
             pago.monto = monto
             pago.fecha_pago = fecha_pago
             pago.forma_pago = forma_pago
+            pago.con_factura = con_factura
             pago.numero_factura = numero_factura
             pago.observaciones = observaciones
             pago.save()
@@ -1122,6 +1124,7 @@ def editar_pago(request, pk):
                     'monto': float(pago.monto),
                     'fecha_pago': pago.fecha_pago.strftime('%d/%m/%Y'),
                     'forma_pago': pago.get_forma_pago_display(),
+                    'con_factura': pago.con_factura,
                     'numero_factura': pago.numero_factura or '-',
                     'observaciones': pago.observaciones or '-'
                 },
@@ -1172,7 +1175,7 @@ def exportar_reporte_excel(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': float(pago.monto),
-            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro'
+            'tipo': 'Blanco' if pago.con_factura else 'Negro'
         })
     
     # Ordenar por fecha
