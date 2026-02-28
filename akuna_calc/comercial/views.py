@@ -615,11 +615,15 @@ def compra_edit(request, pk):
             form.save()
             messages.success(request, 'Gasto actualizado exitosamente.')
             return redirect('comercial:compras_list')
+        # Si hay errores, pre-seleccionar el tipo de cuenta del POST
+        tipo_cuenta_id = request.POST.get('tipo_cuenta_filter')
+        if tipo_cuenta_id:
+            form.fields['tipo_cuenta_filter'].initial = tipo_cuenta_id
     else:
         form = CompraForm(instance=compra)
         # Pre-seleccionar el tipo de cuenta
         if compra.cuenta:
-            form.fields['tipo_cuenta_filter'].initial = compra.cuenta.tipo_cuenta
+            form.fields['tipo_cuenta_filter'].initial = compra.cuenta.tipo_cuenta_id
     
     context = {
         'form': form,

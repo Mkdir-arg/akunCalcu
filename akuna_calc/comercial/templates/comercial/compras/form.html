@@ -327,12 +327,19 @@ $(document).ready(function() {
     if (tipoCuentaId) {
         $('#id_tipo_cuenta_filter').trigger('change');
     }
+    
+    // Si estamos editando, cargar tipos de gasto
+    const cuentaId = $('#id_cuenta').val();
+    if (cuentaId) {
+        $('#id_cuenta').trigger('change');
+    }
 });
 
 // Cargar tipos de gasto cuando cambia la cuenta
 $('#id_cuenta').on('change', function() {
     const cuentaId = $(this).val();
     const tipoGastoSelect = $('#id_tipo_gasto');
+    const tipoGastoActual = tipoGastoSelect.val();
     
     if (cuentaId) {
         $.ajax({
@@ -344,6 +351,11 @@ $('#id_cuenta').on('change', function() {
                 data.forEach(function(tipo) {
                     tipoGastoSelect.append(`<option value="${tipo.id}">${tipo.nombre}</option>`);
                 });
+                
+                // Restaurar selección si existe
+                if (tipoGastoActual) {
+                    tipoGastoSelect.val(tipoGastoActual);
+                }
                 tipoGastoSelect.prop('disabled', false);
             }
         });
