@@ -1,0 +1,60 @@
+{% extends 'plantillas/base_plantillas.html' %}
+
+{% block plantillas_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Plantillas de Despiece</h1>
+    <a href="{% url 'plantillas:plantilla_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+        <i class="fas fa-plus mr-2"></i>Nueva Plantilla
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campos</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for plantilla in plantillas %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ plantilla.nombre }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ plantilla.descripcion|truncatewords:10 }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ plantilla.campos.count }} campos</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if plantilla.activo %}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                    {% else %}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="{% url 'plantillas:plantilla_campos' plantilla.pk %}" class="text-blue-600 hover:text-blue-900 mr-3" title="Configurar campos">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    <a href="{% url 'plantillas:plantilla_probar' plantilla.pk %}" class="text-green-600 hover:text-green-900 mr-3" title="Probar">
+                        <i class="fas fa-calculator"></i>
+                    </a>
+                    <a href="{% url 'plantillas:plantilla_edit' plantilla.pk %}" class="text-yellow-600 hover:text-yellow-900 mr-3" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'plantillas:plantilla_toggle' plantilla.pk %}" class="text-gray-600 hover:text-gray-900" title="{% if plantilla.activo %}Desactivar{% else %}Activar{% endif %}">
+                        <i class="fas fa-{% if plantilla.activo %}toggle-on{% else %}toggle-off{% endif %}"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                    No hay plantillas creadas. <a href="{% url 'plantillas:plantilla_create' %}" class="text-blue-600 hover:underline">Crear la primera</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -129,6 +129,25 @@
                         </div>
                     </div>
                     
+                    <!-- Plantillas de Despiece -->
+                    <div>
+                        <button onclick="toggleMenu('plantillas')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                            <div class="flex items-center">
+                                <i class="fas fa-drafting-compass w-5 mr-3"></i>
+                                <span class="sidebar-text">Despiece</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="plantillas-icon"></i>
+                        </button>
+                        <div id="plantillas-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'plantillas:pedido_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Pedidos de Fábrica</a>
+                            <a href="{% url 'plantillas:calcular_index' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Calcular</a>
+                            {% if request.user.is_staff %}
+                            <a href="{% url 'plantillas:plantilla_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Configurar Plantillas</a>
+                            <a href="{% url 'plantillas:historial_calculos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Historial</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <!-- Facturación -->
                     <div>
                         <button onclick="toggleMenu('facturacion')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">

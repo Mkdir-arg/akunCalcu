@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'usuarios',
     'comercial',
     'facturacion',
+    'plantillas',  # Plantillas de despiece
 ]
 
 MIDDLEWARE = [

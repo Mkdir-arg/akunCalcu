@@ -1,0 +1,59 @@
+{% extends 'plantillas/base_plantillas.html' %}
+
+{% block plantillas_content %}
+<div class="mb-6">
+    <a href="{% url 'plantillas:calcular_index' %}" class="text-blue-600 hover:underline">
+        <i class="fas fa-arrow-left mr-2"></i>Volver a calculadora
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Historial de Cálculos</h1>
+    
+    {% if ejecuciones %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plantilla</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inputs</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for ejecucion in ejecuciones %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ ejecucion.created_at|date:"d/m/Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                        {{ ejecucion.plantilla.nombre }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {{ ejecucion.usuario.username|default:"Anónimo" }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ ejecucion.inputs|length }} valores</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if ejecucion.errores %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Con errores</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Exitoso</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-gray-500">
+        <i class="fas fa-history text-6xl mb-4 text-gray-300"></i>
+        <p>No hay cálculos registrados</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

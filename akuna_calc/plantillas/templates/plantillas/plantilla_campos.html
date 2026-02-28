@@ -1,0 +1,106 @@
+{% extends 'plantillas/base_plantillas.html' %}
+{% load plantillas_tags %}
+
+{% block plantillas_content %}
+<div class="mb-6">
+    <a href="{% url 'plantillas:plantilla_list' %}" class="text-blue-600 hover:underline">
+        <i class="fas fa-arrow-left mr-2"></i>Volver al listado
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">{{ plantilla.nombre }}</h1>
+            <p class="text-gray-600 mt-2">{{ plantilla.descripcion }}</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'plantillas:plantilla_probar' plantilla.pk %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-calculator mr-2"></i>Probar Cálculo
+            </a>
+            <a href="{% url 'plantillas:plantilla_edit' plantilla.pk %}" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-edit mr-2"></i>Editar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Campos de la Plantilla</h2>
+        <a href="{% url 'plantillas:campo_create' plantilla.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Agregar Campo
+        </a>
+    </div>
+
+    {% if campos %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Clave</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fórmula</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Req.</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for campo in campos %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ campo.orden }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                        {{ campo.nombre_visible }}
+                        {% if campo.unidad %}<span class="text-gray-500 text-xs ml-1">({{ campo.unidad }})</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-blue-600">{{ campo.clave }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ campo.get_tipo_display }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        {% if campo.modo == 'MANUAL' %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Manual</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Calculado</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm font-mono text-gray-600">
+                        {% if campo.formula %}
+                        <span class="bg-gray-100 px-2 py-1 rounded">{{ campo.formula|truncatechars:30 }}</span>
+                        {% if warnings|get_item:campo.id %}
+                        <span class="ml-2 text-yellow-600" title="{{ warnings|get_item:campo.id }}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </span>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if campo.requerido %}
+                        <i class="fas fa-check text-green-600"></i>
+                        {% else %}
+                        <i class="fas fa-times text-gray-300"></i>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'plantillas:campo_edit' campo.pk %}" class="text-yellow-600 hover:text-yellow-900 mr-3" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'plantillas:campo_delete' campo.pk %}" class="text-red-600 hover:text-red-900" title="Eliminar" onclick="return confirm('¿Eliminar este campo?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+        No hay campos definidos. <a href="{% url 'plantillas:campo_create' plantilla.pk %}" class="text-blue-600 hover:underline">Agregar el primero</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
