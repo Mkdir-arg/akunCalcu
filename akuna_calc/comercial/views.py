@@ -240,6 +240,7 @@ def registrar_pago(request, pk):
         monto = request.POST.get('monto')
         fecha_pago = request.POST.get('fecha_pago')
         forma_pago = request.POST.get('forma_pago')
+        con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
         
@@ -259,6 +260,7 @@ def registrar_pago(request, pk):
                 monto=monto_decimal,
                 fecha_pago=fecha_pago,
                 forma_pago=forma_pago,
+                con_factura=con_factura,
                 numero_factura=numero_factura,
                 observaciones=observaciones,
                 created_by=request.user

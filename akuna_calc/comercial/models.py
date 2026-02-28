@@ -255,6 +255,7 @@ class PagoVenta(models.Model):
     monto = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     fecha_pago = models.DateField()
     forma_pago = models.CharField(max_length=20, choices=FORMA_PAGO_CHOICES)
+    con_factura = models.BooleanField(default=True, verbose_name="Pago en blanco (con factura)")
     numero_factura = models.CharField(max_length=50, blank=True, verbose_name='Número de Factura')
     observaciones = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
