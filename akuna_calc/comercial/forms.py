@@ -70,6 +70,13 @@ class CompraForm(forms.ModelForm):
         label='Tipo de Cuenta'
     )
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si estamos editando, cargar todas las cuentas activas
+        if self.instance and self.instance.pk:
+            self.fields['cuenta'].queryset = Cuenta.objects.filter(activo=True, deleted_at__isnull=True)
+            self.fields['tipo_gasto'].queryset = TipoGasto.objects.filter(activo=True, deleted_at__isnull=True)
+    
     class Meta:
         model = Compra
         exclude = ['created_at', 'created_by']
