@@ -33,6 +33,8 @@ urlpatterns = [
     path('pedidos/<int:pk>/', views.pedido_detail, name='pedido_detail'),
     path('pedidos/<int:pedido_pk>/agregar-item/', views.pedido_add_item, name='pedido_add_item'),
     path('pedidos/items/<int:item_pk>/calcular/', views.pedido_item_calcular, name='pedido_item_calcular'),
+    path('pedidos/items/<int:item_pk>/agregar-fila/', views.pedido_item_add_fila, name='pedido_item_add_fila'),
     path('pedidos/items/<int:item_pk>/duplicar/', views.pedido_item_duplicate, name='pedido_item_duplicate'),
     path('pedidos/items/<int:item_pk>/eliminar/', views.pedido_item_delete, name='pedido_item_delete'),
+    path('pedidos/filas/<int:fila_pk>/eliminar/', views.pedido_fila_delete, name='pedido_fila_delete'),
 ]

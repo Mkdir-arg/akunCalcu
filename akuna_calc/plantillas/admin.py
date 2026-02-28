@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ProductoPlantilla, CampoPlantilla, CalculoEjecucion, PedidoFabrica, PedidoFabricaItem
+from .models import ProductoPlantilla, CampoPlantilla, CalculoEjecucion, PedidoFabrica, PedidoFabricaItem, PedidoFabricaFila
 
 
 class CampoPlantillaInline(admin.TabularInline):
@@ -35,8 +35,7 @@ class CalculoEjecucionAdmin(admin.ModelAdmin):
 class PedidoFabricaItemInline(admin.TabularInline):
     model = PedidoFabricaItem
     extra = 0
-    fields = ['plantilla', 'orden', 'cantidad', 'obs', 'estado']
-    readonly_fields = ['estado']
+    fields = ['plantilla', 'orden']
 
 
 @admin.register(PedidoFabrica)
@@ -49,6 +48,12 @@ class PedidoFabricaAdmin(admin.ModelAdmin):
 
 @admin.register(PedidoFabricaItem)
 class PedidoFabricaItemAdmin(admin.ModelAdmin):
-    list_display = ['pedido', 'plantilla', 'orden', 'cantidad', 'estado']
-    list_filter = ['estado', 'plantilla']
+    list_display = ['pedido', 'plantilla', 'orden']
+    list_filter = ['plantilla']
+
+
+@admin.register(PedidoFabricaFila)
+class PedidoFabricaFilaAdmin(admin.ModelAdmin):
+    list_display = ['item', 'orden', 'cantidad', 'estado']
+    list_filter = ['estado']
     readonly_fields = ['inputs_json', 'outputs_json', 'errores_json']

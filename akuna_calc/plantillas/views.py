@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 
-from .models import ProductoPlantilla, CampoPlantilla, CalculoEjecucion, PedidoFabrica, PedidoFabricaItem
+from .models import ProductoPlantilla, CampoPlantilla, CalculoEjecucion, PedidoFabrica, PedidoFabricaItem, PedidoFabricaFila
 from .forms import ProductoPlantillaForm, CampoPlantillaForm
 from .services.formula_engine import FormulaEngine
 
@@ -320,7 +320,7 @@ def pedido_create(request):
 def pedido_detail(request, pk):
     """Detalle de pedido con cuadros"""
     pedido = get_object_or_404(PedidoFabrica, pk=pk)
-    items = pedido.items.select_related('plantilla').prefetch_related('plantilla__campos').all()
+    items = pedido.items.select_related('plantilla').prefetch_related('plantilla__campos', 'filas').all()
     plantillas_activas = ProductoPlantilla.objects.filter(activo=True)
     
     return render(request, 'plantillas/pedido_detail.html', {
@@ -348,6 +348,12 @@ def pedido_add_item(request, pedido_pk):
             orden=max_orden + 1
         )
         
+        # Crear primera fila automáticamente
+        PedidoFabricaFila.objects.create(
+            item=item,
+            orden=1
+        )
+        
         messages.success(request, f'Plantilla "{plantilla.nombre}" agregada al pedido')
     
     return redirect('plantillas:pedido_detail', pk=pedido.pk)
@@ -355,43 +361,92 @@ def pedido_add_item(request, pedido_pk):
 
 @login_required
 def pedido_item_calcular(request, item_pk):
-    """Calcular un item del pedido"""
+    """Calcular todas las filas de un item"""
     item = get_object_or_404(PedidoFabricaItem, pk=item_pk)
     campos = item.plantilla.campos.all().order_by('orden', 'id')
     
     if request.method == 'POST':
-        # Recoger SOLO inputs manuales
-        inputs = {}
-        for campo in campos:
-            if campo.modo == 'MANUAL':
-                value = request.POST.get(campo.clave, '')
-                if campo.tipo == 'number' and isinstance(value, str):
-                    value = value.replace(',', '.')
-                inputs[campo.clave] = value
+        # Obtener todas las filas del POST
+        filas_data = {}
+        for key, value in request.POST.lists():
+            if key.startswith('fila_'):
+                parts = key.split('_')
+                if len(parts) >= 3:
+                    fila_id = parts[1]
+                    campo = '_'.join(parts[2:])
+                    if fila_id not in filas_data:
+                        filas_data[fila_id] = {}
+                    filas_data[fila_id][campo] = value[0] if len(value) == 1 else value
         
-        # Recoger OBS y CANT
-        item.obs = request.POST.get('obs', '')
-        try:
-            item.cantidad = int(request.POST.get('cantidad', 1))
-        except ValueError:
-            item.cantidad = 1
+        # Procesar cada fila
+        for fila_id_str, data in filas_data.items():
+            try:
+                fila = PedidoFabricaFila.objects.get(pk=int(fila_id_str), item=item)
+            except (ValueError, PedidoFabricaFila.DoesNotExist):
+                continue
+            
+            # Recoger inputs
+            inputs = {}
+            for campo in campos:
+                if campo.modo == 'MANUAL':
+                    value = data.get(campo.clave, '')
+                    if campo.tipo == 'number' and isinstance(value, str):
+                        value = value.replace(',', '.')
+                    inputs[campo.clave] = value
+            
+            # OBS y CANT
+            fila.obs = data.get('obs', '')
+            try:
+                fila.cantidad = int(data.get('cantidad', 1))
+            except ValueError:
+                fila.cantidad = 1
+            
+            # Calcular
+            outputs, errores = FormulaEngine.calculate(list(campos), inputs)
+            
+            # Guardar
+            fila.inputs_json = json.dumps(inputs)
+            fila.outputs_json = json.dumps(outputs)
+            fila.errores_json = json.dumps(errores)
+            fila.estado = 'ERROR' if errores else 'OK'
+            fila.save()
         
-        # Calcular
-        outputs, errores = FormulaEngine.calculate(list(campos), inputs)
-        
-        # Guardar
-        item.inputs_json = json.dumps(inputs)
-        item.outputs_json = json.dumps(outputs)
-        item.errores_json = json.dumps(errores)
-        item.estado = 'ERROR' if errores else 'OK'
-        item.save()
-        
-        if errores:
-            messages.warning(request, f'Item calculado con errores')
-        else:
-            messages.success(request, f'Item calculado exitosamente')
+        messages.success(request, 'Item calculado exitosamente')
     
     return redirect('plantillas:pedido_detail', pk=item.pedido.pk)
+
+
+@login_required
+def pedido_item_add_fila(request, item_pk):
+    """Agregar fila (renglón) a un item"""
+    item = get_object_or_404(PedidoFabricaItem, pk=item_pk)
+    
+    # Calcular orden
+    max_orden = item.filas.count()
+    
+    PedidoFabricaFila.objects.create(
+        item=item,
+        orden=max_orden + 1
+    )
+    
+    messages.success(request, 'Fila agregada')
+    return redirect('plantillas:pedido_detail', pk=item.pedido.pk)
+
+
+@login_required
+def pedido_fila_delete(request, fila_pk):
+    """Eliminar fila"""
+    fila = get_object_or_404(PedidoFabricaFila, pk=fila_pk)
+    pedido_pk = fila.item.pedido.pk
+    
+    # No permitir eliminar si es la única fila
+    if fila.item.filas.count() <= 1:
+        messages.error(request, 'No se puede eliminar la única fila')
+    else:
+        fila.delete()
+        messages.success(request, 'Fila eliminada')
+    
+    return redirect('plantillas:pedido_detail', pk=pedido_pk)
 
 
 @login_required

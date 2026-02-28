@@ -150,12 +150,6 @@ class PedidoFabricaItem(models.Model):
     pedido = models.ForeignKey(PedidoFabrica, on_delete=models.CASCADE, related_name='items')
     plantilla = models.ForeignKey(ProductoPlantilla, on_delete=models.PROTECT)
     orden = models.IntegerField(default=0)
-    inputs_json = models.TextField(default='{}')
-    outputs_json = models.TextField(default='{}')
-    errores_json = models.TextField(default='{}')
-    obs = models.TextField(blank=True, verbose_name='Observaciones')
-    cantidad = models.IntegerField(default=1, verbose_name='Cantidad')
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='SIN_CALCULAR')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -166,6 +160,31 @@ class PedidoFabricaItem(models.Model):
 
     def __str__(self):
         return f"{self.pedido.numero} - Item #{self.orden} - {self.plantilla.nombre}"
+
+
+class PedidoFabricaFila(models.Model):
+    ESTADO_CHOICES = [
+        ('SIN_CALCULAR', 'Sin Calcular'),
+        ('OK', 'OK'),
+        ('ERROR', 'Con Errores'),
+    ]
+    
+    item = models.ForeignKey(PedidoFabricaItem, on_delete=models.CASCADE, related_name='filas')
+    orden = models.IntegerField(default=0)
+    inputs_json = models.TextField(default='{}')
+    outputs_json = models.TextField(default='{}')
+    errores_json = models.TextField(default='{}')
+    obs = models.TextField(blank=True, verbose_name='Observaciones')
+    cantidad = models.IntegerField(default=1, verbose_name='Cantidad')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='SIN_CALCULAR')
+
+    class Meta:
+        verbose_name = 'Fila de Item'
+        verbose_name_plural = 'Filas de Item'
+        ordering = ['item', 'orden', 'id']
+
+    def __str__(self):
+        return f"{self.item} - Fila #{self.orden}"
 
     @property
     def inputs(self):

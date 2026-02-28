@@ -119,15 +119,15 @@
             <button type="submit" form="form-{{ item.pk }}" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow-lg transition-all">
                 <i class="fas fa-calculator mr-2"></i>CALCULAR
             </button>
-            <a href="{% url 'plantillas:pedido_item_duplicate' item.pk %}" 
-               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all" 
-               title="Duplicar">
-                <i class="fas fa-copy"></i>
+            <a href="{% url 'plantillas:pedido_item_add_fila' item.pk %}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all" 
+               title="Agregar fila">
+                <i class="fas fa-plus"></i>
             </a>
             <a href="{% url 'plantillas:pedido_item_delete' item.pk %}" 
-               onclick="return confirm('¿Eliminar este item?')" 
+               onclick="return confirm('¿Eliminar este cuadro completo?')" 
                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all"
-               title="Eliminar">
+               title="Eliminar cuadro">
                 <i class="fas fa-trash"></i>
             </a>
         </div>
@@ -160,35 +160,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
+                    {% for fila in item.filas.all %}
+                    <tr class="hover:bg-gray-50">
                         {% for campo in item.plantilla.campos.all %}
                         <td class="px-3 py-2 {% if campo.modo == 'CALCULADO' %}calculado{% endif %}">
                             {% if campo.modo == 'MANUAL' %}
                                 {% if campo.tipo == 'number' %}
-                                <input type="text" inputmode="decimal" name="{{ campo.clave }}" 
-                                       value="{{ item.inputs|get_item:campo.clave }}"
+                                <input type="text" inputmode="decimal" name="fila_{{ fila.pk }}_{{ campo.clave }}" 
+                                       value="{{ fila.inputs|get_item:campo.clave }}"
                                        placeholder="{{ campo.ayuda|default:'0' }}"
                                        {% if campo.requerido %}required{% endif %}>
                                 {% elif campo.tipo == 'select' %}
-                                <select name="{{ campo.clave }}">
+                                <select name="fila_{{ fila.pk }}_{{ campo.clave }}">
                                     <option value="">-</option>
                                     {% for opcion in campo.opciones|split:'|' %}
-                                    <option value="{{ opcion }}" {% if item.inputs|get_item:campo.clave == opcion %}selected{% endif %}>{{ opcion }}</option>
+                                    <option value="{{ opcion }}" {% if fila.inputs|get_item:campo.clave == opcion %}selected{% endif %}>{{ opcion }}</option>
                                     {% endfor %}
                                 </select>
                                 {% elif campo.tipo == 'bool' %}
                                 <label class="flex items-center justify-center cursor-pointer">
-                                    <input type="checkbox" name="{{ campo.clave }}" {% if item.inputs|get_item:campo.clave %}checked{% endif %} class="w-5 h-5">
+                                    <input type="checkbox" name="fila_{{ fila.pk }}_{{ campo.clave }}" {% if fila.inputs|get_item:campo.clave %}checked{% endif %} class="w-5 h-5">
                                 </label>
                                 {% else %}
-                                <input type="text" name="{{ campo.clave }}" 
-                                       value="{{ item.inputs|get_item:campo.clave }}">
+                                <input type="text" name="fila_{{ fila.pk }}_{{ campo.clave }}" 
+                                       value="{{ fila.inputs|get_item:campo.clave }}">
                                 {% endif %}
                             {% else %}
                                 <div class="text-center font-mono text-base">
-                                    {% if item.outputs|get_item:campo.clave %}
-                                        {{ item.outputs|get_item:campo.clave|floatformat:2 }}
-                                    {% elif item.errores|get_item:campo.clave %}
+                                    {% if fila.outputs|get_item:campo.clave %}
+                                        {{ fila.outputs|get_item:campo.clave|floatformat:2 }}
+                                    {% elif fila.errores|get_item:campo.clave %}
                                         <span class="text-red-600 font-bold">ERROR</span>
                                     {% else %}
                                         <span class="text-gray-400">—</span>
@@ -198,12 +199,23 @@
                         </td>
                         {% endfor %}
                         <td class="px-3 py-2">
-                            <input type="text" name="obs" value="{{ item.obs }}" placeholder="Observaciones...">
+                            <input type="text" name="fila_{{ fila.pk }}_obs" value="{{ fila.obs }}" placeholder="Observaciones...">
                         </td>
                         <td class="px-3 py-2">
-                            <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="text-center font-bold">
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="fila_{{ fila.pk }}_cantidad" value="{{ fila.cantidad }}" min="1" class="text-center font-bold flex-1">
+                                {% if item.filas.count > 1 %}
+                                <a href="{% url 'plantillas:pedido_fila_delete' fila.pk %}" 
+                                   onclick="return confirm('¿Eliminar esta fila?')" 
+                                   class="text-red-600 hover:text-red-800"
+                                   title="Eliminar fila">
+                                    <i class="fas fa-times-circle"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </form>
