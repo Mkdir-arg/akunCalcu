@@ -19,13 +19,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'security',  # App de seguridad
+    'rest_framework',
+    'security',
     'core',
     'productos',
     'usuarios',
     'comercial',
     'facturacion',
-    'plantillas',  # Plantillas de despiece
+    'plantillas',
+    'pricing',
 ]
 
 MIDDLEWARE = [
