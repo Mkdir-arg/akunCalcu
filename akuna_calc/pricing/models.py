@@ -11,7 +11,7 @@ class Extrusora(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = "extrusoras"
 
 
