@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pricing', '0002_alter_extrusora_options'),
+        ('pricing', '0001_initial'),
     ]
 
     operations = [
