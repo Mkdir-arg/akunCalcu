@@ -11,6 +11,8 @@ urlpatterns = [
     path('comercial/', include('comercial.urls')),
     path('facturacion/', include('facturacion.urls')),
     path('security/', include('security.urls')),  # Módulo de seguridad y backups
+    path('plantillas/', include('plantillas.urls')),  # Plantillas de despiece
+    path('pricing/', include('pricing.urls')),
 ]
 
 # Serve static files in development

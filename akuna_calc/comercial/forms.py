@@ -195,3 +195,41 @@ class ReporteForm(forms.Form):
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_factura'})
     )
+
+
+class ReporteGastosForm(forms.Form):
+    TIPO_FACTURA_CHOICES = [
+        ('blanco', 'Blanco'),
+        ('negro', 'Negro'),
+    ]
+    
+    fecha_desde = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
+    )
+    fecha_hasta = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'})
+    )
+    cuenta = forms.ModelMultipleChoiceField(
+        queryset=Cuenta.objects.filter(deleted_at__isnull=True, activo=True),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    tipo_cuenta = forms.ModelMultipleChoiceField(
+        queryset=TipoCuenta.objects.filter(deleted_at__isnull=True, activo=True),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    tipo_factura = forms.MultipleChoiceField(
+        choices=TIPO_FACTURA_CHOICES,
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fecha_desde'].widget.format = '%Y-%m-%d'
+        self.fields['fecha_hasta'].widget.format = '%Y-%m-%d'

@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title|default:"Plantillas de Despiece" }} - Akuna Calc{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% block plantillas_content %}{% endblock %}
+</div>
+{% endblock %}

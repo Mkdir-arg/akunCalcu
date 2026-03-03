@@ -1,0 +1,167 @@
+{% extends 'plantillas/base_plantillas.html' %}
+
+{% block plantillas_content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'plantillas:plantilla_campos' plantilla.pk %}" class="text-blue-600 hover:underline">
+            <i class="fas fa-arrow-left mr-2"></i>Volver a campos
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ title }}</h2>
+        <p class="text-gray-600 mb-6">Plantilla: {{ plantilla.nombre }}</p>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Visible *</label>
+                    {{ form.nombre_visible }}
+                    {% if form.nombre_visible.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.nombre_visible.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Clave Interna *</label>
+                    {{ form.clave }}
+                    <p class="mt-1 text-xs text-gray-500">Para usar en fórmulas (ej: ANCHO, ALTO)</p>
+                    {% if form.clave.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.clave.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+                    {{ form.tipo }}
+                    {% if form.tipo.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unidad</label>
+                    {{ form.unidad }}
+                    {% if form.unidad.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.unidad.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Orden</label>
+                    {{ form.orden }}
+                    {% if form.orden.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.orden.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Modo *</label>
+                {{ form.modo }}
+                <p class="mt-1 text-xs text-gray-500">Manual: el usuario ingresa el valor. Calculado: se calcula con fórmula</p>
+                {% if form.modo.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.modo.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div id="formula-container" style="display: {% if form.modo.value == 'CALCULADO' %}block{% else %}none{% endif %};" class="p-4 rounded-lg border-2 border-purple-500 bg-purple-50">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Fórmula * <span class="text-purple-600">(requerido para campos calculados)</span>
+                </label>
+                {{ form.formula }}
+                <p class="mt-1 text-xs text-gray-500">Ejemplos: ANCHO - 42, (ALTO / 2) + 10, SI(TIPO = BALCON; ANCHO - 50; ANCHO - 42)</p>
+                <p class="mt-1 text-xs text-blue-600">Separador de argumentos: punto y coma (;)</p>
+                {% if form.formula.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.formula.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div id="opciones-container" style="display: {% if form.tipo.value == 'select' %}block{% else %}none{% endif %};" class="p-4 rounded-lg border-2 border-green-500 bg-green-50">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Opciones * <span class="text-green-600">(requerido para tipo select)</span>
+                </label>
+                {{ form.opciones }}
+                <p class="mt-1 text-xs text-gray-500">Separar opciones con | (ej: BALCON|VENTANA|PUERTA)</p>
+                {% if form.opciones.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.opciones.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Ayuda / Placeholder</label>
+                {{ form.ayuda }}
+                {% if form.ayuda.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.ayuda.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center">
+                {{ form.requerido }}
+                <label class="ml-2 text-sm text-gray-700">Campo requerido</label>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                    <i class="fas fa-save mr-2"></i>Guardar
+                </button>
+                <a href="{% url 'plantillas:plantilla_campos' plantilla.pk %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modoSelect = document.getElementById('{{ form.modo.id_for_label }}');
+    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+    const formulaContainer = document.getElementById('formula-container');
+    const opcionesContainer = document.getElementById('opciones-container');
+
+    function toggleFormula() {
+        if (!modoSelect || !formulaContainer) {
+            return;
+        }
+        formulaContainer.style.display = (modoSelect.value === 'CALCULADO') ? 'block' : 'none';
+    }
+
+    function toggleOpciones() {
+        if (!tipoSelect || !opcionesContainer) {
+            return;
+        }
+        opcionesContainer.style.display = (tipoSelect.value === 'select') ? 'block' : 'none';
+    }
+
+    if (modoSelect) {
+        modoSelect.addEventListener('change', toggleFormula);
+    }
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', toggleOpciones);
+    }
+
+    // Compatibilidad con Select2 (si está activo en el select)
+    if (window.jQuery) {
+        const $modo = window.jQuery(modoSelect);
+        const $tipo = window.jQuery(tipoSelect);
+        if ($modo.length) {
+            $modo.on('select2:select select2:clear', toggleFormula);
+        }
+        if ($tipo.length) {
+            $tipo.on('select2:select select2:clear', toggleOpciones);
+        }
+    }
+
+    toggleFormula();
+    toggleOpciones();
+});
+</script>
+{% endblock %}

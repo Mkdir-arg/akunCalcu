@@ -1272,6 +1272,177 @@ def exportar_reporte_excel(request):
 
 
 @login_required
+def reportes_gastos(request):
+    from datetime import datetime
+    from .forms import ReporteGastosForm
+    
+    form = ReporteGastosForm()
+    
+    fecha_desde = None
+    fecha_hasta = None
+    cuenta_filtro = None
+    tipo_cuenta_filtro = None
+    tipo_factura_filtro = None
+    
+    if request.method == 'POST':
+        form = ReporteGastosForm(request.POST)
+        if form.is_valid():
+            fecha_desde = form.cleaned_data.get('fecha_desde')
+            fecha_hasta = form.cleaned_data.get('fecha_hasta')
+            cuenta_filtro = form.cleaned_data.get('cuenta')
+            tipo_cuenta_filtro = form.cleaned_data.get('tipo_cuenta')
+            tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
+            
+            request.session['reporte_gastos_filtros'] = {
+                'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
+                'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
+                'cuenta_id': [c.id for c in cuenta_filtro] if cuenta_filtro else None,
+                'tipo_cuenta_id': [t.id for t in tipo_cuenta_filtro] if tipo_cuenta_filtro else None,
+                'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
+            }
+    
+    gastos = []
+    compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta')
+    
+    if fecha_desde:
+        compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
+    if fecha_hasta:
+        compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
+    if cuenta_filtro:
+        compras_query = compras_query.filter(cuenta__in=cuenta_filtro)
+    if tipo_cuenta_filtro:
+        compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            compras_query = compras_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            compras_query = compras_query.filter(con_factura=False)
+    
+    for compra in compras_query:
+        gastos.append({
+            'fecha': compra.fecha_pago,
+            'numero_pedido': compra.numero_pedido or '-',
+            'numero_factura': compra.numero_factura or '-',
+            'cuenta': str(compra.cuenta),
+            'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
+            'monto': compra.importe_abonado,
+            'tipo': 'Blanco' if compra.con_factura else 'Negro'
+        })
+    
+    gastos.sort(key=lambda x: x['fecha'], reverse=True)
+    
+    total_blanco = sum(g['monto'] for g in gastos if g['tipo'] == 'Blanco')
+    total_negro = sum(g['monto'] for g in gastos if g['tipo'] == 'Negro')
+    total = total_blanco + total_negro
+    
+    cantidad_blanco = len([g for g in gastos if g['tipo'] == 'Blanco'])
+    cantidad_negro = len([g for g in gastos if g['tipo'] == 'Negro'])
+    
+    reporte_data = {
+        'gastos': {
+            'total_blanco': total_blanco,
+            'total_negro': total_negro,
+            'total': total,
+            'cantidad_blanco': cantidad_blanco,
+            'cantidad_negro': cantidad_negro,
+            'cantidad': len(gastos),
+            'lista': gastos
+        }
+    }
+    
+    context = {
+        'form': form,
+        'reporte_data': reporte_data,
+    }
+    return render(request, 'comercial/reportes/reportes_gastos.html', context)
+
+
+@login_required
+def exportar_reporte_gastos_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
+    
+    gastos = []
+    compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta')
+    
+    for compra in compras_query:
+        gastos.append({
+            'fecha': compra.fecha_pago,
+            'numero_pedido': compra.numero_pedido or '-',
+            'numero_factura': compra.numero_factura or '-',
+            'cuenta': str(compra.cuenta),
+            'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
+            'monto': float(compra.importe_abonado),
+            'tipo': 'Blanco' if compra.con_factura else 'Negro'
+        })
+    
+    gastos.sort(key=lambda x: x['fecha'], reverse=True)
+    
+    total_blanco = sum(g['monto'] for g in gastos if g['tipo'] == 'Blanco')
+    total_negro = sum(g['monto'] for g in gastos if g['tipo'] == 'Negro')
+    total = total_blanco + total_negro
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Gastos"
+    
+    header_fill = PatternFill(start_color="DC2626", end_color="DC2626", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    title_font = Font(bold=True, size=14)
+    
+    ws['A1'] = 'REPORTE DE GASTOS'
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:G1')
+    
+    ws['A3'] = 'Total Gastos Blanco:'
+    ws['B3'] = total_blanco
+    ws['B3'].number_format = '$#,##0.00'
+    ws['A3'].font = Font(bold=True)
+    
+    ws['A4'] = 'Total Gastos Negro:'
+    ws['B4'] = total_negro
+    ws['B4'].number_format = '$#,##0.00'
+    ws['A4'].font = Font(bold=True)
+    
+    ws['A5'] = 'TOTAL GASTOS:'
+    ws['B5'] = total
+    ws['B5'].number_format = '$#,##0.00'
+    ws['A5'].font = Font(bold=True, size=12)
+    ws['B5'].font = Font(bold=True, size=12)
+    
+    headers = ['Fecha Pago', 'N° Pedido', 'N° Factura', 'Cuenta', 'Tipo Cuenta', 'Monto', 'Tipo']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(7, col, header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+    
+    for row, gasto in enumerate(gastos, 8):
+        ws.cell(row, 1, gasto['fecha'].strftime('%d/%m/%Y'))
+        ws.cell(row, 2, gasto['numero_pedido'])
+        ws.cell(row, 3, gasto['numero_factura'])
+        ws.cell(row, 4, gasto['cuenta'])
+        ws.cell(row, 5, gasto['tipo_cuenta'])
+        cell = ws.cell(row, 6, gasto['monto'])
+        cell.number_format = '$#,##0.00'
+        ws.cell(row, 7, gasto['tipo'])
+    
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 25
+    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 10
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=reporte_gastos.xlsx'
+    wb.save(response)
+    return response
+
+
+@login_required
 def editar_fecha_sena(request, pk):
     import json
     from datetime import datetime

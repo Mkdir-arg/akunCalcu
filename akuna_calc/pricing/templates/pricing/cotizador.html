@@ -1,0 +1,368 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Cotizador de Aberturas{% endblock %}
+
+{% block extra_head %}
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="cotizador-root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const Select = ({ label, options, value, onChange, placeholder, searchable = true }) => {
+  const [search, setSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filtered = options.filter(opt => {
+    const text = opt.descripcion || opt.nombre || '';
+    return text.toLowerCase().includes(search.toLowerCase());
+  });
+
+  const selected = options.find(opt => 
+    (opt.id && opt.id === value) || (opt.codigo && opt.codigo === value)
+  );
+  const selectedText = selected ? (selected.descripcion || selected.nombre) : placeholder;
+
+  return (
+    <div className="relative mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-3 py-2 text-left border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {selectedText}
+        </button>
+        
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden">
+              {searchable && (
+                <div className="p-2 border-b">
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
+              <div className="overflow-y-auto max-h-48">
+                {filtered.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">No hay resultados</div>
+                ) : (
+                  filtered.map((opt) => (
+                    <button
+                      key={opt.id || opt.codigo}
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.id || opt.codigo);
+                        setIsOpen(false);
+                        setSearch('');
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                    >
+                      {opt.descripcion || opt.nombre}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Cotizador = () => {
+  const [config, setConfig] = useState({
+    extrusora_id: null,
+    linea_id: null,
+    producto_id: null,
+    marco_id: null,
+    hoja_id: null,
+    interior_id: null,
+    ancho_mm: 1200,
+    alto_mm: 1500,
+    vidrio_codigo: '',
+    margen_porcentaje: 30,
+  });
+
+  const [extrusoras, setExtrusoras] = useState([]);
+  const [lineas, setLineas] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [marcos, setMarcos] = useState([]);
+  const [hojas, setHojas] = useState([]);
+  const [interiores, setInteriores] = useState([]);
+  const [vidrios, setVidrios] = useState([]);
+  const [tratamientos, setTratamientos] = useState([]);
+  const [mosquiteros, setMosquiteros] = useState([]);
+  const [contravidrios, setContravidrios] = useState([]);
+  const [contravidriosExterior, setContravidriosExterior] = useState([]);
+  const [cruces, setCruces] = useState([]);
+  const [vidriosRepartidos, setVidriosRepartidos] = useState([]);
+
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
+    fetch('/api/pricing/vidrios/').then(r => r.json()).then(data => 
+      setVidrios(data.map(v => ({ codigo: v.codigo, descripcion: `${v.codigo} - ${v.descripcion}` })))
+    );
+    fetch('/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
+  }, []);
+
+  useEffect(() => {
+    if (config.extrusora_id) {
+      fetch(`/api/pricing/lineas/?extrusora_id=${config.extrusora_id}`).then(r => r.json()).then(setLineas);
+    }
+  }, [config.extrusora_id]);
+
+  useEffect(() => {
+    if (config.linea_id) {
+      fetch(`/api/pricing/productos/?linea_id=${config.linea_id}`).then(r => r.json()).then(setProductos);
+    }
+  }, [config.linea_id]);
+
+  useEffect(() => {
+    if (config.producto_id) {
+      fetch(`/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
+    }
+  }, [config.producto_id]);
+
+  useEffect(() => {
+    if (config.marco_id) {
+      fetch(`/api/pricing/hojas/?marco_id=${config.marco_id}`).then(r => r.json()).then(setHojas);
+    }
+  }, [config.marco_id]);
+
+  useEffect(() => {
+    if (config.hoja_id) {
+      fetch(`/api/pricing/interiores/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setInteriores);
+      fetch(`/api/pricing/mosquiteros/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setMosquiteros);
+    }
+  }, [config.hoja_id]);
+
+  useEffect(() => {
+    if (config.interior_id) {
+      fetch(`/api/pricing/contravidrios/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidrios);
+      fetch(`/api/pricing/contravidrios-exterior/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidriosExterior);
+      fetch(`/api/pricing/cruces/?interior_id=${config.interior_id}`).then(r => r.json()).then(setCruces);
+      fetch(`/api/pricing/vidrios-repartidos/?interior_id=${config.interior_id}`).then(r => r.json()).then(setVidriosRepartidos);
+    }
+  }, [config.interior_id]);
+
+  const handleCalculate = async () => {
+    if (!config.marco_id || !config.hoja_id || !config.interior_id || !config.vidrio_codigo) {
+      setError('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/pricing/calculate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error al calcular precio');
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+          <i className="fas fa-calculator mr-3 text-blue-600"></i>
+          Cotizador de Aberturas
+        </h1>
+        <p className="text-gray-600 mt-2">Calcula el precio de aberturas de aluminio</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Configuración</h2>
+          
+          <Select label="Extrusora" options={extrusoras} value={config.extrusora_id}
+            onChange={(id) => setConfig({ ...config, extrusora_id: id, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, interior_id: null })}
+            placeholder="Selecciona una extrusora" />
+
+          <Select label="Línea" options={lineas} value={config.linea_id}
+            onChange={(id) => setConfig({ ...config, linea_id: id, producto_id: null, marco_id: null, hoja_id: null, interior_id: null })}
+            placeholder={config.extrusora_id ? "Selecciona una línea" : "Primero selecciona una extrusora"} />
+
+          <Select label="Producto" options={productos} value={config.producto_id}
+            onChange={(id) => setConfig({ ...config, producto_id: id, marco_id: null, hoja_id: null, interior_id: null })}
+            placeholder={config.linea_id ? "Selecciona un producto" : "Primero selecciona una línea"} />
+
+          <Select label="Marco" options={marcos} value={config.marco_id}
+            onChange={(id) => setConfig({ ...config, marco_id: id, hoja_id: null, interior_id: null })}
+            placeholder={config.producto_id ? "Selecciona un marco" : "Primero selecciona un producto"} />
+
+          <Select label="Hoja" options={hojas} value={config.hoja_id}
+            onChange={(id) => setConfig({ ...config, hoja_id: id, interior_id: null })}
+            placeholder={config.marco_id ? "Selecciona una hoja" : "Primero selecciona un marco"} />
+
+          <Select label="Interior" options={interiores} value={config.interior_id}
+            onChange={(id) => setConfig({ ...config, interior_id: id })}
+            placeholder={config.hoja_id ? "Selecciona un interior" : "Primero selecciona una hoja"} />
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ancho (mm)</label>
+              <input type="number" value={config.ancho_mm}
+                onChange={(e) => setConfig({ ...config, ancho_mm: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Alto (mm)</label>
+              <input type="number" value={config.alto_mm}
+                onChange={(e) => setConfig({ ...config, alto_mm: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+
+          <Select label="Vidrio" options={vidrios} value={config.vidrio_codigo}
+            onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
+            placeholder="Selecciona un vidrio" />
+
+          <Select label="Tratamiento (Opcional)" options={tratamientos} value={config.tratamiento_id || null}
+            onChange={(id) => setConfig({ ...config, tratamiento_id: id })}
+            placeholder="Sin tratamiento" />
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Opciones Adicionales</h3>
+            
+            <Select label="Mosquitero (Opcional)" options={mosquiteros} value={config.mosquitero_id || null}
+              onChange={(id) => setConfig({ ...config, mosquitero_id: id })}
+              placeholder={config.hoja_id ? "Sin mosquitero" : "Primero selecciona una hoja"} />
+
+            <Select label="Contravidrio (Opcional)" options={contravidrios} value={config.contravidrio_id || null}
+              onChange={(id) => setConfig({ ...config, contravidrio_id: id })}
+              placeholder={config.interior_id ? "Sin contravidrio" : "Primero selecciona un interior"} />
+
+            <Select label="Contravidrio Exterior (Opcional)" options={contravidriosExterior} value={config.contravidrio_exterior_id || null}
+              onChange={(id) => setConfig({ ...config, contravidrio_exterior_id: id })}
+              placeholder={config.interior_id ? "Sin contravidrio exterior" : "Primero selecciona un interior"} />
+
+            <Select label="Cruces (Opcional)" options={cruces} value={config.cruces_id || null}
+              onChange={(id) => setConfig({ ...config, cruces_id: id })}
+              placeholder={config.interior_id ? "Sin cruces" : "Primero selecciona un interior"} />
+
+            <Select label="Vidrio Repartido (Opcional)" options={vidriosRepartidos} value={config.vidrio_repartido_id || null}
+              onChange={(id) => setConfig({ ...config, vidrio_repartido_id: id })}
+              placeholder={config.interior_id ? "Sin vidrio repartido" : "Primero selecciona un interior"} />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Margen (%)</label>
+            <input type="number" value={config.margen_porcentaje}
+              onChange={(e) => setConfig({ ...config, margen_porcentaje: parseFloat(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <button onClick={handleCalculate} disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex items-center justify-center">
+            {loading ? 'Calculando...' : (
+              <><i className="fas fa-calculator mr-2"></i>Calcular Precio</>
+            )}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Resultado</h2>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
+
+          {result ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-medium text-gray-700">Precio Total</span>
+                  <span className="text-3xl font-bold text-blue-600">
+                    ${result.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">${result.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-600">Margen ({config.margen_porcentaje}%)</span>
+                  <span className="font-medium text-green-600">${result.margen.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="font-semibold mb-3">Desglose por Categoría</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
+                    <span className="text-gray-700">Perfiles</span>
+                    <span className="font-medium">${result.resumen.total_perfiles.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
+                    <span className="text-gray-700">Accesorios</span>
+                    <span className="font-medium">${result.resumen.total_accesorios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
+                    <span className="text-gray-700">Vidrios</span>
+                    <span className="font-medium">${result.resumen.total_vidrios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  {result.resumen.total_tratamiento > 0 && (
+                    <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
+                      <span className="text-gray-700">Tratamiento</span>
+                      <span className="font-medium">${result.resumen.total_tratamiento.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400">
+              <i className="fas fa-dollar-sign text-6xl mb-4 opacity-50"></i>
+              <p>Completa el formulario y haz clic en "Calcular Precio"</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('cotizador-root'));
+root.render(<Cotizador />);
+</script>
+{% endblock %}
