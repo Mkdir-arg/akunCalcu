@@ -203,7 +203,7 @@ def venta_edit(request, pk):
             
             form.save()
             messages.success(request, 'Venta actualizada exitosamente.')
-            return redirect('comercial:ventas_list')
+            return redirect('comercial:venta_detail', pk=pk)
     else:
         form = VentaForm(instance=venta)
     return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
@@ -240,6 +240,7 @@ def registrar_pago(request, pk):
         monto = request.POST.get('monto')
         fecha_pago = request.POST.get('fecha_pago')
         forma_pago = request.POST.get('forma_pago')
+        con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
         
@@ -259,6 +260,7 @@ def registrar_pago(request, pk):
                 monto=monto_decimal,
                 fecha_pago=fecha_pago,
                 forma_pago=forma_pago,
+                con_factura=con_factura,
                 numero_factura=numero_factura,
                 observaciones=observaciones,
                 created_by=request.user
@@ -615,11 +617,15 @@ def compra_edit(request, pk):
             form.save()
             messages.success(request, 'Gasto actualizado exitosamente.')
             return redirect('comercial:compras_list')
+        # Si hay errores, pre-seleccionar el tipo de cuenta del POST
+        tipo_cuenta_id = request.POST.get('tipo_cuenta_filter')
+        if tipo_cuenta_id:
+            form.fields['tipo_cuenta_filter'].initial = tipo_cuenta_id
     else:
         form = CompraForm(instance=compra)
         # Pre-seleccionar el tipo de cuenta
         if compra.cuenta:
-            form.fields['tipo_cuenta_filter'].initial = compra.cuenta.tipo_cuenta
+            form.fields['tipo_cuenta_filter'].initial = compra.cuenta.tipo_cuenta_id
     
     context = {
         'form': form,
@@ -998,11 +1004,22 @@ def reportes(request):
         pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
     if tipo_factura_filtro:
         if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=True)
+            try:
+                pagos_query = pagos_query.filter(con_factura=True)
+            except:
+                pagos_query = pagos_query.filter(venta__con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            pagos_query = pagos_query.filter(venta__con_factura=False)
+            try:
+                pagos_query = pagos_query.filter(con_factura=False)
+            except:
+                pagos_query = pagos_query.filter(venta__con_factura=False)
     
     for pago in pagos_query:
+        try:
+            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
+        except:
+            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
+        
         ingresos.append({
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
@@ -1012,7 +1029,7 @@ def reportes(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': pago.monto,
-            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro',
+            'tipo': tipo_pago,
             'venta_id': pago.venta.id
         })
     
@@ -1087,6 +1104,7 @@ def editar_pago(request, pk):
             monto = Decimal(str(data.get('monto')))
             fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
+            con_factura = data.get('con_factura', True)
             numero_factura = data.get('numero_factura', '')
             observaciones = data.get('observaciones', '')
             
@@ -1102,6 +1120,7 @@ def editar_pago(request, pk):
             pago.monto = monto
             pago.fecha_pago = fecha_pago
             pago.forma_pago = forma_pago
+            pago.con_factura = con_factura
             pago.numero_factura = numero_factura
             pago.observaciones = observaciones
             pago.save()
@@ -1116,6 +1135,7 @@ def editar_pago(request, pk):
                     'monto': float(pago.monto),
                     'fecha_pago': pago.fecha_pago.strftime('%d/%m/%Y'),
                     'forma_pago': pago.get_forma_pago_display(),
+                    'con_factura': pago.con_factura,
                     'numero_factura': pago.numero_factura or '-',
                     'observaciones': pago.observaciones or '-'
                 },
@@ -1158,6 +1178,11 @@ def exportar_reporte_excel(request):
         })
     
     for pago in pagos_query:
+        try:
+            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
+        except:
+            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
+        
         ingresos.append({
             'fecha': pago.fecha_pago,
             'pedido': pago.venta.numero_pedido,
@@ -1166,7 +1191,7 @@ def exportar_reporte_excel(request):
             'razon_social': pago.venta.cliente.razon_social or '-',
             'forma_pago': pago.get_forma_pago_display(),
             'monto': float(pago.monto),
-            'tipo': 'Blanco' if pago.venta.con_factura else 'Negro'
+            'tipo': tipo_pago
         })
     
     # Ordenar por fecha
