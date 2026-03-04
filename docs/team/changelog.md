@@ -14,6 +14,14 @@
 
 ---
 
+## 2026-03-04 — Documento V1 del sistema
+
+**User Story:** Como equipo de desarrollo, quiero un documento V1 del sistema.
+**Archivos creados:** `docs/V1-sistema.md`
+**Descripción:** Análisis completo del sistema. Se documentaron 8 módulos, sus procesos, cálculos internos, arquitectura técnica, flujos de trabajo, integraciones y glosario del negocio.
+
+---
+
 ## 2026-03-04 — Setup del equipo de agentes
 
 **Descripción**: Se configuró la estructura del equipo de desarrollo con metodología Scrum guiado.
