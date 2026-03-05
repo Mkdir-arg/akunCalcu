@@ -39,10 +39,10 @@
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Localidad</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Teléfono</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Email</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Localidad</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Teléfono</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Email</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -57,10 +57,10 @@
                                 <span class="font-semibold text-slate-800">{{ cliente.nombre }} {{ cliente.apellido }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ cliente.razon_social|default:"-" }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ cliente.localidad }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ cliente.telefono|default:"-" }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ cliente.email|default:"-" }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ cliente.razon_social|default:"-" }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ cliente.localidad }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ cliente.telefono|default:"-" }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ cliente.email|default:"-" }}</td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{% url 'comercial:cliente_edit' cliente.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">

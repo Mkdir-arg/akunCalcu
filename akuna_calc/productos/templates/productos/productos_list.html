@@ -2,7 +2,7 @@
 {% load custom_filters %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in">
+<div class="max-w-full mx-auto px-4 animate-fade-in">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
@@ -29,9 +29,9 @@
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Categoría</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Categoría</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Precio por m²</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -46,13 +46,13 @@
                                 <span class="font-semibold text-slate-800">{{ producto.nombre }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 font-medium">
                             {{ producto.get_categoria_display }}
                         </td>
                         <td class="px-6 py-4 text-base font-bold text-slate-800">
                             ${{ producto.precio_m2|formato_numero }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="hidden sm:table-cell px-6 py-4">
                             {% if producto.activo %}
                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                     <i class="fas fa-check-circle mr-1"></i>Activo

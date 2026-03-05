@@ -41,18 +41,18 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Usuario</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Ítems del pedido</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Transcripción</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Transcripción</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for pedido in pedidos %}
                     <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-semibold text-slate-800">#{{ pedido.pk }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-semibold text-slate-800">#{{ pedido.pk }}</td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -78,7 +78,7 @@
                                 {% endfor %}
                             </ul>
                         </td>
-                        <td class="px-6 py-4 max-w-xs">
+                        <td class="hidden md:table-cell px-6 py-4 max-w-xs">
                             <p class="text-xs text-slate-500 truncate" title="{{ pedido.transcripcion_original }}">
                                 {{ pedido.transcripcion_original|truncatechars:80 }}
                             </p>
@@ -98,7 +98,7 @@
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
                             {{ pedido.created_at|date:"d/m/Y H:i" }}
                         </td>
                     </tr>

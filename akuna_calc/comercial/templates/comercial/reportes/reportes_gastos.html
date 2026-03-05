@@ -125,25 +125,25 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Pedido</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Factura</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Pedido</th>
+                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Factura</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cuenta</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Cuenta</th>
+                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Cuenta</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for gasto in reporte_data.gastos.lista %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ gasto.fecha|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_pedido }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_factura }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">{{ gasto.fecha|date:"d/m/Y" }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_pedido }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_factura }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ gasto.cuenta }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ gasto.tipo_cuenta }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-600">{{ gasto.tipo_cuenta }}</td>
                         <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ gasto.monto|formato_numero }}</td>
-                        <td class="px-6 py-4">
+                        <td class="hidden sm:table-cell px-6 py-4">
                             {% if gasto.tipo == 'Blanco' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
                             {% else %}

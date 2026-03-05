@@ -61,9 +61,9 @@
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo Cuenta</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo Cuenta</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -71,9 +71,9 @@
                     {% for tipo in tipos %}
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ tipo.nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ tipo.tipo_cuenta }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ tipo.descripcion|default:"-" }}</td>
-                        <td class="px-6 py-4">
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ tipo.tipo_cuenta }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-600">{{ tipo.descripcion|default:"-" }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4">
                             {% if tipo.activo %}
                                 <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                                     <i class="fas fa-check-circle mr-1"></i>Activo
