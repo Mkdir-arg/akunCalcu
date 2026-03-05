@@ -40,18 +40,35 @@ services:
       DJANGO_SUPERUSER_EMAIL: admin@example.com
       DJANGO_SUPERUSER_PASSWORD: admin123
       DEBUG: "true"
+      TELEGRAM_BOT_SECRET: "akuna-bot-secret-2024"
     depends_on:
       - db
     volumes:
       - ./akuna_calc:/app
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: n8nio/n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
+    environment:
+      - WEBHOOK_URL=https://mya-hypernatural-dalton.ngrok-free.dev
+      - N8N_EDITOR_BASE_URL=https://mya-hypernatural-dalton.ngrok-free.dev
     volumes:
       - n8n_data:/home/node/.n8n
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command:
+      - "start"
+      - "--all"
+      - "--config"
+      - "/etc/ngrok.yml"
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml
+    ports:
+      - 4040:4040
 
 volumes:
   mysql_data:

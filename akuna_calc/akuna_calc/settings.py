@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'facturacion',
     'plantillas',
     'pricing',
+    'pedidos',
 ]
 
 MIDDLEWARE = [

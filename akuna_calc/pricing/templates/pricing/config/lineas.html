@@ -1,9 +1,10 @@
 {% extends 'core/base.html' %}
 {% block title %}Configuración - Líneas{% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto px-4">
     <h1 class="text-3xl font-bold text-slate-800 mb-8">Líneas</h1>
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -24,6 +25,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 {% endblock %}
