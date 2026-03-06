@@ -592,3 +592,10 @@ def api_get_extrusoras(request):
     return JsonResponse({
         'extrusoras': [{'id': e.id, 'nombre': str(e)} for e in extrusoras]
     })
+
+
+@login_required
+def api_get_perfiles(request):
+    """Retorna lista de perfiles para el selector del formulario de fórmulas."""
+    perfiles = Perfil.objects.filter(bloqueado__isnull=True).values('codigo', 'descripcion')
+    return JsonResponse(list(perfiles), safe=False)
