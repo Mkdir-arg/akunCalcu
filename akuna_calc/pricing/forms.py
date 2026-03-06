@@ -26,6 +26,9 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = ['extrusora', 'linea', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
         widgets = {
             'extrusora': forms.Select(attrs={'class': _select_class}),
             'linea': forms.Select(attrs={'class': _select_class}),
