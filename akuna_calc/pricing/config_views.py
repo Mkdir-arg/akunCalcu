@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Max
+from django.http import JsonResponse
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento
 from .forms import (
     ExtrusoraForm, LineaForm, ProductoForm, MarcoForm, HojaForm, InteriorForm,
@@ -470,3 +471,56 @@ def tratamiento_delete(request, pk):
         obj.save()
         messages.success(request, 'Tratamiento desactivado.')
     return redirect('config-tratamientos')
+
+
+# ─── API ENDPOINTS ────────────────────────────────────────────────────────────
+
+@login_required
+def api_get_producto(request, pk):
+    """Retorna datos del producto para autocompletar formularios."""
+    try:
+        producto = Producto.objects.select_related('extrusora', 'linea').get(pk=pk)
+        return JsonResponse({
+            'extrusora_id': producto.extrusora.id,
+            'extrusora_nombre': str(producto.extrusora),
+            'linea_id': producto.linea.id,
+            'linea_nombre': str(producto.linea),
+        })
+    except Producto.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+
+
+@login_required
+def api_get_marco(request, pk):
+    """Retorna datos del marco para autocompletar formularios."""
+    try:
+        marco = Marco.objects.select_related('producto__extrusora', 'producto__linea').get(pk=pk)
+        return JsonResponse({
+            'extrusora_id': marco.producto.extrusora.id,
+            'extrusora_nombre': str(marco.producto.extrusora),
+            'linea_id': marco.producto.linea.id,
+            'linea_nombre': str(marco.producto.linea),
+            'producto_id': marco.producto.id,
+            'producto_nombre': str(marco.producto),
+        })
+    except Marco.DoesNotExist:
+        return JsonResponse({'error': 'Marco no encontrado'}, status=404)
+
+
+@login_required
+def api_get_hoja(request, pk):
+    """Retorna datos de la hoja para autocompletar formularios."""
+    try:
+        hoja = Hoja.objects.select_related('marco__producto__extrusora', 'marco__producto__linea').get(pk=pk)
+        return JsonResponse({
+            'extrusora_id': hoja.marco.producto.extrusora.id,
+            'extrusora_nombre': str(hoja.marco.producto.extrusora),
+            'linea_id': hoja.marco.producto.linea.id,
+            'linea_nombre': str(hoja.marco.producto.linea),
+            'producto_id': hoja.marco.producto.id,
+            'producto_nombre': str(hoja.marco.producto),
+            'marco_id': hoja.marco.id,
+            'marco_nombre': str(hoja.marco),
+        })
+    except Hoja.DoesNotExist:
+        return JsonResponse({'error': 'Hoja no encontrada'}, status=404)

@@ -24,6 +24,7 @@ from .config_views import (
     accesorio_create, accesorio_edit, accesorio_delete,
     vidrio_create, vidrio_edit, vidrio_delete,
     tratamiento_create, tratamiento_edit, tratamiento_delete,
+    api_get_producto, api_get_marco, api_get_hoja,
 )
 
 urlpatterns = [
@@ -32,6 +33,9 @@ urlpatterns = [
     
     # API Endpoints
     path("api/pricing/calculate/", PricingCalculateView.as_view(), name="pricing-calculate"),
+    path("api/producto/<int:pk>/", api_get_producto, name="api-get-producto"),
+    path("api/marco/<int:pk>/", api_get_marco, name="api-get-marco"),
+    path("api/hoja/<int:pk>/", api_get_hoja, name="api-get-hoja"),
     path("api/pricing/extrusoras/", ExtrusorasListView.as_view(), name="extrusoras-list"),
     path("api/pricing/lineas/", LineasListView.as_view(), name="lineas-list"),
     path("api/pricing/productos/", ProductosListView.as_view(), name="productos-list"),

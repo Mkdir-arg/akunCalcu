@@ -29,4 +29,41 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productoSelect = document.getElementById('id_producto');
+    const extrusoraSelect = document.getElementById('id_extrusora');
+    const lineaSelect = document.getElementById('id_linea');
+    
+    if (productoSelect) {
+        productoSelect.addEventListener('change', function() {
+            const productoId = this.value;
+            if (productoId) {
+                // Buscar el producto seleccionado en las opciones
+                const option = this.options[this.selectedIndex];
+                const productoText = option.text;
+                
+                // Obtener datos del producto via AJAX
+                fetch(`/pricing/api/producto/${productoId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (extrusoraSelect) {
+                            extrusoraSelect.value = data.extrusora_id;
+                        }
+                        if (lineaSelect) {
+                            lineaSelect.value = data.linea_id;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+        
+        // Trigger change si ya hay un valor seleccionado (modo edición)
+        if (productoSelect.value) {
+            productoSelect.dispatchEvent(new Event('change'));
+        }
+    }
+});
+</script>
 {% endblock %}
