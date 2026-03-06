@@ -20,14 +20,14 @@ const Select = ({ label, options, value, onChange, placeholder, searchable = tru
   const [isOpen, setIsOpen] = useState(false);
 
   const filtered = options.filter(opt => {
-    const text = opt.nombre || opt.descripcion || '';
+    const text = opt.nombre || opt.descripcion || opt.codigo || '';
     return text.toLowerCase().includes(search.toLowerCase());
   });
 
   const selected = options.find(opt => 
     (opt.id && opt.id === value) || (opt.codigo && opt.codigo === value)
   );
-  const selectedText = selected ? (selected.nombre || selected.descripcion) : placeholder;
+  const selectedText = selected ? (selected.nombre || selected.descripcion || selected.codigo || `ID: ${selected.id}`) : placeholder;
 
   return (
     <div className="relative mb-4">
@@ -72,7 +72,7 @@ const Select = ({ label, options, value, onChange, placeholder, searchable = tru
                       }}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
                     >
-                      {opt.nombre || opt.descripcion}
+                      {opt.nombre || opt.descripcion || opt.codigo || `ID: ${opt.id}`}
                     </button>
                   ))
                 )}
