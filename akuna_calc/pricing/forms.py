@@ -166,9 +166,8 @@ class PerfilCreateForm(forms.ModelForm):
         (2, 'Dólar'),
     ]
     
-    linea_id = forms.ModelChoiceField(
-        queryset=Linea.objects.all(),
-        widget=forms.Select(attrs={'class': _select_class}),
+    linea_id = forms.IntegerField(
+        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Línea',
         required=False
     )
@@ -196,13 +195,10 @@ class PerfilCreateForm(forms.ModelForm):
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
     
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if self.cleaned_data.get('linea_id'):
-            instance.linea_id = self.cleaned_data['linea_id'].id
-        if commit:
-            instance.save()
-        return instance
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        lineas = [(l.id, str(l)) for l in Linea.objects.all()]
+        self.fields['linea_id'].widget.choices = [('', '---------')] + lineas
 
 
 class PerfilEditForm(forms.ModelForm):
@@ -211,9 +207,8 @@ class PerfilEditForm(forms.ModelForm):
         (2, 'Dólar'),
     ]
     
-    linea_id = forms.ModelChoiceField(
-        queryset=Linea.objects.all(),
-        widget=forms.Select(attrs={'class': _select_class}),
+    linea_id = forms.IntegerField(
+        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Línea',
         required=False
     )
@@ -242,19 +237,8 @@ class PerfilEditForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.linea_id:
-            try:
-                self.fields['linea_id'].initial = Linea.objects.get(id=self.instance.linea_id)
-            except Linea.DoesNotExist:
-                pass
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if self.cleaned_data.get('linea_id'):
-            instance.linea_id = self.cleaned_data['linea_id'].id
-        if commit:
-            instance.save()
-        return instance
+        lineas = [(l.id, str(l)) for l in Linea.objects.all()]
+        self.fields['linea_id'].widget.choices = [('', '---------')] + lineas
 
 
 class AccesorioCreateForm(forms.ModelForm):
