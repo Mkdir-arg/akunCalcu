@@ -10,6 +10,7 @@
 {% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div id="cotizador-root"></div>
 
 <script type="text/babel">
@@ -191,9 +192,13 @@ const Cotizador = () => {
     setError(null);
     
     try {
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
       const response = await fetch('/pricing/api/pricing/calculate/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
         body: JSON.stringify(config),
       });
 
