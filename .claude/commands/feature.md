@@ -11,6 +11,7 @@ Cuando el usuario ejecuta `/feature [descripción de la idea]`, seguir EXACTAMEN
 ### PASO 1 — Product Owner
 
 Leer primero:
+- `docs/requerimientos/_INDEX.md` — para asignar el próximo número REQ
 - `docs/team/backlog.md`
 - `docs/team/current-sprint.md`
 
@@ -29,6 +30,9 @@ Como [rol del usuario] quiero [funcionalidad] para [beneficio]
 **Complejidad estimada:** Pequeño / Mediano / Grande
 
 **¿Está relacionada con algún ítem del backlog existente?** Sí/No
+
+Crear el archivo `docs/requerimientos/REQ-XXX-nombre-corto.md` con estado `En desarrollo` antes de continuar.
+Actualizar `docs/requerimientos/_INDEX.md` agregando la fila.
 
 Terminar con: "¿Aprobamos esta user story y avanzamos al diseño técnico?"
 
@@ -90,6 +94,11 @@ Terminar con: "¿Procedemos con la revisión?"
 
 Releer cada archivo modificado y verificar:
 
+**Criterios de aceptación (del Paso 1):**
+- [ ] Revisar cada criterio de aceptación definido en el Paso 1 — verificar uno por uno que esté cumplido
+- [ ] El flujo funciona de punta a punta, no solo compila
+- [ ] Tests pasan: `docker-compose exec web python manage.py test nombre_app`
+
 **Seguridad:**
 - [ ] `@login_required` donde corresponde
 - [ ] `{% csrf_token %}` en todos los forms POST
@@ -98,6 +107,8 @@ Releer cada archivo modificado y verificar:
 - [ ] Si se modificó un model → existe la migración
 - [ ] Models tienen `verbose_name` y `__str__`
 - [ ] Forms usan Django Forms/ModelForms
+- [ ] Listados con muchos registros tienen paginación
+- [ ] Se usa `get_object_or_404` donde corresponde
 
 **Frontend:**
 - [ ] Templates extienden `core/base.html`
@@ -115,11 +126,20 @@ Si hay problemas → reportar exactamente qué falló y volver al Paso 3.
 
 ### PASO 5 — Documentador (solo si Paso 4 aprobado)
 
-1. Agregar la user story al `docs/team/backlog.md` como ✅ Completado
-2. Actualizar `docs/team/current-sprint.md`
-3. Agregar entrada en `docs/team/changelog.md`
-4. Si hubo decisión técnica → agregar ADR en `docs/team/decisions.md`
-5. Si se usó un patrón de UI nuevo → actualizar `docs/team/design-system.md`
-6. Si hay algo relevante para futuras sesiones → actualizar `memory/MEMORY.md`
+1. Crear `docs/features/FEAT-XXX-nombre.md` con el detalle de la feature:
+   - Qué hace (descripción funcional)
+   - Criterios de aceptación (todos marcados como cumplidos)
+   - Archivos involucrados con descripción del cambio
+   - Decisiones técnicas tomadas
+2. Actualizar `docs/features/_INDEX.md` agregando la fila de la nueva feature
+3. Actualizar el REQ correspondiente en `docs/requerimientos/REQ-XXX.md`:
+   - Estado → `Implementado`
+   - Agregar `Derivó en: FEAT-XXX`
+4. Agregar la user story al `docs/team/backlog.md` como ✅ Completado
+5. Actualizar `docs/team/current-sprint.md`
+6. Agregar entrada en `docs/team/changelog.md`
+7. Si hubo decisión técnica → agregar ADR en `docs/team/decisions.md`
+8. Si se usó un patrón de UI nuevo → actualizar `docs/team/design-system.md`
+9. Si hay algo relevante para futuras sesiones → actualizar `memory/MEMORY.md`
 
-Terminar con: "Feature completada. Documentación actualizada."
+Terminar con: "Feature **FEAT-XXX** completada. Documentación actualizada."

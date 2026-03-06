@@ -27,14 +27,15 @@ El equipo opera en modo **guiado paso a paso**. Cada rol se ejecuta secuencialme
 Cuando el usuario propone una idea, seguir SIEMPRE este flujo en orden. **No saltear pasos.**
 
 ### Paso 1 — Product Owner activa
-1. Leer `docs/team/backlog.md` y `docs/team/current-sprint.md`
+1. Leer `docs/requerimientos/_INDEX.md`, `docs/team/backlog.md` y `docs/team/current-sprint.md`
 2. Escribir **User Story** con formato:
    ```
    Como [usuario] quiero [funcionalidad] para [beneficio]
    ```
 3. Definir **Criterios de Aceptación** (checklist)
 4. Estimar complejidad: Pequeño / Mediano / Grande
-5. **PAUSAR y mostrar al usuario. Esperar aprobación.**
+5. Crear `docs/requerimientos/REQ-XXX-nombre.md` con estado `En desarrollo` y actualizar `docs/requerimientos/_INDEX.md`
+6. **PAUSAR y mostrar al usuario. Esperar aprobación.**
 
 ### Paso 2 — Arquitecto + Análisis de Impacto (solo si Paso 1 aprobado)
 
@@ -78,10 +79,20 @@ Terminar con: "¿Aprobamos este diseño y avanzamos a la implementación?"
    - Quinto: templates (siguiendo el Design System)
 2. Si es un template nuevo: SIEMPRE leer `docs/team/design-system.md` antes de escribirlo
 3. No agregar código extra que no fue pedido
-4. **Mostrar resumen de archivos modificados. Esperar aprobación para continuar.**
+4. Escribir tests básicos para lo implementado:
+   - Si se creó/modificó un model → test de `__str__` y campos críticos
+   - Por cada view nueva → test de status code y redirección si no hay login
+   - Ubicación: `app/tests.py` o `app/tests/` si hay muchos
+   - Correr al terminar: `docker-compose exec web python manage.py test nombre_app`
+5. **Mostrar resumen de archivos modificados + resultado de tests. Esperar aprobación para continuar.**
 
 ### Paso 4 — Reviewer activa (solo si Paso 3 aprobado)
 Releer cada archivo modificado y verificar:
+
+**Criterios de aceptación (verificar contra Paso 1):**
+- [ ] Cada criterio de aceptación definido en el Paso 1 está cumplido — verificar uno por uno
+- [ ] El flujo funciona de punta a punta, no solo compila
+- [ ] Los tests pasan sin errores: `docker-compose exec web python manage.py test nombre_app`
 
 **Seguridad:**
 - [ ] `@login_required` en todas las views que lo requieran
@@ -108,11 +119,28 @@ Si todo está bien → avanzar al Paso 5.
 Si hay problemas → reportar exactamente qué falló y volver al Paso 3.
 
 ### Paso 5 — Documentador activa (solo si Paso 4 aprobado)
-1. Agregar entrada a `docs/team/changelog.md`
-2. Marcar ítem como completado en `docs/team/current-sprint.md`
-3. Si hubo decisión técnica importante → agregar ADR en `docs/team/decisions.md`
-4. Si se agregó nueva librería o patrón de UI → actualizar `docs/team/design-system.md`
-5. Actualizar `memory/MEMORY.md` si hay algo relevante para futuras sesiones
+1. Crear `docs/features/FEAT-XXX-nombre.md` con: descripción funcional, criterios cumplidos, archivos modificados y decisiones técnicas
+2. Actualizar `docs/features/_INDEX.md` con la nueva feature
+3. Actualizar `docs/requerimientos/REQ-XXX.md`: estado → `Implementado`, agregar link a FEAT-XXX
+4. Agregar entrada a `docs/team/changelog.md`
+5. Marcar ítem como completado en `docs/team/current-sprint.md`
+6. Si hubo decisión técnica importante → agregar ADR en `docs/team/decisions.md`
+7. Si se agregó nueva librería o patrón de UI → actualizar `docs/team/design-system.md`
+8. Actualizar `memory/MEMORY.md` si hay algo relevante para futuras sesiones
+
+---
+
+## Definition of Done (aplica a TODOS los workflows)
+
+Ningún trabajo se considera terminado hasta que cumpla todos estos puntos:
+
+- [ ] El código implementa exactamente lo pedido (ni más, ni menos)
+- [ ] Existe al menos un test por cada view nueva y por cada model nuevo
+- [ ] Los tests pasan: `docker-compose exec web python manage.py test`
+- [ ] Si hubo cambio de model → existe la migración
+- [ ] El Reviewer aprobó el código (checklist completo)
+- [ ] La documentación fue actualizada (FEAT/FIX/HFX según corresponda)
+- [ ] No se introdujeron vulnerabilidades de seguridad
 
 ---
 
@@ -126,6 +154,10 @@ Si hay problemas → reportar exactamente qué falló y volver al Paso 3.
 - **Seguridad**: CSRF en todos los forms, `@login_required` en todas las views
 - **Migraciones**: SIEMPRE crear migración inmediatamente después de modificar un model. No esperar al final.
 - **Sin comentarios obvios**: solo comentar lógica no evidente
+- **N+1 queries**: usar `select_related` para FK y `prefetch_related` para M2M en listados
+- **404/403**: usar `get_object_or_404` y `PermissionDenied`, nunca retornar 200 con error
+- **Paginación**: listados con más de 20 registros deben paginar
+- **Tests**: mínimo un test por view (status code) y uno por model nuevo (`__str__`, campos críticos)
 
 ## Convenciones de frontend
 
@@ -138,7 +170,61 @@ Reglas no negociables:
 - No agregar nuevas librerías JS/CSS sin pasar por el Arquitecto y registrar ADR
 - Los `<select>` tienen Select2 automático desde base.html — no duplicar
 
-## Archivos clave de memoria
+## Comandos disponibles
+
+| Comando | Activa | Cuándo usarlo |
+|---------|--------|---------------|
+| `/feature [idea]` | Equipo completo (PO→Arq→Dev→Review→Docs) | Nueva funcionalidad |
+| `/fix [bug]` | Arq→Dev→Review→Docs | Bug en ciclo normal |
+| `/hotfix [problema]` | Dev→Review→Docs | Parche urgente en producción |
+| `/idea [idea libre]` | PO + Arq (solo discovery) | Explorar una idea antes de comprometerse a desarrollarla |
+| `/sprint-plan` | PO | Planificar el sprint |
+| `/sprint-review` | PO + Docs | Revisar el sprint |
+| `/status` | Todos | Ver estado actual del proyecto |
+
+## Comandos directos a agentes
+
+Para hablar con un agente específico sin seguir el flujo completo:
+
+| Comando | Agente | Cuándo usarlo |
+|---------|--------|---------------|
+| `/po [pregunta]` | Product Owner | Discutir valor, user stories, priorización |
+| `/arq [pregunta]` | Arquitecto | Diseño técnico, impacto, viabilidad |
+| `/dev [tarea]` | Desarrollador | Código puntual, debugging, preguntas sobre el código |
+| `/reviewer [archivo]` | Reviewer | Revisión de código específico |
+| `/docu [qué documentar]` | Documentador | Actualizar documentación manualmente |
+
+## Workflow de un Fix (/fix)
+
+Flujo liviano para bugs dentro del sprint. Sin Product Owner.
+
+```
+Arquitecto → Desarrollador → Reviewer → Documentador
+```
+
+El Documentador agrega entrada en `docs/fixes/_LOG.md` con número FIX-XXX.
+
+## Workflow de un Hotfix (/hotfix)
+
+Flujo mínimo para producción urgente. Sin análisis extendido.
+
+```
+Desarrollador → Reviewer → Documentador
+```
+
+El Documentador agrega entrada en `docs/hotfix/_LOG.md` con número HFX-XXX.
+
+## Workflow de una Idea (/idea)
+
+Para explorar una idea antes de comprometerse a desarrollarla. No se escribe código.
+
+```
+Product Owner (analiza valor) → Arquitecto (evalúa viabilidad) → Documentador (crea REQ-XXX)
+```
+
+El resultado es `docs/requerimientos/REQ-XXX-nombre.md` listo para entrar a `/feature` cuando el usuario lo decida.
+
+---
 
 ## Formato de sprint
 
@@ -147,10 +233,23 @@ Reglas no negociables:
 - Review al final: se verifica qué se completó
 - Documentación en `docs/team/`
 
-## Archivos clave de memoria
+## Archivos clave de documentación
 
-- `docs/team/backlog.md` → todas las ideas/features pendientes
+**Proceso del equipo (`docs/team/`):**
+- `docs/team/backlog.md` → features pendientes
 - `docs/team/current-sprint.md` → sprint activo
-- `docs/team/decisions.md` → decisiones técnicas tomadas (ADRs)
-- `docs/team/changelog.md` → historial de cambios
+- `docs/team/decisions.md` → ADRs
+- `docs/team/changelog.md` → historial resumido
+- `docs/team/design-system.md` → convenciones de UI
+
+**Documentación del sistema (`docs/`):**
+- `docs/features/_INDEX.md` → tabla de todas las features implementadas
+- `docs/features/FEAT-XXX-*.md` → detalle de cada feature
+- `docs/fixes/_LOG.md` → log de todos los fixes
+- `docs/hotfix/_LOG.md` → log de todos los hotfixes
+- `docs/requerimientos/_INDEX.md` → tabla de todos los requerimientos
+- `docs/requerimientos/REQ-XXX-*.md` → detalle de cada requerimiento
+- `docs/V1-sistema.md` → descripción general del sistema
+
+**Memoria:**
 - `memory/MEMORY.md` → contexto rápido del proyecto (auto-cargado)

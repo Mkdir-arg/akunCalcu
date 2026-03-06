@@ -1,4 +1,5 @@
 ﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
@@ -227,7 +228,8 @@ def venta_detail(request, pk):
     context = {
         'venta': venta,
         'pagos': pagos,
-        'total_pagado': venta.sena + sum(p.monto for p in pagos)
+        'total_pagado': venta.sena + sum(p.monto for p in pagos),
+        'avanzar_estado': request.GET.get('avanzar_estado') == '1',
     }
     return render(request, 'comercial/ventas/detail.html', context)
 
@@ -268,8 +270,11 @@ def registrar_pago(request, pk):
             
             # Recalcular saldo
             venta.save()
-            
+
             messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente')
+            # Si el saldo quedó en 0 y el estado es pendiente, ofrecer avanzar al siguiente estado
+            if venta.saldo <= 0 and venta.estado == 'pendiente':
+                return redirect(f"{reverse('comercial:venta_detail', kwargs={'pk': pk})}?avanzar_estado=1")
             return redirect('comercial:venta_detail', pk=pk)
             
         except Exception as e:
@@ -277,6 +282,24 @@ def registrar_pago(request, pk):
             return redirect('comercial:venta_detail', pk=pk)
     
     return redirect('comercial:venta_detail', pk=pk)
+
+
+@login_required
+def cambiar_estado_venta(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    venta = get_object_or_404(Venta, pk=pk)
+    nuevo_estado = request.POST.get('estado')
+
+    estados_validos = [e[0] for e in Venta.ESTADO_CHOICES]
+    if nuevo_estado not in estados_validos:
+        return JsonResponse({'error': 'Estado no válido'}, status=400)
+
+    venta.estado = nuevo_estado
+    venta.save()
+
+    return JsonResponse({'success': True, 'nuevo_estado': venta.get_estado_display()})
 
 
 @login_required

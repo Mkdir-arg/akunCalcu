@@ -838,6 +838,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }, 5000);
+
+    {% if avanzar_estado %}
+    Swal.fire({
+        title: '¡Venta pagada!',
+        text: '¿Deseas cambiar el estado a "Colocado"?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cambiar a Colocado',
+        cancelButtonText: 'No por ahora',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch("{% url 'comercial:cambiar_estado_venta' venta.pk %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'estado=colocado'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Estado actualizado',
+                        text: `La venta ahora está en estado: ${data.nuevo_estado}`,
+                        timer: 2000,
+                        showConfirmButton: false,
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
+                }
+            });
+        }
+    });
+    {% endif %}
 });
 </script>
 {% endblock %}

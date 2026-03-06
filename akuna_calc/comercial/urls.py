@@ -59,4 +59,5 @@ urlpatterns = [
     path('api/pago/<int:pk>/editar/', views.editar_pago, name='editar_pago'),
     path('api/pago/<int:pk>/eliminar/', views.eliminar_pago, name='eliminar_pago'),
     path('api/venta/<int:pk>/editar-fecha-sena/', views.editar_fecha_sena, name='editar_fecha_sena'),
+    path('api/venta/<int:pk>/cambiar-estado/', views.cambiar_estado_venta, name='cambiar_estado_venta'),
 ]

@@ -14,6 +14,19 @@
 
 ---
 
+## 2026-03-06 — Popup para avanzar estado al completar pago (US-004)
+
+**User Story:** Como vendedor, quiero que al registrar el último pago de una venta (saldo = $0) me aparezca un popup preguntando si deseo cambiar el estado a "Colocado".
+
+**Archivos modificados:**
+- `akuna_calc/comercial/views.py` — `venta_detail` + `registrar_pago` + nueva view `cambiar_estado_venta`
+- `akuna_calc/comercial/urls.py` — nueva URL `api/venta/<pk>/cambiar-estado/`
+- `akuna_calc/comercial/templates/comercial/ventas/detail.html` — popup SweetAlert2 condicional
+
+**Descripción:** Al registrar un pago que deja el saldo en $0 y el estado es `pendiente`, se redirige con `?avanzar_estado=1`. El template detecta el flag y dispara un SweetAlert2. Si el usuario confirma, un fetch POST cambia el estado a `colocado` y recarga la página.
+
+---
+
 ## 2026-03-05 — CRUD Fábrica ABM (US-003)
 
 **User Story:** Como administrador, quiero agregar, editar y eliminar de forma lógica los registros de los ABMs de Fábrica para gestionar la configuración desde la interfaz web.
