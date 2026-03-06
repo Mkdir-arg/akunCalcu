@@ -182,8 +182,8 @@ const Cotizador = () => {
   }, [config.interior_id]);
 
   const handleCalculate = async () => {
-    if (!config.marco_id || !config.hoja_id || !config.interior_id || !config.vidrio_codigo) {
-      setError('Por favor completa todos los campos requeridos');
+    if (!config.marco_id) {
+      setError('Por favor selecciona un marco');
       return;
     }
 
@@ -238,16 +238,8 @@ const Cotizador = () => {
             placeholder={config.linea_id ? "Selecciona un producto" : "Primero selecciona una línea"} />
 
           <Select label="Marco" options={marcos} value={config.marco_id}
-            onChange={(id) => setConfig({ ...config, marco_id: id, hoja_id: null, interior_id: null })}
+            onChange={(id) => setConfig({ ...config, marco_id: id })}
             placeholder={config.producto_id ? "Selecciona un marco" : "Primero selecciona un producto"} />
-
-          <Select label="Hoja" options={hojas} value={config.hoja_id}
-            onChange={(id) => setConfig({ ...config, hoja_id: id, interior_id: null })}
-            placeholder={config.marco_id ? "Selecciona una hoja" : "Primero selecciona un marco"} />
-
-          <Select label="Interior" options={interiores} value={config.interior_id}
-            onChange={(id) => setConfig({ ...config, interior_id: id })}
-            placeholder={config.hoja_id ? "Selecciona un interior" : "Primero selecciona una hoja"} />
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
@@ -262,45 +254,6 @@ const Cotizador = () => {
                 onChange={(e) => setConfig({ ...config, alto_mm: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-          </div>
-
-          <Select label="Vidrio" options={vidrios} value={config.vidrio_codigo}
-            onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
-            placeholder="Selecciona un vidrio" />
-
-          <Select label="Tratamiento (Opcional)" options={tratamientos} value={config.tratamiento_id || null}
-            onChange={(id) => setConfig({ ...config, tratamiento_id: id })}
-            placeholder="Sin tratamiento" />
-
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Opciones Adicionales</h3>
-            
-            <Select label="Mosquitero (Opcional)" options={mosquiteros} value={config.mosquitero_id || null}
-              onChange={(id) => setConfig({ ...config, mosquitero_id: id })}
-              placeholder={config.hoja_id ? "Sin mosquitero" : "Primero selecciona una hoja"} />
-
-            <Select label="Contravidrio (Opcional)" options={contravidrios} value={config.contravidrio_id || null}
-              onChange={(id) => setConfig({ ...config, contravidrio_id: id })}
-              placeholder={config.interior_id ? "Sin contravidrio" : "Primero selecciona un interior"} />
-
-            <Select label="Contravidrio Exterior (Opcional)" options={contravidriosExterior} value={config.contravidrio_exterior_id || null}
-              onChange={(id) => setConfig({ ...config, contravidrio_exterior_id: id })}
-              placeholder={config.interior_id ? "Sin contravidrio exterior" : "Primero selecciona un interior"} />
-
-            <Select label="Cruces (Opcional)" options={cruces} value={config.cruces_id || null}
-              onChange={(id) => setConfig({ ...config, cruces_id: id })}
-              placeholder={config.interior_id ? "Sin cruces" : "Primero selecciona un interior"} />
-
-            <Select label="Vidrio Repartido (Opcional)" options={vidriosRepartidos} value={config.vidrio_repartido_id || null}
-              onChange={(id) => setConfig({ ...config, vidrio_repartido_id: id })}
-              placeholder={config.interior_id ? "Sin vidrio repartido" : "Primero selecciona un interior"} />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Margen (%)</label>
-            <input type="number" value={config.margen_porcentaje}
-              onChange={(e) => setConfig({ ...config, margen_porcentaje: parseFloat(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
 
           <button onClick={handleCalculate} disabled={loading}
