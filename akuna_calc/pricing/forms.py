@@ -37,34 +37,136 @@ class ProductoForm(forms.ModelForm):
 
 
 class MarcoForm(forms.ModelForm):
+    extrusora = forms.ModelChoiceField(
+        queryset=Extrusora.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Extrusora'
+    )
+    linea = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Línea'
+    )
+    nombre_producto = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Producto'
+    )
+    
     class Meta:
         model = Marco
         fields = ['producto', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
         widgets = {
             'producto': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.producto:
+            self.fields['extrusora'].initial = self.instance.producto.extrusora
+            self.fields['linea'].initial = self.instance.producto.linea
+            self.fields['nombre_producto'].initial = self.instance.producto.descripcion
 
 
 class HojaForm(forms.ModelForm):
+    extrusora = forms.ModelChoiceField(
+        queryset=Extrusora.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Extrusora'
+    )
+    linea = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Línea'
+    )
+    nombre_producto = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Producto'
+    )
+    nombre_marco = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Marco'
+    )
+    
     class Meta:
         model = Hoja
         fields = ['marco', 'descripcion', 'cantidad']
+        labels = {
+            'descripcion': 'Nombre',
+        }
         widgets = {
             'marco': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad': forms.NumberInput(attrs={'class': _input_class}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.marco:
+            self.fields['extrusora'].initial = self.instance.marco.producto.extrusora
+            self.fields['linea'].initial = self.instance.marco.producto.linea
+            self.fields['nombre_producto'].initial = self.instance.marco.producto.descripcion
+            self.fields['nombre_marco'].initial = self.instance.marco.descripcion
 
 
 class InteriorForm(forms.ModelForm):
+    extrusora = forms.ModelChoiceField(
+        queryset=Extrusora.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Extrusora'
+    )
+    linea = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        label='Línea'
+    )
+    nombre_producto = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Producto'
+    )
+    nombre_marco = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Marco'
+    )
+    nombre_hoja = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': _input_class, 'readonly': 'readonly'}),
+        label='Nombre Hoja'
+    )
+    
     class Meta:
         model = Interior
         fields = ['hoja', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
         widgets = {
             'hoja': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.hoja:
+            self.fields['extrusora'].initial = self.instance.hoja.marco.producto.extrusora
+            self.fields['linea'].initial = self.instance.hoja.marco.producto.linea
+            self.fields['nombre_producto'].initial = self.instance.hoja.marco.producto.descripcion
+            self.fields['nombre_marco'].initial = self.instance.hoja.marco.descripcion
+            self.fields['nombre_hoja'].initial = self.instance.hoja.descripcion
 
 
 class PerfilCreateForm(forms.ModelForm):
