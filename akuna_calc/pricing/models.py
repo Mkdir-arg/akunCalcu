@@ -31,7 +31,6 @@ class Linea(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "l_neas"
 
     def __str__(self):
@@ -60,7 +59,6 @@ class Producto(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "productos"
 
     def __str__(self):
@@ -83,7 +81,6 @@ class Marco(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "marco"
 
     def __str__(self):
@@ -106,7 +103,6 @@ class Hoja(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "hoja"
 
     def __str__(self):
@@ -128,7 +124,6 @@ class Interior(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "interior"
 
     def __str__(self):
@@ -149,7 +144,6 @@ class Contravidrio(models.Model):
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "contravidrio"
 
 
@@ -167,7 +161,6 @@ class ContravidrioExterior(models.Model):
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "contravidrio_exterior"
 
 
@@ -185,7 +178,6 @@ class Mosquitero(models.Model):
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "mosquitero"
 
 
@@ -203,7 +195,6 @@ class Cruce(models.Model):
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "cruces"
 
 
@@ -222,7 +213,6 @@ class VidrioRepartido(models.Model):
     interior_entero = models.TextField(db_column="interior_entero", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "vidrio_repartido"
 
 
@@ -245,7 +235,6 @@ class Perfil(models.Model):
     minimo_reutilizable = models.TextField(db_column="minimo_reutilizable", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "perfiles"
 
     def __str__(self):
@@ -264,7 +253,6 @@ class Accesorio(models.Model):
     tipo = models.IntegerField(db_column="Tipo", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "accesorios"
 
     def __str__(self):
@@ -287,7 +275,6 @@ class Vidrio(models.Model):
     transparente = models.TextField(db_column="transparente", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "vidrios"
 
     def __str__(self):
@@ -303,7 +290,6 @@ class Tratamiento(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "tratamientos"
 
     def __str__(self):
@@ -326,7 +312,6 @@ class DespiecePerfilesMarco(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_marcos"
 
 
@@ -346,7 +331,6 @@ class DespiecePerfilesHoja(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_hojas"
 
 
@@ -366,7 +350,6 @@ class DespiecePerfilesMosquitero(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_mosquitero"
 
 
@@ -393,7 +376,6 @@ class DespiecePerfilesContravidrio(models.Model):
     altura_contravidrio = models.IntegerField(db_column="altura_contravidrio", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_contravidrios"
 
 
@@ -420,7 +402,6 @@ class DespiecePerfilesContravidrioExterior(models.Model):
     altura_contravidrio = models.IntegerField(db_column="altura_contravidrio", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_contravidrios_exterior"
 
 
@@ -461,7 +442,6 @@ class DespiecePerfilesVidrioRepartido(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_perfiles_vidrio_repartido"
 
 
@@ -479,7 +459,6 @@ class DespieceAccesoriosMarco(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_marco"
 
 
@@ -500,7 +479,6 @@ class DespieceAccesoriosHoja(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_hoja"
 
 
@@ -521,7 +499,6 @@ class DespieceAccesoriosInterior(models.Model):
     bur_int = models.TextField(db_column="bur_int", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_interior"
 
 
@@ -539,7 +516,6 @@ class DespieceAccesoriosMosquitero(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_mosquitero"
 
 
@@ -557,7 +533,6 @@ class DespieceAccesoriosContravidrio(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_contravidrio"
 
 
@@ -575,7 +550,6 @@ class DespieceAccesoriosContravidrioExterior(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_contravidrio_exterior"
 
 
@@ -593,7 +567,6 @@ class DespieceAccesoriosCruces(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_cruces"
 
 
@@ -611,7 +584,6 @@ class DespieceAccesoriosVidrioRepartido(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_accesorios_vidrio_repartido"
 
 
@@ -638,7 +610,6 @@ class DespieceCruces(models.Model):
     esp_cruce = models.FloatField(db_column="esp_cruce", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_cruces"
 
 
@@ -661,7 +632,6 @@ class DespieceInterior(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_interior"
 
 
@@ -684,5 +654,4 @@ class DespieceInteriorMosquitero(models.Model):
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
 
     class Meta:
-        managed = False
         db_table = "despiece_interior_mosquitero"
