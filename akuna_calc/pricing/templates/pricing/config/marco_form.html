@@ -24,9 +24,16 @@
             <div class="border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-slate-800">Fórmulas de Perfiles</h3>
-                    <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-plus mr-2"></i>Agregar Fórmula
-                    </button>
+                    <div class="flex gap-2">
+                        {% if object %}
+                        <button type="button" onclick="guardarFormulas()" id="btnGuardarFormulas" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-save mr-2"></i>Guardar Fórmulas
+                        </button>
+                        {% endif %}
+                        <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-plus mr-2"></i>Agregar Fórmula
+                        </button>
+                    </div>
                 </div>
                 <div id="formulasContainer" class="overflow-x-auto">
                     <table class="w-full">
@@ -163,6 +170,56 @@ function eliminarFormula(btn) {
         document.getElementById('noFormulas').style.display = 'block';
     }
 }
+
+{% if object %}
+function guardarFormulas() {
+    // Re-numerar antes de recolectar
+    document.querySelectorAll('#formulasTable tr').forEach((row, idx) => {
+        row.querySelectorAll('[name]').forEach(input => {
+            input.name = input.name.replace(/_\d+$/, '_' + idx);
+        });
+    });
+
+    const btn = document.getElementById('btnGuardarFormulas');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    document.querySelectorAll('#formulasTable tr').forEach((row, idx) => {
+        row.querySelectorAll('[name]').forEach(input => {
+            formData.append(input.name, input.value);
+        });
+    });
+
+    fetch('{% url "config-marco-formulas-guardar" object.pk %}', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
+        if (data.ok) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Fórmulas guardadas',
+                text: `Se guardaron ${data.guardadas} fórmula(s) correctamente.`,
+                confirmButtonColor: '#3b82f6',
+                timer: 2500,
+                timerProgressBar: true,
+            });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudieron guardar las fórmulas.', confirmButtonColor: '#3b82f6' });
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
+        Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.', confirmButtonColor: '#3b82f6' });
+    });
+}
+{% endif %}
 
 // Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
 document.getElementById('marcoForm').addEventListener('submit', function() {

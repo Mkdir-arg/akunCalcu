@@ -23,4 +23,4 @@
 | [REQ-001](./REQ-001-documento-v1.md) | Documento V1 del sistema | Implementado | 2026-03-04 | — |
 | [REQ-002](./REQ-002-pedidos-telegram.md) | Pedidos por voz via Telegram | Implementado | 2026-03-04 | FEAT-001 |
 | [REQ-003](./REQ-003-crud-fabrica-abm.md) | CRUD Fábrica ABM | Implementado | 2026-03-05 | FEAT-002 |
-| [REQ-004](./REQ-004-formulas-marcos.md) | Sistema de Fórmulas para Marcos | En desarrollo | 2026-03-06 | — |
+| [REQ-004](./REQ-004-formulas-marcos.md) | Sistema de Fórmulas para Marcos | Implementado | 2026-03-06 | FEAT-003 |

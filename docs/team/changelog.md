@@ -14,6 +14,23 @@
 
 ---
 
+## 2026-03-06 — Sistema de Fórmulas para Marcos (REQ-004 / FEAT-003)
+
+**User Story:** Como administrador, quiero agregar fórmulas de perfiles al configurar un Marco para definir automáticamente las dimensiones de los perfiles necesarios para fabricar ese marco.
+
+**Archivos modificados:**
+- `akuna_calc/pricing/config_views.py` — nueva vista `api_get_perfiles`
+- `akuna_calc/pricing/urls.py` — nueva URL `/pricing/api/perfiles-simple/`
+- `akuna_calc/pricing/templates/pricing/config/marco_form.html` — fix de índices, nueva API de perfiles, carga de fórmulas existentes, JS en `extra_js`
+- `akuna_calc/pricing/tests.py` — creado con 6 tests de status code
+
+**Bugs corregidos:**
+1. Fórmulas no se guardaban: re-numeración de índices en el submit
+2. Selector de perfiles vacío: nueva vista simple sin DRF
+3. Fórmulas en edición con timing frágil: datos inyectados server-side, cargados en el `.then()` del fetch
+
+---
+
 ## 2026-03-06 — Popup para avanzar estado al completar pago (US-004)
 
 **User Story:** Como vendedor, quiero que al registrar el último pago de una venta (saldo = $0) me aparezca un popup preguntando si deseo cambiar el estado a "Colocado".

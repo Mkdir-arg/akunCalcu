@@ -1,8 +1,8 @@
 # REQ-004 — Sistema de Fórmulas para Marcos
 
-> Estado: En desarrollo
+> Estado: Implementado
 > Fecha: 2026-03-06
-> Derivó en: —
+> Derivó en: FEAT-003
 
 ## Descripción
 

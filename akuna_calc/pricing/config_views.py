@@ -266,6 +266,43 @@ def marco_delete(request, pk):
     return redirect('config-marcos')
 
 
+@login_required
+@user_passes_test(is_staff)
+def marco_formulas_guardar(request, pk):
+    """Guarda las fórmulas de un marco via AJAX sin redirigir."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    obj = get_object_or_404(Marco, pk=pk)
+    from .models import DespiecePerfilesMarco
+
+    try:
+        DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+        index = 0
+        guardadas = 0
+        while f'formula_cantidad_{index}' in request.POST:
+            variable = request.POST.get(f'formula_variable_{index}', '')
+            operador = request.POST.get(f'formula_operador_{index}', '')
+            valor = request.POST.get(f'formula_valor_{index}', '')
+            formula_texto = f"{variable} {operador} {valor}"
+
+            max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
+            DespiecePerfilesMarco.objects.create(
+                id=max_id + 1,
+                marco=obj,
+                formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
+                formula_perfil=formula_texto,
+                angulo=request.POST.get(f'formula_angulo_{index}'),
+                perfil=request.POST.get(f'formula_perfil_{index}'),
+            )
+            guardadas += 1
+            index += 1
+
+        return JsonResponse({'ok': True, 'guardadas': guardadas})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 # ─── HOJAS ────────────────────────────────────────────────────────────────────
 
 @login_required
