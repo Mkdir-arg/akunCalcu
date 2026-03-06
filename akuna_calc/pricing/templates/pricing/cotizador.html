@@ -203,8 +203,9 @@ const Cotizador = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al calcular precio');
+        const errorData = await response.json().catch(() => ({ detail: `Error ${response.status}` }));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.detail || errorData.error || 'Error al calcular precio');
       }
 
       const data = await response.json();
