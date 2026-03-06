@@ -40,19 +40,19 @@ class MarcoForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
-        queryset=Linea.objects.all(),
+        queryset=Linea.objects.none(),
         required=False,
         widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
-        label='LÃ­nea'
+        label='Línea'
     )
-    
+
     class Meta:
         model = Marco
-        fields = ['producto', 'descripcion']
+        fields = ['extrusora', 'linea', 'producto', 'descripcion']
         labels = {
             'descripcion': 'Nombre',
         }
@@ -60,15 +60,49 @@ class MarcoForm(forms.ModelForm):
             'producto': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
-        
-        if self.instance and self.instance.pk and self.instance.producto:
-            self.fields['extrusora'].initial = self.instance.producto.extrusora
-            self.fields['linea'].initial = self.instance.producto.linea
 
+        self.fields['linea'].widget.attrs['disabled'] = 'disabled'
+        self.fields['producto'].queryset = Producto.objects.none()
+        self.fields['producto'].widget.attrs['disabled'] = 'disabled'
+
+        extrusora_id = self.data.get('extrusora')
+        linea_id = self.data.get('linea')
+        producto = self.instance.producto if self.instance and self.instance.pk else None
+
+        if producto:
+            self.fields['extrusora'].initial = producto.extrusora
+            self.fields['linea'].initial = producto.linea
+            self.fields['producto'].initial = producto
+            if not extrusora_id:
+                extrusora_id = str(producto.extrusora_id)
+            if not linea_id:
+                linea_id = str(producto.linea_id)
+
+        if extrusora_id:
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora_id=extrusora_id)
+            self.fields['linea'].widget.attrs.pop('disabled', None)
+
+        if linea_id:
+            self.fields['producto'].queryset = Producto.objects.filter(linea_id=linea_id)
+            self.fields['producto'].widget.attrs.pop('disabled', None)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        extrusora = cleaned_data.get('extrusora')
+        linea = cleaned_data.get('linea')
+        producto = cleaned_data.get('producto')
+
+        if producto and extrusora and producto.extrusora_id != extrusora.id:
+            self.add_error('producto', 'El producto no pertenece a la extrusora seleccionada.')
+
+        if producto and linea and producto.linea_id != linea.id:
+            self.add_error('producto', 'El producto no pertenece a la línea seleccionada.')
+
+        return cleaned_data
 
 class HojaForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
@@ -92,7 +126,7 @@ class HojaForm(forms.ModelForm):
     
     class Meta:
         model = Hoja
-        fields = ['marco', 'descripcion', 'cantidad']
+        fields = ['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad']
         labels = {
             'descripcion': 'Nombre',
         }
@@ -140,7 +174,7 @@ class InteriorForm(forms.ModelForm):
     
     class Meta:
         model = Interior
-        fields = ['hoja', 'descripcion']
+        fields = ['extrusora', 'linea', 'producto', 'marco', 'hoja', 'descripcion']
         labels = {
             'descripcion': 'Nombre',
         }
