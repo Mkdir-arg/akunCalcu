@@ -20,14 +20,14 @@ const Select = ({ label, options, value, onChange, placeholder, searchable = tru
   const [isOpen, setIsOpen] = useState(false);
 
   const filtered = options.filter(opt => {
-    const text = opt.descripcion || opt.nombre || '';
+    const text = opt.nombre || opt.descripcion || '';
     return text.toLowerCase().includes(search.toLowerCase());
   });
 
   const selected = options.find(opt => 
     (opt.id && opt.id === value) || (opt.codigo && opt.codigo === value)
   );
-  const selectedText = selected ? (selected.descripcion || selected.nombre) : placeholder;
+  const selectedText = selected ? (selected.nombre || selected.descripcion) : placeholder;
 
   return (
     <div className="relative mb-4">
@@ -72,7 +72,7 @@ const Select = ({ label, options, value, onChange, placeholder, searchable = tru
                       }}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
                     >
-                      {opt.descripcion || opt.nombre}
+                      {opt.nombre || opt.descripcion}
                     </button>
                   ))
                 )}
@@ -118,50 +118,66 @@ const Cotizador = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
-    fetch('/api/pricing/vidrios/').then(r => r.json()).then(data => 
+    fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
+    fetch('/pricing/api/pricing/vidrios/').then(r => r.json()).then(data => 
       setVidrios(data.map(v => ({ codigo: v.codigo, descripcion: `${v.codigo} - ${v.descripcion}` })))
     );
-    fetch('/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
+    fetch('/pricing/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
   }, []);
 
   useEffect(() => {
     if (config.extrusora_id) {
-      fetch(`/api/pricing/lineas/?extrusora_id=${config.extrusora_id}`).then(r => r.json()).then(setLineas);
+      fetch(`/pricing/api/pricing/lineas/?extrusora_id=${config.extrusora_id}`).then(r => r.json()).then(setLineas);
+    } else {
+      setLineas([]);
     }
   }, [config.extrusora_id]);
 
   useEffect(() => {
     if (config.linea_id) {
-      fetch(`/api/pricing/productos/?linea_id=${config.linea_id}`).then(r => r.json()).then(setProductos);
+      fetch(`/pricing/api/pricing/productos/?linea_id=${config.linea_id}`).then(r => r.json()).then(setProductos);
+    } else {
+      setProductos([]);
     }
   }, [config.linea_id]);
 
   useEffect(() => {
     if (config.producto_id) {
-      fetch(`/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
+      fetch(`/pricing/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
+    } else {
+      setMarcos([]);
     }
   }, [config.producto_id]);
 
   useEffect(() => {
     if (config.marco_id) {
-      fetch(`/api/pricing/hojas/?marco_id=${config.marco_id}`).then(r => r.json()).then(setHojas);
+      fetch(`/pricing/api/pricing/hojas/?marco_id=${config.marco_id}`).then(r => r.json()).then(setHojas);
+    } else {
+      setHojas([]);
     }
   }, [config.marco_id]);
 
   useEffect(() => {
     if (config.hoja_id) {
-      fetch(`/api/pricing/interiores/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setInteriores);
-      fetch(`/api/pricing/mosquiteros/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setMosquiteros);
+      fetch(`/pricing/api/pricing/interiores/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setInteriores);
+      fetch(`/pricing/api/pricing/mosquiteros/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setMosquiteros);
+    } else {
+      setInteriores([]);
+      setMosquiteros([]);
     }
   }, [config.hoja_id]);
 
   useEffect(() => {
     if (config.interior_id) {
-      fetch(`/api/pricing/contravidrios/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidrios);
-      fetch(`/api/pricing/contravidrios-exterior/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidriosExterior);
-      fetch(`/api/pricing/cruces/?interior_id=${config.interior_id}`).then(r => r.json()).then(setCruces);
-      fetch(`/api/pricing/vidrios-repartidos/?interior_id=${config.interior_id}`).then(r => r.json()).then(setVidriosRepartidos);
+      fetch(`/pricing/api/pricing/contravidrios/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidrios);
+      fetch(`/pricing/api/pricing/contravidrios-exterior/?interior_id=${config.interior_id}`).then(r => r.json()).then(setContravidriosExterior);
+      fetch(`/pricing/api/pricing/cruces/?interior_id=${config.interior_id}`).then(r => r.json()).then(setCruces);
+      fetch(`/pricing/api/pricing/vidrios-repartidos/?interior_id=${config.interior_id}`).then(r => r.json()).then(setVidriosRepartidos);
+    } else {
+      setContravidrios([]);
+      setContravidriosExterior([]);
+      setCruces([]);
+      setVidriosRepartidos([]);
     }
   }, [config.interior_id]);
 
@@ -175,7 +191,7 @@ const Cotizador = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/pricing/calculate/', {
+      const response = await fetch('/pricing/api/pricing/calculate/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
