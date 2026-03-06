@@ -180,24 +180,30 @@ def marco_create(request):
         obj.id = _next_id(Marco)
         obj.save()
         
-        # Guardar fórmulas
-        from .models import DespiecePerfilesMarco
-        index = 0
-        while f'formula_cantidad_{index}' in request.POST:
-            variable = request.POST.get(f'formula_variable_{index}')
-            operador = request.POST.get(f'formula_operador_{index}')
-            valor = request.POST.get(f'formula_valor_{index}')
-            formula_texto = f"{variable} {operador} {valor}"
-            
-            DespiecePerfilesMarco.objects.create(
-                id=_next_id(DespiecePerfilesMarco),
-                marco=obj,
-                formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                formula_perfil=formula_texto,
-                angulo=request.POST.get(f'formula_angulo_{index}'),
-                perfil=request.POST.get(f'formula_perfil_{index}')
-            )
-            index += 1
+        # Guardar fórmulas si existen
+        if 'formula_cantidad_0' in request.POST:
+            from .models import DespiecePerfilesMarco
+            index = 0
+            while f'formula_cantidad_{index}' in request.POST:
+                variable = request.POST.get(f'formula_variable_{index}')
+                operador = request.POST.get(f'formula_operador_{index}')
+                valor = request.POST.get(f'formula_valor_{index}')
+                formula_texto = f"{variable} {operador} {valor}"
+                
+                try:
+                    max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
+                    DespiecePerfilesMarco.objects.create(
+                        id=max_id + 1,
+                        marco=obj,
+                        formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
+                        formula_perfil=formula_texto,
+                        angulo=request.POST.get(f'formula_angulo_{index}'),
+                        perfil=request.POST.get(f'formula_perfil_{index}')
+                    )
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+                    break
+                index += 1
         
         messages.success(request, 'Marco creado correctamente.')
         return redirect('config-marcos')
@@ -211,29 +217,38 @@ def marco_edit(request, pk):
     form = MarcoForm(request.POST or None, instance=obj)
     
     from .models import DespiecePerfilesMarco
-    formulas = DespiecePerfilesMarco.objects.filter(marco=obj)
+    formulas = []
+    try:
+        formulas = list(DespiecePerfilesMarco.objects.filter(marco=obj))
+    except:
+        pass
     
     if request.method == 'POST' and form.is_valid():
         form.save()
         
         # Eliminar fórmulas existentes y crear nuevas
-        DespiecePerfilesMarco.objects.filter(marco=obj).delete()
-        index = 0
-        while f'formula_cantidad_{index}' in request.POST:
-            variable = request.POST.get(f'formula_variable_{index}')
-            operador = request.POST.get(f'formula_operador_{index}')
-            valor = request.POST.get(f'formula_valor_{index}')
-            formula_texto = f"{variable} {operador} {valor}"
-            
-            DespiecePerfilesMarco.objects.create(
-                id=_next_id(DespiecePerfilesMarco),
-                marco=obj,
-                formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                formula_perfil=formula_texto,
-                angulo=request.POST.get(f'formula_angulo_{index}'),
-                perfil=request.POST.get(f'formula_perfil_{index}')
-            )
-            index += 1
+        if 'formula_cantidad_0' in request.POST:
+            try:
+                DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+                index = 0
+                while f'formula_cantidad_{index}' in request.POST:
+                    variable = request.POST.get(f'formula_variable_{index}')
+                    operador = request.POST.get(f'formula_operador_{index}')
+                    valor = request.POST.get(f'formula_valor_{index}')
+                    formula_texto = f"{variable} {operador} {valor}"
+                    
+                    max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
+                    DespiecePerfilesMarco.objects.create(
+                        id=max_id + 1,
+                        marco=obj,
+                        formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
+                        formula_perfil=formula_texto,
+                        angulo=request.POST.get(f'formula_angulo_{index}'),
+                        perfil=request.POST.get(f'formula_perfil_{index}')
+                    )
+                    index += 1
+            except Exception as e:
+                messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
         
         messages.success(request, 'Marco actualizado correctamente.')
         return redirect('config-marcos')
