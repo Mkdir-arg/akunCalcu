@@ -37,17 +37,6 @@ class ProductoForm(forms.ModelForm):
 
 
 class MarcoForm(forms.ModelForm):
-    class Meta:
-        model = Marco
-        fields = ['producto', 'descripcion']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'producto': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-        }
-    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -61,9 +50,19 @@ class MarcoForm(forms.ModelForm):
         label='Línea'
     )
     
+    class Meta:
+        model = Marco
+        fields = ['producto', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'producto': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+        }
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Reordenar campos
         self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
         
         if self.instance and self.instance.pk and self.instance.producto:
@@ -72,18 +71,6 @@ class MarcoForm(forms.ModelForm):
 
 
 class HojaForm(forms.ModelForm):
-    class Meta:
-        model = Hoja
-        fields = ['marco', 'descripcion', 'cantidad']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'marco': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'cantidad': forms.NumberInput(attrs={'class': _input_class}),
-        }
-    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -103,6 +90,18 @@ class HojaForm(forms.ModelForm):
         label='Producto'
     )
     
+    class Meta:
+        model = Hoja
+        fields = ['marco', 'descripcion', 'cantidad']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'marco': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'cantidad': forms.NumberInput(attrs={'class': _input_class}),
+        }
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
@@ -114,17 +113,6 @@ class HojaForm(forms.ModelForm):
 
 
 class InteriorForm(forms.ModelForm):
-    class Meta:
-        model = Interior
-        fields = ['hoja', 'descripcion']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'hoja': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-        }
-    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -149,6 +137,17 @@ class InteriorForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
         label='Marco'
     )
+    
+    class Meta:
+        model = Interior
+        fields = ['hoja', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'hoja': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+        }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
