@@ -47,7 +47,7 @@ class MarcoForm(forms.ModelForm):
         queryset=Linea.objects.none(),
         required=False,
         widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
-        label='Línea'
+        label='Lï¿½nea'
     )
 
     class Meta:
@@ -100,7 +100,7 @@ class MarcoForm(forms.ModelForm):
             self.add_error('producto', 'El producto no pertenece a la extrusora seleccionada.')
 
         if producto and linea and producto.linea_id != linea.id:
-            self.add_error('producto', 'El producto no pertenece a la línea seleccionada.')
+            self.add_error('producto', 'El producto no pertenece a la lï¿½nea seleccionada.')
 
         return cleaned_data
 
@@ -126,7 +126,7 @@ class HojaForm(forms.ModelForm):
     
     class Meta:
         model = Hoja
-        fields = ['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad']
+        fields = ['marco', 'descripcion', 'cantidad']
         labels = {
             'descripcion': 'Nombre',
         }
@@ -174,7 +174,7 @@ class InteriorForm(forms.ModelForm):
     
     class Meta:
         model = Interior
-        fields = ['extrusora', 'linea', 'producto', 'marco', 'hoja', 'descripcion']
+        fields = ['hoja', 'descripcion']
         labels = {
             'descripcion': 'Nombre',
         }
