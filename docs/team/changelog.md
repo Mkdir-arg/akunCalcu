@@ -14,6 +14,31 @@
 
 ---
 
+## 2026-03-05 — CRUD Fábrica ABM (US-003)
+
+**User Story:** Como administrador, quiero agregar, editar y eliminar de forma lógica los registros de los ABMs de Fábrica para gestionar la configuración desde la interfaz web.
+
+**Archivos creados:**
+- `akuna_calc/pricing/forms.py` — 10 ModelForms (Create/Edit separados para Perfil, Accesorio, Vidrio por PK de texto)
+- `akuna_calc/pricing/migrations/0003_add_bloqueado_to_legacy_tables.py` — RunSQL para agregar columna Bloqueado a tablas `productos`, `marco`, `hoja`, `interior`
+- 10 templates de formulario: `extrusora_form.html`, `linea_form.html`, `producto_form.html`, `marco_form.html`, `hoja_form.html`, `interior_form.html`, `perfil_form.html`, `accesorio_form.html`, `vidrio_form.html`, `tratamiento_form.html`
+
+**Archivos modificados:**
+- `akuna_calc/pricing/models.py` — campo `bloqueado` agregado a Producto, Marco, Hoja, Interior
+- `akuna_calc/pricing/config_views.py` — 30 vistas nuevas (create/edit/delete × 10 entidades)
+- `akuna_calc/pricing/urls.py` — 30 nuevas URLs
+- 10 templates de lista reescritos con design system, botón Agregar, columna Estado y acciones (editar/desactivar)
+
+**Decisiones técnicas:**
+- Modelos con `managed = False`: IDs generados manualmente via `max(id) + 1` para entidades con PK IntegerField
+- Soft delete via campo `bloqueado = 'Si'` (convención existente en la DB legacy)
+- Perfil/Accesorio/Vidrio tienen PK de texto (codigo) definido por el usuario → formularios Create/Edit separados
+
+**Bugs corregidos:**
+- Templates referenciaban `producto.nombre`, `perfil.nombre`, `perfil.id` — campos inexistentes. Corregido a `descripcion` y `codigo`.
+
+---
+
 ## 2026-03-04 — Módulo de Pedidos Telegram (Bot de Voz)
 
 **User Story:** Como vendedor de Akuna Aberturas, quiero enviar un audio de voz por Telegram con los ítems de un pedido, para que el sistema lo interprete automáticamente y lo registre como pedido en AkunCalcu.

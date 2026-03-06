@@ -1,5 +1,94 @@
 {% extends 'core/base.html' %}
 {% block title %}Configuración - Accesorios{% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-4"><h1 class="text-3xl font-bold mb-8">Accesorios</h1><div class="bg-white rounded-3xl shadow-xl overflow-hidden"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th></tr></thead><tbody>{% for accesorio in accesorios %}<tr><td class="px-6 py-4 text-sm">{{ accesorio.id }}</td><td class="px-6 py-4 text-sm">{{ accesorio.nombre }}</td></tr>{% empty %}<tr><td colspan="2" class="px-6 py-4 text-center text-gray-500">No hay accesorios</td></tr>{% endfor %}</tbody></table></div></div>
+{% csrf_token %}
+<div class="max-w-full mx-auto px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-tools mr-3"></i>Accesorios
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Gestión de accesorios (mostrando los primeros 200)</p>
+        </div>
+        <a href="{% url 'config-accesorio-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
+            <i class="fas fa-plus mr-2"></i>Nuevo Accesorio
+        </a>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Código</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Precio</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for accesorio in accesorios %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ accesorio.codigo }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ accesorio.descripcion }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ accesorio.precio|default:"-" }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4">
+                            {% if accesorio.bloqueado == 'Si' %}
+                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Activo</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'config-accesorio-edit' accesorio.codigo %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if accesorio.bloqueado != 'Si' %}
+                                <button onclick="confirmarDesactivar('{% url 'config-accesorio-delete' accesorio.codigo %}', '{{ accesorio.codigo }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay accesorios registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarDesactivar(url, nombre) {
+    Swal.fire({
+        title: '¿Desactivar accesorio?',
+        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, desactivar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
 {% endblock %}

@@ -3,12 +3,27 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Max
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento
+from .forms import (
+    ExtrusoraForm, LineaForm, ProductoForm, MarcoForm, HojaForm, InteriorForm,
+    PerfilCreateForm, PerfilEditForm,
+    AccesorioCreateForm, AccesorioEditForm,
+    VidrioCreateForm, VidrioEditForm,
+    TratamientoForm,
+)
 
 
 def is_staff(user):
     return user.is_staff
 
+
+def _next_id(model):
+    max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
+    return max_id + 1
+
+
+# ─── EXTRUSORAS ───────────────────────────────────────────────────────────────
 
 @login_required
 @user_passes_test(is_staff)
@@ -16,6 +31,44 @@ def extrusoras_config(request):
     extrusoras = Extrusora.objects.all()
     return render(request, 'pricing/config/extrusoras.html', {'extrusoras': extrusoras})
 
+
+@login_required
+@user_passes_test(is_staff)
+def extrusora_create(request):
+    form = ExtrusoraForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Extrusora)
+        obj.save()
+        messages.success(request, 'Extrusora creada correctamente.')
+        return redirect('config-extrusoras')
+    return render(request, 'pricing/config/extrusora_form.html', {'form': form, 'titulo': 'Nueva Extrusora', 'cancel_url': 'config-extrusoras'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def extrusora_edit(request, pk):
+    obj = get_object_or_404(Extrusora, pk=pk)
+    form = ExtrusoraForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Extrusora actualizada correctamente.')
+        return redirect('config-extrusoras')
+    return render(request, 'pricing/config/extrusora_form.html', {'form': form, 'titulo': 'Editar Extrusora', 'cancel_url': 'config-extrusoras', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def extrusora_delete(request, pk):
+    obj = get_object_or_404(Extrusora, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Extrusora desactivada.')
+    return redirect('config-extrusoras')
+
+
+# ─── LÍNEAS ───────────────────────────────────────────────────────────────────
 
 @login_required
 @user_passes_test(is_staff)
@@ -27,11 +80,87 @@ def lineas_config(request):
 
 @login_required
 @user_passes_test(is_staff)
+def linea_create(request):
+    form = LineaForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Linea)
+        obj.save()
+        messages.success(request, 'Línea creada correctamente.')
+        return redirect('config-lineas')
+    return render(request, 'pricing/config/linea_form.html', {'form': form, 'titulo': 'Nueva Línea', 'cancel_url': 'config-lineas'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def linea_edit(request, pk):
+    obj = get_object_or_404(Linea, pk=pk)
+    form = LineaForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Línea actualizada correctamente.')
+        return redirect('config-lineas')
+    return render(request, 'pricing/config/linea_form.html', {'form': form, 'titulo': 'Editar Línea', 'cancel_url': 'config-lineas', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def linea_delete(request, pk):
+    obj = get_object_or_404(Linea, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Línea desactivada.')
+    return redirect('config-lineas')
+
+
+# ─── PRODUCTOS ────────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
 def productos_config(request):
     productos = Producto.objects.select_related('linea', 'extrusora').all()
     lineas = Linea.objects.all()
     return render(request, 'pricing/config/productos.html', {'productos': productos, 'lineas': lineas})
 
+
+@login_required
+@user_passes_test(is_staff)
+def producto_create(request):
+    form = ProductoForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Producto)
+        obj.save()
+        messages.success(request, 'Producto creado correctamente.')
+        return redirect('config-productos')
+    return render(request, 'pricing/config/producto_form.html', {'form': form, 'titulo': 'Nuevo Producto', 'cancel_url': 'config-productos'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def producto_edit(request, pk):
+    obj = get_object_or_404(Producto, pk=pk)
+    form = ProductoForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Producto actualizado correctamente.')
+        return redirect('config-productos')
+    return render(request, 'pricing/config/producto_form.html', {'form': form, 'titulo': 'Editar Producto', 'cancel_url': 'config-productos', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def producto_delete(request, pk):
+    obj = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Producto desactivado.')
+    return redirect('config-productos')
+
+
+# ─── MARCOS ───────────────────────────────────────────────────────────────────
 
 @login_required
 @user_passes_test(is_staff)
@@ -43,11 +172,87 @@ def marcos_config(request):
 
 @login_required
 @user_passes_test(is_staff)
+def marco_create(request):
+    form = MarcoForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Marco)
+        obj.save()
+        messages.success(request, 'Marco creado correctamente.')
+        return redirect('config-marcos')
+    return render(request, 'pricing/config/marco_form.html', {'form': form, 'titulo': 'Nuevo Marco', 'cancel_url': 'config-marcos'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def marco_edit(request, pk):
+    obj = get_object_or_404(Marco, pk=pk)
+    form = MarcoForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Marco actualizado correctamente.')
+        return redirect('config-marcos')
+    return render(request, 'pricing/config/marco_form.html', {'form': form, 'titulo': 'Editar Marco', 'cancel_url': 'config-marcos', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def marco_delete(request, pk):
+    obj = get_object_or_404(Marco, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Marco desactivado.')
+    return redirect('config-marcos')
+
+
+# ─── HOJAS ────────────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
 def hojas_config(request):
     hojas = Hoja.objects.select_related('marco').all()
     marcos = Marco.objects.all()
     return render(request, 'pricing/config/hojas.html', {'hojas': hojas, 'marcos': marcos})
 
+
+@login_required
+@user_passes_test(is_staff)
+def hoja_create(request):
+    form = HojaForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Hoja)
+        obj.save()
+        messages.success(request, 'Hoja creada correctamente.')
+        return redirect('config-hojas')
+    return render(request, 'pricing/config/hoja_form.html', {'form': form, 'titulo': 'Nueva Hoja', 'cancel_url': 'config-hojas'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def hoja_edit(request, pk):
+    obj = get_object_or_404(Hoja, pk=pk)
+    form = HojaForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Hoja actualizada correctamente.')
+        return redirect('config-hojas')
+    return render(request, 'pricing/config/hoja_form.html', {'form': form, 'titulo': 'Editar Hoja', 'cancel_url': 'config-hojas', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def hoja_delete(request, pk):
+    obj = get_object_or_404(Hoja, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Hoja desactivada.')
+    return redirect('config-hojas')
+
+
+# ─── INTERIORES ───────────────────────────────────────────────────────────────
 
 @login_required
 @user_passes_test(is_staff)
@@ -59,17 +264,127 @@ def interiores_config(request):
 
 @login_required
 @user_passes_test(is_staff)
+def interior_create(request):
+    form = InteriorForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Interior)
+        obj.save()
+        messages.success(request, 'Interior creado correctamente.')
+        return redirect('config-interiores')
+    return render(request, 'pricing/config/interior_form.html', {'form': form, 'titulo': 'Nuevo Interior', 'cancel_url': 'config-interiores'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def interior_edit(request, pk):
+    obj = get_object_or_404(Interior, pk=pk)
+    form = InteriorForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Interior actualizado correctamente.')
+        return redirect('config-interiores')
+    return render(request, 'pricing/config/interior_form.html', {'form': form, 'titulo': 'Editar Interior', 'cancel_url': 'config-interiores', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def interior_delete(request, pk):
+    obj = get_object_or_404(Interior, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Interior desactivado.')
+    return redirect('config-interiores')
+
+
+# ─── PERFILES ─────────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
 def perfiles_config(request):
-    perfiles = Perfil.objects.all()[:100]  # Limitar para performance
+    perfiles = Perfil.objects.all()[:200]
     return render(request, 'pricing/config/perfiles.html', {'perfiles': perfiles})
 
 
 @login_required
 @user_passes_test(is_staff)
+def perfil_create(request):
+    form = PerfilCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Perfil creado correctamente.')
+        return redirect('config-perfiles')
+    return render(request, 'pricing/config/perfil_form.html', {'form': form, 'titulo': 'Nuevo Perfil', 'cancel_url': 'config-perfiles'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def perfil_edit(request, pk):
+    obj = get_object_or_404(Perfil, pk=pk)
+    form = PerfilEditForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Perfil actualizado correctamente.')
+        return redirect('config-perfiles')
+    return render(request, 'pricing/config/perfil_form.html', {'form': form, 'titulo': 'Editar Perfil', 'cancel_url': 'config-perfiles', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def perfil_delete(request, pk):
+    obj = get_object_or_404(Perfil, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Perfil desactivado.')
+    return redirect('config-perfiles')
+
+
+# ─── ACCESORIOS ───────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
 def accesorios_config(request):
-    accesorios = Accesorio.objects.all()[:100]
+    accesorios = Accesorio.objects.all()[:200]
     return render(request, 'pricing/config/accesorios.html', {'accesorios': accesorios})
 
+
+@login_required
+@user_passes_test(is_staff)
+def accesorio_create(request):
+    form = AccesorioCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Accesorio creado correctamente.')
+        return redirect('config-accesorios')
+    return render(request, 'pricing/config/accesorio_form.html', {'form': form, 'titulo': 'Nuevo Accesorio', 'cancel_url': 'config-accesorios'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def accesorio_edit(request, pk):
+    obj = get_object_or_404(Accesorio, pk=pk)
+    form = AccesorioEditForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Accesorio actualizado correctamente.')
+        return redirect('config-accesorios')
+    return render(request, 'pricing/config/accesorio_form.html', {'form': form, 'titulo': 'Editar Accesorio', 'cancel_url': 'config-accesorios', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def accesorio_delete(request, pk):
+    obj = get_object_or_404(Accesorio, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Accesorio desactivado.')
+    return redirect('config-accesorios')
+
+
+# ─── VIDRIOS ──────────────────────────────────────────────────────────────────
 
 @login_required
 @user_passes_test(is_staff)
@@ -80,6 +395,78 @@ def vidrios_config(request):
 
 @login_required
 @user_passes_test(is_staff)
+def vidrio_create(request):
+    form = VidrioCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Vidrio creado correctamente.')
+        return redirect('config-vidrios')
+    return render(request, 'pricing/config/vidrio_form.html', {'form': form, 'titulo': 'Nuevo Vidrio', 'cancel_url': 'config-vidrios'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def vidrio_edit(request, pk):
+    obj = get_object_or_404(Vidrio, pk=pk)
+    form = VidrioEditForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Vidrio actualizado correctamente.')
+        return redirect('config-vidrios')
+    return render(request, 'pricing/config/vidrio_form.html', {'form': form, 'titulo': 'Editar Vidrio', 'cancel_url': 'config-vidrios', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def vidrio_delete(request, pk):
+    obj = get_object_or_404(Vidrio, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Vidrio desactivado.')
+    return redirect('config-vidrios')
+
+
+# ─── TRATAMIENTOS ─────────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
 def tratamientos_config(request):
     tratamientos = Tratamiento.objects.all()
     return render(request, 'pricing/config/tratamientos.html', {'tratamientos': tratamientos})
+
+
+@login_required
+@user_passes_test(is_staff)
+def tratamiento_create(request):
+    form = TratamientoForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.id = _next_id(Tratamiento)
+        obj.save()
+        messages.success(request, 'Tratamiento creado correctamente.')
+        return redirect('config-tratamientos')
+    return render(request, 'pricing/config/tratamiento_form.html', {'form': form, 'titulo': 'Nuevo Tratamiento', 'cancel_url': 'config-tratamientos'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def tratamiento_edit(request, pk):
+    obj = get_object_or_404(Tratamiento, pk=pk)
+    form = TratamientoForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Tratamiento actualizado correctamente.')
+        return redirect('config-tratamientos')
+    return render(request, 'pricing/config/tratamiento_form.html', {'form': form, 'titulo': 'Editar Tratamiento', 'cancel_url': 'config-tratamientos', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def tratamiento_delete(request, pk):
+    obj = get_object_or_404(Tratamiento, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'Si'
+        obj.save()
+        messages.success(request, 'Tratamiento desactivado.')
+    return redirect('config-tratamientos')

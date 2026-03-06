@@ -51,6 +51,7 @@ class Producto(models.Model):
     idtipo = models.IntegerField(db_column="Idtipo", null=True, blank=True)
     descripcion = models.TextField(db_column="Descripci_n", null=True, blank=True)
     fecha_creacion = models.TextField(db_column="Fecha_creacion", null=True, blank=True)
+    bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
         managed = False
@@ -70,6 +71,7 @@ class Marco(models.Model):
     predeterminado = models.TextField(db_column="Predeterminado", null=True, blank=True)
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
     forma_dibujo = models.IntegerField(db_column="forma_dibujo", null=True, blank=True)
+    bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
         managed = False
@@ -89,6 +91,7 @@ class Hoja(models.Model):
     cantidad = models.IntegerField(db_column="Cantidad", null=True, blank=True)
     predeterminado = models.TextField(db_column="Predeterminado", null=True, blank=True)
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
+    bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
         managed = False
@@ -107,6 +110,7 @@ class Interior(models.Model):
     descripcion = models.TextField(db_column="Descripci_n", null=True, blank=True)
     predeterminado = models.TextField(db_column="Predeterminado", null=True, blank=True)
     no_verificado = models.TextField(db_column="no_verificado", null=True, blank=True)
+    bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
 
     class Meta:
         managed = False

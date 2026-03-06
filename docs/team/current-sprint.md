@@ -12,7 +12,7 @@ _Se define en el sprint planning._
 
 | ID | User Story | Estado | Notas |
 |----|-----------|--------|-------|
-| — | — | — | — |
+| US-003 | CRUD Fábrica ABM (Extrusoras, Líneas, Productos, Marcos, Hojas, Interiores, Perfiles, Accesorios, Vidrios, Tratamientos) | ✅ Completado | Soft delete via bloqueado; IDs manuales; migración RunSQL |
 
 ## Impedimentos
 
