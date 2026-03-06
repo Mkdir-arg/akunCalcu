@@ -9,19 +9,19 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            "ALTER TABLE productos ADD COLUMN IF NOT EXISTS Bloqueado TEXT NULL",
-            reverse_sql="ALTER TABLE productos DROP COLUMN IF EXISTS Bloqueado",
+            "ALTER TABLE productos ADD COLUMN Bloqueado TEXT NULL",
+            reverse_sql="ALTER TABLE productos DROP COLUMN Bloqueado",
         ),
         migrations.RunSQL(
-            "ALTER TABLE marco ADD COLUMN IF NOT EXISTS Bloqueado TEXT NULL",
-            reverse_sql="ALTER TABLE marco DROP COLUMN IF EXISTS Bloqueado",
+            "ALTER TABLE marco ADD COLUMN Bloqueado TEXT NULL",
+            reverse_sql="ALTER TABLE marco DROP COLUMN Bloqueado",
         ),
         migrations.RunSQL(
-            "ALTER TABLE hoja ADD COLUMN IF NOT EXISTS Bloqueado TEXT NULL",
-            reverse_sql="ALTER TABLE hoja DROP COLUMN IF EXISTS Bloqueado",
+            "ALTER TABLE hoja ADD COLUMN Bloqueado TEXT NULL",
+            reverse_sql="ALTER TABLE hoja DROP COLUMN Bloqueado",
         ),
         migrations.RunSQL(
-            "ALTER TABLE interior ADD COLUMN IF NOT EXISTS Bloqueado TEXT NULL",
-            reverse_sql="ALTER TABLE interior DROP COLUMN IF EXISTS Bloqueado",
+            "ALTER TABLE interior ADD COLUMN Bloqueado TEXT NULL",
+            reverse_sql="ALTER TABLE interior DROP COLUMN Bloqueado",
         ),
     ]

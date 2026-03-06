@@ -1,0 +1,6 @@
+@echo off
+echo Deteniendo contenedores...
+docker-compose down -v
+
+echo Reconstruyendo e iniciando...
+docker-compose up --build

@@ -14,6 +14,9 @@ class Extrusora(models.Model):
         managed = False
         db_table = "extrusoras"
 
+    def __str__(self):
+        return self.nombre or f"Extrusora {self.id}"
+
 
 class Linea(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
@@ -30,6 +33,9 @@ class Linea(models.Model):
     class Meta:
         managed = False
         db_table = "l_neas"
+
+    def __str__(self):
+        return self.nombre or f"Línea {self.id}"
 
 
 class Producto(models.Model):
@@ -57,6 +63,9 @@ class Producto(models.Model):
         managed = False
         db_table = "productos"
 
+    def __str__(self):
+        return self.descripcion or f"Producto {self.id}"
+
 
 class Marco(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
@@ -76,6 +85,9 @@ class Marco(models.Model):
     class Meta:
         managed = False
         db_table = "marco"
+
+    def __str__(self):
+        return self.descripcion or f"Marco {self.id}"
 
 
 class Hoja(models.Model):
@@ -97,6 +109,9 @@ class Hoja(models.Model):
         managed = False
         db_table = "hoja"
 
+    def __str__(self):
+        return self.descripcion or f"Hoja {self.id}"
+
 
 class Interior(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
@@ -115,6 +130,9 @@ class Interior(models.Model):
     class Meta:
         managed = False
         db_table = "interior"
+
+    def __str__(self):
+        return self.descripcion or f"Interior {self.id}"
 
 
 class Contravidrio(models.Model):
@@ -230,6 +248,9 @@ class Perfil(models.Model):
         managed = False
         db_table = "perfiles"
 
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion}" if self.descripcion else self.codigo
+
 
 class Accesorio(models.Model):
     codigo = models.TextField(db_column="COD_PARTE", primary_key=True)
@@ -245,6 +266,9 @@ class Accesorio(models.Model):
     class Meta:
         managed = False
         db_table = "accesorios"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion}" if self.descripcion else self.codigo
 
 
 class Vidrio(models.Model):
@@ -266,6 +290,9 @@ class Vidrio(models.Model):
         managed = False
         db_table = "vidrios"
 
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion}" if self.descripcion else self.codigo
+
 
 class Tratamiento(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
@@ -278,6 +305,9 @@ class Tratamiento(models.Model):
     class Meta:
         managed = False
         db_table = "tratamientos"
+
+    def __str__(self):
+        return self.descripcion or f"Tratamiento {self.id}"
 
 
 class DespiecePerfilesMarco(models.Model):

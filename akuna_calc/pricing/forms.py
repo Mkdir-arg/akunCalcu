@@ -15,41 +15,41 @@ class ExtrusoraForm(forms.ModelForm):
 class LineaForm(forms.ModelForm):
     class Meta:
         model = Linea
-        fields = ['nombre', 'extrusora']
+        fields = ['extrusora', 'nombre']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': _input_class}),
             'extrusora': forms.Select(attrs={'class': _select_class}),
+            'nombre': forms.TextInput(attrs={'class': _input_class}),
         }
 
 
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['descripcion', 'extrusora', 'linea']
+        fields = ['extrusora', 'linea', 'descripcion']
         widgets = {
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'extrusora': forms.Select(attrs={'class': _select_class}),
             'linea': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
 
 
 class MarcoForm(forms.ModelForm):
     class Meta:
         model = Marco
-        fields = ['descripcion', 'producto']
+        fields = ['producto', 'descripcion']
         widgets = {
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'producto': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
 
 
 class HojaForm(forms.ModelForm):
     class Meta:
         model = Hoja
-        fields = ['descripcion', 'marco', 'cantidad']
+        fields = ['marco', 'descripcion', 'cantidad']
         widgets = {
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'marco': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad': forms.NumberInput(attrs={'class': _input_class}),
         }
 
@@ -57,10 +57,10 @@ class HojaForm(forms.ModelForm):
 class InteriorForm(forms.ModelForm):
     class Meta:
         model = Interior
-        fields = ['descripcion', 'hoja']
+        fields = ['hoja', 'descripcion']
         widgets = {
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'hoja': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
 
 
