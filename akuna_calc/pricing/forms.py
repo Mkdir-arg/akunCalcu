@@ -40,13 +40,13 @@ class MarcoForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Línea'
     )
     
@@ -161,26 +161,100 @@ class InteriorForm(forms.ModelForm):
 
 
 class PerfilCreateForm(forms.ModelForm):
+    MONEDA_CHOICES = [
+        (1, 'Peso'),
+        (2, 'Dólar'),
+    ]
+    
+    linea_id = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Línea',
+        required=False
+    )
+    
+    moneda = forms.ChoiceField(
+        choices=MONEDA_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Moneda'
+    )
+    
     class Meta:
         model = Perfil
-        fields = ['codigo', 'descripcion', 'peso_metro', 'precio_kg']
+        fields = ['codigo', 'linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda']
+        labels = {
+            'linea_id': 'Línea',
+            'peso_metro': 'KG x Metro',
+            'long_tira': 'Largo',
+            'precio_kg': 'Precio x KG',
+        }
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'peso_metro': forms.NumberInput(attrs={'class': _input_class, 'step': '0.001'}),
+            'long_tira': forms.NumberInput(attrs={'class': _input_class}),
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data.get('linea_id'):
+            instance.linea_id = self.cleaned_data['linea_id'].id
+        if commit:
+            instance.save()
+        return instance
 
 
 class PerfilEditForm(forms.ModelForm):
+    MONEDA_CHOICES = [
+        (1, 'Peso'),
+        (2, 'Dólar'),
+    ]
+    
+    linea_id = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Línea',
+        required=False
+    )
+    
+    moneda = forms.ChoiceField(
+        choices=MONEDA_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Moneda'
+    )
+    
     class Meta:
         model = Perfil
-        fields = ['descripcion', 'peso_metro', 'precio_kg']
+        fields = ['linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda']
+        labels = {
+            'linea_id': 'Línea',
+            'peso_metro': 'KG x Metro',
+            'long_tira': 'Largo',
+            'precio_kg': 'Precio x KG',
+        }
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'peso_metro': forms.NumberInput(attrs={'class': _input_class, 'step': '0.001'}),
+            'long_tira': forms.NumberInput(attrs={'class': _input_class}),
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.linea_id:
+            try:
+                self.fields['linea_id'].initial = Linea.objects.get(id=self.instance.linea_id)
+            except Linea.DoesNotExist:
+                pass
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data.get('linea_id'):
+            instance.linea_id = self.cleaned_data['linea_id'].id
+        if commit:
+            instance.save()
+        return instance
 
 
 class AccesorioCreateForm(forms.ModelForm):

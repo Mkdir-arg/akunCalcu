@@ -524,3 +524,12 @@ def api_get_hoja(request, pk):
         })
     except Hoja.DoesNotExist:
         return JsonResponse({'error': 'Hoja no encontrada'}, status=404)
+
+
+@login_required
+def api_get_extrusoras(request):
+    """Retorna lista de extrusoras."""
+    extrusoras = Extrusora.objects.filter(bloqueado__isnull=True) | Extrusora.objects.filter(bloqueado='No')
+    return JsonResponse({
+        'extrusoras': [{'id': e.id, 'nombre': str(e)} for e in extrusoras]
+    })
