@@ -57,12 +57,18 @@ class PriceCalculator:
         cleaned = self._validate_config(configuracion)
 
         marco = self._get_marco(cleaned["marco_id"])
-        hoja = self._get_hoja(cleaned["hoja_id"])
-        interior = self._get_interior(cleaned["interior_id"])
-        if hoja.marco_id != marco.id:
-            raise PricingError("La hoja no pertenece al marco seleccionado.")
-        if interior.hoja_id != hoja.id:
-            raise PricingError("El interior no pertenece a la hoja seleccionada.")
+        hoja_id = cleaned.get("hoja_id")
+        interior_id = cleaned.get("interior_id")
+        
+        if hoja_id:
+            hoja = self._get_hoja(hoja_id)
+            if hoja.marco_id != marco.id:
+                raise PricingError("La hoja no pertenece al marco seleccionado.")
+        
+        if interior_id:
+            interior = self._get_interior(interior_id)
+            if hoja_id and interior.hoja_id != hoja_id:
+                raise PricingError("El interior no pertenece a la hoja seleccionada.")
 
         variables = {
             "Ancho": cleaned["ancho_mm"],
@@ -81,12 +87,13 @@ class PriceCalculator:
             cleaned["color_id"],
             perfiles_items,
         )
-        peso_total_perfiles += self._calcular_perfiles_simple(
-            DespiecePerfilesHoja.objects.filter(hoja_id=hoja.id),
-            variables,
-            cleaned["color_id"],
-            perfiles_items,
-        )
+        if hoja_id:
+            peso_total_perfiles += self._calcular_perfiles_simple(
+                DespiecePerfilesHoja.objects.filter(hoja_id=hoja_id),
+                variables,
+                cleaned["color_id"],
+                perfiles_items,
+            )
 
         mosquitero_id = cleaned.get("mosquitero_id")
         if mosquitero_id:
@@ -143,16 +150,18 @@ class PriceCalculator:
             variables,
             accesorios_items,
         )
-        self._calcular_accesorios(
-            DespieceAccesoriosHoja.objects.filter(hoja_id=hoja.id),
-            variables,
-            accesorios_items,
-        )
-        self._calcular_accesorios(
-            DespieceAccesoriosInterior.objects.filter(interior_id=interior.id),
-            variables,
-            accesorios_items,
-        )
+        if hoja_id:
+            self._calcular_accesorios(
+                DespieceAccesoriosHoja.objects.filter(hoja_id=hoja_id),
+                variables,
+                accesorios_items,
+            )
+        if interior_id:
+            self._calcular_accesorios(
+                DespieceAccesoriosInterior.objects.filter(interior_id=interior_id),
+                variables,
+                accesorios_items,
+            )
         if mosquitero_id:
             self._calcular_accesorios(
                 DespieceAccesoriosMosquitero.objects.filter(mosquitero_id=mosquitero_id),
@@ -189,23 +198,27 @@ class PriceCalculator:
             )
 
         # Vidrios
-        vidrio = self._get_vidrio(cleaned["vidrio_codigo"])
-        rebaje = cleaned.get("rebaje_vidrio_mm", 0)
-        ancho_vidrio = cleaned["ancho_mm"] - rebaje
-        alto_vidrio = cleaned["alto_mm"] - rebaje
-        if ancho_vidrio <= 0 or alto_vidrio <= 0:
-            raise PricingError("Dimensiones invalidas para vidrio (rebaje demasiado grande).")
-        area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
-        precio_vidrio = area_m2 * _to_float(vidrio.precio)
-        vidrio_detalle = {
-            "codigo": vidrio.codigo,
-            "descripcion": vidrio.descripcion,
-            "ancho_mm": ancho_vidrio,
-            "alto_mm": alto_vidrio,
-            "area_m2": round(area_m2, 4),
-            "precio_m2": _to_float(vidrio.precio),
-            "precio_total": round(precio_vidrio, 2),
-        }
+        vidrio_detalle = None
+        precio_vidrio = 0.0
+        vidrio_codigo = cleaned.get("vidrio_codigo")
+        if vidrio_codigo:
+            vidrio = self._get_vidrio(vidrio_codigo)
+            rebaje = cleaned.get("rebaje_vidrio_mm", 0)
+            ancho_vidrio = cleaned["ancho_mm"] - rebaje
+            alto_vidrio = cleaned["alto_mm"] - rebaje
+            if ancho_vidrio <= 0 or alto_vidrio <= 0:
+                raise PricingError("Dimensiones invalidas para vidrio (rebaje demasiado grande).")
+            area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
+            precio_vidrio = area_m2 * _to_float(vidrio.precio)
+            vidrio_detalle = {
+                "codigo": vidrio.codigo,
+                "descripcion": vidrio.descripcion,
+                "ancho_mm": ancho_vidrio,
+                "alto_mm": alto_vidrio,
+                "area_m2": round(area_m2, 4),
+                "precio_m2": _to_float(vidrio.precio),
+                "precio_total": round(precio_vidrio, 2),
+            }
 
         # Tratamientos
         tratamiento_total = 0.0
@@ -253,7 +266,7 @@ class PriceCalculator:
         }
 
     def _validate_config(self, configuracion: Dict[str, Any]) -> Dict[str, Any]:
-        required = ["marco_id", "hoja_id", "interior_id", "ancho_mm", "alto_mm", "vidrio_codigo"]
+        required = ["marco_id", "ancho_mm", "alto_mm"]
         for key in required:
             if configuracion.get(key) in (None, ""):
                 raise PricingError(f"Falta parametro requerido: {key}")
@@ -274,8 +287,8 @@ class PriceCalculator:
         cleaned = {
             "producto_id": configuracion.get("producto_id"),
             "marco_id": int(configuracion["marco_id"]),
-            "hoja_id": int(configuracion["hoja_id"]),
-            "interior_id": int(configuracion["interior_id"]),
+            "hoja_id": configuracion.get("hoja_id"),
+            "interior_id": configuracion.get("interior_id"),
             "contravidrio_id": configuracion.get("contravidrio_id"),
             "contravidrio_exterior_id": configuracion.get("contravidrio_exterior_id"),
             "mosquitero_id": configuracion.get("mosquitero_id"),
@@ -284,16 +297,13 @@ class PriceCalculator:
             "ancho_mm": ancho,
             "alto_mm": alto,
             "color_id": color_id,
-            "vidrio_codigo": str(configuracion["vidrio_codigo"]),
+            "vidrio_codigo": configuracion.get("vidrio_codigo"),
             "tratamiento_id": configuracion.get("tratamiento_id"),
             "margen_porcentaje": margen,
             "rebaje_vidrio_mm": configuracion.get("rebaje_vidrio_mm", 0),
         }
 
-        cantidad_hojas = configuracion.get("cantidad_hojas")
-        if cantidad_hojas is None:
-            hoja = self._get_hoja(cleaned["hoja_id"])
-            cantidad_hojas = hoja.cantidad or 1
+        cantidad_hojas = configuracion.get("cantidad_hojas", 1)
         cleaned["cantidad_hojas"] = int(cantidad_hojas)
 
         return cleaned
