@@ -37,6 +37,17 @@ class ProductoForm(forms.ModelForm):
 
 
 class MarcoForm(forms.ModelForm):
+    class Meta:
+        model = Marco
+        fields = ['producto', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'producto': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+        }
+    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -50,25 +61,29 @@ class MarcoForm(forms.ModelForm):
         label='Línea'
     )
     
-    class Meta:
-        model = Marco
-        fields = ['extrusora', 'linea', 'producto', 'descripcion']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'producto': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-        }
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Reordenar campos
+        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
+        
         if self.instance and self.instance.pk and self.instance.producto:
             self.fields['extrusora'].initial = self.instance.producto.extrusora
             self.fields['linea'].initial = self.instance.producto.linea
 
 
 class HojaForm(forms.ModelForm):
+    class Meta:
+        model = Hoja
+        fields = ['marco', 'descripcion', 'cantidad']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'marco': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'cantidad': forms.NumberInput(attrs={'class': _input_class}),
+        }
+    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -88,20 +103,10 @@ class HojaForm(forms.ModelForm):
         label='Producto'
     )
     
-    class Meta:
-        model = Hoja
-        fields = ['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'marco': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'cantidad': forms.NumberInput(attrs={'class': _input_class}),
-        }
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
+        
         if self.instance and self.instance.pk and self.instance.marco:
             self.fields['extrusora'].initial = self.instance.marco.producto.extrusora
             self.fields['linea'].initial = self.instance.marco.producto.linea
@@ -109,6 +114,17 @@ class HojaForm(forms.ModelForm):
 
 
 class InteriorForm(forms.ModelForm):
+    class Meta:
+        model = Interior
+        fields = ['hoja', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
+        widgets = {
+            'hoja': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
+        }
+    
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
@@ -134,19 +150,10 @@ class InteriorForm(forms.ModelForm):
         label='Marco'
     )
     
-    class Meta:
-        model = Interior
-        fields = ['extrusora', 'linea', 'producto', 'marco', 'hoja', 'descripcion']
-        labels = {
-            'descripcion': 'Nombre',
-        }
-        widgets = {
-            'hoja': forms.Select(attrs={'class': _select_class}),
-            'descripcion': forms.TextInput(attrs={'class': _input_class}),
-        }
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'hoja', 'descripcion'])
+        
         if self.instance and self.instance.pk and self.instance.hoja:
             self.fields['extrusora'].initial = self.instance.hoja.marco.producto.extrusora
             self.fields['linea'].initial = self.instance.hoja.marco.producto.linea
