@@ -79,10 +79,14 @@ Implementar en este orden:
 3. Views
 4. URLs
 5. Templates → leer `docs/team/design-system.md` antes de escribir cualquier template
+6. Tests → escribir en `app/tests.py` o `app/tests/`:
+   - Por cada model nuevo/modificado: test de `__str__` y campos críticos
+   - Por cada view nueva: test de status code (200 autenticado, 302 sin login)
+   - Correr: `docker-compose exec web python manage.py test nombre_app`
 
 Seguir las convenciones de `CLAUDE.md`. No agregar código no pedido.
 
-Al terminar, mostrar lista de archivos modificados/creados.
+Al terminar, mostrar lista de archivos modificados/creados y resultado de los tests.
 
 Terminar con: "¿Procedemos con la revisión?"
 

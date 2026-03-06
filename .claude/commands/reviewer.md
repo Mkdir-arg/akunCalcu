@@ -17,6 +17,11 @@ Cuando el usuario ejecuta `/reviewer [archivo o descripción de qué revisar]`, 
 
 **Checklist de revisión:**
 
+**Criterios de aceptación (si aplica — revisar el REQ o la user story asociada):**
+- [ ] Cada criterio de aceptación definido está cumplido — verificar uno por uno
+- [ ] El flujo funciona de punta a punta, no solo compila
+- [ ] Tests pasan: `docker-compose exec web python manage.py test nombre_app`
+
 **Seguridad:**
 - [ ] `@login_required` en todas las views que lo requieren
 - [ ] `{% csrf_token %}` en todos los forms POST

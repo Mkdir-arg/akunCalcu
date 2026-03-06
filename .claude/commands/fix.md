@@ -63,6 +63,8 @@ Terminar con: "¿Procedemos con la revisión?"
 
 ### PASO 3 — Reviewer verifica (solo si Paso 2 aprobado)
 
+- [ ] El test escrito reproduce el bug y pasa con el fix aplicado
+- [ ] `docker-compose exec web python manage.py test nombre_app` pasa sin errores
 - [ ] El fix resuelve el síntoma sin introducir regresiones
 - [ ] No se modificó código fuera del alcance del bug
 - [ ] Si hubo migración → existe el archivo

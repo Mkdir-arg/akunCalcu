@@ -868,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         text: `La venta ahora está en estado: ${data.nuevo_estado}`,
                         timer: 2000,
                         showConfirmButton: false,
-                    }).then(() => location.reload());
+                    }).then(() => window.location.href = window.location.pathname);
                 } else {
                     Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
                 }

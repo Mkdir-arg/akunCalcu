@@ -18,10 +18,14 @@ Leer el código afectado. Identificar la causa raíz y aplicar el fix mínimo ne
 
 **NO refactorizar. NO mejorar código cercano. Solo resolver el problema puntual.**
 
+Si el tiempo lo permite, escribir un test de regresión mínimo que confirme que el problema no vuelve.
+Si no hay tiempo, marcarlo en el seguimiento del HFX para hacerlo en el próximo sprint.
+
 Presentar al usuario:
 - Causa raíz identificada
 - Cambio aplicado (diff o descripción)
 - Archivos modificados
+- Tests escritos (o nota de que queda pendiente)
 
 Terminar con: "¿Procedemos con la revisión?"
 
