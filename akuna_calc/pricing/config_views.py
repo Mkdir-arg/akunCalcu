@@ -587,79 +587,16 @@ def vidrio_edit(request, pk):
     obj = get_object_or_404(Vidrio, pk=pk)
     form = VidrioEditForm(request.POST or None, instance=obj)
     
-    from .models import DespiecePerfilesVidrio
-    formulas = []
-    try:
-        formulas = list(DespiecePerfilesVidrio.objects.filter(vidrio=obj))
-    except:
-        pass
-    
-    perfiles = Perfil.objects.exclude(bloqueado='Si')
-    
-    if request.method == 'POST':
-        # Si es una petición AJAX para guardar solo fórmulas
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            try:
-                DespiecePerfilesVidrio.objects.filter(vidrio=obj).delete()
-                cantidades = request.POST.getlist('cantidad[]')
-                formulas_list = request.POST.getlist('formula[]')
-                angulos = request.POST.getlist('angulo[]')
-                perfiles_list = request.POST.getlist('perfil[]')
-                
-                guardadas = 0
-                for i in range(len(cantidades)):
-                    if perfiles_list[i] and cantidades[i] and formulas_list[i]:
-                        max_id = DespiecePerfilesVidrio.objects.aggregate(Max('id'))['id__max'] or 0
-                        DespiecePerfilesVidrio.objects.create(
-                            id=max_id + 1,
-                            vidrio=obj,
-                            perfil=perfiles_list[i],
-                            formula_cantidad=cantidades[i],
-                            formula_perfil=formulas_list[i],
-                            angulo=angulos[i] if i < len(angulos) else ''
-                        )
-                        guardadas += 1
-                return JsonResponse({'success': True, 'guardadas': guardadas})
-            except Exception as e:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-        
-        # Guardado normal del formulario
-        if form.is_valid():
-            form.save()
-            
-            # Guardar fórmulas
-            if 'cantidad[]' in request.POST:
-                try:
-                    DespiecePerfilesVidrio.objects.filter(vidrio=obj).delete()
-                    cantidades = request.POST.getlist('cantidad[]')
-                    formulas_list = request.POST.getlist('formula[]')
-                    angulos = request.POST.getlist('angulo[]')
-                    perfiles_list = request.POST.getlist('perfil[]')
-                    
-                    for i in range(len(cantidades)):
-                        if perfiles_list[i] and cantidades[i] and formulas_list[i]:
-                            max_id = DespiecePerfilesVidrio.objects.aggregate(Max('id'))['id__max'] or 0
-                            DespiecePerfilesVidrio.objects.create(
-                                id=max_id + 1,
-                                vidrio=obj,
-                                perfil=perfiles_list[i],
-                                formula_cantidad=cantidades[i],
-                                formula_perfil=formulas_list[i],
-                                angulo=angulos[i] if i < len(angulos) else ''
-                            )
-                except Exception as e:
-                    messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
-            
-            messages.success(request, 'Vidrio actualizado correctamente.')
-            return redirect('config-vidrios')
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Vidrio actualizado correctamente.')
+        return redirect('config-vidrios')
     
     return render(request, 'pricing/config/vidrio_form.html', {
         'form': form, 
         'titulo': 'Editar Vidrio', 
         'cancel_url': 'config-vidrios', 
-        'object': obj,
-        'formulas': formulas,
-        'perfiles': perfiles
+        'object': obj
     })
 
 

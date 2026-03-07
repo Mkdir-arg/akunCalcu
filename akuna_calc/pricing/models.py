@@ -274,6 +274,7 @@ class Accesorio(models.Model):
 
 class Vidrio(models.Model):
     codigo = models.TextField(db_column="CODIGO", primary_key=True)
+    producto_id = models.IntegerField(db_column="Idproducto", null=True, blank=True)
     hoja_id = models.IntegerField(db_column="Idhoja", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
     precio = models.FloatField(db_column="PRECIO", null=True, blank=True)
@@ -287,15 +288,9 @@ class Vidrio(models.Model):
     maximo = models.IntegerField(db_column="Maximo", null=True, blank=True)
     corte1 = models.TextField(db_column="Corte1", null=True, blank=True)
     transparente = models.TextField(db_column="transparente", null=True, blank=True)
-    # Fórmulas de cálculo
-    formula_umbral_dintel = models.TextField(db_column="formula_umbral_dintel", null=True, blank=True)
-    formula_zocalo = models.TextField(db_column="formula_zocalo", null=True, blank=True)
-    formula_parante = models.TextField(db_column="formula_parante", null=True, blank=True)
-    formula_ancho_dvh = models.TextField(db_column="formula_ancho_dvh", null=True, blank=True)
-    formula_alto_dvh = models.TextField(db_column="formula_alto_dvh", null=True, blank=True)
-    formula_ancho_mosq = models.TextField(db_column="formula_ancho_mosq", null=True, blank=True)
-    formula_alto_mosq = models.TextField(db_column="formula_alto_mosq", null=True, blank=True)
-    formula_tope_mosq = models.TextField(db_column="formula_tope_mosq", null=True, blank=True)
+    # Rebajes para cálculo de dimensiones
+    rebaje_ancho = models.IntegerField(db_column="rebaje_ancho", null=True, blank=True, default=0)
+    rebaje_alto = models.IntegerField(db_column="rebaje_alto", null=True, blank=True, default=0)
 
     class Meta:
         managed = False

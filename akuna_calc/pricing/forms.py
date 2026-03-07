@@ -288,41 +288,41 @@ class AccesorioEditForm(forms.ModelForm):
 
 
 class VidrioCreateForm(forms.ModelForm):
+    from productos.models import Producto as ProductoComercial
+    
+    producto_id = forms.ModelChoiceField(
+        queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Producto',
+        required=False
+    )
+    
     hoja_id = forms.IntegerField(
         widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Hoja',
         required=False
     )
     
+    rebaje_ancho = forms.IntegerField(
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
+        label='Rebaje Ancho (mm)'
+    )
+    
+    rebaje_alto = forms.IntegerField(
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
+        label='Rebaje Alto (mm)'
+    )
+    
     class Meta:
         model = Vidrio
-        fields = [
-            'codigo', 'hoja_id', 'descripcion',
-            'formula_umbral_dintel', 'formula_zocalo', 'formula_parante',
-            'formula_ancho_dvh', 'formula_alto_dvh',
-            'formula_ancho_mosq', 'formula_alto_mosq', 'formula_tope_mosq'
-        ]
-        labels = {
-            'formula_umbral_dintel': 'Fórmula Umbral y Dintel',
-            'formula_zocalo': 'Fórmula Zócalo',
-            'formula_parante': 'Fórmula Parante',
-            'formula_ancho_dvh': 'Fórmula Ancho DVH',
-            'formula_alto_dvh': 'Fórmula Alto DVH',
-            'formula_ancho_mosq': 'Fórmula Ancho Mosquitero',
-            'formula_alto_mosq': 'Fórmula Alto Mosquitero',
-            'formula_tope_mosq': 'Fórmula Tope Mosquitero',
-        }
+        fields = ['codigo', 'producto_id', 'hoja_id', 'descripcion', 'rebaje_ancho', 'rebaje_alto']
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'formula_umbral_dintel': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 100'}),
-            'formula_zocalo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 50'}),
-            'formula_parante': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 200'}),
-            'formula_ancho_dvh': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 30'}),
-            'formula_alto_dvh': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 30'}),
-            'formula_ancho_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 40'}),
-            'formula_alto_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 40'}),
-            'formula_tope_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 150'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -332,40 +332,40 @@ class VidrioCreateForm(forms.ModelForm):
 
 
 class VidrioEditForm(forms.ModelForm):
+    from productos.models import Producto as ProductoComercial
+    
+    producto_id = forms.ModelChoiceField(
+        queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Producto',
+        required=False
+    )
+    
     hoja_id = forms.IntegerField(
         widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Hoja',
         required=False
     )
     
+    rebaje_ancho = forms.IntegerField(
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
+        label='Rebaje Ancho (mm)'
+    )
+    
+    rebaje_alto = forms.IntegerField(
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
+        label='Rebaje Alto (mm)'
+    )
+    
     class Meta:
         model = Vidrio
-        fields = [
-            'hoja_id', 'descripcion',
-            'formula_umbral_dintel', 'formula_zocalo', 'formula_parante',
-            'formula_ancho_dvh', 'formula_alto_dvh',
-            'formula_ancho_mosq', 'formula_alto_mosq', 'formula_tope_mosq'
-        ]
-        labels = {
-            'formula_umbral_dintel': 'Fórmula Umbral y Dintel',
-            'formula_zocalo': 'Fórmula Zócalo',
-            'formula_parante': 'Fórmula Parante',
-            'formula_ancho_dvh': 'Fórmula Ancho DVH',
-            'formula_alto_dvh': 'Fórmula Alto DVH',
-            'formula_ancho_mosq': 'Fórmula Ancho Mosquitero',
-            'formula_alto_mosq': 'Fórmula Alto Mosquitero',
-            'formula_tope_mosq': 'Fórmula Tope Mosquitero',
-        }
+        fields = ['producto_id', 'hoja_id', 'descripcion', 'rebaje_ancho', 'rebaje_alto']
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'formula_umbral_dintel': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 100'}),
-            'formula_zocalo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 50'}),
-            'formula_parante': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 200'}),
-            'formula_ancho_dvh': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 30'}),
-            'formula_alto_dvh': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 30'}),
-            'formula_ancho_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 40'}),
-            'formula_alto_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 40'}),
-            'formula_tope_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 150'}),
         }
     
     def __init__(self, *args, **kwargs):

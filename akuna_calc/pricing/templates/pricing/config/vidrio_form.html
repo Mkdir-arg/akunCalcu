@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto px-4">
+<div class="max-w-4xl mx-auto px-4">
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
         {% if object %}
@@ -10,13 +10,13 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-lg p-6">
-        <form method="post" id="vidrioForm">
+        <form method="post">
             {% csrf_token %}
             
             <!-- Datos Básicos -->
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Datos Básicos</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {% if form.codigo %}
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.codigo.label }}</label>
@@ -26,6 +26,13 @@
                         {% endif %}
                     </div>
                     {% endif %}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.producto_id.label }}</label>
+                        {{ form.producto_id }}
+                        {% if form.producto_id.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.producto_id.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.hoja_id.label }}</label>
                         {{ form.hoja_id }}
@@ -43,57 +50,45 @@
                 </div>
             </div>
 
-            {% if object %}
-            <!-- Fórmulas de Perfiles -->
+            <!-- Dimensiones del Vidrio -->
             <div class="mb-6">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                    <h2 class="text-xl font-semibold text-slate-800">Fórmulas de Perfiles</h2>
-                    <button type="button" onclick="guardarFormulas()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm">
-                        <i class="fas fa-save mr-2"></i>Guardar Fórmulas
-                    </button>
-                </div>
+                <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Dimensiones del Vidrio</h2>
+                <p class="text-sm text-slate-600 mb-4">El vidrio se calcula como: <strong>Ancho Vidrio = Ancho - Rebaje Ancho</strong> y <strong>Alto Vidrio = Alto - Rebaje Alto</strong></p>
                 
                 <div class="overflow-x-auto">
-                    <table class="w-full border-collapse" id="formulasTable">
+                    <table class="w-full border-collapse">
                         <thead>
                             <tr class="bg-slate-100">
-                                <th class="border px-3 py-2 text-left text-sm font-semibold">Cantidad</th>
-                                <th class="border px-3 py-2 text-left text-sm font-semibold">Fórmula</th>
-                                <th class="border px-3 py-2 text-left text-sm font-semibold">Ángulo</th>
-                                <th class="border px-3 py-2 text-left text-sm font-semibold">Perfil</th>
-                                <th class="border px-3 py-2 w-20"></th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Dimensión</th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Fórmula</th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Rebaje (mm)</th>
                             </tr>
                         </thead>
-                        <tbody id="formulasBody">
-                            {% for formula in formulas %}
+                        <tbody>
                             <tr>
-                                <td class="border px-3 py-2"><input type="text" name="cantidad[]" value="{{ formula.formula_cantidad }}" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500"></td>
-                                <td class="border px-3 py-2"><input type="text" name="formula[]" value="{{ formula.formula_perfil }}" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500" placeholder="Ej: Ancho - 100"></td>
-                                <td class="border px-3 py-2"><input type="text" name="angulo[]" value="{{ formula.angulo }}" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500"></td>
-                                <td class="border px-3 py-2">
-                                    <select name="perfil[]" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500">
-                                        <option value="">Seleccionar...</option>
-                                        {% for p in perfiles %}
-                                        <option value="{{ p.codigo }}" {% if p.codigo == formula.perfil %}selected{% endif %}>{{ p.codigo }} - {{ p.descripcion }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td class="border px-3 py-2 text-center">
-                                    <button type="button" onclick="eliminarFila(this)" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <td class="border px-4 py-2 font-medium">Ancho Vidrio</td>
+                                <td class="border px-4 py-2 text-slate-600">Ancho -</td>
+                                <td class="border px-4 py-2">
+                                    {{ form.rebaje_ancho }}
+                                    {% if form.rebaje_ancho.errors %}
+                                        <p class="text-red-600 text-xs mt-1">{{ form.rebaje_ancho.errors.0 }}</p>
+                                    {% endif %}
                                 </td>
                             </tr>
-                            {% endfor %}
+                            <tr>
+                                <td class="border px-4 py-2 font-medium">Alto Vidrio</td>
+                                <td class="border px-4 py-2 text-slate-600">Alto -</td>
+                                <td class="border px-4 py-2">
+                                    {{ form.rebaje_alto }}
+                                    {% if form.rebaje_alto.errors %}
+                                        <p class="text-red-600 text-xs mt-1">{{ form.rebaje_alto.errors.0 }}</p>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
-                
-                <button type="button" onclick="agregarFila()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm">
-                    <i class="fas fa-plus mr-2"></i>Agregar Fórmula
-                </button>
             </div>
-            {% endif %}
 
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <a href="{% url 'config-vidrios' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
@@ -104,60 +99,4 @@
         </form>
     </div>
 </div>
-
-<script>
-const perfilesOptions = `{% for p in perfiles %}<option value="{{ p.codigo }}">{{ p.codigo }} - {{ p.descripcion }}</option>{% endfor %}`;
-
-function agregarFila() {
-    const tbody = document.getElementById('formulasBody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="border px-3 py-2"><input type="text" name="cantidad[]" value="" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500"></td>
-        <td class="border px-3 py-2"><input type="text" name="formula[]" value="" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500" placeholder="Ej: Ancho - 100"></td>
-        <td class="border px-3 py-2"><input type="text" name="angulo[]" value="" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500"></td>
-        <td class="border px-3 py-2">
-            <select name="perfil[]" class="w-full px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500">
-                <option value="">Seleccionar...</option>
-                ${perfilesOptions}
-            </select>
-        </td>
-        <td class="border px-3 py-2 text-center">
-            <button type="button" onclick="eliminarFila(this)" class="text-red-600 hover:text-red-800">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>
-    `;
-    tbody.appendChild(tr);
-}
-
-function eliminarFila(btn) {
-    btn.closest('tr').remove();
-}
-
-function guardarFormulas() {
-    const form = document.getElementById('vidrioForm');
-    const formData = new FormData(form);
-    
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Fórmulas guardadas correctamente');
-        } else {
-            alert('Error al guardar fórmulas');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al guardar fórmulas');
-    });
-}
-</script>
 {% endblock %}
