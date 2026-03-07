@@ -53,7 +53,7 @@
             <!-- Dimensiones del Vidrio -->
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Dimensiones del Vidrio</h2>
-                <p class="text-sm text-slate-600 mb-4">El vidrio se calcula como: <strong>Ancho Vidrio = Ancho - Rebaje Ancho</strong> y <strong>Alto Vidrio = Alto - Rebaje Alto</strong></p>
+                <p class="text-sm text-slate-600 mb-4">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse">
@@ -61,13 +61,11 @@
                             <tr class="bg-slate-100">
                                 <th class="border px-4 py-2 text-left text-sm font-semibold">Dimensión</th>
                                 <th class="border px-4 py-2 text-left text-sm font-semibold">Fórmula</th>
-                                <th class="border px-4 py-2 text-left text-sm font-semibold">Rebaje (mm)</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td class="border px-4 py-2 font-medium">Ancho Vidrio</td>
-                                <td class="border px-4 py-2 text-slate-600">Ancho -</td>
                                 <td class="border px-4 py-2">
                                     {{ form.rebaje_ancho }}
                                     {% if form.rebaje_ancho.errors %}
@@ -77,7 +75,6 @@
                             </tr>
                             <tr>
                                 <td class="border px-4 py-2 font-medium">Alto Vidrio</td>
-                                <td class="border px-4 py-2 text-slate-600">Alto -</td>
                                 <td class="border px-4 py-2">
                                     {{ form.rebaje_alto }}
                                     {% if form.rebaje_alto.errors %}

@@ -293,7 +293,7 @@ class VidrioCreateForm(forms.ModelForm):
     producto_id = forms.ModelChoiceField(
         queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
         widget=forms.Select(attrs={'class': _select_class}),
-        label='Producto',
+        label='Interior',
         required=False
     )
     
@@ -303,18 +303,16 @@ class VidrioCreateForm(forms.ModelForm):
         required=False
     )
     
-    rebaje_ancho = forms.IntegerField(
+    rebaje_ancho = forms.CharField(
         required=False,
-        initial=0,
-        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
-        label='Rebaje Ancho (mm)'
+        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 149, (Ancho-149)/2'}),
+        label='Fórmula Ancho'
     )
     
-    rebaje_alto = forms.IntegerField(
+    rebaje_alto = forms.CharField(
         required=False,
-        initial=0,
-        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
-        label='Rebaje Alto (mm)'
+        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 100, (Alto-50)/2'}),
+        label='Fórmula Alto'
     )
     
     class Meta:
@@ -337,7 +335,7 @@ class VidrioEditForm(forms.ModelForm):
     producto_id = forms.ModelChoiceField(
         queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
         widget=forms.Select(attrs={'class': _select_class}),
-        label='Producto',
+        label='Interior',
         required=False
     )
     
@@ -347,18 +345,16 @@ class VidrioEditForm(forms.ModelForm):
         required=False
     )
     
-    rebaje_ancho = forms.IntegerField(
+    rebaje_ancho = forms.CharField(
         required=False,
-        initial=0,
-        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
-        label='Rebaje Ancho (mm)'
+        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 149, (Ancho-149)/2'}),
+        label='Fórmula Ancho'
     )
     
-    rebaje_alto = forms.IntegerField(
+    rebaje_alto = forms.CharField(
         required=False,
-        initial=0,
-        widget=forms.NumberInput(attrs={'class': _input_class, 'placeholder': '0'}),
-        label='Rebaje Alto (mm)'
+        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 100, (Alto-50)/2'}),
+        label='Fórmula Alto'
     )
     
     class Meta:
