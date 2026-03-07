@@ -11,8 +11,8 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 gap-6">
                 {% for field in form %}
-                {% if not object and field.name == 'cantidad' %}
-                    {# Ocultar campo cantidad al crear #}
+                {% if field.name == 'cantidad' %}
+                    {# Ocultar campo cantidad siempre #}
                 {% else %}
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
