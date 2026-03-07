@@ -361,6 +361,27 @@ class DespiecePerfilesHoja(models.Model):
         db_table = "despiece_perfiles_hojas"
 
 
+class DespiecePerfilesVidrio(models.Model):
+    id = models.IntegerField(db_column="Id", primary_key=True)
+    vidrio = models.ForeignKey(
+        'Vidrio',
+        db_column="Idvidrio",
+        on_delete=models.DO_NOTHING,
+        related_name="despiece_perfiles",
+        db_constraint=False,
+        to_field="codigo"
+    )
+    formula_cantidad = models.TextField(db_column="Formuladecantidad", null=True, blank=True)
+    perfil = models.TextField(db_column="Perfil", null=True, blank=True)
+    formula_perfil = models.TextField(db_column="Formuladeperfil", null=True, blank=True)
+    angulo = models.TextField(db_column="Angulo", null=True, blank=True)
+    mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = "despiece_perfiles_vidrios"
+
+
 class DespiecePerfilesMosquitero(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
     mosquitero = models.ForeignKey(
