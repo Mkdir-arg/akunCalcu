@@ -320,6 +320,7 @@ def hoja_create(request):
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
         obj.id = _next_id(Hoja)
+        obj.cantidad = 1  # Valor por defecto
         obj.save()
         messages.success(request, 'Hoja creada correctamente.')
         return redirect('config-hojas')
