@@ -204,6 +204,9 @@ class PriceCalculator:
         if vidrio_codigo:
             vidrio = self._get_vidrio(vidrio_codigo)
             
+            # DEBUG: Imprimir valores
+            print(f"DEBUG Vidrio: codigo={vidrio.codigo}, producto_id={vidrio.producto_id}, tipo={type(vidrio.producto_id)}")
+            
             # Obtener precio del producto relacionado
             precio_m2 = 0.0
             if vidrio.producto_id:
@@ -211,14 +214,20 @@ class PriceCalculator:
                     from productos.models import Producto as ProductoComercial
                     # Convertir a int, manejando strings
                     prod_id = int(str(vidrio.producto_id).strip()) if vidrio.producto_id else None
+                    print(f"DEBUG: Buscando producto con ID={prod_id}")
                     if prod_id:
                         producto = ProductoComercial.objects.get(pk=prod_id)
                         precio_m2 = _to_float(producto.precio)
+                        print(f"DEBUG: Producto encontrado, precio={precio_m2}")
                 except Exception as e:
+                    print(f"DEBUG ERROR: {e}")
                     logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
                     precio_m2 = _to_float(vidrio.precio)
             else:
+                print(f"DEBUG: producto_id vacio, usando vidrio.precio={vidrio.precio}")
                 precio_m2 = _to_float(vidrio.precio)
+            
+            print(f"DEBUG: precio_m2 final={precio_m2}")
             
             # Calcular dimensiones usando fórmulas de rebaje
             ancho_vidrio = cleaned["ancho_mm"]
