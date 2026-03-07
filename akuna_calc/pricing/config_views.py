@@ -323,7 +323,7 @@ def hoja_create(request):
         obj.cantidad = 1  # Valor por defecto
         obj.save()
         messages.success(request, 'Hoja creada correctamente.')
-        return redirect('config-hojas')
+        return redirect('config-hoja-edit', pk=obj.id)
     return render(request, 'pricing/config/hoja_form.html', {'form': form, 'titulo': 'Nueva Hoja', 'cancel_url': 'config-hojas'})
 
 
@@ -348,26 +348,31 @@ def hoja_edit(request, pk):
     if request.method == 'POST' and form.is_valid():
         form.save()
         
-        # Guardar fórmulas
-        perfiles_list = request.POST.getlist('perfil[]')
-        cantidades = request.POST.getlist('cantidad[]')
-        formulas_list = request.POST.getlist('formula[]')
-        angulos = request.POST.getlist('angulo[]')
-        
-        if perfiles_list:
+        # Guardar fórmulas con formato estructurado
+        if 'perfil_0' in request.POST:
             try:
                 DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
-                for i in range(len(perfiles_list)):
-                    if perfiles_list[i] and cantidades[i] and formulas_list[i]:
+                index = 0
+                while f'perfil_{index}' in request.POST:
+                    perfil = request.POST.get(f'perfil_{index}')
+                    cantidad = request.POST.get(f'cantidad_{index}')
+                    variable = request.POST.get(f'formula_variable_{index}')
+                    operador = request.POST.get(f'formula_operador_{index}')
+                    valor = request.POST.get(f'formula_valor_{index}')
+                    angulo = request.POST.get(f'angulo_{index}')
+                    
+                    if perfil and cantidad and variable and operador and valor:
+                        formula_texto = f"{variable} {operador} {valor}"
                         max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
                         DespiecePerfilesHoja.objects.create(
                             id=max_id + 1,
                             hoja=obj,
-                            perfil=perfiles_list[i],
-                            formula_cantidad=cantidades[i],
-                            formula_perfil=formulas_list[i],
-                            angulo=angulos[i] if i < len(angulos) else ''
+                            perfil=perfil,
+                            formula_cantidad=cantidad,
+                            formula_perfil=formula_texto,
+                            angulo=angulo or ''
                         )
+                    index += 1
             except Exception as e:
                 messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
         

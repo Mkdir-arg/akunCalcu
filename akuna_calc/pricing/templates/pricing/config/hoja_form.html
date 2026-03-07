@@ -37,41 +37,14 @@
                     <table class="w-full" id="formulasTable">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 text-left">Perfil</th>
-                                <th class="px-4 py-2 text-left">Cantidad</th>
-                                <th class="px-4 py-2 text-left">Fórmula</th>
-                                <th class="px-4 py-2 text-left">Ángulo</th>
+                                <th class="px-4 py-2 text-left text-sm font-semibold">Perfil</th>
+                                <th class="px-4 py-2 text-left text-sm font-semibold">Cantidad</th>
+                                <th class="px-4 py-2 text-left text-sm font-semibold">Fórmula</th>
+                                <th class="px-4 py-2 text-left text-sm font-semibold">Ángulo</th>
                                 <th class="px-4 py-2"></th>
                             </tr>
                         </thead>
-                        <tbody id="formulasBody">
-                            {% for formula in formulas %}
-                            <tr class="border-b">
-                                <td class="px-4 py-2">
-                                    <select name="perfil[]" class="w-full px-2 py-1 border rounded">
-                                        <option value="">Seleccionar...</option>
-                                        {% for perfil in perfiles %}
-                                        <option value="{{ perfil.codigo }}" {% if perfil.codigo == formula.perfil %}selected{% endif %}>{{ perfil.codigo }} - {{ perfil.descripcion }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td class="px-4 py-2">
-                                    <input type="text" name="cantidad[]" value="{{ formula.formula_cantidad }}" class="w-full px-2 py-1 border rounded" placeholder="Ej: 2">
-                                </td>
-                                <td class="px-4 py-2">
-                                    <input type="text" name="formula[]" value="{{ formula.formula_perfil }}" class="w-full px-2 py-1 border rounded" placeholder="Ej: Alto - 0">
-                                </td>
-                                <td class="px-4 py-2">
-                                    <input type="text" name="angulo[]" value="{{ formula.angulo }}" class="w-full px-2 py-1 border rounded" placeholder="Ej: 90">
-                                </td>
-                                <td class="px-4 py-2">
-                                    <button type="button" onclick="eliminarFormula(this)" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
+                        <tbody id="formulasBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -89,31 +62,65 @@
 
 <script>
 const perfiles = {{ perfiles_json|safe }};
+let formulaIndex = 0;
 
-function agregarFormula() {
-    const tbody = document.getElementById('formulasBody');
+// Cargar fórmulas existentes
+const formulasIniciales = [
+    {% for formula in formulas %}
+    {
+        perfil: "{{ formula.perfil|default:'' }}",
+        cantidad: "{{ formula.formula_cantidad|default:'' }}",
+        formula_perfil: "{{ formula.formula_perfil|default:'' }}",
+        angulo: "{{ formula.angulo|default:'' }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+if (formulasIniciales.length > 0) {
+    formulasIniciales.forEach(f => _agregarFila(f));
+}
+
+function _buildPerfilOptions(selectedCodigo) {
+    return '<option value="">Seleccionar...</option>' +
+        perfiles.map(p =>
+            `<option value="${p.codigo}" ${p.codigo === selectedCodigo ? 'selected' : ''}>${p.codigo}${p.descripcion ? ' - ' + p.descripcion : ''}</option>`
+        ).join('');
+}
+
+function _crearFila(idx, datos) {
+    const parts = (datos.formula_perfil || '').match(/(Alto|Ancho)\s*([+\-*/])\s*([\d.]+)/);
+    const variable = parts ? parts[1] : 'Alto';
+    const operador = parts ? parts[2] : '-';
+    const valor    = parts ? parts[3] : '0';
+
     const row = document.createElement('tr');
     row.className = 'border-b';
-    
-    let perfilesOptions = '<option value="">Seleccionar...</option>';
-    perfiles.forEach(p => {
-        perfilesOptions += `<option value="${p.codigo}">${p.codigo} - ${p.descripcion}</option>`;
-    });
-    
     row.innerHTML = `
         <td class="px-4 py-2">
-            <select name="perfil[]" class="w-full px-2 py-1 border rounded">
-                ${perfilesOptions}
+            <select name="perfil_${idx}" class="w-full px-2 py-1 border rounded no-select2" required>
+                ${_buildPerfilOptions(datos.perfil || '')}
             </select>
         </td>
         <td class="px-4 py-2">
-            <input type="text" name="cantidad[]" class="w-full px-2 py-1 border rounded" placeholder="Ej: 2">
+            <input type="number" name="cantidad_${idx}" value="${datos.cantidad || 1}" class="w-full px-2 py-1 border rounded" required>
         </td>
         <td class="px-4 py-2">
-            <input type="text" name="formula[]" class="w-full px-2 py-1 border rounded" placeholder="Ej: Alto - 0">
+            <div class="flex gap-1">
+                <select name="formula_variable_${idx}" class="px-2 py-1 border rounded no-select2" required>
+                    <option value="Alto"  ${variable === 'Alto'  ? 'selected' : ''}>Alto</option>
+                    <option value="Ancho" ${variable === 'Ancho' ? 'selected' : ''}>Ancho</option>
+                </select>
+                <select name="formula_operador_${idx}" class="px-2 py-1 border rounded no-select2" required>
+                    <option value="-" ${operador === '-' ? 'selected' : ''}>-</option>
+                    <option value="+" ${operador === '+' ? 'selected' : ''}>+</option>
+                    <option value="*" ${operador === '*' ? 'selected' : ''}>*</option>
+                    <option value="/" ${operador === '/' ? 'selected' : ''}>/</option>
+                </select>
+                <input type="number" name="formula_valor_${idx}" value="${valor}" placeholder="500" class="w-20 px-2 py-1 border rounded" required>
+            </div>
         </td>
         <td class="px-4 py-2">
-            <input type="text" name="angulo[]" class="w-full px-2 py-1 border rounded" placeholder="Ej: 90">
+            <input type="text" name="angulo_${idx}" value="${datos.angulo || '90'}" placeholder="90" class="w-full px-2 py-1 border rounded">
         </td>
         <td class="px-4 py-2">
             <button type="button" onclick="eliminarFormula(this)" class="text-red-600 hover:text-red-800">
@@ -121,11 +128,30 @@ function agregarFormula() {
             </button>
         </td>
     `;
-    tbody.appendChild(row);
+    return row;
+}
+
+function _agregarFila(datos) {
+    document.getElementById('formulasBody').appendChild(_crearFila(formulaIndex, datos));
+    formulaIndex++;
+}
+
+function agregarFormula() {
+    _agregarFila({});
 }
 
 function eliminarFormula(btn) {
     btn.closest('tr').remove();
 }
+
+// Re-numerar índices antes del submit
+document.getElementById('hojaForm').addEventListener('submit', function() {
+    document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
+        row.querySelectorAll('[name]').forEach(input => {
+            const baseName = input.name.replace(/_\d+$/, '');
+            input.name = `${baseName}_${idx}`;
+        });
+    });
+});
 </script>
 {% endblock %}
