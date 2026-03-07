@@ -100,6 +100,7 @@ class HojaForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['marco'].queryset = Marco.objects.filter(bloqueado__isnull=True) | Marco.objects.filter(bloqueado='No')
         self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
         
         if self.instance and self.instance.pk and self.instance.marco:
