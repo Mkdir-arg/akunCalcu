@@ -70,19 +70,19 @@ class HojaForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Línea'
     )
     producto = forms.ModelChoiceField(
         queryset=Producto.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Producto'
     )
     

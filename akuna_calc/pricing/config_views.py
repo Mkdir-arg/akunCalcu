@@ -331,11 +331,57 @@ def hoja_create(request):
 def hoja_edit(request, pk):
     obj = get_object_or_404(Hoja, pk=pk)
     form = HojaForm(request.POST or None, instance=obj)
+    
+    from .models import DespiecePerfilesHoja
+    import json
+    
+    formulas = []
+    try:
+        formulas = list(DespiecePerfilesHoja.objects.filter(hoja=obj))
+    except:
+        pass
+    
+    perfiles = Perfil.objects.exclude(bloqueado='Si').values('codigo', 'descripcion')
+    perfiles_json = json.dumps(list(perfiles))
+    
     if request.method == 'POST' and form.is_valid():
         form.save()
+        
+        # Guardar fórmulas
+        perfiles_list = request.POST.getlist('perfil[]')
+        cantidades = request.POST.getlist('cantidad[]')
+        formulas_list = request.POST.getlist('formula[]')
+        angulos = request.POST.getlist('angulo[]')
+        
+        if perfiles_list:
+            try:
+                DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
+                for i in range(len(perfiles_list)):
+                    if perfiles_list[i] and cantidades[i] and formulas_list[i]:
+                        max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
+                        DespiecePerfilesHoja.objects.create(
+                            id=max_id + 1,
+                            hoja=obj,
+                            perfil=perfiles_list[i],
+                            formula_cantidad=cantidades[i],
+                            formula_perfil=formulas_list[i],
+                            angulo=angulos[i] if i < len(angulos) else ''
+                        )
+            except Exception as e:
+                messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+        
         messages.success(request, 'Hoja actualizada correctamente.')
         return redirect('config-hojas')
-    return render(request, 'pricing/config/hoja_form.html', {'form': form, 'titulo': 'Editar Hoja', 'cancel_url': 'config-hojas', 'object': obj})
+    return render(request, 'pricing/config/hoja_form.html', {
+        'form': form, 
+        'titulo': 'Editar Hoja', 
+        'cancel_url': 'config-hojas', 
+        'object': obj, 
+        'hoja': obj, 
+        'formulas': formulas,
+        'perfiles': perfiles,
+        'perfiles_json': perfiles_json
+    })
 
 
 @login_required
