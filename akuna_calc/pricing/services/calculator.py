@@ -211,14 +211,19 @@ class PriceCalculator:
                     from productos.models import Producto as ProductoComercial
                     producto = ProductoComercial.objects.get(pk=int(vidrio.producto_id))
                     precio_m2 = _to_float(producto.precio)
-                except (ProductoComercial.DoesNotExist, ValueError):
+                except Exception:
                     precio_m2 = _to_float(vidrio.precio)
             else:
                 precio_m2 = _to_float(vidrio.precio)
             
             # Calcular dimensiones usando fórmulas de rebaje
-            ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho or str(cleaned["ancho_mm"]), {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
-            alto_vidrio = self._eval_formula(vidrio.rebaje_alto or str(cleaned["alto_mm"]), {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            ancho_vidrio = cleaned["ancho_mm"]
+            alto_vidrio = cleaned["alto_mm"]
+            
+            if vidrio.rebaje_ancho:
+                ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            if vidrio.rebaje_alto:
+                alto_vidrio = self._eval_formula(vidrio.rebaje_alto, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
             
             if ancho_vidrio <= 0 or alto_vidrio <= 0:
                 raise PricingError("Dimensiones invalidas para vidrio.")
