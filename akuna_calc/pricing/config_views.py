@@ -345,14 +345,13 @@ def hoja_edit(request, pk):
     perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
     
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        
-        # Guardar fórmulas con formato estructurado
-        if 'perfil_0' in request.POST:
+    if request.method == 'POST':
+        # Si es una petición AJAX para guardar solo fórmulas
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'HTTP_X_REQUESTED_WITH' in request.META:
             try:
                 DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
                 index = 0
+                guardadas = 0
                 while f'perfil_{index}' in request.POST:
                     perfil = request.POST.get(f'perfil_{index}')
                     cantidad = request.POST.get(f'cantidad_{index}')
@@ -372,12 +371,47 @@ def hoja_edit(request, pk):
                             formula_perfil=formula_texto,
                             angulo=angulo or ''
                         )
+                        guardadas += 1
                     index += 1
+                return JsonResponse({'ok': True, 'guardadas': guardadas})
             except Exception as e:
-                messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+                return JsonResponse({'error': str(e)}, status=500)
         
-        messages.success(request, 'Hoja actualizada correctamente.')
-        return redirect('config-hojas')
+        # Guardado normal del formulario
+        if form.is_valid():
+            form.save()
+            
+            # Guardar fórmulas con formato estructurado
+            if 'perfil_0' in request.POST:
+                try:
+                    DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
+                    index = 0
+                    while f'perfil_{index}' in request.POST:
+                        perfil = request.POST.get(f'perfil_{index}')
+                        cantidad = request.POST.get(f'cantidad_{index}')
+                        variable = request.POST.get(f'formula_variable_{index}')
+                        operador = request.POST.get(f'formula_operador_{index}')
+                        valor = request.POST.get(f'formula_valor_{index}')
+                        angulo = request.POST.get(f'angulo_{index}')
+                        
+                        if perfil and cantidad and variable and operador and valor:
+                            formula_texto = f"{variable} {operador} {valor}"
+                            max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
+                            DespiecePerfilesHoja.objects.create(
+                                id=max_id + 1,
+                                hoja=obj,
+                                perfil=perfil,
+                                formula_cantidad=cantidad,
+                                formula_perfil=formula_texto,
+                                angulo=angulo or ''
+                            )
+                        index += 1
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+            
+            messages.success(request, 'Hoja actualizada correctamente.')
+            return redirect('config-hojas')
+    
     return render(request, 'pricing/config/hoja_form.html', {
         'form': form, 
         'titulo': 'Editar Hoja', 

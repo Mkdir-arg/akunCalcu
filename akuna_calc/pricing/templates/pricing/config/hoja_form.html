@@ -191,6 +191,9 @@ function guardarFormulas() {
 
     fetch(window.location.href, {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData,
     })
     .then(r => r.json())
@@ -201,7 +204,7 @@ function guardarFormulas() {
             Swal.fire({
                 icon: 'success',
                 title: 'Fórmulas guardadas',
-                text: `Se guardaron las fórmulas correctamente.`,
+                text: `Se guardaron ${data.guardadas} fórmula(s) correctamente.`,
                 confirmButtonColor: '#3b82f6',
                 timer: 2500,
                 timerProgressBar: true,
