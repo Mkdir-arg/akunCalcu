@@ -167,6 +167,11 @@ class PerfilCreateForm(forms.ModelForm):
         (2, 'Dólar'),
     ]
     
+    TIPO_PERFIL_CHOICES = [
+        ('Marco', 'Marco'),
+        ('Hojas', 'Hojas'),
+    ]
+    
     linea_id = forms.IntegerField(
         widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Línea',
@@ -179,9 +184,16 @@ class PerfilCreateForm(forms.ModelForm):
         label='Moneda'
     )
     
+    tipo_perfil = forms.ChoiceField(
+        choices=[('', '---------')] + TIPO_PERFIL_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Tipo de Perfil',
+        required=False
+    )
+    
     class Meta:
         model = Perfil
-        fields = ['codigo', 'linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda']
+        fields = ['codigo', 'linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
         labels = {
             'linea_id': 'Línea',
             'peso_metro': 'KG x Metro',
@@ -208,6 +220,11 @@ class PerfilEditForm(forms.ModelForm):
         (2, 'Dólar'),
     ]
     
+    TIPO_PERFIL_CHOICES = [
+        ('Marco', 'Marco'),
+        ('Hojas', 'Hojas'),
+    ]
+    
     linea_id = forms.IntegerField(
         widget=forms.Select(attrs={'class': _select_class}, choices=[]),
         label='Línea',
@@ -220,9 +237,16 @@ class PerfilEditForm(forms.ModelForm):
         label='Moneda'
     )
     
+    tipo_perfil = forms.ChoiceField(
+        choices=[('', '---------')] + TIPO_PERFIL_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Tipo de Perfil',
+        required=False
+    )
+    
     class Meta:
         model = Perfil
-        fields = ['linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda']
+        fields = ['linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
         labels = {
             'linea_id': 'Línea',
             'peso_metro': 'KG x Metro',

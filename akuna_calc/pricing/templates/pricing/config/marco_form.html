@@ -83,7 +83,7 @@ const formulasIniciales = [
 ];
 
 // Cargar perfiles y luego mostrar fórmulas existentes
-fetch('/pricing/api/perfiles-simple/')
+fetch('/pricing/api/perfiles-simple/?tipo=Marco')
     .then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();

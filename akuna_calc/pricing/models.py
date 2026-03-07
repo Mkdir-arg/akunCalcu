@@ -243,6 +243,7 @@ class Perfil(models.Model):
     cubre = models.IntegerField(db_column="cubre", null=True, blank=True)
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
     minimo_reutilizable = models.TextField(db_column="minimo_reutilizable", null=True, blank=True)
+    tipo_perfil = models.TextField(db_column="tipo_perfil", null=True, blank=True)
 
     class Meta:
         managed = False

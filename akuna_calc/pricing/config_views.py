@@ -342,7 +342,7 @@ def hoja_edit(request, pk):
     except:
         pass
     
-    perfiles = Perfil.objects.exclude(bloqueado='Si').values('codigo', 'descripcion')
+    perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
     
     if request.method == 'POST' and form.is_valid():
@@ -685,6 +685,9 @@ def api_get_extrusoras(request):
 
 @login_required
 def api_get_perfiles(request):
-    """Retorna lista de perfiles para el selector del formulario de fórmulas."""
-    perfiles = Perfil.objects.filter(bloqueado__isnull=True).values('codigo', 'descripcion')
-    return JsonResponse(list(perfiles), safe=False)
+    """Retorna lista de perfiles filtrados por tipo."""
+    tipo = request.GET.get('tipo', '')
+    perfiles = Perfil.objects.filter(bloqueado__isnull=True)
+    if tipo:
+        perfiles = perfiles.filter(tipo_perfil=tipo)
+    return JsonResponse(list(perfiles.values('codigo', 'descripcion')), safe=False)
