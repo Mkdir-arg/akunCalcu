@@ -222,10 +222,10 @@ class PriceCalculator:
                 except Exception as e:
                     print(f"DEBUG ERROR: {e}")
                     logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
-                    precio_m2 = _to_float(vidrio.precio)
+                    precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
             else:
-                print(f"DEBUG: producto_id vacio, usando vidrio.precio={vidrio.precio}")
-                precio_m2 = _to_float(vidrio.precio)
+                print(f"DEBUG: producto_id vacio, usando vidrio.precio={getattr(vidrio, 'precio', 0)}")
+                precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
             
             print(f"DEBUG: precio_m2 final={precio_m2}")
             
