@@ -14,6 +14,14 @@
 
 ---
 
+## 2026-03-06 — Página de detalle de cliente (REQ-005 / FEAT-004)
+
+**User Story:** Como usuario del sistema, quiero ver una página de detalle de cada cliente que consolide toda su información y actividad comercial.
+**Archivos modificados:** `comercial/views.py`, `comercial/urls.py`, `clientes/list.html`, `clientes/detail.html` (nuevo), `comercial/tests.py` (nuevo)
+**Descripción:** Se creó la vista `/comercial/clientes/ver/<id>/` con KPIs, gráficos (Chart.js), historial de ventas, pagos y facturas electrónicas por cliente. Se agregó botón "Ver" en el listado.
+
+---
+
 ## 2026-03-06 — Sistema de Fórmulas para Marcos (REQ-004 / FEAT-003)
 
 **User Story:** Como administrador, quiero agregar fórmulas de perfiles al configurar un Marco para definir automáticamente las dimensiones de los perfiles necesarios para fabricar ese marco.

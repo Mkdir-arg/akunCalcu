@@ -562,6 +562,78 @@ def cliente_delete(request, pk):
     return redirect('comercial:clientes_list')
 
 
+@login_required
+def cliente_detail(request, pk):
+    from facturacion.models import Factura
+    from django.db.models import Sum, Count
+    from django.db.models.functions import TruncMonth
+    from datetime import datetime, timedelta
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+
+    cliente = get_object_or_404(Cliente, pk=pk, deleted_at__isnull=True)
+
+    ventas = Venta.objects.filter(
+        cliente=cliente, deleted_at__isnull=True
+    ).prefetch_related('pagos', 'percepciones').order_by('-created_at')
+
+    # KPIs
+    kpis = ventas.aggregate(
+        total_comprado=Sum('valor_total'),
+        saldo_pendiente=Sum('saldo'),
+        cantidad_ventas=Count('id'),
+    )
+    total_comprado = kpis['total_comprado'] or 0
+    saldo_pendiente = kpis['saldo_pendiente'] or 0
+    cantidad_ventas = kpis['cantidad_ventas'] or 0
+
+    # Pagos recibidos
+    pagos = PagoVenta.objects.filter(
+        venta__cliente=cliente,
+        venta__deleted_at__isnull=True,
+    ).select_related('venta').order_by('-fecha_pago')
+    total_cobrado = pagos.aggregate(total=Sum('monto'))['total'] or 0
+
+    # Facturas electrónicas
+    facturas = Factura.objects.filter(cliente=cliente).select_related('venta', 'punto_venta').order_by('-fecha')
+    cantidad_facturas = facturas.count()
+
+    # Gráfico 1: ventas por mes (últimos 12 meses)
+    hace_12_meses = datetime.now() - timedelta(days=365)
+    ventas_por_mes = (
+        ventas.filter(created_at__gte=hace_12_meses)
+        .annotate(mes=TruncMonth('created_at'))
+        .values('mes')
+        .annotate(total=Sum('valor_total'))
+        .order_by('mes')
+    )
+    meses_labels = [v['mes'].strftime('%b %Y') for v in ventas_por_mes]
+    meses_data = [float(v['total']) for v in ventas_por_mes]
+
+    # Gráfico 2: distribución por estado
+    ESTADO_DISPLAY = {'pendiente': 'Pendiente', 'entregado': 'Entregado', 'colocado': 'Colocado'}
+    estados_qs = ventas.values('estado').annotate(cantidad=Count('id'))
+    estados_labels = [ESTADO_DISPLAY.get(e['estado'], e['estado']) for e in estados_qs]
+    estados_data = [e['cantidad'] for e in estados_qs]
+
+    context = {
+        'cliente': cliente,
+        'ventas': ventas,
+        'pagos': pagos[:30],
+        'facturas': facturas,
+        'total_comprado': total_comprado,
+        'saldo_pendiente': saldo_pendiente,
+        'cantidad_ventas': cantidad_ventas,
+        'cantidad_facturas': cantidad_facturas,
+        'total_cobrado': total_cobrado,
+        'meses_labels': json.dumps(meses_labels, cls=DjangoJSONEncoder),
+        'meses_data': json.dumps(meses_data, cls=DjangoJSONEncoder),
+        'estados_labels': json.dumps(estados_labels, cls=DjangoJSONEncoder),
+        'estados_data': json.dumps(estados_data, cls=DjangoJSONEncoder),
+    }
+    return render(request, 'comercial/clientes/detail.html', context)
+
+
 # COMPRAS
 @login_required
 def compras_list(request):

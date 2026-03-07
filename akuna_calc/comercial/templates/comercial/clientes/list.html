@@ -63,10 +63,13 @@
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ cliente.email|default:"-" }}</td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'comercial:cliente_edit' cliente.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <a href="{% url 'comercial:cliente_detail' cliente.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'comercial:cliente_edit' cliente.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button onclick="confirmarEliminacion('{% url 'comercial:cliente_delete' cliente.pk %}', '{{ cliente.nombre }} {{ cliente.apellido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <button onclick="confirmarEliminacion('{% url 'comercial:cliente_delete' cliente.pk %}', '{{ cliente.nombre }} {{ cliente.apellido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
