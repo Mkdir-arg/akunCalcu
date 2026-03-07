@@ -274,7 +274,7 @@ class Accesorio(models.Model):
 
 class Vidrio(models.Model):
     codigo = models.TextField(db_column="CODIGO", primary_key=True)
-    producto_id = models.IntegerField(db_column="Idproducto", null=True, blank=True)
+    producto_id = models.TextField(db_column="Idproducto", null=True, blank=True)
     hoja_id = models.IntegerField(db_column="Idhoja", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
     precio = models.FloatField(db_column="PRECIO", null=True, blank=True)

@@ -575,7 +575,11 @@ def vidrios_config(request):
 def vidrio_create(request):
     form = VidrioCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        vidrio = form.save(commit=False)
+        # Convertir producto_id a string si es un objeto
+        if hasattr(form.cleaned_data.get('producto_id'), 'id'):
+            vidrio.producto_id = str(form.cleaned_data['producto_id'].id)
+        vidrio.save()
         messages.success(request, 'Vidrio creado correctamente.')
         return redirect('config-vidrios')
     return render(request, 'pricing/config/vidrio_form.html', {'form': form, 'titulo': 'Nuevo Vidrio', 'cancel_url': 'config-vidrios'})
@@ -588,7 +592,11 @@ def vidrio_edit(request, pk):
     form = VidrioEditForm(request.POST or None, instance=obj)
     
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        vidrio = form.save(commit=False)
+        # Convertir producto_id a string si es un objeto
+        if hasattr(form.cleaned_data.get('producto_id'), 'id'):
+            vidrio.producto_id = str(form.cleaned_data['producto_id'].id)
+        vidrio.save()
         messages.success(request, 'Vidrio actualizado correctamente.')
         return redirect('config-vidrios')
     
