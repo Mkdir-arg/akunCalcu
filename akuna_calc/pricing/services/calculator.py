@@ -215,12 +215,18 @@ class PriceCalculator:
                     # Convertir a int, manejando strings
                     prod_id = int(str(vidrio.producto_id).strip()) if vidrio.producto_id else None
                     print(f"DEBUG: Buscando producto con ID={prod_id}")
+                    print(f"DEBUG: ProductoComercial model: {ProductoComercial._meta.db_table}")
+                    print(f"DEBUG: ProductoComercial fields: {[f.name for f in ProductoComercial._meta.fields]}")
                     if prod_id:
                         producto = ProductoComercial.objects.get(pk=prod_id)
+                        print(f"DEBUG: Producto encontrado: {producto}")
+                        print(f"DEBUG: Producto.__dict__: {producto.__dict__}")
                         precio_m2 = _to_float(producto.precio)
                         print(f"DEBUG: Producto encontrado, precio={precio_m2}")
                 except Exception as e:
                     print(f"DEBUG ERROR: {e}")
+                    import traceback
+                    print(f"DEBUG TRACEBACK: {traceback.format_exc()}")
                     logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
                     precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
             else:
