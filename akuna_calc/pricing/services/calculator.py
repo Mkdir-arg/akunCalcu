@@ -209,9 +209,13 @@ class PriceCalculator:
             if vidrio.producto_id:
                 try:
                     from productos.models import Producto as ProductoComercial
-                    producto = ProductoComercial.objects.get(pk=int(vidrio.producto_id))
-                    precio_m2 = _to_float(producto.precio)
-                except Exception:
+                    # Convertir a int, manejando strings
+                    prod_id = int(str(vidrio.producto_id).strip()) if vidrio.producto_id else None
+                    if prod_id:
+                        producto = ProductoComercial.objects.get(pk=prod_id)
+                        precio_m2 = _to_float(producto.precio)
+                except Exception as e:
+                    logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
                     precio_m2 = _to_float(vidrio.precio)
             else:
                 precio_m2 = _to_float(vidrio.precio)
