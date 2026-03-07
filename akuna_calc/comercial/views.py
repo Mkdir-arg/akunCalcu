@@ -602,6 +602,7 @@ def cliente_detail(request, pk):
     hace_12_meses = datetime.now() - timedelta(days=365)
     ventas_por_mes = (
         ventas.filter(created_at__gte=hace_12_meses)
+        .order_by()
         .annotate(mes=TruncMonth('created_at'))
         .values('mes')
         .annotate(total=Sum('valor_total'))
@@ -612,7 +613,7 @@ def cliente_detail(request, pk):
 
     # Gráfico 2: distribución por estado
     ESTADO_DISPLAY = {'pendiente': 'Pendiente', 'entregado': 'Entregado', 'colocado': 'Colocado'}
-    estados_qs = ventas.values('estado').annotate(cantidad=Count('id'))
+    estados_qs = ventas.order_by().values('estado').annotate(cantidad=Count('id'))
     estados_labels = [ESTADO_DISPLAY.get(e['estado'], e['estado']) for e in estados_qs]
     estados_data = [e['cantidad'] for e in estados_qs]
 
