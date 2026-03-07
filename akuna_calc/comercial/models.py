@@ -76,6 +76,7 @@ class Venta(models.Model):
     numero_factura = models.CharField(max_length=50, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
     observaciones = models.TextField(blank=True)
+    notas_internas = models.TextField(blank=True, verbose_name="Notas internas")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)

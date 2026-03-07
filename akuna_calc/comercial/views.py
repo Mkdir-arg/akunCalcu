@@ -244,16 +244,53 @@ def venta_delete(request, pk):
 
 @login_required
 def venta_detail(request, pk):
+    from django.utils import timezone
     venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
-    pagos = venta.pagos.all().order_by('-fecha_pago')
-    
+    pagos = venta.pagos.all().order_by('fecha_pago')
+    total_pagado = venta.sena + sum(p.monto for p in pagos)
+    total = venta.get_total_con_percepciones()
+    porcentaje_cobrado = int((total_pagado / total * 100)) if total > 0 else 0
+    dias_abierta = (timezone.now().date() - venta.created_at.date()).days
+
     context = {
         'venta': venta,
         'pagos': pagos,
-        'total_pagado': venta.sena + sum(p.monto for p in pagos),
+        'total_pagado': total_pagado,
+        'porcentaje_cobrado': porcentaje_cobrado,
+        'dias_abierta': dias_abierta,
+        'today': timezone.now().date(),
         'avanzar_estado': request.GET.get('avanzar_estado') == '1',
     }
     return render(request, 'comercial/ventas/detail.html', context)
+
+
+@login_required
+def duplicar_venta(request, pk):
+    original = get_object_or_404(Venta, pk=pk, deleted_at__isnull=True)
+    nueva = Venta.objects.create(
+        numero_pedido=original.numero_pedido,
+        cliente=original.cliente,
+        valor_total=original.valor_total,
+        sena=original.sena,
+        con_factura=original.con_factura,
+        forma_pago=original.forma_pago,
+        observaciones=original.observaciones,
+    )
+    messages.success(request, f'Venta duplicada exitosamente. Nueva Venta #{nueva.pk}')
+    return redirect('comercial:venta_edit', pk=nueva.pk)
+
+
+@login_required
+def guardar_nota_venta(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    venta = get_object_or_404(Venta, pk=pk)
+    try:
+        venta.notas_internas = request.POST.get('nota', '')
+        venta.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 @login_required
