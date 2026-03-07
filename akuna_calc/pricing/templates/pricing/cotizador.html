@@ -321,27 +321,104 @@ const Cotizador = () => {
               </div>
 
               <div className="mt-6">
-                <h3 className="font-semibold mb-3">Desglose por Categoría</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
-                    <span className="text-gray-700">Perfiles</span>
-                    <span className="font-medium">${result.resumen.total_perfiles.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
-                    <span className="text-gray-700">Accesorios</span>
-                    <span className="font-medium">${result.resumen.total_accesorios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
-                    <span className="text-gray-700">Vidrios</span>
-                    <span className="font-medium">${result.resumen.total_vidrios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  {result.resumen.total_tratamiento > 0 && (
-                    <div className="flex justify-between py-2 bg-gray-50 px-3 rounded">
-                      <span className="text-gray-700">Tratamiento</span>
-                      <span className="font-medium">${result.resumen.total_tratamiento.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                <h3 className="font-semibold mb-3">Desglose Detallado</h3>
+                
+                {/* Perfiles */}
+                {result.desglose.perfiles.length > 0 && (
+                  <details className="mb-3 bg-blue-50 rounded-lg" open>
+                    <summary className="cursor-pointer p-3 font-medium text-blue-900 hover:bg-blue-100 rounded-lg">
+                      <span className="inline-flex items-center justify-between w-full">
+                        <span><i className="fas fa-ruler mr-2"></i>Perfiles ({result.desglose.perfiles.length})</span>
+                        <span className="text-blue-700">${result.resumen.total_perfiles.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    </summary>
+                    <div className="p-3 pt-0 space-y-1">
+                      {result.desglose.perfiles.map((item, idx) => (
+                        <div key={idx} className="bg-white p-2 rounded text-sm">
+                          <div className="flex justify-between font-medium">
+                            <span className="text-gray-800">{item.codigo} - {item.descripcion}</span>
+                            <span className="text-blue-600">${item.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            Cant: {item.cantidad} × {item.longitud_mm}mm ({item.longitud_m}m) | {item.peso_kg}kg × ${item.precio_kg}/kg
+                            {item.angulo && ` | Ángulo: ${item.angulo}°`}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </details>
+                )}
+
+                {/* Accesorios */}
+                {result.desglose.accesorios.length > 0 && (
+                  <details className="mb-3 bg-green-50 rounded-lg" open>
+                    <summary className="cursor-pointer p-3 font-medium text-green-900 hover:bg-green-100 rounded-lg">
+                      <span className="inline-flex items-center justify-between w-full">
+                        <span><i className="fas fa-tools mr-2"></i>Accesorios ({result.desglose.accesorios.length})</span>
+                        <span className="text-green-700">${result.resumen.total_accesorios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    </summary>
+                    <div className="p-3 pt-0 space-y-1">
+                      {result.desglose.accesorios.map((item, idx) => (
+                        <div key={idx} className="bg-white p-2 rounded text-sm">
+                          <div className="flex justify-between font-medium">
+                            <span className="text-gray-800">{item.codigo} - {item.descripcion}</span>
+                            <span className="text-green-600">${item.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            Cantidad: {item.cantidad} × ${item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* Vidrios */}
+                {result.desglose.vidrios && (
+                  <details className="mb-3 bg-purple-50 rounded-lg" open>
+                    <summary className="cursor-pointer p-3 font-medium text-purple-900 hover:bg-purple-100 rounded-lg">
+                      <span className="inline-flex items-center justify-between w-full">
+                        <span><i className="fas fa-square mr-2"></i>Vidrio</span>
+                        <span className="text-purple-700">${result.resumen.total_vidrios.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    </summary>
+                    <div className="p-3 pt-0">
+                      <div className="bg-white p-2 rounded text-sm">
+                        <div className="flex justify-between font-medium">
+                          <span className="text-gray-800">{result.desglose.vidrios.codigo} - {result.desglose.vidrios.descripcion}</span>
+                          <span className="text-purple-600">${result.desglose.vidrios.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {result.desglose.vidrios.ancho_mm}mm × {result.desglose.vidrios.alto_mm}mm = {result.desglose.vidrios.area_m2}m² × ${result.desglose.vidrios.precio_m2}/m²
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+                )}
+
+                {/* Tratamiento */}
+                {result.desglose.tratamiento && (
+                  <details className="mb-3 bg-yellow-50 rounded-lg" open>
+                    <summary className="cursor-pointer p-3 font-medium text-yellow-900 hover:bg-yellow-100 rounded-lg">
+                      <span className="inline-flex items-center justify-between w-full">
+                        <span><i className="fas fa-paint-brush mr-2"></i>Tratamiento</span>
+                        <span className="text-yellow-700">${result.resumen.total_tratamiento.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    </summary>
+                    <div className="p-3 pt-0">
+                      <div className="bg-white p-2 rounded text-sm">
+                        <div className="flex justify-between font-medium">
+                          <span className="text-gray-800">{result.desglose.tratamiento.descripcion}</span>
+                          <span className="text-yellow-600">${result.desglose.tratamiento.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {result.desglose.tratamiento.peso_total_kg}kg × ${result.desglose.tratamiento.precio_kg}/kg
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+                )}
               </div>
             </div>
           ) : (
