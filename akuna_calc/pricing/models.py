@@ -289,8 +289,8 @@ class Vidrio(models.Model):
     corte1 = models.TextField(db_column="Corte1", null=True, blank=True)
     transparente = models.TextField(db_column="transparente", null=True, blank=True)
     # Rebajes para cálculo de dimensiones
-    rebaje_ancho = models.IntegerField(db_column="rebaje_ancho", null=True, blank=True, default=0)
-    rebaje_alto = models.IntegerField(db_column="rebaje_alto", null=True, blank=True, default=0)
+    rebaje_ancho = models.TextField(db_column="rebaje_ancho", null=True, blank=True)
+    rebaje_alto = models.TextField(db_column="rebaje_alto", null=True, blank=True)
 
     class Meta:
         managed = False
