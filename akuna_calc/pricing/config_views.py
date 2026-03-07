@@ -355,20 +355,17 @@ def hoja_edit(request, pk):
                 while f'perfil_{index}' in request.POST:
                     perfil = request.POST.get(f'perfil_{index}')
                     cantidad = request.POST.get(f'cantidad_{index}')
-                    variable = request.POST.get(f'formula_variable_{index}')
-                    operador = request.POST.get(f'formula_operador_{index}')
-                    valor = request.POST.get(f'formula_valor_{index}')
+                    formula = request.POST.get(f'formula_{index}')
                     angulo = request.POST.get(f'angulo_{index}')
                     
-                    if perfil and cantidad and variable and operador and valor:
-                        formula_texto = f"{variable} {operador} {valor}"
+                    if perfil and cantidad and formula:
                         max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
                         DespiecePerfilesHoja.objects.create(
                             id=max_id + 1,
                             hoja=obj,
                             perfil=perfil,
                             formula_cantidad=cantidad,
-                            formula_perfil=formula_texto,
+                            formula_perfil=formula,
                             angulo=angulo or ''
                         )
                         guardadas += 1
@@ -389,20 +386,17 @@ def hoja_edit(request, pk):
                     while f'perfil_{index}' in request.POST:
                         perfil = request.POST.get(f'perfil_{index}')
                         cantidad = request.POST.get(f'cantidad_{index}')
-                        variable = request.POST.get(f'formula_variable_{index}')
-                        operador = request.POST.get(f'formula_operador_{index}')
-                        valor = request.POST.get(f'formula_valor_{index}')
+                        formula = request.POST.get(f'formula_{index}')
                         angulo = request.POST.get(f'angulo_{index}')
                         
-                        if perfil and cantidad and variable and operador and valor:
-                            formula_texto = f"{variable} {operador} {valor}"
+                        if perfil and cantidad and formula:
                             max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
                             DespiecePerfilesHoja.objects.create(
                                 id=max_id + 1,
                                 hoja=obj,
                                 perfil=perfil,
                                 formula_cantidad=cantidad,
-                                formula_perfil=formula_texto,
+                                formula_perfil=formula,
                                 angulo=angulo or ''
                             )
                         index += 1

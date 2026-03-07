@@ -93,11 +93,6 @@ function _buildPerfilOptions(selectedCodigo) {
 }
 
 function _crearFila(idx, datos) {
-    const parts = (datos.formula_perfil || '').match(/(Alto|Ancho)\s*([+\-*/])\s*([\d.]+)/);
-    const variable = parts ? parts[1] : 'Alto';
-    const operador = parts ? parts[2] : '-';
-    const valor    = parts ? parts[3] : '0';
-
     const row = document.createElement('tr');
     row.className = 'border-b';
     row.innerHTML = `
@@ -110,19 +105,7 @@ function _crearFila(idx, datos) {
             <input type="number" name="cantidad_${idx}" value="${datos.cantidad || 1}" class="w-full px-2 py-1 border rounded" required>
         </td>
         <td class="px-4 py-2">
-            <div class="flex gap-1">
-                <select name="formula_variable_${idx}" class="px-2 py-1 border rounded no-select2" required>
-                    <option value="Alto"  ${variable === 'Alto'  ? 'selected' : ''}>Alto</option>
-                    <option value="Ancho" ${variable === 'Ancho' ? 'selected' : ''}>Ancho</option>
-                </select>
-                <select name="formula_operador_${idx}" class="px-2 py-1 border rounded no-select2" required>
-                    <option value="-" ${operador === '-' ? 'selected' : ''}>-</option>
-                    <option value="+" ${operador === '+' ? 'selected' : ''}>+</option>
-                    <option value="*" ${operador === '*' ? 'selected' : ''}>*</option>
-                    <option value="/" ${operador === '/' ? 'selected' : ''}>/</option>
-                </select>
-                <input type="number" name="formula_valor_${idx}" value="${valor}" placeholder="500" class="w-20 px-2 py-1 border rounded" required>
-            </div>
+            <input type="text" name="formula_${idx}" value="${datos.formula_perfil || ''}" placeholder="Ej: (Ancho / 2) - 24" class="w-full px-2 py-1 border rounded" required>
         </td>
         <td class="px-4 py-2">
             <input type="text" name="angulo_${idx}" value="${datos.angulo || '90'}" placeholder="90" class="w-full px-2 py-1 border rounded">
