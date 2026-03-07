@@ -203,20 +203,34 @@ class PriceCalculator:
         vidrio_codigo = cleaned.get("vidrio_codigo")
         if vidrio_codigo:
             vidrio = self._get_vidrio(vidrio_codigo)
-            rebaje = cleaned.get("rebaje_vidrio_mm", 0)
-            ancho_vidrio = cleaned["ancho_mm"] - rebaje
-            alto_vidrio = cleaned["alto_mm"] - rebaje
+            
+            # Obtener precio del producto relacionado
+            precio_m2 = 0.0
+            if vidrio.producto_id:
+                try:
+                    from productos.models import Producto as ProductoComercial
+                    producto = ProductoComercial.objects.get(pk=int(vidrio.producto_id))
+                    precio_m2 = _to_float(producto.precio)
+                except (ProductoComercial.DoesNotExist, ValueError):
+                    precio_m2 = _to_float(vidrio.precio)
+            else:
+                precio_m2 = _to_float(vidrio.precio)
+            
+            # Calcular dimensiones usando fórmulas de rebaje
+            ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho or str(cleaned["ancho_mm"]), {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            alto_vidrio = self._eval_formula(vidrio.rebaje_alto or str(cleaned["alto_mm"]), {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            
             if ancho_vidrio <= 0 or alto_vidrio <= 0:
-                raise PricingError("Dimensiones invalidas para vidrio (rebaje demasiado grande).")
+                raise PricingError("Dimensiones invalidas para vidrio.")
             area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
-            precio_vidrio = area_m2 * _to_float(vidrio.precio)
+            precio_vidrio = area_m2 * precio_m2
             vidrio_detalle = {
                 "codigo": vidrio.codigo,
                 "descripcion": vidrio.descripcion,
-                "ancho_mm": ancho_vidrio,
-                "alto_mm": alto_vidrio,
+                "ancho_mm": round(ancho_vidrio, 2),
+                "alto_mm": round(alto_vidrio, 2),
                 "area_m2": round(area_m2, 4),
-                "precio_m2": _to_float(vidrio.precio),
+                "precio_m2": precio_m2,
                 "precio_total": round(precio_vidrio, 2),
             }
 

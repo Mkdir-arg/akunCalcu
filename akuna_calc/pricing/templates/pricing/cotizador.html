@@ -251,10 +251,6 @@ const Cotizador = () => {
             onChange={(id) => setConfig({ ...config, hoja_id: id, interior_id: null })}
             placeholder={config.marco_id ? "Selecciona una hoja" : "Primero selecciona un marco"} />
 
-          <Select label="Interior (Opcional)" options={interiores} value={config.interior_id}
-            onChange={(id) => setConfig({ ...config, interior_id: id })}
-            placeholder={config.hoja_id ? "Selecciona un interior" : "Primero selecciona una hoja"} />
-
           <Select label="Vidrio (Opcional)" options={vidrios} value={config.vidrio_codigo}
             onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
             placeholder="Selecciona un vidrio" />
