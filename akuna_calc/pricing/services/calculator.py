@@ -221,7 +221,7 @@ class PriceCalculator:
                         producto = ProductoComercial.objects.get(pk=prod_id)
                         print(f"DEBUG: Producto encontrado: {producto}")
                         print(f"DEBUG: Producto.__dict__: {producto.__dict__}")
-                        precio_m2 = _to_float(producto.precio)
+                        precio_m2 = _to_float(producto.precio_m2)
                         print(f"DEBUG: Producto encontrado, precio={precio_m2}")
                 except Exception as e:
                     print(f"DEBUG ERROR: {e}")
