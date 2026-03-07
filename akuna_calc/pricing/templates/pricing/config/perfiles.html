@@ -23,6 +23,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Código</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
                         <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Precio/kg</th>
+                        <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -33,6 +34,15 @@
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ perfil.codigo }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.descripcion }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ perfil.precio_kg|default:"-" }}</td>
+                        <td class="hidden lg:table-cell px-6 py-4">
+                            {% if perfil.tipo_perfil == 'Marco' %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold"><i class="fas fa-square mr-1"></i>Marco</span>
+                            {% elif perfil.tipo_perfil == 'Hojas' %}
+                                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold"><i class="fas fa-door-open mr-1"></i>Hojas</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">-</span>
+                            {% endif %}
+                        </td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if perfil.bloqueado == 'Si' %}
                                 <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
@@ -55,7 +65,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay perfiles registrados</p>
                         </td>
