@@ -9,6 +9,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
+            # Agregar columna Idhoja
+            try:
+                cursor.execute("ALTER TABLE vidrios ADD COLUMN Idhoja INT")
+                self.stdout.write(self.style.SUCCESS("✓ Added column: Idhoja"))
+            except Exception as e:
+                if "Duplicate column name" in str(e) or "duplicate column" in str(e).lower():
+                    self.stdout.write(self.style.WARNING("⊘ Column already exists: Idhoja"))
+                else:
+                    self.stdout.write(self.style.ERROR(f"✗ Error adding Idhoja: {e}"))
+            
+            # Agregar columnas de fórmulas
             fields = [
                 "formula_umbral_dintel",
                 "formula_zocalo",

@@ -288,10 +288,16 @@ class AccesorioEditForm(forms.ModelForm):
 
 
 class VidrioCreateForm(forms.ModelForm):
+    hoja_id = forms.IntegerField(
+        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
+        label='Hoja',
+        required=False
+    )
+    
     class Meta:
         model = Vidrio
         fields = [
-            'codigo', 'descripcion', 'precio',
+            'codigo', 'hoja_id', 'descripcion',
             'formula_umbral_dintel', 'formula_zocalo', 'formula_parante',
             'formula_ancho_dvh', 'formula_alto_dvh',
             'formula_ancho_mosq', 'formula_alto_mosq', 'formula_tope_mosq'
@@ -309,7 +315,6 @@ class VidrioCreateForm(forms.ModelForm):
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
             'formula_umbral_dintel': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 100'}),
             'formula_zocalo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 50'}),
             'formula_parante': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 200'}),
@@ -319,13 +324,24 @@ class VidrioCreateForm(forms.ModelForm):
             'formula_alto_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 40'}),
             'formula_tope_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 150'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        hojas = [(h.id, str(h)) for h in Hoja.objects.all()]
+        self.fields['hoja_id'].widget.choices = [('', '---------')] + hojas
 
 
 class VidrioEditForm(forms.ModelForm):
+    hoja_id = forms.IntegerField(
+        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
+        label='Hoja',
+        required=False
+    )
+    
     class Meta:
         model = Vidrio
         fields = [
-            'descripcion', 'precio',
+            'hoja_id', 'descripcion',
             'formula_umbral_dintel', 'formula_zocalo', 'formula_parante',
             'formula_ancho_dvh', 'formula_alto_dvh',
             'formula_ancho_mosq', 'formula_alto_mosq', 'formula_tope_mosq'
@@ -342,7 +358,6 @@ class VidrioEditForm(forms.ModelForm):
         }
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
-            'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
             'formula_umbral_dintel': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 100'}),
             'formula_zocalo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Ancho - 50'}),
             'formula_parante': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 200'}),
@@ -352,6 +367,11 @@ class VidrioEditForm(forms.ModelForm):
             'formula_alto_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 40'}),
             'formula_tope_mosq': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: Alto - 150'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        hojas = [(h.id, str(h)) for h in Hoja.objects.all()]
+        self.fields['hoja_id'].widget.choices = [('', '---------')] + hojas
 
 
 class TratamientoForm(forms.ModelForm):

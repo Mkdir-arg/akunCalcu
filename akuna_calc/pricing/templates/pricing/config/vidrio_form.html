@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto px-4">
+<div class="max-w-4xl mx-auto px-4">
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
         {% if object %}
@@ -12,17 +12,116 @@
     <div class="bg-white rounded-2xl shadow-lg p-6">
         <form method="post">
             {% csrf_token %}
-            <div class="grid grid-cols-1 gap-6">
-                {% for field in form %}
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
+            
+            <!-- Datos Básicos -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Datos Básicos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if form.codigo %}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.codigo.label }}</label>
+                        {{ form.codigo }}
+                        {% if form.codigo.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.codigo.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                     {% endif %}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.hoja_id.label }}</label>
+                        {{ form.hoja_id }}
+                        {% if form.hoja_id.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.hoja_id.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.descripcion.label }}</label>
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.descripcion.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                 </div>
-                {% endfor %}
             </div>
+
+            <!-- Fórmulas de Cálculo -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-slate-800 mb-2 pb-2 border-b">Fórmulas de Cálculo</h2>
+                <p class="text-sm text-slate-600 mb-4">Usa variables: <code class="bg-slate-100 px-2 py-1 rounded">Ancho</code>, <code class="bg-slate-100 px-2 py-1 rounded">Alto</code>. Ejemplo: <code class="bg-slate-100 px-2 py-1 rounded">Ancho - 100</code></p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Piezas del Marco -->
+                    <div class="col-span-2">
+                        <h3 class="text-sm font-semibold text-blue-700 mb-3 uppercase tracking-wide">Piezas del Marco</h3>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_umbral_dintel.label }}</label>
+                        {{ form.formula_umbral_dintel }}
+                        {% if form.formula_umbral_dintel.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_umbral_dintel.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_zocalo.label }}</label>
+                        {{ form.formula_zocalo }}
+                        {% if form.formula_zocalo.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_zocalo.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_parante.label }}</label>
+                        {{ form.formula_parante }}
+                        {% if form.formula_parante.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_parante.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Vidrio DVH -->
+                    <div class="col-span-2 mt-4">
+                        <h3 class="text-sm font-semibold text-green-700 mb-3 uppercase tracking-wide">Dimensiones Vidrio DVH</h3>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_ancho_dvh.label }}</label>
+                        {{ form.formula_ancho_dvh }}
+                        {% if form.formula_ancho_dvh.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_ancho_dvh.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_alto_dvh.label }}</label>
+                        {{ form.formula_alto_dvh }}
+                        {% if form.formula_alto_dvh.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_alto_dvh.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mosquitero -->
+                    <div class="col-span-2 mt-4">
+                        <h3 class="text-sm font-semibold text-purple-700 mb-3 uppercase tracking-wide">Dimensiones Mosquitero</h3>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_ancho_mosq.label }}</label>
+                        {{ form.formula_ancho_mosq }}
+                        {% if form.formula_ancho_mosq.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_ancho_mosq.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_alto_mosq.label }}</label>
+                        {{ form.formula_alto_mosq }}
+                        {% if form.formula_alto_mosq.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_alto_mosq.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_tope_mosq.label }}</label>
+                        {{ form.formula_tope_mosq }}
+                        {% if form.formula_tope_mosq.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.formula_tope_mosq.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <a href="{% url 'config-vidrios' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
                 <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
