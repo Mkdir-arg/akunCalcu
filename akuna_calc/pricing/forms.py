@@ -52,14 +52,18 @@ class MarcoForm(forms.ModelForm):
     
     class Meta:
         model = Marco
-        fields = ['producto']
+        fields = ['producto', 'descripcion']
+        labels = {
+            'descripcion': 'Nombre',
+        }
         widgets = {
             'producto': forms.Select(attrs={'class': _select_class}),
+            'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.order_fields(['extrusora', 'linea', 'producto'])
+        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
         
         if self.instance and self.instance.pk and self.instance.producto:
             self.fields['extrusora'].initial = self.instance.producto.extrusora
