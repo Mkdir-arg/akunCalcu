@@ -166,6 +166,11 @@ def ventas_list(request):
         'total_monto': total_monto,
         'total_saldo': total_saldo,
         'total_count': total_count,
+        'col_estados': [
+            ('pendiente', 'bg-yellow-400', 'bg-yellow-50', 'border-yellow-200', 'bg-yellow-100 text-yellow-800', 'bg-gradient-to-r from-amber-400 to-yellow-500'),
+            ('entregado', 'bg-blue-400',   'bg-blue-50',   'border-blue-200',   'bg-blue-100 text-blue-800',   'bg-gradient-to-r from-blue-500 to-blue-600'),
+            ('colocado',  'bg-green-400',  'bg-green-50',  'border-green-200',  'bg-green-100 text-green-800', 'bg-gradient-to-r from-emerald-500 to-green-600'),
+        ],
     }
     return render(request, 'comercial/ventas/list.html', context)
 
