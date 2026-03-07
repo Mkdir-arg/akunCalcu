@@ -76,10 +76,10 @@ def dashboard_comercial(request):
 @login_required
 def ventas_list(request):
     from django.core.paginator import Paginator
-    from django.db.models import Case, When, Value, IntegerField
-    
+    from django.db.models import Case, When, Value, IntegerField, Sum, Count
+
     ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').all()
-    
+
     # Filtros
     estado = request.GET.get('estado', '')
     con_factura = request.GET.get('con_factura', '')
@@ -88,15 +88,16 @@ def ventas_list(request):
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     orden = request.GET.get('orden', '-created_at')
-    
+    con_saldo = request.GET.get('con_saldo', '')
+
     if estado:
         ventas = ventas.filter(estado=estado)
-    
+
     if con_factura == 'si':
         ventas = ventas.filter(con_factura=True)
     elif con_factura == 'no':
         ventas = ventas.filter(con_factura=False)
-    
+
     if buscar:
         ventas = ventas.filter(
             Q(numero_pedido__icontains=buscar) |
@@ -105,16 +106,29 @@ def ventas_list(request):
             Q(cliente__razon_social__icontains=buscar) |
             Q(numero_factura__icontains=buscar)
         )
-    
+
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
-    
+
     if fecha_desde:
         ventas = ventas.filter(created_at__date__gte=fecha_desde)
-    
+
     if fecha_hasta:
         ventas = ventas.filter(created_at__date__lte=fecha_hasta)
-    
+
+    if con_saldo == 'si':
+        ventas = ventas.filter(saldo__gt=0)
+
+    # Totales del filtro activo (antes de paginar)
+    totales = ventas.aggregate(
+        total_monto=Sum('valor_total'),
+        total_saldo=Sum('saldo'),
+        total_count=Count('id'),
+    )
+    total_monto = totales['total_monto'] or 0
+    total_saldo = totales['total_saldo'] or 0
+    total_count = totales['total_count'] or 0
+
     # Ordenamiento especial para numero_factura (manejar valores vacíos)
     if orden in ['numero_factura', '-numero_factura']:
         ventas = ventas.annotate(
@@ -129,26 +143,29 @@ def ventas_list(request):
         else:
             ventas = ventas.order_by('factura_order', '-numero_factura')
     else:
-        # Ordenamiento normal
         ventas = ventas.order_by(orden)
-    
+
     # Paginación
     paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'ventas': page_obj,
         'page_obj': page_obj,
         'estados': Venta.ESTADO_CHOICES,
         'filtro_estado': estado,
         'filtro_factura': con_factura,
+        'filtro_con_saldo': con_saldo,
         'buscar': buscar,
         'razon_social': razon_social,
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
         'orden_actual': orden,
-        'razones_sociales': Cliente.objects.filter(deleted_at__isnull=True, razon_social__isnull=False).exclude(razon_social='').values_list('razon_social', flat=True).distinct().order_by('razon_social')
+        'razones_sociales': Cliente.objects.filter(deleted_at__isnull=True, razon_social__isnull=False).exclude(razon_social='').values_list('razon_social', flat=True).distinct().order_by('razon_social'),
+        'total_monto': total_monto,
+        'total_saldo': total_saldo,
+        'total_count': total_count,
     }
     return render(request, 'comercial/ventas/list.html', context)
 
@@ -560,6 +577,109 @@ def cliente_delete(request, pk):
         
         return redirect('comercial:clientes_list')
     return redirect('comercial:clientes_list')
+
+
+@login_required
+def exportar_ventas_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').order_by('-created_at')
+
+    # Mismos filtros que ventas_list
+    estado = request.GET.get('estado', '')
+    con_factura = request.GET.get('con_factura', '')
+    buscar = request.GET.get('q', '')
+    razon_social = request.GET.get('razon_social', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    con_saldo = request.GET.get('con_saldo', '')
+
+    if estado:
+        ventas = ventas.filter(estado=estado)
+    if con_factura == 'si':
+        ventas = ventas.filter(con_factura=True)
+    elif con_factura == 'no':
+        ventas = ventas.filter(con_factura=False)
+    if buscar:
+        ventas = ventas.filter(
+            Q(numero_pedido__icontains=buscar) |
+            Q(cliente__nombre__icontains=buscar) |
+            Q(cliente__apellido__icontains=buscar) |
+            Q(cliente__razon_social__icontains=buscar) |
+            Q(numero_factura__icontains=buscar)
+        )
+    if razon_social:
+        ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
+    if fecha_desde:
+        ventas = ventas.filter(created_at__date__gte=fecha_desde)
+    if fecha_hasta:
+        ventas = ventas.filter(created_at__date__lte=fecha_hasta)
+    if con_saldo == 'si':
+        ventas = ventas.filter(saldo__gt=0)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ventas"
+
+    # Estilos
+    header_fill = PatternFill(start_color="1e293b", end_color="1e293b", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    total_fill = PatternFill(start_color="dbeafe", end_color="dbeafe", fill_type="solid")
+    total_font = Font(bold=True, size=11)
+    thin = Side(style='thin', color='CBD5E1')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ['N° Pedido', 'Fecha', 'Cliente', 'Razón Social', 'Valor Total', 'Seña', 'Saldo Pendiente', 'Estado', 'Tipo', 'N° Factura']
+    col_widths = [14, 14, 28, 28, 16, 14, 18, 14, 10, 18]
+
+    for i, (h, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=i, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    ws.row_dimensions[1].height = 22
+
+    for row_num, venta in enumerate(ventas, 2):
+        datos = [
+            venta.numero_pedido,
+            venta.created_at.strftime('%d/%m/%Y'),
+            str(venta.cliente),
+            venta.cliente.razon_social or '',
+            float(venta.valor_total),
+            float(venta.sena),
+            float(venta.saldo),
+            venta.get_estado_display(),
+            'Blanco' if venta.con_factura else 'Negro',
+            venta.get_numero_factura_display(),
+        ]
+        for col_num, valor in enumerate(datos, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=valor)
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+            if col_num in [5, 6, 7]:
+                cell.number_format = '#,##0.00'
+
+    # Fila de totales
+    total_row = ws.max_row + 1
+    ws.cell(row=total_row, column=1, value='TOTALES').font = total_font
+    ws.cell(row=total_row, column=5, value=sum(float(v.valor_total) for v in ventas)).number_format = '#,##0.00'
+    ws.cell(row=total_row, column=6, value=sum(float(v.sena) for v in ventas)).number_format = '#,##0.00'
+    ws.cell(row=total_row, column=7, value=sum(float(v.saldo) for v in ventas)).number_format = '#,##0.00'
+    for col in range(1, 11):
+        ws.cell(row=total_row, column=col).fill = total_fill
+        ws.cell(row=total_row, column=col).font = total_font
+        ws.cell(row=total_row, column=col).border = border
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="ventas.xlsx"'
+    wb.save(response)
+    return response
 
 
 @login_required

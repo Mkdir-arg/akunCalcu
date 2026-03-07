@@ -15,6 +15,7 @@ urlpatterns = [
     path('ventas/<int:pk>/eliminar/', views.venta_delete, name='venta_delete'),
     path('ventas/<int:pk>/pago/', views.registrar_pago, name='registrar_pago'),
     path('ventas/<int:pk>/pdf/', views.generar_pdf_venta, name='generar_pdf_venta'),
+    path('ventas/exportar-excel/', views.exportar_ventas_excel, name='exportar_ventas_excel'),
     
     # Clientes
     path('clientes/', views.clientes_list, name='clientes_list'),

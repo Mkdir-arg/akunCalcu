@@ -7,216 +7,235 @@
 {% block content %}
 {% csrf_token %}
 <div class="max-w-full mx-auto px-4 animate-fade-in">
+
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Ventas</h1>
             <p class="text-slate-500 font-medium mt-1">Gestión completa de ventas y pedidos</p>
         </div>
-        <div class="flex gap-3">
-            <button onclick="mostrarCotizacionDolar()" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-xl transition-all">
+        <div class="flex gap-3 flex-wrap items-center">
+            <!-- Toggle vista -->
+            <div class="flex bg-white rounded-xl shadow border border-gray-200 p-1 gap-1">
+                <button id="btn-tabla" onclick="setVista('tabla')"
+                        class="vista-btn active inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm transition-all">
+                    <i class="fas fa-table mr-2"></i>Tabla
+                </button>
+                <button id="btn-kanban" onclick="setVista('kanban')"
+                        class="vista-btn inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm transition-all">
+                    <i class="fas fa-columns mr-2"></i>Kanban
+                </button>
+            </div>
+            <button onclick="mostrarCotizacionDolar()" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-xl transition-all">
                 <i class="fas fa-dollar-sign mr-2"></i>Cotización Dólar
             </button>
-            <a href="{% url 'comercial:venta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
+            <a href="{% url 'comercial:exportar_ventas_excel' %}?{{ request.GET.urlencode }}" class="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-semibold shadow-xl transition-all">
+                <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+            </a>
+            <a href="{% url 'comercial:venta_create' %}" class="btn-primary inline-flex items-center text-white px-5 py-3 rounded-2xl font-semibold shadow-xl">
                 <i class="fas fa-plus mr-2"></i>Nueva Venta
             </a>
         </div>
     </div>
 
-    <!-- Barra de Filtros -->
-    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <!-- Buscador -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                <input type="text" name="q" value="{{ buscar }}" 
-                       placeholder="Nº pedido, cliente, factura, razón social..." 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+        <form method="get" id="form-filtros" class="grid grid-cols-2 md:grid-cols-7 gap-3">
+            <div class="col-span-2">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Buscar</label>
+                <input type="text" name="q" value="{{ buscar }}"
+                       placeholder="Nº pedido, cliente, factura..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
             </div>
-            
-            <!-- Filtro Razón Social -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
-                <select name="razon_social" class="no-select2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Razón Social</label>
+                <select name="razon_social" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">Todas</option>
                     {% for rs in razones_sociales %}
                         <option value="{{ rs }}" {% if razon_social == rs %}selected{% endif %}>{{ rs }}</option>
                     {% endfor %}
                 </select>
             </div>
-            
-            <!-- Filtro Fecha Desde -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
-                <input type="date" name="fecha_desde" value="{{ fecha_desde }}" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Desde</label>
+                <input type="date" name="fecha_desde" value="{{ fecha_desde }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
             </div>
-            
-            <!-- Filtro Fecha Hasta -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
-                <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Hasta</label>
+                <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
             </div>
-            
-            <!-- Filtro Estado -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select name="estado" class="no-select2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Estado</label>
+                <select name="estado" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">Todos</option>
                     {% for value, label in estados %}
                         <option value="{{ value }}" {% if filtro_estado == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            
-            <!-- Filtro Tipo -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select name="con_factura" class="no-select2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Tipo / Saldo</label>
+                <select name="con_factura" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">Todas</option>
                     <option value="si" {% if filtro_factura == 'si' %}selected{% endif %}>Con factura (Blanco)</option>
                     <option value="no" {% if filtro_factura == 'no' %}selected{% endif %}>Sin factura (Negro)</option>
                 </select>
             </div>
-            
-            <!-- Botones -->
-            <div class="md:col-span-6 flex gap-2">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
+
+            <!-- Fila 2: checkbox saldo + botones -->
+            <div class="col-span-2 md:col-span-5 flex items-end gap-3">
+                <label class="flex items-center gap-2 cursor-pointer bg-red-50 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-100 transition-all">
+                    <input type="checkbox" name="con_saldo" value="si" {% if filtro_con_saldo == 'si' %}checked{% endif %} class="w-4 h-4 accent-red-600">
+                    <span class="text-sm font-semibold text-red-700">
+                        <i class="fas fa-exclamation-circle mr-1"></i>Solo con saldo pendiente
+                    </span>
+                </label>
+            </div>
+            <div class="col-span-2 md:col-span-2 flex items-end gap-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm">
+                    <i class="fas fa-filter mr-1"></i>Filtrar
                 </button>
-                <a href="{% url 'comercial:ventas_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-times mr-2"></i>Limpiar
+                <a href="{% url 'comercial:ventas_list' %}" class="flex-1 text-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">
+                    <i class="fas fa-times mr-1"></i>Limpiar
                 </a>
             </div>
         </form>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+    <!-- ── Barra de totales del filtro ───────────────────────────────────── -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="bg-white rounded-xl shadow px-5 py-3 flex items-center gap-3 border-l-4 border-slate-500">
+            <i class="fas fa-list-ol text-slate-500 text-xl"></i>
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Resultados</p>
+                <p class="text-xl font-bold text-slate-800">{{ total_count }} venta{% if total_count != 1 %}s{% endif %}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow px-5 py-3 flex items-center gap-3 border-l-4 border-blue-500">
+            <i class="fas fa-dollar-sign text-blue-500 text-xl"></i>
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Ventas</p>
+                <p class="text-xl font-bold text-slate-800">${{ total_monto|formato_numero }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow px-5 py-3 flex items-center gap-3 border-l-4 {% if total_saldo > 0 %}border-red-500{% else %}border-green-500{% endif %}">
+            <i class="fas fa-{% if total_saldo > 0 %}exclamation-circle text-red-500{% else %}check-circle text-green-500{% endif %} text-xl"></i>
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Saldo Pendiente</p>
+                <p class="text-xl font-bold {% if total_saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}">${{ total_saldo|formato_numero }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tabla ─────────────────────────────────────────────────────────── -->
+    <div id="vista-tabla" class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'numero_pedido' %}-numero_pedido{% else %}numero_pedido{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Pedido
-                                {% if orden_actual == 'numero_pedido' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-numero_pedido' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                        <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'numero_pedido' %}-numero_pedido{% else %}numero_pedido{% endif %}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="flex items-center hover:text-blue-300">
+                                Pedido {% if orden_actual == 'numero_pedido' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-numero_pedido' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
                             </a>
                         </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'numero_factura' %}-numero_factura{% else %}numero_factura{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Factura
-                                {% if orden_actual == 'numero_factura' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-numero_factura' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                        <th class="hidden sm:table-cell px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Factura</th>
+                        <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'cliente__nombre' %}-cliente__nombre{% else %}cliente__nombre{% endif %}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="flex items-center hover:text-blue-300">
+                                Cliente {% if orden_actual == 'cliente__nombre' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-cliente__nombre' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
                             </a>
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'cliente__nombre' %}-cliente__nombre{% else %}cliente__nombre{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Cliente
-                                {% if orden_actual == 'cliente__nombre' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-cliente__nombre' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                        <th class="hidden md:table-cell px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
+                        <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'valor_total' %}-valor_total{% else %}valor_total{% endif %}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="flex items-center hover:text-blue-300">
+                                Total {% if orden_actual == 'valor_total' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-valor_total' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
                             </a>
                         </th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'valor_total' %}-valor_total{% else %}valor_total{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Valor Total
-                                {% if orden_actual == 'valor_total' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-valor_total' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
+                        <th class="hidden sm:table-cell px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Seña</th>
+                        <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                            <a href="?orden={% if orden_actual == 'saldo' %}-saldo{% else %}saldo{% endif %}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="flex items-center hover:text-blue-300">
+                                Saldo {% if orden_actual == 'saldo' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-saldo' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
                             </a>
                         </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'sena' %}-sena{% else %}sena{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Seña
-                                {% if orden_actual == 'sena' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-sena' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
-                            </a>
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'saldo' %}-saldo{% else %}saldo{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Saldo Pendiente
-                                {% if orden_actual == 'saldo' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-saldo' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
-                            </a>
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?orden={% if orden_actual == 'estado' %}-estado{% else %}estado{% endif %}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}" class="flex items-center hover:text-blue-300">
-                                Estado
-                                {% if orden_actual == 'estado' %}<i class="fas fa-sort-up ml-1"></i>{% elif orden_actual == '-estado' %}<i class="fas fa-sort-down ml-1"></i>{% else %}<i class="fas fa-sort ml-1 opacity-50"></i>{% endif %}
-                            </a>
-                        </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="hidden sm:table-cell px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
+                        <th class="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for venta in ventas %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr class="hover:bg-slate-50 transition-colors" id="fila-venta-{{ venta.pk }}">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
                             {{ venta.numero_pedido }}
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                             {{ venta.get_numero_factura_display }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ venta.cliente }}
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="font-semibold text-slate-800 hover:text-blue-600 transition-colors">
+                                {{ venta.cliente }}
+                            </a>
                         </td>
-                        <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td class="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                             {{ venta.cliente.razon_social|default:"-" }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
                             ${{ venta.get_total_con_percepciones|formato_numero }}
                             {% if venta.percepciones.exists %}
-                            <span class="text-xs text-blue-600 block">+Perc: ${{ venta.get_total_percepciones|formato_numero }}</span>
+                            <span class="text-xs text-blue-600 block">+Perc.</span>
                             {% endif %}
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                             ${{ venta.sena|formato_numero }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}">
                             ${{ venta.saldo|formato_numero }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if venta.estado == 'pendiente' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                    Pendiente
-                                </span>
-                            {% elif venta.estado == 'entregado' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    Entregado
-                                </span>
-                            {% elif venta.estado == 'colocado' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    Colocado
-                                </span>
-                            {% endif %}
+
+                        <!-- ── Estado editable inline ── -->
+                        <td class="px-4 py-3 whitespace-nowrap" id="estado-celda-{{ venta.pk }}">
+                            <select onchange="cambiarEstado({{ venta.pk }}, this)"
+                                    class="no-select2 estado-select text-xs font-bold px-2 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-blue-400
+                                    {% if venta.estado == 'pendiente' %}bg-yellow-100 text-yellow-800
+                                    {% elif venta.estado == 'entregado' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                <option value="pendiente" {% if venta.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                <option value="entregado" {% if venta.estado == 'entregado' %}selected{% endif %}>Entregado</option>
+                                <option value="colocado" {% if venta.estado == 'colocado' %}selected{% endif %}>Colocado</option>
+                            </select>
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm">
+
+                        <td class="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm">
                             {% if venta.con_factura %}
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-file-invoice mr-1"></i> Blanco
+                                    <i class="fas fa-file-invoice mr-1"></i>Blanco
                                 </span>
                             {% else %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                    Negro
-                                </span>
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'comercial:venta_detail' venta.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Ver detalle">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center justify-center gap-1">
+                                <a href="{% url 'comercial:venta_detail' venta.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="Ver detalle">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Descargar PDF" target="_blank">
+                                <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="PDF" target="_blank">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
-                                <a href="{% url 'comercial:venta_edit' venta.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Editar">
+                                <a href="{% url 'comercial:venta_edit' venta.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button onclick="confirmarEliminacion('{% url 'comercial:venta_delete' venta.pk %}', 'Venta #{{ venta.numero_pedido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Eliminar">
+                                <button onclick="confirmarEliminacion('{% url 'comercial:venta_delete' venta.pk %}', 'Venta #{{ venta.numero_pedido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
                                 {% if venta.con_factura %}
                                     {% if venta.factura_electronica %}
-                                        <a href="{% url 'facturacion:detalle_factura' venta.factura_electronica.id %}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Ver Factura">
+                                        <a href="{% url 'facturacion:detalle_factura' venta.factura_electronica.id %}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="Ver Factura">
                                             <i class="fas fa-file-invoice"></i>
                                         </a>
                                     {% else %}
-                                        <a href="{% url 'facturacion:crear_factura_desde_venta' venta.id %}" class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Generar Factura Electrónica">
+                                        <a href="{% url 'facturacion:crear_factura_desde_venta' venta.id %}" class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white px-2.5 py-1.5 rounded-lg font-semibold transition-all text-xs" title="Generar Factura Electrónica">
                                             <i class="fas fa-file-invoice-dollar"></i>
                                         </a>
                                     {% endif %}
@@ -226,176 +245,283 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                        <td colspan="10" class="px-6 py-10 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2 block"></i>
                             <p class="text-slate-500 font-medium">No hay ventas registradas</p>
+                            {% if filtro_con_saldo == 'si' %}
+                            <p class="text-slate-400 text-sm mt-1">No hay ventas con saldo pendiente para los filtros actuales.</p>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Paginación -->
         {% if page_obj.has_other_pages %}
         <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-between sm:hidden">
                 {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Anterior
-                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Anterior</a>
                 {% endif %}
                 {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Siguiente
-                </a>
+                <a href="?page={{ page_obj.next_page_number }}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Siguiente</a>
                 {% endif %}
             </div>
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-gray-700">
-                        Mostrando
-                        <span class="font-medium">{{ page_obj.start_index }}</span>
-                        a
-                        <span class="font-medium">{{ page_obj.end_index }}</span>
-                        de
-                        <span class="font-medium">{{ page_obj.paginator.count }}</span>
-                        resultados
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
+                <p class="text-sm text-gray-700">
+                    Mostrando <span class="font-medium">{{ page_obj.start_index }}</span> a <span class="font-medium">{{ page_obj.end_index }}</span> de <span class="font-medium">{{ page_obj.paginator.count }}</span> resultados
+                </p>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><i class="fas fa-chevron-left"></i></a>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ num }}</a>
                         {% endif %}
-                        
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">
-                                {{ num }}
-                            </span>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <a href="?page={{ num }}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                {{ num }}
-                            </a>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}{% if buscar %}&q={{ buscar }}{% endif %}{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_factura %}&con_factura={{ filtro_factura }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                        {% endif %}
-                    </nav>
-                </div>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ buscar }}&estado={{ filtro_estado }}&con_factura={{ filtro_factura }}&con_saldo={{ filtro_con_saldo }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><i class="fas fa-chevron-right"></i></a>
+                    {% endif %}
+                </nav>
             </div>
         </div>
         {% endif %}
     </div>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- VISTA KANBAN                                                     -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="vista-kanban" class="hidden">
+
+        {% if page_obj.has_other_pages %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mb-4 text-sm text-amber-700 font-medium flex items-center gap-2">
+            <i class="fas fa-info-circle"></i>
+            El Kanban muestra la página actual ({{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}). Usá los filtros para reducir los resultados.
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            <!-- Columna Pendiente -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide">Pendiente</h3>
+                        <span id="cnt-pendiente" class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <span id="sum-pendiente" class="text-xs font-bold text-slate-500">$0</span>
+                </div>
+                <div id="col-pendiente"
+                     class="kanban-col min-h-48 bg-yellow-50 rounded-2xl p-3 space-y-3 border-2 border-dashed border-yellow-200 transition-all"
+                     ondragover="onDragOver(event)" ondrop="onDrop(event, 'pendiente')" ondragleave="onDragLeave(event)">
+                    {% for venta in ventas %}{% if venta.estado == 'pendiente' %}
+                    <div class="kanban-card bg-white rounded-xl shadow-md p-4 cursor-grab active:cursor-grabbing border border-yellow-100 hover:shadow-lg transition-all"
+                         draggable="true"
+                         data-id="{{ venta.pk }}"
+                         data-estado="pendiente"
+                         ondragstart="onDragStart(event)">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-800 text-sm">#{{ venta.numero_pedido }}</span>
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">Pendiente</span>
+                        </div>
+                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">
+                            <i class="fas fa-user mr-1"></i>{{ venta.cliente }}
+                        </a>
+                        <div class="flex justify-between items-center text-xs text-slate-500 mb-3">
+                            <span><i class="far fa-calendar mr-1"></i>{{ venta.created_at|date:"d/m/Y" }}</span>
+                            {% if not venta.con_factura %}<span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-semibold">Negro</span>{% endif %}
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                            <div>
+                                <p class="text-xs text-slate-400">Total</p>
+                                <p class="font-bold text-slate-800 text-sm">${{ venta.valor_total|formato_numero }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400">Saldo</p>
+                                <p class="font-bold text-sm {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}" data-saldo="{{ venta.saldo }}">${{ venta.saldo|formato_numero }}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-1 mt-3 pt-2 border-t border-gray-100">
+                            <a href="{% url 'comercial:venta_detail' venta.pk %}" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+
+            <!-- Columna Entregado -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-blue-400"></div>
+                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide">Entregado</h3>
+                        <span id="cnt-entregado" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <span id="sum-entregado" class="text-xs font-bold text-slate-500">$0</span>
+                </div>
+                <div id="col-entregado"
+                     class="kanban-col min-h-48 bg-blue-50 rounded-2xl p-3 space-y-3 border-2 border-dashed border-blue-200 transition-all"
+                     ondragover="onDragOver(event)" ondrop="onDrop(event, 'entregado')" ondragleave="onDragLeave(event)">
+                    {% for venta in ventas %}{% if venta.estado == 'entregado' %}
+                    <div class="kanban-card bg-white rounded-xl shadow-md p-4 cursor-grab active:cursor-grabbing border border-blue-100 hover:shadow-lg transition-all"
+                         draggable="true"
+                         data-id="{{ venta.pk }}"
+                         data-estado="entregado"
+                         ondragstart="onDragStart(event)">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-800 text-sm">#{{ venta.numero_pedido }}</span>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">Entregado</span>
+                        </div>
+                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">
+                            <i class="fas fa-user mr-1"></i>{{ venta.cliente }}
+                        </a>
+                        <div class="flex justify-between items-center text-xs text-slate-500 mb-3">
+                            <span><i class="far fa-calendar mr-1"></i>{{ venta.created_at|date:"d/m/Y" }}</span>
+                            {% if not venta.con_factura %}<span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-semibold">Negro</span>{% endif %}
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                            <div>
+                                <p class="text-xs text-slate-400">Total</p>
+                                <p class="font-bold text-slate-800 text-sm">${{ venta.valor_total|formato_numero }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400">Saldo</p>
+                                <p class="font-bold text-sm {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}" data-saldo="{{ venta.saldo }}">${{ venta.saldo|formato_numero }}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-1 mt-3 pt-2 border-t border-gray-100">
+                            <a href="{% url 'comercial:venta_detail' venta.pk %}" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+
+            <!-- Columna Colocado -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide">Colocado</h3>
+                        <span id="cnt-colocado" class="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <span id="sum-colocado" class="text-xs font-bold text-slate-500">$0</span>
+                </div>
+                <div id="col-colocado"
+                     class="kanban-col min-h-48 bg-green-50 rounded-2xl p-3 space-y-3 border-2 border-dashed border-green-200 transition-all"
+                     ondragover="onDragOver(event)" ondrop="onDrop(event, 'colocado')" ondragleave="onDragLeave(event)">
+                    {% for venta in ventas %}{% if venta.estado == 'colocado' %}
+                    <div class="kanban-card bg-white rounded-xl shadow-md p-4 cursor-grab active:cursor-grabbing border border-green-100 hover:shadow-lg transition-all"
+                         draggable="true"
+                         data-id="{{ venta.pk }}"
+                         data-estado="colocado"
+                         ondragstart="onDragStart(event)">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-800 text-sm">#{{ venta.numero_pedido }}</span>
+                            <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">Colocado</span>
+                        </div>
+                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">
+                            <i class="fas fa-user mr-1"></i>{{ venta.cliente }}
+                        </a>
+                        <div class="flex justify-between items-center text-xs text-slate-500 mb-3">
+                            <span><i class="far fa-calendar mr-1"></i>{{ venta.created_at|date:"d/m/Y" }}</span>
+                            {% if not venta.con_factura %}<span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-semibold">Negro</span>{% endif %}
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                            <div>
+                                <p class="text-xs text-slate-400">Total</p>
+                                <p class="font-bold text-slate-800 text-sm">${{ venta.valor_total|formato_numero }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400">Saldo</p>
+                                <p class="font-bold text-sm {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}" data-saldo="{{ venta.saldo }}">${{ venta.saldo|formato_numero }}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-1 mt-3 pt-2 border-t border-gray-100">
+                            <a href="{% url 'comercial:venta_detail' venta.pk %}" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- /kanban -->
+
 </div>
 
 <script>
-function mostrarCotizacionDolar() {
-    Swal.fire({
-        title: '<i class="fas fa-spinner fa-spin"></i> Cargando cotizaciones...',
-        showConfirmButton: false,
-        allowOutsideClick: false
-    });
-    
-    Promise.all([
-        fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json()),
-        fetch('https://dolarapi.com/v1/dolares/oficial').then(r => r.json())
-    ]).then(([blue, oficial]) => {
-        const fechaBlue = new Date(blue.fechaActualizacion).toLocaleString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        const fechaOficial = new Date(oficial.fechaActualizacion).toLocaleString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        Swal.fire({
-            html: `
-                <div class="space-y-4">
-                    <div class="text-center mb-6">
-                        <i class="fas fa-dollar-sign text-5xl text-green-600 mb-3"></i>
-                        <h2 class="text-3xl font-bold text-gray-800">Cotización del Dólar</h2>
-                    </div>
-                    
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-8 text-white shadow-2xl">
-                        <h3 class="text-2xl font-bold mb-6 flex items-center justify-center">
-                            <i class="fas fa-chart-line mr-3"></i>Dólar Blue
-                        </h3>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Compra</p>
-                                <p class="text-4xl font-bold">$${blue.compra}</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Venta</p>
-                                <p class="text-4xl font-bold">$${blue.venta}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-blue-400 text-center">
-                            <p class="text-xs opacity-80"><i class="far fa-clock mr-1"></i>Actualizado: ${fechaBlue}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gradient-to-br from-gray-700 to-gray-900 rounded-3xl p-8 text-white shadow-2xl">
-                        <h3 class="text-2xl font-bold mb-6 flex items-center justify-center">
-                            <i class="fas fa-university mr-3"></i>Dólar Oficial
-                        </h3>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Compra</p>
-                                <p class="text-4xl font-bold">$${oficial.compra}</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Venta</p>
-                                <p class="text-4xl font-bold">$${oficial.venta}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-gray-600 text-center">
-                            <p class="text-xs opacity-80"><i class="far fa-clock mr-1"></i>Actualizado: ${fechaOficial}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-50 rounded-2xl p-3 text-center">
-                        <p class="text-xs text-gray-600">
-                            <i class="fas fa-info-circle mr-1"></i>Fuente: DolarAPI.com
-                        </p>
-                    </div>
-                </div>
-            `,
-            width: '650px',
-            showConfirmButton: true,
-            confirmButtonText: '<i class="fas fa-times mr-2"></i>Cerrar',
-            confirmButtonColor: '#3b82f6',
-            customClass: {
-                popup: 'rounded-3xl',
-                confirmButton: 'rounded-xl px-8 py-3 font-semibold'
-            }
-        });
-    }).catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo obtener la cotización del dólar',
-            confirmButtonColor: '#3b82f6'
-        });
-    });
+// ── Cambio de estado inline ───────────────────────────────────────────────
+const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const ESTADO_CLASES = {
+    pendiente: 'bg-yellow-100 text-yellow-800',
+    entregado: 'bg-blue-100 text-blue-800',
+    colocado:  'bg-green-100 text-green-800',
+};
+
+function cambiarEstado(ventaId, selectEl) {
+    const nuevoEstado = selectEl.value;
+    selectEl.disabled = true;
+
+    fetch(`/comercial/api/venta/${ventaId}/cambiar-estado/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': CSRF_TOKEN,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `estado=${nuevoEstado}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar clases de color del select
+            selectEl.className = selectEl.className
+                .replace(/bg-\S+\s?/g, '')
+                .replace(/text-\S+\s?/g, '');
+            selectEl.className += ' no-select2 estado-select text-xs font-bold px-2 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-blue-400 ' + ESTADO_CLASES[nuevoEstado];
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Estado actualizado',
+                text: `Venta pasada a "${data.nuevo_estado}"`,
+                timer: 1800,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end',
+            });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el estado.' });
+        }
+    })
+    .catch(() => {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'Intentá de nuevo.' });
+    })
+    .finally(() => { selectEl.disabled = false; });
 }
 
+// ── Eliminar ──────────────────────────────────────────────────────────────
 function confirmarEliminacion(url, nombre) {
     Swal.fire({
         title: '¿Eliminar venta?',
@@ -411,14 +537,209 @@ function confirmarEliminacion(url, nombre) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            }
+            form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${CSRF_TOKEN}">`;
             document.body.appendChild(form);
             form.submit();
         }
     });
 }
+
+// ── Toggle tabla / kanban ────────────────────────────────────────────────
+function setVista(vista) {
+    const tabla  = document.getElementById('vista-tabla');
+    const kanban = document.getElementById('vista-kanban');
+    const btnTabla  = document.getElementById('btn-tabla');
+    const btnKanban = document.getElementById('btn-kanban');
+
+    if (vista === 'kanban') {
+        tabla.classList.add('hidden');
+        kanban.classList.remove('hidden');
+        btnKanban.classList.add('active');
+        btnTabla.classList.remove('active');
+        recalcularColumnas();
+    } else {
+        kanban.classList.add('hidden');
+        tabla.classList.remove('hidden');
+        btnTabla.classList.add('active');
+        btnKanban.classList.remove('active');
+    }
+    localStorage.setItem('ventas_vista', vista);
+}
+
+function recalcularColumnas() {
+    ['pendiente', 'entregado', 'colocado'].forEach(estado => {
+        const col   = document.getElementById('col-' + estado);
+        const cards = col.querySelectorAll('.kanban-card');
+        let total = 0;
+        cards.forEach(c => {
+            const saldoEl = c.querySelector('[data-saldo]');
+            if (saldoEl) total += parseFloat(saldoEl.dataset.saldo) || 0;
+        });
+        document.getElementById('cnt-' + estado).textContent = cards.length;
+        document.getElementById('sum-' + estado).textContent =
+            '$' + total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    });
+}
+
+// Restaurar vista guardada
+(function() {
+    const vista = localStorage.getItem('ventas_vista') || 'tabla';
+    if (vista === 'kanban') setVista('kanban');
+    else recalcularColumnas();
+})();
+
+// ── Drag & Drop Kanban ───────────────────────────────────────────────────
+let dragCard = null;
+
+function onDragStart(e) {
+    dragCard = e.currentTarget;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => dragCard.classList.add('opacity-40'), 0);
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('ring-2', 'ring-blue-400', 'bg-opacity-80');
+}
+
+function onDragLeave(e) {
+    e.currentTarget.classList.remove('ring-2', 'ring-blue-400', 'bg-opacity-80');
+}
+
+function onDrop(e, nuevoEstado) {
+    e.preventDefault();
+    const col = e.currentTarget;
+    col.classList.remove('ring-2', 'ring-blue-400', 'bg-opacity-80');
+
+    if (!dragCard) return;
+    const estadoActual = dragCard.dataset.estado;
+    if (estadoActual === nuevoEstado) {
+        dragCard.classList.remove('opacity-40');
+        dragCard = null;
+        return;
+    }
+
+    const ventaId = dragCard.dataset.id;
+
+    fetch(`/comercial/api/venta/${ventaId}/cambiar-estado/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `estado=${nuevoEstado}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Mover la card a la nueva columna
+            dragCard.classList.remove('opacity-40');
+            dragCard.dataset.estado = nuevoEstado;
+
+            // Actualizar el badge de estado en la card
+            const badge = dragCard.querySelector('.rounded-full');
+            const COLORES = {
+                pendiente: 'bg-yellow-100 text-yellow-800',
+                entregado: 'bg-blue-100 text-blue-800',
+                colocado:  'bg-green-100 text-green-800',
+            };
+            const LABELS = { pendiente: 'Pendiente', entregado: 'Entregado', colocado: 'Colocado' };
+            if (badge) {
+                badge.className = `text-xs font-bold px-2 py-0.5 rounded-full ${COLORES[nuevoEstado]}`;
+                badge.textContent = LABELS[nuevoEstado];
+            }
+
+            // Actualizar border de la card
+            const BORDERS = { pendiente: 'border-yellow-100', entregado: 'border-blue-100', colocado: 'border-green-100' };
+            ['border-yellow-100','border-blue-100','border-green-100'].forEach(c => dragCard.classList.remove(c));
+            dragCard.classList.add(BORDERS[nuevoEstado]);
+
+            col.appendChild(dragCard);
+            recalcularColumnas();
+
+            // También actualizar el select en la vista tabla
+            const selectTabla = document.querySelector(`#fila-venta-${ventaId} .estado-select`);
+            if (selectTabla) {
+                selectTabla.value = nuevoEstado;
+                const CLASES = {
+                    pendiente: 'bg-yellow-100 text-yellow-800',
+                    entregado: 'bg-blue-100 text-blue-800',
+                    colocado:  'bg-green-100 text-green-800',
+                };
+                selectTabla.className = selectTabla.className.replace(/bg-\S+/g,'').replace(/text-\S+/g,'');
+                selectTabla.className += ' no-select2 estado-select text-xs font-bold px-2 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-blue-400 ' + CLASES[nuevoEstado];
+            }
+
+            Swal.fire({ icon:'success', title:'Estado actualizado', text:`Venta movida a "${data.nuevo_estado}"`,
+                timer:1800, timerProgressBar:true, showConfirmButton:false, toast:true, position:'top-end' });
+        } else {
+            dragCard.classList.remove('opacity-40');
+            Swal.fire({ icon:'error', title:'Error', text:'No se pudo mover la venta.' });
+        }
+    })
+    .catch(() => {
+        dragCard.classList.remove('opacity-40');
+        Swal.fire({ icon:'error', title:'Error de conexión' });
+    })
+    .finally(() => { dragCard = null; });
+}
+
+document.addEventListener('dragend', () => {
+    if (dragCard) dragCard.classList.remove('opacity-40');
+});
+
+// ── Cotización dólar ──────────────────────────────────────────────────────
+function mostrarCotizacionDolar() {
+    Swal.fire({
+        title: '<i class="fas fa-spinner fa-spin"></i> Cargando cotizaciones...',
+        showConfirmButton: false,
+        allowOutsideClick: false
+    });
+
+    Promise.all([
+        fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json()),
+        fetch('https://dolarapi.com/v1/dolares/oficial').then(r => r.json())
+    ]).then(([blue, oficial]) => {
+        const fmt = d => new Date(d).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        Swal.fire({
+            html: `
+                <div class="space-y-4">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-dollar-sign text-5xl text-green-600 mb-2"></i>
+                        <h2 class="text-3xl font-bold text-gray-800">Cotización del Dólar</h2>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 text-white shadow-2xl">
+                        <h3 class="text-xl font-bold mb-4 text-center"><i class="fas fa-chart-line mr-2"></i>Dólar Blue</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center"><p class="text-sm opacity-90 mb-1">Compra</p><p class="text-3xl font-bold">$${blue.compra}</p></div>
+                            <div class="text-center"><p class="text-sm opacity-90 mb-1">Venta</p><p class="text-3xl font-bold">$${blue.venta}</p></div>
+                        </div>
+                        <p class="text-xs opacity-70 text-center mt-3"><i class="far fa-clock mr-1"></i>${fmt(blue.fechaActualizacion)}</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-gray-700 to-gray-900 rounded-3xl p-6 text-white shadow-2xl">
+                        <h3 class="text-xl font-bold mb-4 text-center"><i class="fas fa-university mr-2"></i>Dólar Oficial</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center"><p class="text-sm opacity-90 mb-1">Compra</p><p class="text-3xl font-bold">$${oficial.compra}</p></div>
+                            <div class="text-center"><p class="text-sm opacity-90 mb-1">Venta</p><p class="text-3xl font-bold">$${oficial.venta}</p></div>
+                        </div>
+                        <p class="text-xs opacity-70 text-center mt-3"><i class="far fa-clock mr-1"></i>${fmt(oficial.fechaActualizacion)}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 text-center"><i class="fas fa-info-circle mr-1"></i>Fuente: DolarAPI.com</p>
+                </div>`,
+            width: '580px',
+            showConfirmButton: true,
+            confirmButtonText: '<i class="fas fa-times mr-2"></i>Cerrar',
+            confirmButtonColor: '#3b82f6',
+            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-8 py-3 font-semibold' }
+        });
+    }).catch(() => {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener la cotización del dólar' });
+    });
+}
 </script>
+
+<style>
+.vista-btn { color: #64748b; background: transparent; }
+.vista-btn.active { background: #1e293b; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.vista-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
+.kanban-col { transition: border-color .15s, background .15s; }
+</style>
 {% endblock %}
