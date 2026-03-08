@@ -350,7 +350,11 @@ def hoja_edit(request, pk):
     
     perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
-    
+    accesorios_hoja_json = json.dumps([
+        {'accesorio': a.accesorio, 'obligatorio': a.obligatorio or 'No'}
+        for a in accesorios_hoja
+    ])
+
     if request.method == 'POST':
         # Si es una petición AJAX para guardar solo fórmulas o accesorios
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'HTTP_X_REQUESTED_WITH' in request.META:
@@ -487,7 +491,8 @@ def hoja_edit(request, pk):
         'formulas': formulas,
         'accesorios_hoja': accesorios_hoja,
         'perfiles': perfiles,
-        'perfiles_json': perfiles_json
+        'perfiles_json': perfiles_json,
+        'accesorios_hoja_json': accesorios_hoja_json
     })
 
 
