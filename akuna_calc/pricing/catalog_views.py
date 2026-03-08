@@ -77,7 +77,11 @@ class PerfilesListView(APIView):
 
 class AccesoriosListView(APIView):
     def get(self, request):
-        accesorios = Accesorio.objects.exclude(bloqueado='Si').values('codigo', 'descripcion', 'precio')
+        tipo = request.query_params.get('tipo')
+        qs = Accesorio.objects.exclude(bloqueado='Si')
+        if tipo:
+            qs = qs.filter(tipo=tipo)
+        accesorios = qs.values('codigo', 'descripcion', 'precio')
         return Response(list(accesorios))
 
 
