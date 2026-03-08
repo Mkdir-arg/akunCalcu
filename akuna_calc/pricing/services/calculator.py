@@ -151,9 +151,11 @@ class PriceCalculator:
             accesorios_items,
         )
         if hoja_id:
+            # Calcular dimensiones reales de la hoja desde sus perfiles
+            hoja_variables = self._calcular_dimensiones_hoja(hoja_id, variables)
             self._calcular_accesorios(
                 DespieceAccesoriosHoja.objects.filter(hoja_id=hoja_id),
-                variables,
+                hoja_variables,
                 accesorios_items,
             )
         if interior_id:
@@ -644,6 +646,34 @@ class PriceCalculator:
         except FormulaError as exc:
             logger.warning("Formula invalida '%s': %s", formula, exc)
             return 0.0
+
+    def _calcular_dimensiones_hoja(self, hoja_id: int, variables_ventana: Dict[str, Any]) -> Dict[str, Any]:
+        """Calcula las dimensiones reales de la hoja evaluando sus fórmulas de perfiles."""
+        despieces = DespiecePerfilesHoja.objects.filter(hoja_id=hoja_id)
+        
+        ancho_hoja = None
+        alto_hoja = None
+        
+        for despiece in despieces:
+            if not despiece.formula_perfil:
+                continue
+            
+            # Evaluar la fórmula del perfil con las dimensiones de la ventana
+            longitud = self._eval_formula(despiece.formula_perfil, variables_ventana)
+            
+            # Detectar si es una fórmula de ancho o alto
+            formula_lower = despiece.formula_perfil.lower()
+            if 'ancho' in formula_lower and ancho_hoja is None:
+                ancho_hoja = longitud
+            elif 'alto' in formula_lower and alto_hoja is None:
+                alto_hoja = longitud
+        
+        # Si no se encontraron dimensiones, usar las de la ventana
+        return {
+            "Ancho": ancho_hoja if ancho_hoja else variables_ventana["Ancho"],
+            "Alto": alto_hoja if alto_hoja else variables_ventana["Alto"],
+            "Cantidad": variables_ventana["Cantidad"],
+        }
 
 
 def calcular_precio(configuracion: Dict[str, Any]) -> Dict[str, Any]:
