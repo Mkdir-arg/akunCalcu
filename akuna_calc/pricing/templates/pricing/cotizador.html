@@ -97,6 +97,7 @@ const Cotizador = () => {
     ancho_mm: 1200,
     alto_mm: 1500,
     vidrio_codigo: '',
+    tratamiento_id: null,
     margen_porcentaje: 30,
   });
 
@@ -254,6 +255,10 @@ const Cotizador = () => {
           <Select label="Vidrio (Opcional)" options={vidrios} value={config.vidrio_codigo}
             onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
             placeholder="Selecciona un vidrio" />
+
+          <Select label="Tratamiento (Opcional)" options={tratamientos} value={config.tratamiento_id}
+            onChange={(id) => setConfig({ ...config, tratamiento_id: id })}
+            placeholder="Selecciona un tratamiento" />
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
