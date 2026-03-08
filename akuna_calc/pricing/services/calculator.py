@@ -628,15 +628,22 @@ class PriceCalculator:
                 cantidad_total = cantidad_formula * _to_float(accesorio.cant or 1)
             
             precio_total = cantidad_total * _to_float(accesorio.precio)
-            items.append(
-                {
-                    "codigo": accesorio.codigo,
-                    "descripcion": accesorio.descripcion,
-                    "cantidad": cantidad_total,
-                    "precio_unitario": _to_float(accesorio.precio),
-                    "precio_total": round(precio_total, 2),
+            item = {
+                "codigo": accesorio.codigo,
+                "descripcion": accesorio.descripcion,
+                "cantidad": cantidad_total,
+                "precio_unitario": _to_float(accesorio.precio),
+                "precio_total": round(precio_total, 2),
+            }
+            
+            # Agregar dimensiones usadas si es fórmula
+            if accesorio.tipo_calculo == 'formula' and accesorio.formula_calculo:
+                item["dimensiones"] = {
+                    "ancho": round(variables.get("Ancho", 0), 2),
+                    "alto": round(variables.get("Alto", 0), 2),
                 }
-            )
+            
+            items.append(item)
 
     def _eval_formula(self, formula: Optional[str], variables: Dict[str, Any]) -> float:
         if not formula:
