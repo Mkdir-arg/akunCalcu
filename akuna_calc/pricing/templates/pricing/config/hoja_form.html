@@ -53,6 +53,27 @@
                     </table>
                 </div>
             </div>
+
+            <div class="mt-8 border-t pt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-slate-800">Accesorios</h2>
+                    <button type="button" onclick="agregarAccesorio()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Agregar Accesorio
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="accesoriosTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-sm font-semibold">Accesorio</th>
+                                <th class="px-4 py-2 text-center text-sm font-semibold">Obligatorio</th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="accesoriosBody"></tbody>
+                    </table>
+                </div>
+            </div>
             {% endif %}
 
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
@@ -201,6 +222,37 @@ function guardarFormulas() {
         btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
         Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.', confirmButtonColor: '#3b82f6' });
     });
+}
+
+let accesorioIndex = 0;
+let accesorios = [];
+
+fetch('/pricing/api/accesorios-simple/?tipo=hoja')
+    .then(r => r.json())
+    .then(data => { accesorios = data; })
+    .catch(e => console.error('Error cargando accesorios:', e));
+
+function agregarAccesorio() {
+    const row = document.createElement('tr');
+    row.className = 'border-b';
+    row.innerHTML = `
+        <td class="px-4 py-2">
+            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded no-select2" required>
+                <option value="">Seleccionar...</option>
+                ${accesorios.map(a => `<option value="${a.codigo}">${a.codigo} - ${a.descripcion}</option>`).join('')}
+            </select>
+        </td>
+        <td class="px-4 py-2 text-center">
+            <input type="checkbox" name="obligatorio_${accesorioIndex}" class="w-4 h-4">
+        </td>
+        <td class="px-4 py-2">
+            <button type="button" onclick="this.closest('tr').remove()" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    document.getElementById('accesoriosBody').appendChild(row);
+    accesorioIndex++;
 }
 </script>
 {% endblock %}
