@@ -363,6 +363,11 @@ const Cotizador = () => {
                           </div>
                           <div className="text-xs text-gray-600 mt-1">
                             Cantidad: {item.cantidad} × ${item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                            {item.dimensiones && (
+                              <span className="ml-2 text-blue-600">
+                                (Ancho: {item.dimensiones.ancho}mm × Alto: {item.dimensiones.alto}mm)
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
