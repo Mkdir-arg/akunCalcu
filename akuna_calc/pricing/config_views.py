@@ -337,8 +337,10 @@ def hoja_edit(request, pk):
     import json
     
     formulas = []
+    accesorios_hoja = []
     try:
         formulas = list(DespiecePerfilesHoja.objects.filter(hoja=obj))
+        accesorios_hoja = list(DespieceAccesoriosHoja.objects.filter(hoja=obj))
     except:
         pass
     
@@ -435,6 +437,7 @@ def hoja_edit(request, pk):
         'object': obj, 
         'hoja': obj, 
         'formulas': formulas,
+        'accesorios_hoja': accesorios_hoja,
         'perfiles': perfiles,
         'perfiles_json': perfiles_json
     })
