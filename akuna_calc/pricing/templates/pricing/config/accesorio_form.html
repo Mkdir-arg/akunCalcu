@@ -14,18 +14,18 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 gap-6">
                 {% for field in form %}
-                {% if field.name != 'cant' %}
-                <div {% if field.name == 'formula_calculo' %}id="formula_field" style="display:none;"{% endif %}>
+                {% if field.name == 'cant' %}
+                    {# Skip cant, se muestra manualmente después #}
+                {% elif field.name == 'formula_calculo' %}
+                    {# Skip formula_calculo, se muestra manualmente después #}
+                {% elif field.name == 'tipo_calculo' %}
+                <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}
                         <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
                     {% endif %}
-                    {% if field.name == 'formula_calculo' %}
-                        <p class="text-xs text-gray-500 mt-1">Usa variables: Ancho, Alto. Ejemplo: (Ancho * 2) + (Alto * 2)</p>
-                    {% endif %}
                 </div>
-                {% if field.name == 'tipo_calculo' %}
                 <div id="cant_field">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cant.label }}</label>
                     {{ form.cant }}
@@ -33,7 +33,22 @@
                         <p class="text-red-600 text-xs mt-1">{{ form.cant.errors.0 }}</p>
                     {% endif %}
                 </div>
-                {% endif %}
+                <div id="formula_field" style="display:none;">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.formula_calculo.label }}</label>
+                    {{ form.formula_calculo }}
+                    {% if form.formula_calculo.errors %}
+                        <p class="text-red-600 text-xs mt-1">{{ form.formula_calculo.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 mt-1">Usa variables: Ancho, Alto. Ejemplo: (Ancho * 2) + (Alto * 2)</p>
+                </div>
+                {% else %}
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
                 {% endif %}
                 {% endfor %}
             </div>
