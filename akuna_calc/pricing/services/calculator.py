@@ -249,7 +249,17 @@ class PriceCalculator:
             if ancho_vidrio <= 0 or alto_vidrio <= 0:
                 raise PricingError("Dimensiones invalidas para vidrio.")
             area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
-            precio_vidrio = area_m2 * precio_m2
+            
+            # Obtener cantidad de hojas del producto
+            cantidad_hojas_producto = 1
+            if cleaned.get("producto_id"):
+                try:
+                    producto_marco = self._get_producto(cleaned["producto_id"])
+                    cantidad_hojas_producto = producto_marco.cantidad_hojas or 1
+                except:
+                    cantidad_hojas_producto = 1
+            
+            precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
             vidrio_detalle = {
                 "codigo": vidrio.codigo,
                 "descripcion": vidrio.descripcion,
@@ -257,6 +267,7 @@ class PriceCalculator:
                 "alto_mm": round(alto_vidrio, 2),
                 "area_m2": round(area_m2, 4),
                 "precio_m2": precio_m2,
+                "cantidad_hojas": cantidad_hojas_producto,
                 "precio_total": round(precio_vidrio, 2),
             }
 
@@ -377,6 +388,12 @@ class PriceCalculator:
             return Tratamiento.objects.get(pk=tratamiento_id)
         except Tratamiento.DoesNotExist as exc:
             raise PricingError("Tratamiento inexistente.") from exc
+
+    def _get_producto(self, producto_id: int) -> Producto:
+        try:
+            return Producto.objects.get(pk=producto_id)
+        except Producto.DoesNotExist as exc:
+            raise PricingError("Producto inexistente.") from exc
 
     def _get_perfil(self, codigo: str, color_id: Optional[int]) -> Perfil:
         qs = Perfil.objects.filter(codigo=codigo)

@@ -58,6 +58,7 @@ class Producto(models.Model):
     descripcion = models.TextField(db_column="Descripci_n", null=True, blank=True)
     fecha_creacion = models.TextField(db_column="Fecha_creacion", null=True, blank=True)
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
+    cantidad_hojas = models.IntegerField(db_column="cantidad_hojas", null=True, blank=True, default=1)
 
     class Meta:
         managed = False

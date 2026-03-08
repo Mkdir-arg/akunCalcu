@@ -392,6 +392,9 @@ const Cotizador = () => {
                         </div>
                         <div className="text-xs text-gray-600 mt-1">
                           {result.desglose.vidrios.ancho_mm}mm × {result.desglose.vidrios.alto_mm}mm = {result.desglose.vidrios.area_m2}m² × ${result.desglose.vidrios.precio_m2}/m²
+                          {result.desglose.vidrios.cantidad_hojas > 1 && (
+                            <span className="ml-2 text-blue-600">× {result.desglose.vidrios.cantidad_hojas} hojas</span>
+                          )}
                         </div>
                       </div>
                     </div>
