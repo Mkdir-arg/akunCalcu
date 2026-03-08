@@ -264,6 +264,8 @@ class Accesorio(models.Model):
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
     tipo = models.TextField(db_column="Tipo", null=True, blank=True)
     cant = models.IntegerField(db_column="cant", null=True, blank=True, default=1)
+    tipo_calculo = models.TextField(db_column="tipo_calculo", null=True, blank=True, default='unidad')
+    formula_calculo = models.TextField(db_column="formula_calculo", null=True, blank=True)
 
     class Meta:
         managed = False

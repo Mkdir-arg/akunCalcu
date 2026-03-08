@@ -14,13 +14,25 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 gap-6">
                 {% for field in form %}
-                <div>
+                <div {% if field.name == 'formula_calculo' %}id="formula_field" style="display:none;"{% endif %}>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}
                         <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
                     {% endif %}
+                    {% if field.name == 'formula_calculo' %}
+                        <p class="text-xs text-gray-500 mt-1">Usa variables: Ancho, Alto. Ejemplo: (Ancho * 2) + (Alto * 2)</p>
+                    {% endif %}
                 </div>
+                {% if field.name == 'tipo_calculo' %}
+                <div id="cant_field">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cant.label }}</label>
+                    {{ form.cant }}
+                    {% if form.cant.errors %}
+                        <p class="text-red-600 text-xs mt-1">{{ form.cant.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
@@ -32,4 +44,23 @@
         </form>
     </div>
 </div>
+
+<script>
+const tipoCalculo = document.getElementById('id_tipo_calculo');
+const cantField = document.getElementById('cant_field');
+const formulaField = document.getElementById('formula_field');
+
+function toggleFields() {
+    if (tipoCalculo.value === 'formula') {
+        cantField.style.display = 'none';
+        formulaField.style.display = 'block';
+    } else {
+        cantField.style.display = 'block';
+        formulaField.style.display = 'none';
+    }
+}
+
+tipoCalculo.addEventListener('change', toggleFields);
+toggleFields();
+</script>
 {% endblock %}

@@ -273,6 +273,11 @@ class AccesorioCreateForm(forms.ModelForm):
         ('marco', 'Marco'),
     ]
     
+    TIPO_CALCULO_CHOICES = [
+        ('unidad', 'Unidad'),
+        ('formula', 'Fórmula'),
+    ]
+    
     tipo = forms.ChoiceField(
         choices=TIPO_CHOICES,
         widget=forms.Select(attrs={'class': _select_class}),
@@ -280,16 +285,25 @@ class AccesorioCreateForm(forms.ModelForm):
         required=False
     )
     
+    tipo_calculo = forms.ChoiceField(
+        choices=TIPO_CALCULO_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class, 'id': 'id_tipo_calculo'}),
+        label='Tipo de Cálculo',
+        initial='unidad'
+    )
+    
     class Meta:
         model = Accesorio
-        fields = ['codigo', 'descripcion', 'cant', 'tipo', 'precio']
+        fields = ['codigo', 'descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio']
         labels = {
             'cant': 'Cantidad',
+            'formula_calculo': 'Fórmula de Cálculo',
         }
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cant': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
+            'formula_calculo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: (Ancho * 2) + (Alto * 2)'}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 
@@ -301,6 +315,11 @@ class AccesorioEditForm(forms.ModelForm):
         ('marco', 'Marco'),
     ]
     
+    TIPO_CALCULO_CHOICES = [
+        ('unidad', 'Unidad'),
+        ('formula', 'Fórmula'),
+    ]
+    
     tipo = forms.ChoiceField(
         choices=TIPO_CHOICES,
         widget=forms.Select(attrs={'class': _select_class}),
@@ -308,15 +327,23 @@ class AccesorioEditForm(forms.ModelForm):
         required=False
     )
     
+    tipo_calculo = forms.ChoiceField(
+        choices=TIPO_CALCULO_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class, 'id': 'id_tipo_calculo'}),
+        label='Tipo de Cálculo'
+    )
+    
     class Meta:
         model = Accesorio
-        fields = ['descripcion', 'cant', 'tipo', 'precio']
+        fields = ['descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio']
         labels = {
             'cant': 'Cantidad',
+            'formula_calculo': 'Fórmula de Cálculo',
         }
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cant': forms.NumberInput(attrs={'class': _input_class}),
+            'formula_calculo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: (Ancho * 2) + (Alto * 2)'}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 

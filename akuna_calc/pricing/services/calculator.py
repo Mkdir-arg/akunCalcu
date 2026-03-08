@@ -615,8 +615,16 @@ class PriceCalculator:
             accesorio = self._get_accesorio(despiece.accesorio)
             if not accesorio:
                 continue
-            # Multiplicar por la cantidad por defecto del accesorio
-            cantidad_total = cantidad_formula * _to_float(accesorio.cant or 1)
+            
+            # Calcular cantidad según tipo_calculo
+            if accesorio.tipo_calculo == 'formula' and accesorio.formula_calculo:
+                # Evaluar fórmula con variables Ancho y Alto
+                cantidad_calculada = self._eval_formula(accesorio.formula_calculo, variables)
+                cantidad_total = cantidad_formula * cantidad_calculada
+            else:
+                # Usar cantidad fija (cant)
+                cantidad_total = cantidad_formula * _to_float(accesorio.cant or 1)
+            
             precio_total = cantidad_total * _to_float(accesorio.precio)
             items.append(
                 {
