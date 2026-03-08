@@ -348,8 +348,34 @@ def hoja_edit(request, pk):
     perfiles_json = json.dumps(list(perfiles))
     
     if request.method == 'POST':
-        # Si es una petición AJAX para guardar solo fórmulas
+        # Si es una petición AJAX para guardar solo fórmulas o accesorios
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'HTTP_X_REQUESTED_WITH' in request.META:
+            # Guardar accesorios
+            if 'save_accesorios' in request.POST:
+                try:
+                    DespieceAccesoriosHoja.objects.filter(hoja=obj).delete()
+                    index = 0
+                    guardadas = 0
+                    while f'accesorio_{index}' in request.POST:
+                        accesorio = request.POST.get(f'accesorio_{index}')
+                        obligatorio = 'Si' if request.POST.get(f'obligatorio_{index}') == 'on' else 'No'
+                        
+                        if accesorio:
+                            max_id = DespieceAccesoriosHoja.objects.aggregate(Max('id'))['id__max'] or 0
+                            DespieceAccesoriosHoja.objects.create(
+                                id=max_id + 1,
+                                hoja=obj,
+                                accesorio=accesorio,
+                                formula_cantidad='1',
+                                obligatorio=obligatorio
+                            )
+                            guardadas += 1
+                        index += 1
+                    return JsonResponse({'ok': True, 'guardadas': guardadas})
+                except Exception as e:
+                    return JsonResponse({'error': str(e)}, status=500)
+            
+            # Guardar fórmulas
             try:
                 DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
                 index = 0
