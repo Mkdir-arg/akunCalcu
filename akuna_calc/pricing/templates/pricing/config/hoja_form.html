@@ -300,27 +300,35 @@ function guardarAccesorios() {
         },
         body: formData,
     })
-    .then(r => r.json())
+    .then(async (r) => {
+        const text = await r.text();
+        let data = {};
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (e) {
+            throw new Error(`Respuesta inválida del servidor (HTTP ${r.status}).`);
+        }
+        if (!r.ok || !data.ok) {
+            throw new Error(data.error || `Error HTTP ${r.status} al guardar.`);
+        }
+        return data;
+    })
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        if (data.ok) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Accesorios guardados',
-                text: `Se guardaron ${data.guardadas} accesorio(s) correctamente.`,
-                confirmButtonColor: '#3b82f6',
-                timer: 2500,
-                timerProgressBar: true,
-            });
-        } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudieron guardar los accesorios.', confirmButtonColor: '#3b82f6' });
-        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Accesorios guardados',
+            text: `Se guardaron ${data.guardadas} accesorio(s) correctamente.`,
+            confirmButtonColor: '#3b82f6',
+            timer: 2500,
+            timerProgressBar: true,
+        });
     })
-    .catch(() => {
+    .catch((err) => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.', confirmButtonColor: '#3b82f6' });
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.', confirmButtonColor: '#3b82f6' });
     });
 }
 </script>

@@ -1,5 +1,7 @@
 """Vistas de configuración para ABMs de pricing."""
 
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -13,6 +15,8 @@ from .forms import (
     VidrioCreateForm, VidrioEditForm,
     TratamientoForm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def is_staff(user):
@@ -353,6 +357,14 @@ def hoja_edit(request, pk):
             # Guardar accesorios
             if 'save_accesorios' in request.POST:
                 try:
+                    accesorios_recibidos = [
+                        key for key in request.POST.keys() if key.startswith('accesorio_')
+                    ]
+                    logger.warning(
+                        "save_accesorios recibido hoja_id=%s filas=%s",
+                        obj.id,
+                        len(accesorios_recibidos),
+                    )
                     DespieceAccesoriosHoja.objects.filter(hoja=obj).delete()
                     index = 0
                     guardadas = 0
@@ -371,8 +383,18 @@ def hoja_edit(request, pk):
                             )
                             guardadas += 1
                         index += 1
+                    logger.warning(
+                        "save_accesorios guardado hoja_id=%s guardadas=%s",
+                        obj.id,
+                        guardadas,
+                    )
                     return JsonResponse({'ok': True, 'guardadas': guardadas})
                 except Exception as e:
+                    logger.exception(
+                        "Error en save_accesorios hoja_id=%s: %s",
+                        obj.id,
+                        str(e),
+                    )
                     return JsonResponse({'error': str(e)}, status=500)
             
             # Guardar fórmulas
