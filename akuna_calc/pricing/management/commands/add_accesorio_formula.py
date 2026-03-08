@@ -9,7 +9,7 @@ class Command(BaseCommand):
         with connection.cursor() as cursor:
             # tipo_calculo en accesorios
             try:
-                cursor.execute("ALTER TABLE accesorios ADD COLUMN tipo_calculo TEXT DEFAULT 'unidad'")
+                cursor.execute("ALTER TABLE accesorios ADD COLUMN tipo_calculo TEXT")
                 self.stdout.write(self.style.SUCCESS('✓ Campo tipo_calculo agregado a accesorios'))
             except Exception as e:
                 if '1060' in str(e):
