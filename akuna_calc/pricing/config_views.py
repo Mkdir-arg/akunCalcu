@@ -217,46 +217,87 @@ def marco_create(request):
 @login_required
 @user_passes_test(is_staff)
 def marco_edit(request, pk):
+    import json as _json
     obj = get_object_or_404(Marco, pk=pk)
     form = MarcoForm(request.POST or None, instance=obj)
-    
-    from .models import DespiecePerfilesMarco
+
+    from .models import DespiecePerfilesMarco, DespieceAccesoriosMarco
     formulas = []
+    accesorios_marco = []
     try:
         formulas = list(DespiecePerfilesMarco.objects.filter(marco=obj))
+        accesorios_marco = list(DespieceAccesoriosMarco.objects.filter(marco=obj))
     except:
         pass
-    
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        
-        # Eliminar fórmulas existentes y crear nuevas
-        if 'formula_cantidad_0' in request.POST:
+
+    accesorios_marco_json = _json.dumps([
+        {'accesorio': a.accesorio, 'obligatorio': a.obligatorio or 'No'}
+        for a in accesorios_marco
+    ])
+
+    if request.method == 'POST':
+        # AJAX: guardar solo accesorios
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and 'save_accesorios' in request.POST:
             try:
-                DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+                DespieceAccesoriosMarco.objects.filter(marco=obj).delete()
                 index = 0
-                while f'formula_cantidad_{index}' in request.POST:
-                    variable = request.POST.get(f'formula_variable_{index}')
-                    operador = request.POST.get(f'formula_operador_{index}')
-                    valor = request.POST.get(f'formula_valor_{index}')
-                    formula_texto = f"{variable} {operador} {valor}"
-                    
-                    max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
-                    DespiecePerfilesMarco.objects.create(
-                        id=max_id + 1,
-                        marco=obj,
-                        formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                        formula_perfil=formula_texto,
-                        angulo=request.POST.get(f'formula_angulo_{index}'),
-                        perfil=request.POST.get(f'formula_perfil_{index}')
-                    )
+                guardadas = 0
+                while f'accesorio_{index}' in request.POST:
+                    accesorio = request.POST.get(f'accesorio_{index}')
+                    obligatorio = 'Si' if request.POST.get(f'obligatorio_{index}') == 'on' else 'No'
+                    if accesorio:
+                        max_id = DespieceAccesoriosMarco.objects.aggregate(Max('id'))['id__max'] or 0
+                        DespieceAccesoriosMarco.objects.create(
+                            id=max_id + 1,
+                            marco=obj,
+                            accesorio=accesorio,
+                            formula_cantidad='1',
+                            obligatorio=obligatorio,
+                        )
+                        guardadas += 1
                     index += 1
+                return JsonResponse({'ok': True, 'guardadas': guardadas})
             except Exception as e:
-                messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
-        
-        messages.success(request, 'Marco actualizado correctamente.')
-        return redirect('config-marcos')
-    return render(request, 'pricing/config/marco_form.html', {'form': form, 'titulo': 'Editar Marco', 'cancel_url': 'config-marcos', 'object': obj, 'formulas': formulas})
+                return JsonResponse({'error': str(e)}, status=500)
+
+        if form.is_valid():
+            form.save()
+
+            # Eliminar fórmulas existentes y crear nuevas
+            if 'formula_cantidad_0' in request.POST:
+                try:
+                    DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+                    index = 0
+                    while f'formula_cantidad_{index}' in request.POST:
+                        variable = request.POST.get(f'formula_variable_{index}')
+                        operador = request.POST.get(f'formula_operador_{index}')
+                        valor = request.POST.get(f'formula_valor_{index}')
+                        formula_texto = f"{variable} {operador} {valor}"
+
+                        max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
+                        DespiecePerfilesMarco.objects.create(
+                            id=max_id + 1,
+                            marco=obj,
+                            formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
+                            formula_perfil=formula_texto,
+                            angulo=request.POST.get(f'formula_angulo_{index}'),
+                            perfil=request.POST.get(f'formula_perfil_{index}')
+                        )
+                        index += 1
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+
+            messages.success(request, 'Marco actualizado correctamente.')
+            return redirect('config-marcos')
+
+    return render(request, 'pricing/config/marco_form.html', {
+        'form': form,
+        'titulo': 'Editar Marco',
+        'cancel_url': 'config-marcos',
+        'object': obj,
+        'formulas': formulas,
+        'accesorios_marco_json': accesorios_marco_json,
+    })
 
 
 @login_required

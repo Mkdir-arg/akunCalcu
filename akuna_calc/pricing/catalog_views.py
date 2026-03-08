@@ -80,7 +80,7 @@ class AccesoriosListView(APIView):
         tipo = request.query_params.get('tipo')
         qs = Accesorio.objects.exclude(bloqueado='Si')
         if tipo:
-            qs = qs.filter(tipo=tipo)
+            qs = qs.filter(tipo__iexact=tipo)
         accesorios = qs.values('codigo', 'descripcion', 'precio')
         return Response(list(accesorios))
 
