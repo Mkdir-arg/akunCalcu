@@ -68,7 +68,8 @@ const cantField = document.getElementById('cant_field');
 const formulaField = document.getElementById('formula_field');
 
 function toggleFields() {
-    if (tipoCalculo.value === 'formula') {
+    const value = $('#id_tipo_calculo').val();
+    if (value === 'formula') {
         cantField.style.display = 'none';
         formulaField.style.display = 'block';
     } else {
@@ -77,7 +78,8 @@ function toggleFields() {
     }
 }
 
-tipoCalculo.addEventListener('change', toggleFields);
+// Usar evento de Select2
+$('#id_tipo_calculo').on('change', toggleFields);
 toggleFields();
 </script>
 {% endblock %}
