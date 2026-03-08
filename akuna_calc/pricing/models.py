@@ -262,7 +262,8 @@ class Accesorio(models.Model):
     unidad = models.FloatField(db_column="UNIDAD", null=True, blank=True)
     moneda = models.IntegerField(db_column="MONEDA", null=True, blank=True)
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
-    tipo = models.IntegerField(db_column="Tipo", null=True, blank=True)
+    tipo = models.TextField(db_column="Tipo", null=True, blank=True)
+    cant = models.IntegerField(db_column="cant", null=True, blank=True, default=1)
 
     class Meta:
         managed = False

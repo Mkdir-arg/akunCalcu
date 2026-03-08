@@ -23,6 +23,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Código</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
                         <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Precio</th>
+                        <th class="hidden lg:table-cell px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -33,6 +34,9 @@
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ accesorio.codigo }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ accesorio.descripcion }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ accesorio.precio|default:"-" }}</td>
+                        <td class="hidden lg:table-cell px-6 py-4 text-center">
+                            <span class="px-3 py-1 {% if accesorio.tipo == 'marco' %}bg-blue-100 text-blue-800{% else %}bg-purple-100 text-purple-800{% endif %} rounded-full text-xs font-semibold uppercase">{{ accesorio.tipo|default:"-" }}</span>
+                        </td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if accesorio.bloqueado == 'Si' %}
                                 <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
@@ -55,7 +59,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay accesorios registrados</p>
                         </td>

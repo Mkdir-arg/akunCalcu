@@ -267,22 +267,56 @@ class PerfilEditForm(forms.ModelForm):
 
 
 class AccesorioCreateForm(forms.ModelForm):
+    TIPO_CHOICES = [
+        ('', '---------'),
+        ('hoja', 'Hoja'),
+        ('marco', 'Marco'),
+    ]
+    
+    tipo = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Tipo',
+        required=False
+    )
+    
     class Meta:
         model = Accesorio
-        fields = ['codigo', 'descripcion', 'precio']
+        fields = ['codigo', 'descripcion', 'cant', 'tipo', 'precio']
+        labels = {
+            'cant': 'Cantidad',
+        }
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'cant': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 
 
 class AccesorioEditForm(forms.ModelForm):
+    TIPO_CHOICES = [
+        ('', '---------'),
+        ('hoja', 'Hoja'),
+        ('marco', 'Marco'),
+    ]
+    
+    tipo = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Tipo',
+        required=False
+    )
+    
     class Meta:
         model = Accesorio
-        fields = ['descripcion', 'precio']
+        fields = ['descripcion', 'cant', 'tipo', 'precio']
+        labels = {
+            'cant': 'Cantidad',
+        }
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'cant': forms.NumberInput(attrs={'class': _input_class}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 
@@ -291,7 +325,7 @@ class VidrioCreateForm(forms.ModelForm):
     from productos.models import Producto as ProductoComercial
     
     producto_id = forms.ModelChoiceField(
-        queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
+        queryset=ProductoComercial.objects.filter(activo=True, categoria='Vidrio'),
         widget=forms.Select(attrs={'class': _select_class}),
         label='Interior',
         required=False
@@ -333,7 +367,7 @@ class VidrioEditForm(forms.ModelForm):
     from productos.models import Producto as ProductoComercial
     
     producto_id = forms.ModelChoiceField(
-        queryset=ProductoComercial.objects.filter(activo=True, categoria='vidrios'),
+        queryset=ProductoComercial.objects.filter(activo=True, categoria='Vidrio'),
         widget=forms.Select(attrs={'class': _select_class}),
         label='Interior',
         required=False
