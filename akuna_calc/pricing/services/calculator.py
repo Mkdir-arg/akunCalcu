@@ -609,18 +609,20 @@ class PriceCalculator:
         for despiece in despieces:
             if not despiece.accesorio:
                 continue
-            cantidad = self._eval_formula(despiece.formula_cantidad, variables)
-            if cantidad <= 0:
+            cantidad_formula = self._eval_formula(despiece.formula_cantidad, variables)
+            if cantidad_formula <= 0:
                 continue
             accesorio = self._get_accesorio(despiece.accesorio)
             if not accesorio:
                 continue
-            precio_total = cantidad * _to_float(accesorio.precio)
+            # Multiplicar por la cantidad por defecto del accesorio
+            cantidad_total = cantidad_formula * _to_float(accesorio.cant or 1)
+            precio_total = cantidad_total * _to_float(accesorio.precio)
             items.append(
                 {
                     "codigo": accesorio.codigo,
                     "descripcion": accesorio.descripcion,
-                    "cantidad": cantidad,
+                    "cantidad": cantidad_total,
                     "precio_unitario": _to_float(accesorio.precio),
                     "precio_total": round(precio_total, 2),
                 }
