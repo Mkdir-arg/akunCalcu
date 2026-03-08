@@ -31,6 +31,7 @@ from ..models import (
     Marco,
     Mosquitero,
     Perfil,
+    Producto,
     Tratamiento,
     Vidrio,
     VidrioRepartido,
@@ -206,36 +207,20 @@ class PriceCalculator:
         if vidrio_codigo:
             vidrio = self._get_vidrio(vidrio_codigo)
             
-            # DEBUG: Imprimir valores
-            print(f"DEBUG Vidrio: codigo={vidrio.codigo}, producto_id={vidrio.producto_id}, tipo={type(vidrio.producto_id)}")
-            
             # Obtener precio del producto relacionado
             precio_m2 = 0.0
             if vidrio.producto_id:
                 try:
                     from productos.models import Producto as ProductoComercial
-                    # Convertir a int, manejando strings
                     prod_id = int(str(vidrio.producto_id).strip()) if vidrio.producto_id else None
-                    print(f"DEBUG: Buscando producto con ID={prod_id}")
-                    print(f"DEBUG: ProductoComercial model: {ProductoComercial._meta.db_table}")
-                    print(f"DEBUG: ProductoComercial fields: {[f.name for f in ProductoComercial._meta.fields]}")
                     if prod_id:
                         producto = ProductoComercial.objects.get(pk=prod_id)
-                        print(f"DEBUG: Producto encontrado: {producto}")
-                        print(f"DEBUG: Producto.__dict__: {producto.__dict__}")
                         precio_m2 = _to_float(producto.precio_m2)
-                        print(f"DEBUG: Producto encontrado, precio={precio_m2}")
                 except Exception as e:
-                    print(f"DEBUG ERROR: {e}")
-                    import traceback
-                    print(f"DEBUG TRACEBACK: {traceback.format_exc()}")
                     logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
                     precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
             else:
-                print(f"DEBUG: producto_id vacio, usando vidrio.precio={getattr(vidrio, 'precio', 0)}")
                 precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
-            
-            print(f"DEBUG: precio_m2 final={precio_m2}")
             
             # Calcular dimensiones usando fórmulas de rebaje
             ancho_vidrio = cleaned["ancho_mm"]
@@ -256,12 +241,10 @@ class PriceCalculator:
                 try:
                     producto_marco = self._get_producto(cleaned["producto_id"])
                     cantidad_hojas_producto = int(producto_marco.cantidad_hojas) if producto_marco.cantidad_hojas else 1
-                    print(f"DEBUG: Producto ID={cleaned['producto_id']}, cantidad_hojas={cantidad_hojas_producto}")
                 except Exception as e:
-                    print(f"DEBUG: Error obteniendo cantidad_hojas: {e}")
+                    logger.warning(f"Error obteniendo cantidad_hojas: {e}")
                     cantidad_hojas_producto = 1
             
-            print(f"DEBUG: cantidad_hojas_producto final={cantidad_hojas_producto}")
             precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
             vidrio_detalle = {
                 "codigo": vidrio.codigo,
