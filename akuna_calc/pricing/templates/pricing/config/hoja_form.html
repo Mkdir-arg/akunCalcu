@@ -227,7 +227,7 @@ function guardarFormulas() {
 let accesorioIndex = 0;
 let accesorios = [];
 
-fetch('/pricing/api/accesorios-simple/?tipo=hoja')
+fetch('/pricing/api/pricing/accesorios/?tipo=hoja')
     .then(r => r.json())
     .then(data => { accesorios = data; })
     .catch(e => console.error('Error cargando accesorios:', e));

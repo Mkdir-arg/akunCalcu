@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
 let accesorioIndex = 0;
 let accesorios = [];
 
-fetch('/pricing/api/accesorios-simple/?tipo=marco')
+fetch('/pricing/api/pricing/accesorios/?tipo=marco')
     .then(r => r.json())
     .then(data => { accesorios = data; })
     .catch(e => console.error('Error cargando accesorios:', e));
