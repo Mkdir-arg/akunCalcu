@@ -255,10 +255,13 @@ class PriceCalculator:
             if cleaned.get("producto_id"):
                 try:
                     producto_marco = self._get_producto(cleaned["producto_id"])
-                    cantidad_hojas_producto = producto_marco.cantidad_hojas or 1
-                except:
+                    cantidad_hojas_producto = int(producto_marco.cantidad_hojas) if producto_marco.cantidad_hojas else 1
+                    print(f"DEBUG: Producto ID={cleaned['producto_id']}, cantidad_hojas={cantidad_hojas_producto}")
+                except Exception as e:
+                    print(f"DEBUG: Error obteniendo cantidad_hojas: {e}")
                     cantidad_hojas_producto = 1
             
+            print(f"DEBUG: cantidad_hojas_producto final={cantidad_hojas_producto}")
             precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
             vidrio_detalle = {
                 "codigo": vidrio.codigo,
