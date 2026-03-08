@@ -505,6 +505,7 @@ class DespieceAccesoriosMarco(models.Model):
     formula_cantidad = models.TextField(db_column="Formuladecantidad", null=True, blank=True)
     accesorio = models.TextField(db_column="Accesorio", null=True, blank=True)
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
+    obligatorio = models.TextField(db_column="obligatorio", null=True, blank=True)
 
     class Meta:
         managed = False
@@ -526,6 +527,7 @@ class DespieceAccesoriosHoja(models.Model):
     nombre_conjunto = models.TextField(db_column="Nombre_conjunto", null=True, blank=True)
     aparece_presupuesto = models.TextField(db_column="Aparece_presupuesto", null=True, blank=True)
     mo_especifica = models.IntegerField(db_column="Mo_especifica", null=True, blank=True)
+    obligatorio = models.TextField(db_column="obligatorio", null=True, blank=True)
 
     class Meta:
         managed = False

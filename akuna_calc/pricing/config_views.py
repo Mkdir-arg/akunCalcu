@@ -333,7 +333,7 @@ def hoja_edit(request, pk):
     obj = get_object_or_404(Hoja, pk=pk)
     form = HojaForm(request.POST or None, instance=obj)
     
-    from .models import DespiecePerfilesHoja
+    from .models import DespiecePerfilesHoja, DespieceAccesoriosHoja
     import json
     
     formulas = []
@@ -378,7 +378,7 @@ def hoja_edit(request, pk):
         if form.is_valid():
             form.save()
             
-            # Guardar fórmulas con formato estructurado
+            # Guardar fórmulas
             if 'perfil_0' in request.POST:
                 try:
                     DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
@@ -402,6 +402,28 @@ def hoja_edit(request, pk):
                         index += 1
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
+            
+            # Guardar accesorios
+            if 'accesorio_0' in request.POST:
+                try:
+                    DespieceAccesoriosHoja.objects.filter(hoja=obj).delete()
+                    index = 0
+                    while f'accesorio_{index}' in request.POST:
+                        accesorio = request.POST.get(f'accesorio_{index}')
+                        obligatorio = 'Si' if f'obligatorio_{index}' in request.POST else 'No'
+                        
+                        if accesorio:
+                            max_id = DespieceAccesoriosHoja.objects.aggregate(Max('id'))['id__max'] or 0
+                            DespieceAccesoriosHoja.objects.create(
+                                id=max_id + 1,
+                                hoja=obj,
+                                accesorio=accesorio,
+                                formula_cantidad='1',
+                                obligatorio=obligatorio
+                            )
+                        index += 1
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar los accesorios: {str(e)}')
             
             messages.success(request, 'Hoja actualizada correctamente.')
             return redirect('config-hojas')
