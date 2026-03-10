@@ -219,13 +219,12 @@ class PriceCalculator:
                 if ancho_vidrio > 0 and alto_vidrio > 0:
                     area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
 
-                    cantidad_hojas_producto = 1
-                    if cleaned.get("producto_id"):
-                        try:
-                            producto_marco = self._get_producto(cleaned["producto_id"])
-                            cantidad_hojas_producto = int(producto_marco.cantidad_hojas) if producto_marco.cantidad_hojas else 1
-                        except Exception as e:
-                            logger.warning(f"Error obteniendo cantidad_hojas: {e}")
+                    # Obtener cantidad_hojas del producto del marco (ya cargado), no del frontend
+                    try:
+                        cantidad_hojas_producto = int(marco.producto.cantidad_hojas) if marco.producto.cantidad_hojas else 1
+                    except Exception as e:
+                        logger.warning(f"Error obteniendo cantidad_hojas del marco: {e}")
+                        cantidad_hojas_producto = 1
 
                     precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
                     vidrio_detalle = {
@@ -329,7 +328,7 @@ class PriceCalculator:
 
     def _get_marco(self, marco_id: int) -> Marco:
         try:
-            return Marco.objects.get(pk=marco_id)
+            return Marco.objects.select_related('producto').get(pk=marco_id)
         except Marco.DoesNotExist as exc:
             raise PricingError("Marco inexistente.") from exc
 
