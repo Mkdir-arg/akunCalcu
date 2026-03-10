@@ -29,4 +29,31 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const extrusoraSelect = document.getElementById('id_extrusora');
+    const lineaSelect = document.getElementById('id_linea');
+
+    if (extrusoraSelect) {
+        extrusoraSelect.addEventListener('change', function() {
+            const extrusoraId = this.value;
+            lineaSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (extrusoraId) {
+                fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(linea => {
+                            const option = document.createElement('option');
+                            option.value = linea.id;
+                            option.textContent = linea.nombre;
+                            lineaSelect.appendChild(option);
+                        });
+                    });
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
