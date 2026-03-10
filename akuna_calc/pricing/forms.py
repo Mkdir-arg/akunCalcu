@@ -39,6 +39,19 @@ class ProductoForm(forms.ModelForm):
 
 
 class MarcoForm(forms.ModelForm):
+    extrusora = forms.ModelChoiceField(
+        queryset=Extrusora.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Extrusora'
+    )
+    linea = forms.ModelChoiceField(
+        queryset=Linea.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': _select_class}),
+        label='Línea'
+    )
+    
     class Meta:
         model = Marco
         fields = ['producto', 'descripcion']
@@ -49,6 +62,14 @@ class MarcoForm(forms.ModelForm):
             'producto': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
+        
+        if self.instance and self.instance.pk and self.instance.producto:
+            self.fields['extrusora'].initial = self.instance.producto.extrusora
+            self.fields['linea'].initial = self.instance.producto.linea
 
 
 class HojaForm(forms.ModelForm):
