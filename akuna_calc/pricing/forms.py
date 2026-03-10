@@ -59,7 +59,7 @@ class MarcoForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'producto': forms.Select(attrs={'class': _select_class}),
+            'producto': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
     
