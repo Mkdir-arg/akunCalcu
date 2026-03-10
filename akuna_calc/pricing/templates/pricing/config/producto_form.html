@@ -34,24 +34,47 @@
 document.addEventListener('DOMContentLoaded', function() {
     const extrusoraSelect = document.getElementById('id_extrusora');
     const lineaSelect = document.getElementById('id_linea');
+    const emptyOption = '<option value="">---------</option>';
+
+    function resetSelect(selectEl, disabled = true) {
+        selectEl.innerHTML = emptyOption;
+        selectEl.disabled = disabled;
+    }
+
+    function populateSelect(selectEl, items, textKey, selectedId) {
+        selectEl.innerHTML = emptyOption;
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item[textKey] || `ID ${item.id}`;
+            if (selectedId && String(item.id) === String(selectedId)) option.selected = true;
+            selectEl.appendChild(option);
+        });
+        selectEl.disabled = items.length === 0;
+    }
+
+    async function cargarLineas(extrusoraId, selectedLineaId) {
+        resetSelect(lineaSelect, true);
+        if (!extrusoraId) return;
+        try {
+            const data = await fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`).then(r => r.json());
+            populateSelect(lineaSelect, data, 'nombre', selectedLineaId);
+        } catch (e) {
+            console.error('Error cargando líneas:', e);
+        }
+    }
+
+    {% if object %}
+    // Modo edición: linea ya está server-rendered con el valor correcto, solo habilitarla
+    if (lineaSelect.options.length > 1) lineaSelect.disabled = false;
+    {% else %}
+    // Modo creación: deshabilitar linea hasta que se seleccione extrusora
+    resetSelect(lineaSelect, true);
+    {% endif %}
 
     if (extrusoraSelect) {
         extrusoraSelect.addEventListener('change', function() {
-            const extrusoraId = this.value;
-            lineaSelect.innerHTML = '<option value="">---------</option>';
-            
-            if (extrusoraId) {
-                fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        data.forEach(linea => {
-                            const option = document.createElement('option');
-                            option.value = linea.id;
-                            option.textContent = linea.nombre;
-                            lineaSelect.appendChild(option);
-                        });
-                    });
-            }
+            cargarLineas(this.value);
         });
     }
 });

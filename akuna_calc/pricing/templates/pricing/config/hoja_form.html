@@ -92,6 +92,100 @@
 </div>
 
 <script>
+// Cascade: Extrusora → Línea → Producto → Marco
+document.addEventListener('DOMContentLoaded', function() {
+    const extrusoraSelect = document.getElementById('id_extrusora');
+    const lineaSelect = document.getElementById('id_linea');
+    const productoSelect = document.getElementById('id_producto');
+    const marcoSelect = document.getElementById('id_marco');
+    const emptyOption = '<option value="">---------</option>';
+
+    function resetSelect(selectEl, disabled = true) {
+        if (!selectEl) return;
+        selectEl.innerHTML = emptyOption;
+        selectEl.disabled = disabled;
+    }
+
+    function populateSelect(selectEl, items, textKey, selectedId) {
+        if (!selectEl) return;
+        selectEl.innerHTML = emptyOption;
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item[textKey] || `ID ${item.id}`;
+            if (selectedId && String(item.id) === String(selectedId)) option.selected = true;
+            selectEl.appendChild(option);
+        });
+        selectEl.disabled = items.length === 0;
+    }
+
+    async function cargarLineas(extrusoraId, selectedId) {
+        resetSelect(lineaSelect);
+        resetSelect(productoSelect);
+        resetSelect(marcoSelect);
+        if (!extrusoraId) return;
+        const data = await fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`).then(r => r.json());
+        populateSelect(lineaSelect, data, 'nombre', selectedId);
+    }
+
+    async function cargarProductos(lineaId, selectedId) {
+        resetSelect(productoSelect);
+        resetSelect(marcoSelect);
+        if (!lineaId) return;
+        const data = await fetch(`/pricing/api/pricing/productos/?linea_id=${lineaId}`).then(r => r.json());
+        populateSelect(productoSelect, data, 'descripcion', selectedId);
+    }
+
+    async function cargarMarcos(productoId, selectedId) {
+        resetSelect(marcoSelect);
+        if (!productoId) return;
+        const data = await fetch(`/pricing/api/pricing/marcos/?producto_id=${productoId}`).then(r => r.json());
+        populateSelect(marcoSelect, data, 'descripcion', selectedId);
+    }
+
+    {% if hoja and hoja.marco %}
+    // Modo edición: pre-cargar cascada con los valores actuales
+    const _initExtrusoraId = "{{ hoja.marco.producto.extrusora.id }}";
+    const _initLineaId = "{{ hoja.marco.producto.linea.id }}";
+    const _initProductoId = "{{ hoja.marco.producto.id }}";
+    const _initMarcoId = "{{ hoja.marco.id }}";
+
+    if (extrusoraSelect && _initExtrusoraId) {
+        extrusoraSelect.value = _initExtrusoraId;
+        cargarLineas(_initExtrusoraId, _initLineaId).then(() => {
+            lineaSelect.value = _initLineaId;
+            cargarProductos(_initLineaId, _initProductoId).then(() => {
+                productoSelect.value = _initProductoId;
+                cargarMarcos(_initProductoId, _initMarcoId).then(() => {
+                    marcoSelect.value = _initMarcoId;
+                });
+            });
+        });
+    }
+    {% else %}
+    // Modo creación: deshabilitar dependientes hasta selección
+    resetSelect(lineaSelect);
+    resetSelect(productoSelect);
+    resetSelect(marcoSelect);
+    {% endif %}
+
+    if (extrusoraSelect) {
+        extrusoraSelect.addEventListener('change', function() {
+            cargarLineas(this.value);
+        });
+    }
+    if (lineaSelect) {
+        lineaSelect.addEventListener('change', function() {
+            cargarProductos(this.value);
+        });
+    }
+    if (productoSelect) {
+        productoSelect.addEventListener('change', function() {
+            cargarMarcos(this.value);
+        });
+    }
+});
+
 const perfiles = {{ perfiles_json|safe }};
 let formulaIndex = 0;
 
@@ -159,27 +253,15 @@ function eliminarFormula(btn) {
 }
 
 // Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
-document.getElementById('hojaForm').addEventListener('submit', function(e) {
-    console.log('=== DEBUG: Formulario antes de renumerar ===');
+document.getElementById('hojaForm').addEventListener('submit', function() {
     document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
-        console.log(`Fila ${idx}:`);
         row.querySelectorAll('[name]').forEach(input => {
-            console.log(`  ${input.name} = ${input.value}`);
-            const baseName = input.name.replace(/_\d+$/, '');
-            input.name = `${baseName}_${idx}`;
+            input.name = input.name.replace(/_\d+$/, '_' + idx);
         });
     });
-    // Renumerar accesorios
     document.querySelectorAll('#accesoriosBody tr').forEach((row, idx) => {
         row.querySelectorAll('[name]').forEach(input => {
-            const baseName = input.name.replace(/_\d+$/, '');
-            input.name = `${baseName}_${idx}`;
-        });
-    });
-    console.log('=== DEBUG: Formulario después de renumerar ===');
-    document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
-        row.querySelectorAll('[name]').forEach(input => {
-            console.log(`  ${input.name} = ${input.value}`);
+            input.name = input.name.replace(/_\d+$/, '_' + idx);
         });
     });
 });
