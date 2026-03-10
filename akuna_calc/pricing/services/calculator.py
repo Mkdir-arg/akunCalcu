@@ -200,13 +200,22 @@ class PriceCalculator:
                 accesorios_items,
             )
 
-        # Vidrios — se auto-detecta desde la hoja seleccionada
+        # Vidrios — usa el seleccionado por el usuario; si no hay, auto-detecta desde la hoja
         vidrio_detalle = None
         precio_vidrio = 0.0
-        if hoja_id:
-            vidrio = Vidrio.objects.filter(hoja_id=hoja_id).first()
-            if vidrio:
-                precio_m2 = _to_float(vidrio.precio)
+        vidrio_codigo = cleaned.get("vidrio_codigo")
+        vidrio_obj = None
+        if vidrio_codigo:
+            try:
+                vidrio_obj = self._get_vidrio(vidrio_codigo)
+            except PricingError:
+                logger.warning(f"Vidrio seleccionado no encontrado: {vidrio_codigo}")
+        elif hoja_id:
+            vidrio_obj = Vidrio.objects.filter(hoja_id=hoja_id).first()
+
+        if vidrio_obj:
+            vidrio = vidrio_obj
+            precio_m2 = _to_float(vidrio.precio)
 
                 ancho_vidrio = cleaned["ancho_mm"]
                 alto_vidrio = cleaned["alto_mm"]

@@ -93,6 +93,7 @@ const Cotizador = () => {
     producto_id: null,
     marco_id: null,
     hoja_id: null,
+    vidrio_codigo: null,
     interior_id: null,
     ancho_mm: 1200,
     alto_mm: 1500,
@@ -112,6 +113,7 @@ const Cotizador = () => {
   const [contravidriosExterior, setContravidriosExterior] = useState([]);
   const [cruces, setCruces] = useState([]);
   const [vidriosRepartidos, setVidriosRepartidos] = useState([]);
+  const [vidrios, setVidrios] = useState([]);
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -158,9 +160,11 @@ const Cotizador = () => {
     if (config.hoja_id) {
       fetch(`/pricing/api/pricing/interiores/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setInteriores);
       fetch(`/pricing/api/pricing/mosquiteros/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setMosquiteros);
+      fetch(`/pricing/api/pricing/vidrios/?hoja_id=${config.hoja_id}`).then(r => r.json()).then(setVidrios);
     } else {
       setInteriores([]);
       setMosquiteros([]);
+      setVidrios([]);
     }
   }, [config.hoja_id]);
 
@@ -244,8 +248,14 @@ const Cotizador = () => {
             placeholder={config.producto_id ? "Selecciona un marco" : "Primero selecciona un producto"} />
 
           <Select label="Hoja (Opcional)" options={hojas} value={config.hoja_id}
-            onChange={(id) => setConfig({ ...config, hoja_id: id, interior_id: null })}
+            onChange={(id) => setConfig({ ...config, hoja_id: id, vidrio_codigo: null, interior_id: null })}
             placeholder={config.marco_id ? "Selecciona una hoja" : "Primero selecciona un marco"} />
+
+          {config.hoja_id && vidrios.length > 0 && (
+            <Select label="Vidrio" options={vidrios} value={config.vidrio_codigo}
+              onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
+              placeholder="Selecciona un vidrio" />
+          )}
 
           <Select label="Tratamiento (Opcional)" options={tratamientos} value={config.tratamiento_id}
             onChange={(id) => setConfig({ ...config, tratamiento_id: id })}

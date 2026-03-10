@@ -65,8 +65,11 @@ class InterioresListView(APIView):
 
 class VidriosListView(APIView):
     def get(self, request):
-        vidrios = Vidrio.objects.exclude(bloqueado='Si').values('codigo', 'descripcion', 'precio')
-        return Response(list(vidrios))
+        hoja_id = request.query_params.get('hoja_id')
+        qs = Vidrio.objects.exclude(bloqueado='Si')
+        if hoja_id:
+            qs = qs.filter(hoja_id=hoja_id)
+        return Response(list(qs.values('codigo', 'descripcion', 'precio')))
 
 
 class PerfilesListView(APIView):
