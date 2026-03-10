@@ -73,6 +73,7 @@ class MarcoForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
 
         if self.instance and self.instance.pk and self.instance.producto:
             self.fields['extrusora'].initial = self.instance.producto.extrusora
@@ -121,7 +122,8 @@ class HojaForm(forms.ModelForm):
         self.fields['linea'].queryset = Linea.objects.none()
         self.fields['producto'].queryset = Producto.objects.none()
         self.fields['marco'].queryset = Marco.objects.none()
-        
+        self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
+
         if self.instance and self.instance.pk and self.instance.marco:
             self.fields['extrusora'].initial = self.instance.marco.producto.extrusora
             self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.marco.producto.extrusora)
@@ -170,6 +172,7 @@ class InteriorForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'hoja', 'descripcion'])
 
         if self.instance and self.instance.pk and self.instance.hoja:
             self.fields['extrusora'].initial = self.instance.hoja.marco.producto.extrusora

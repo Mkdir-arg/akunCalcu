@@ -330,8 +330,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    {% if object and object.producto %}
+    // Modo edición: inicializar cascada con los valores actuales
+    const _initExtrusoraId = "{{ object.producto.extrusora.id }}";
+    const _initLineaId = "{{ object.producto.linea.id }}";
+    const _initProductoId = "{{ object.producto.id }}";
+
+    if (extrusoraSelect && _initExtrusoraId) {
+        extrusoraSelect.value = _initExtrusoraId;
+        cargarLineas(_initExtrusoraId).then(() => {
+            lineaSelect.value = _initLineaId;
+            refreshSelect2(lineaSelect);
+            cargarProductos(_initLineaId).then(() => {
+                productoSelect.value = _initProductoId;
+                refreshSelect2(productoSelect);
+            });
+        });
+    }
+    {% else %}
     resetSelect(lineaSelect, true);
     resetSelect(productoSelect, true);
+    {% endif %}
 
     if (extrusoraSelect) {
         extrusoraSelect.addEventListener('change', function() {
