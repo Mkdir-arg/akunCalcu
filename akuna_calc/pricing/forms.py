@@ -191,12 +191,6 @@ class PerfilCreateForm(forms.ModelForm):
         ('Hojas', 'Hojas'),
     ]
     
-    linea_id = forms.IntegerField(
-        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
-        label='Línea',
-        required=False
-    )
-    
     moneda = forms.ChoiceField(
         choices=MONEDA_CHOICES,
         widget=forms.Select(attrs={'class': _select_class}),
@@ -212,25 +206,21 @@ class PerfilCreateForm(forms.ModelForm):
     
     class Meta:
         model = Perfil
-        fields = ['codigo', 'linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
+        fields = ['codigo', 'linea', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
         labels = {
-            'linea_id': 'Línea',
+            'linea': 'Línea',
             'peso_metro': 'KG x Metro',
             'long_tira': 'Largo',
             'precio_kg': 'Precio x KG',
         }
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
+            'linea': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'peso_metro': forms.NumberInput(attrs={'class': _input_class, 'step': '0.001'}),
             'long_tira': forms.NumberInput(attrs={'class': _input_class}),
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        lineas = [(l.id, str(l)) for l in Linea.objects.all()]
-        self.fields['linea_id'].widget.choices = [('', '---------')] + lineas
 
 
 class PerfilEditForm(forms.ModelForm):
@@ -244,12 +234,6 @@ class PerfilEditForm(forms.ModelForm):
         ('Hojas', 'Hojas'),
     ]
     
-    linea_id = forms.IntegerField(
-        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
-        label='Línea',
-        required=False
-    )
-    
     moneda = forms.ChoiceField(
         choices=MONEDA_CHOICES,
         widget=forms.Select(attrs={'class': _select_class}),
@@ -265,24 +249,20 @@ class PerfilEditForm(forms.ModelForm):
     
     class Meta:
         model = Perfil
-        fields = ['linea_id', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
+        fields = ['linea', 'descripcion', 'peso_metro', 'long_tira', 'precio_kg', 'moneda', 'tipo_perfil']
         labels = {
-            'linea_id': 'Línea',
+            'linea': 'Línea',
             'peso_metro': 'KG x Metro',
             'long_tira': 'Largo',
             'precio_kg': 'Precio x KG',
         }
         widgets = {
+            'linea': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'peso_metro': forms.NumberInput(attrs={'class': _input_class, 'step': '0.001'}),
             'long_tira': forms.NumberInput(attrs={'class': _input_class}),
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        lineas = [(l.id, str(l)) for l in Linea.objects.all()]
-        self.fields['linea_id'].widget.choices = [('', '---------')] + lineas
 
 
 class AccesorioCreateForm(forms.ModelForm):

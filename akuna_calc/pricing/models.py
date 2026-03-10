@@ -229,7 +229,15 @@ class VidrioRepartido(models.Model):
 
 class Perfil(models.Model):
     codigo = models.TextField(db_column="NRO_PERFIL", primary_key=True)
-    linea_id = models.IntegerField(db_column="Idl_nea", null=True, blank=True)
+    linea = models.ForeignKey(
+        Linea,
+        db_column="Idl_nea",
+        on_delete=models.DO_NOTHING,
+        related_name="perfiles",
+        db_constraint=False,
+        null=True,
+        blank=True,
+    )
     color_id = models.IntegerField(db_column="COD_COLOR", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
     peso_metro = models.FloatField(db_column="PESO_METRO", null=True, blank=True)
