@@ -42,13 +42,13 @@ class MarcoForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
         label='Línea'
     )
     
