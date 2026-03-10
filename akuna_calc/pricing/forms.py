@@ -31,11 +31,19 @@ class ProductoForm(forms.ModelForm):
             'cantidad_hojas': 'Cantidad de Hojas',
         }
         widgets = {
-            'extrusora': forms.Select(attrs={'class': _select_class}),
-            'linea': forms.Select(attrs={'class': _select_class}),
+            'extrusora': forms.Select(attrs={'class': _select_class + ' no-select2'}),
+            'linea': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad_hojas': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['linea'].queryset = Linea.objects.none()
+        else:
+            if self.instance.extrusora:
+                self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.extrusora)
 
 
 class MarcoForm(forms.ModelForm):
