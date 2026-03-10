@@ -21,6 +21,8 @@
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Extrusora</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Línea</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Producto</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
@@ -30,6 +32,8 @@
                     {% for marco in marcos %}
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ marco.descripcion }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ marco.producto.extrusora.nombre }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ marco.producto.linea.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ marco.producto.descripcion }}</td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if marco.bloqueado == 'Si' %}
@@ -53,7 +57,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay marcos registrados</p>
                         </td>
