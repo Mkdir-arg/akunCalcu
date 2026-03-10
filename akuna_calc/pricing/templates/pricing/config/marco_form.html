@@ -262,45 +262,86 @@ document.addEventListener('DOMContentLoaded', function() {
     const extrusoraSelect = document.getElementById('id_extrusora');
     const lineaSelect = document.getElementById('id_linea');
     const productoSelect = document.getElementById('id_producto');
+    const emptyOption = '<option value="">---------</option>';
+
+    function refreshSelect2(selectEl) {
+        if (!selectEl || typeof window.jQuery === 'undefined') {
+            return;
+        }
+        window.jQuery(selectEl).trigger('change.select2');
+    }
+
+    function resetSelect(selectEl, disabled = true) {
+        if (!selectEl) {
+            return;
+        }
+        selectEl.innerHTML = emptyOption;
+        selectEl.disabled = disabled;
+        refreshSelect2(selectEl);
+    }
+
+    function populateSelect(selectEl, items, textKey) {
+        if (!selectEl) {
+            return;
+        }
+        selectEl.innerHTML = emptyOption;
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item[textKey] || `ID ${item.id}`;
+            selectEl.appendChild(option);
+        });
+        selectEl.disabled = items.length === 0;
+        refreshSelect2(selectEl);
+    }
+
+    async function cargarLineas(extrusoraId) {
+        resetSelect(lineaSelect, true);
+        resetSelect(productoSelect, true);
+        if (!extrusoraId) {
+            return;
+        }
+        try {
+            const response = await fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            populateSelect(lineaSelect, data, 'nombre');
+        } catch (error) {
+            console.error('Error cargando líneas:', error);
+        }
+    }
+
+    async function cargarProductos(lineaId) {
+        resetSelect(productoSelect, true);
+        if (!lineaId) {
+            return;
+        }
+        try {
+            const response = await fetch(`/pricing/api/pricing/productos/?linea_id=${lineaId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            populateSelect(productoSelect, data, 'descripcion');
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+        }
+    }
+
+    resetSelect(lineaSelect, true);
+    resetSelect(productoSelect, true);
 
     if (extrusoraSelect) {
         extrusoraSelect.addEventListener('change', function() {
-            const extrusoraId = this.value;
-            lineaSelect.innerHTML = '<option value="">---------</option>';
-            productoSelect.innerHTML = '<option value="">---------</option>';
-            
-            if (extrusoraId) {
-                fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        data.forEach(linea => {
-                            const option = document.createElement('option');
-                            option.value = linea.id;
-                            option.textContent = linea.nombre;
-                            lineaSelect.appendChild(option);
-                        });
-                    });
-            }
+            cargarLineas(this.value);
         });
     }
 
     if (lineaSelect) {
         lineaSelect.addEventListener('change', function() {
-            const lineaId = this.value;
-            productoSelect.innerHTML = '<option value="">---------</option>';
-            
-            if (lineaId) {
-                fetch(`/pricing/api/pricing/productos/?linea_id=${lineaId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        data.forEach(producto => {
-                            const option = document.createElement('option');
-                            option.value = producto.id;
-                            option.textContent = producto.descripcion;
-                            productoSelect.appendChild(option);
-                        });
-                    });
-            }
+            cargarProductos(this.value);
         });
     }
 });
