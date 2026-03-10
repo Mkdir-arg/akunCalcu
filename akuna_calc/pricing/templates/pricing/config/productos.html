@@ -21,8 +21,8 @@
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Extrusora</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Línea</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Extrusora</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -31,8 +31,8 @@
                     {% for producto in productos %}
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ producto.descripcion }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.extrusora.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.linea.nombre }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.extrusora.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if producto.bloqueado == 'Si' %}
                                 <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>

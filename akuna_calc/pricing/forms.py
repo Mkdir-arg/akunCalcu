@@ -80,19 +80,19 @@ class HojaForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
         label='Línea'
     )
     producto = forms.ModelChoiceField(
         queryset=Producto.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
         label='Producto'
     )
     
@@ -103,45 +103,50 @@ class HojaForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'marco': forms.Select(attrs={'class': _select_class}),
+            'marco': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad': forms.NumberInput(attrs={'class': _input_class}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['marco'].queryset = Marco.objects.filter(bloqueado__isnull=True) | Marco.objects.filter(bloqueado='No')
+        self.fields['linea'].queryset = Linea.objects.none()
+        self.fields['producto'].queryset = Producto.objects.none()
+        self.fields['marco'].queryset = Marco.objects.none()
         self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
         
         if self.instance and self.instance.pk and self.instance.marco:
             self.fields['extrusora'].initial = self.instance.marco.producto.extrusora
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.marco.producto.extrusora)
             self.fields['linea'].initial = self.instance.marco.producto.linea
+            self.fields['producto'].queryset = Producto.objects.filter(linea=self.instance.marco.producto.linea)
             self.fields['producto'].initial = self.instance.marco.producto
+            self.fields['marco'].queryset = Marco.objects.filter(producto=self.instance.marco.producto)
 
 
 class InteriorForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
         label='Línea'
     )
     producto = forms.ModelChoiceField(
         queryset=Producto.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
         label='Producto'
     )
     marco = forms.ModelChoiceField(
         queryset=Marco.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
         label='Marco'
     )
     
@@ -152,7 +157,7 @@ class InteriorForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'hoja': forms.Select(attrs={'class': _select_class}),
+            'hoja': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
     
