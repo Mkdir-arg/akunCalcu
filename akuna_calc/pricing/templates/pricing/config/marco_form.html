@@ -259,26 +259,49 @@ document.getElementById('marcoForm').addEventListener('submit', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    const productoSelect  = document.getElementById('id_producto');
     const extrusoraSelect = document.getElementById('id_extrusora');
-    const lineaSelect     = document.getElementById('id_linea');
+    const lineaSelect = document.getElementById('id_linea');
+    const productoSelect = document.getElementById('id_producto');
 
-    if (productoSelect) {
-        productoSelect.addEventListener('change', function() {
-            const productoId = this.value;
-            if (productoId) {
-                fetch(`/pricing/api/producto/${productoId}/`)
+    if (extrusoraSelect) {
+        extrusoraSelect.addEventListener('change', function() {
+            const extrusoraId = this.value;
+            lineaSelect.innerHTML = '<option value="">---------</option>';
+            productoSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (extrusoraId) {
+                fetch(`/pricing/api/pricing/lineas/?extrusora_id=${extrusoraId}`)
                     .then(r => r.json())
                     .then(data => {
-                        if (extrusoraSelect) extrusoraSelect.value = data.extrusora_id;
-                        if (lineaSelect)     lineaSelect.value     = data.linea_id;
-                    })
-                    .catch(error => console.error('Error:', error));
+                        data.forEach(linea => {
+                            const option = document.createElement('option');
+                            option.value = linea.id;
+                            option.textContent = linea.nombre;
+                            lineaSelect.appendChild(option);
+                        });
+                    });
             }
         });
-        if (productoSelect.value) {
-            productoSelect.dispatchEvent(new Event('change'));
-        }
+    }
+
+    if (lineaSelect) {
+        lineaSelect.addEventListener('change', function() {
+            const lineaId = this.value;
+            productoSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (lineaId) {
+                fetch(`/pricing/api/pricing/productos/?linea_id=${lineaId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(producto => {
+                            const option = document.createElement('option');
+                            option.value = producto.id;
+                            option.textContent = producto.descripcion;
+                            productoSelect.appendChild(option);
+                        });
+                    });
+            }
+        });
     }
 });
 
