@@ -364,24 +364,14 @@ class VidrioCreateForm(forms.ModelForm):
         required=False
     )
     
-    rebaje_ancho = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 149, (Ancho-149)/2'}),
-        label='Fórmula Ancho'
-    )
-    
-    rebaje_alto = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 100, (Alto-50)/2'}),
-        label='Fórmula Alto'
-    )
-    
     class Meta:
         model = Vidrio
-        fields = ['codigo', 'producto_id', 'hoja_id', 'descripcion', 'rebaje_ancho', 'rebaje_alto']
+        fields = ['codigo', 'producto_id', 'hoja_id', 'descripcion', 'precio']
+        labels = {'precio': 'Precio / m²'}
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -406,23 +396,13 @@ class VidrioEditForm(forms.ModelForm):
         required=False
     )
     
-    rebaje_ancho = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 149, (Ancho-149)/2'}),
-        label='Fórmula Ancho'
-    )
-    
-    rebaje_alto = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: 100, (Alto-50)/2'}),
-        label='Fórmula Alto'
-    )
-    
     class Meta:
         model = Vidrio
-        fields = ['producto_id', 'hoja_id', 'descripcion', 'rebaje_ancho', 'rebaje_alto']
+        fields = ['producto_id', 'hoja_id', 'descripcion', 'precio']
+        labels = {'precio': 'Precio / m²'}
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
     
     def __init__(self, *args, **kwargs):

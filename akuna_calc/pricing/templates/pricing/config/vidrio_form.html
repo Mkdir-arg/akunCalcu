@@ -50,44 +50,7 @@
                 </div>
             </div>
 
-            <!-- Dimensiones del Vidrio -->
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Dimensiones del Vidrio</h2>
-                <p class="text-sm text-slate-600 mb-4">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100">
-                                <th class="border px-4 py-2 text-left text-sm font-semibold">Dimensión</th>
-                                <th class="border px-4 py-2 text-left text-sm font-semibold">Fórmula</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="border px-4 py-2 font-medium">Ancho Vidrio</td>
-                                <td class="border px-4 py-2">
-                                    {{ form.rebaje_ancho }}
-                                    {% if form.rebaje_ancho.errors %}
-                                        <p class="text-red-600 text-xs mt-1">{{ form.rebaje_ancho.errors.0 }}</p>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border px-4 py-2 font-medium">Alto Vidrio</td>
-                                <td class="border px-4 py-2">
-                                    {{ form.rebaje_alto }}
-                                    {% if form.rebaje_alto.errors %}
-                                        <p class="text-red-600 text-xs mt-1">{{ form.rebaje_alto.errors.0 }}</p>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+<div class="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <a href="{% url 'config-vidrios' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
                 <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
                     <i class="fas fa-save mr-2"></i>Guardar

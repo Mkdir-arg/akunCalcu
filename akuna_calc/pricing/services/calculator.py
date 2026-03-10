@@ -200,62 +200,44 @@ class PriceCalculator:
                 accesorios_items,
             )
 
-        # Vidrios
+        # Vidrios — se auto-detecta desde la hoja seleccionada
         vidrio_detalle = None
         precio_vidrio = 0.0
-        vidrio_codigo = cleaned.get("vidrio_codigo")
-        if vidrio_codigo:
-            vidrio = self._get_vidrio(vidrio_codigo)
-            
-            # Obtener precio del producto relacionado
-            precio_m2 = 0.0
-            if vidrio.producto_id:
-                try:
-                    from productos.models import Producto as ProductoComercial
-                    prod_id = int(str(vidrio.producto_id).strip()) if vidrio.producto_id else None
-                    if prod_id:
-                        producto = ProductoComercial.objects.get(pk=prod_id)
-                        precio_m2 = _to_float(producto.precio_m2)
-                except Exception as e:
-                    logger.warning(f"Error obteniendo precio de producto {vidrio.producto_id}: {e}")
-                    precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
-            else:
-                precio_m2 = _to_float(vidrio.precio) if hasattr(vidrio, 'precio') else 0.0
-            
-            # Calcular dimensiones usando fórmulas de rebaje
-            ancho_vidrio = cleaned["ancho_mm"]
-            alto_vidrio = cleaned["alto_mm"]
-            
-            if vidrio.rebaje_ancho:
-                ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
-            if vidrio.rebaje_alto:
-                alto_vidrio = self._eval_formula(vidrio.rebaje_alto, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
-            
-            if ancho_vidrio <= 0 or alto_vidrio <= 0:
-                raise PricingError("Dimensiones invalidas para vidrio.")
-            area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
-            
-            # Obtener cantidad de hojas del producto
-            cantidad_hojas_producto = 1
-            if cleaned.get("producto_id"):
-                try:
-                    producto_marco = self._get_producto(cleaned["producto_id"])
-                    cantidad_hojas_producto = int(producto_marco.cantidad_hojas) if producto_marco.cantidad_hojas else 1
-                except Exception as e:
-                    logger.warning(f"Error obteniendo cantidad_hojas: {e}")
+        if hoja_id:
+            vidrio = Vidrio.objects.filter(hoja_id=hoja_id).first()
+            if vidrio:
+                precio_m2 = _to_float(vidrio.precio)
+
+                ancho_vidrio = cleaned["ancho_mm"]
+                alto_vidrio = cleaned["alto_mm"]
+
+                if vidrio.rebaje_ancho:
+                    ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+                if vidrio.rebaje_alto:
+                    alto_vidrio = self._eval_formula(vidrio.rebaje_alto, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+
+                if ancho_vidrio > 0 and alto_vidrio > 0:
+                    area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
+
                     cantidad_hojas_producto = 1
-            
-            precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
-            vidrio_detalle = {
-                "codigo": vidrio.codigo,
-                "descripcion": vidrio.descripcion,
-                "ancho_mm": round(ancho_vidrio, 2),
-                "alto_mm": round(alto_vidrio, 2),
-                "area_m2": round(area_m2, 4),
-                "precio_m2": precio_m2,
-                "cantidad_hojas": cantidad_hojas_producto,
-                "precio_total": round(precio_vidrio, 2),
-            }
+                    if cleaned.get("producto_id"):
+                        try:
+                            producto_marco = self._get_producto(cleaned["producto_id"])
+                            cantidad_hojas_producto = int(producto_marco.cantidad_hojas) if producto_marco.cantidad_hojas else 1
+                        except Exception as e:
+                            logger.warning(f"Error obteniendo cantidad_hojas: {e}")
+
+                    precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
+                    vidrio_detalle = {
+                        "codigo": vidrio.codigo,
+                        "descripcion": vidrio.descripcion,
+                        "ancho_mm": round(ancho_vidrio, 2),
+                        "alto_mm": round(alto_vidrio, 2),
+                        "area_m2": round(area_m2, 4),
+                        "precio_m2": precio_m2,
+                        "cantidad_hojas": cantidad_hojas_producto,
+                        "precio_total": round(precio_vidrio, 2),
+                    }
 
         # Tratamientos
         tratamiento_total = 0.0

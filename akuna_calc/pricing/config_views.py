@@ -377,10 +377,10 @@ def hoja_create(request):
 def hoja_edit(request, pk):
     obj = get_object_or_404(Hoja, pk=pk)
     form = HojaForm(request.POST or None, instance=obj)
-    
-    from .models import DespiecePerfilesHoja, DespieceAccesoriosHoja
+
+    from .models import DespiecePerfilesHoja, DespieceAccesoriosHoja, Vidrio
     import json
-    
+
     formulas = []
     accesorios_hoja = []
     try:
@@ -388,7 +388,9 @@ def hoja_edit(request, pk):
         accesorios_hoja = list(DespieceAccesoriosHoja.objects.filter(hoja=obj))
     except:
         pass
-    
+
+    vidrio = Vidrio.objects.filter(hoja_id=obj.id).first()
+
     perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
     accesorios_hoja_json = json.dumps([
@@ -399,6 +401,18 @@ def hoja_edit(request, pk):
     if request.method == 'POST':
         # Si es una petición AJAX para guardar solo fórmulas o accesorios
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'HTTP_X_REQUESTED_WITH' in request.META:
+            # Guardar fórmula de vidrio
+            if 'save_vidrio_formula' in request.POST:
+                if not vidrio:
+                    return JsonResponse({'error': 'No hay vidrio asociado a esta hoja'}, status=400)
+                try:
+                    vidrio.rebaje_ancho = request.POST.get('rebaje_ancho', '')
+                    vidrio.rebaje_alto = request.POST.get('rebaje_alto', '')
+                    vidrio.save()
+                    return JsonResponse({'ok': True})
+                except Exception as e:
+                    return JsonResponse({'error': str(e)}, status=500)
+
             # Guardar accesorios
             if 'save_accesorios' in request.POST:
                 try:
@@ -524,16 +538,17 @@ def hoja_edit(request, pk):
             return redirect('config-hojas')
     
     return render(request, 'pricing/config/hoja_form.html', {
-        'form': form, 
-        'titulo': 'Editar Hoja', 
-        'cancel_url': 'config-hojas', 
-        'object': obj, 
-        'hoja': obj, 
+        'form': form,
+        'titulo': 'Editar Hoja',
+        'cancel_url': 'config-hojas',
+        'object': obj,
+        'hoja': obj,
         'formulas': formulas,
         'accesorios_hoja': accesorios_hoja,
         'perfiles': perfiles,
         'perfiles_json': perfiles_json,
-        'accesorios_hoja_json': accesorios_hoja_json
+        'accesorios_hoja_json': accesorios_hoja_json,
+        'vidrio': vidrio,
     })
 
 

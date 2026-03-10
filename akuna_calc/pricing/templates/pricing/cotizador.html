@@ -96,7 +96,6 @@ const Cotizador = () => {
     interior_id: null,
     ancho_mm: 1200,
     alto_mm: 1500,
-    vidrio_codigo: '',
     tratamiento_id: null,
     margen_porcentaje: 30,
   });
@@ -107,7 +106,6 @@ const Cotizador = () => {
   const [marcos, setMarcos] = useState([]);
   const [hojas, setHojas] = useState([]);
   const [interiores, setInteriores] = useState([]);
-  const [vidrios, setVidrios] = useState([]);
   const [tratamientos, setTratamientos] = useState([]);
   const [mosquiteros, setMosquiteros] = useState([]);
   const [contravidrios, setContravidrios] = useState([]);
@@ -121,9 +119,6 @@ const Cotizador = () => {
 
   useEffect(() => {
     fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
-    fetch('/pricing/api/pricing/vidrios/').then(r => r.json()).then(data => 
-      setVidrios(data.map(v => ({ codigo: v.codigo, descripcion: `${v.codigo} - ${v.descripcion}` })))
-    );
     fetch('/pricing/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
   }, []);
 
@@ -251,10 +246,6 @@ const Cotizador = () => {
           <Select label="Hoja (Opcional)" options={hojas} value={config.hoja_id}
             onChange={(id) => setConfig({ ...config, hoja_id: id, interior_id: null })}
             placeholder={config.marco_id ? "Selecciona una hoja" : "Primero selecciona un marco"} />
-
-          <Select label="Vidrio (Opcional)" options={vidrios} value={config.vidrio_codigo}
-            onChange={(codigo) => setConfig({ ...config, vidrio_codigo: codigo })}
-            placeholder="Selecciona un vidrio" />
 
           <Select label="Tratamiento (Opcional)" options={tratamientos} value={config.tratamiento_id}
             onChange={(id) => setConfig({ ...config, tratamiento_id: id })}
