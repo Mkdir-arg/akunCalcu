@@ -73,6 +73,7 @@ class MarcoForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
         
         if self.instance and self.instance.pk and self.instance.producto:
             self.fields['extrusora'].initial = self.instance.producto.extrusora
@@ -82,8 +83,6 @@ class MarcoForm(forms.ModelForm):
         else:
             self.fields['linea'].queryset = Linea.objects.none()
             self.fields['producto'].queryset = Producto.objects.none()
-        
-        self.order_fields(['extrusora', 'linea', 'producto', 'descripcion'])
 
 
 class HojaForm(forms.ModelForm):
