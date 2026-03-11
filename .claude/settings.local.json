@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py makemigrations presupuestos 2>&1)",
+      "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py migrate presupuestos 2>&1)",
+      "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py test presupuestos --verbosity=2 2>&1)",
+      "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check presupuestos 2>&1)",
+      "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check 2>&1)"
+    ]
+  }
+}
