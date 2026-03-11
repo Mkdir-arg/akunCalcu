@@ -118,6 +118,12 @@
                                 <p class="text-xs text-slate-400">${{ item.precio_unitario|floatformat:2 }} c/u</p>
                                 {% endif %}
                             </div>
+                            <button type="button"
+                                onclick='verDetalleItem({{ item.resultado_json|safe }}, "{{ item.descripcion|escapejs }}")'
+                                class="shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                                title="Ver desglose">
+                                <i class="fas fa-list-ul text-sm"></i>
+                            </button>
                             {% if not presupuesto.esta_bloqueado %}
                             <form method="post" action="{% url 'presupuestos:presupuestos-item-eliminar' presupuesto.pk item.pk %}" class="shrink-0">
                                 {% csrf_token %}
