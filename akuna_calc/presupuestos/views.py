@@ -47,7 +47,7 @@ def crear(request):
             presupuesto.created_by = request.user
             presupuesto.save()
             messages.success(request, f'Presupuesto {presupuesto.numero} creado.')
-            return redirect('presupuestos-detalle', pk=presupuesto.pk)
+            return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
     else:
         form = PresupuestoForm()
     return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Nuevo Presupuesto'})
@@ -71,14 +71,14 @@ def editar(request, pk):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede editar un presupuesto confirmado o cancelado.')
-        return redirect('presupuestos-detalle', pk=pk)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if request.method == 'POST':
         form = PresupuestoForm(request.POST, instance=presupuesto)
         if form.is_valid():
             form.save()
             messages.success(request, 'Presupuesto actualizado.')
-            return redirect('presupuestos-detalle', pk=pk)
+            return redirect('presupuestos:presupuestos-detalle', pk=pk)
     else:
         form = PresupuestoForm(instance=presupuesto)
     return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Editar Presupuesto', 'presupuesto': presupuesto})
@@ -89,7 +89,7 @@ def agregar_item(request, pk):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se pueden agregar ítems a un presupuesto confirmado o cancelado.')
-        return redirect('presupuestos-detalle', pk=pk)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if request.method == 'POST':
         data = request.POST
@@ -122,7 +122,7 @@ def agregar_item(request, pk):
             )
             presupuesto.recalcular_total()
             messages.success(request, f'Ítem "{item.descripcion}" agregado.')
-            return redirect('presupuestos-detalle', pk=pk)
+            return redirect('presupuestos:presupuestos-detalle', pk=pk)
         except PricingError as e:
             messages.error(request, f'Error al calcular: {e}')
 
@@ -135,13 +135,13 @@ def eliminar_item(request, pk, ipk):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede modificar un presupuesto confirmado o cancelado.')
-        return redirect('presupuestos-detalle', pk=pk)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     item = get_object_or_404(ItemPresupuesto, pk=ipk, presupuesto=presupuesto)
     item.delete()
     presupuesto.recalcular_total()
     messages.success(request, 'Ítem eliminado.')
-    return redirect('presupuestos-detalle', pk=pk)
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
 @login_required
@@ -154,7 +154,7 @@ def comentar(request, pk):
         comentario.presupuesto = presupuesto
         comentario.autor = request.user
         comentario.save()
-    return redirect('presupuestos-detalle', pk=pk)
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
 @login_required
@@ -166,16 +166,16 @@ def cambiar_estado(request, pk):
 
     if nuevo_estado not in estados_validos:
         messages.error(request, 'Estado inválido.')
-        return redirect('presupuestos-detalle', pk=pk)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede cambiar el estado de un presupuesto confirmado o cancelado.')
-        return redirect('presupuestos-detalle', pk=pk)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     presupuesto.estado = nuevo_estado
     presupuesto.save(update_fields=['estado'])
     messages.success(request, f'Estado actualizado a "{presupuesto.get_estado_display()}".')
-    return redirect('presupuestos-detalle', pk=pk)
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
 @login_required

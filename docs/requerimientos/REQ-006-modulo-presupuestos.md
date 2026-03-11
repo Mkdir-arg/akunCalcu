@@ -1,8 +1,8 @@
 # REQ-006 — Módulo de Presupuestos
 
-**Estado:** En desarrollo
+**Estado:** Implementado
 **Fecha:** 2026-03-11
-**Derivó en:** —
+**Derivó en:** [FEAT-005](../features/FEAT-005-modulo-presupuestos.md)
 
 ---
 

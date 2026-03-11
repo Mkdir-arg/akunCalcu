@@ -14,6 +14,30 @@
 
 ---
 
+## 2026-03-11 — Módulo de Presupuestos — Paso 1 de Fábrica (REQ-006 / FEAT-005)
+
+**User Story:** Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar múltiples ítems usando la lógica del cotizador, dejar comentarios de seguimiento y generar un PDF para entregar al cliente.
+
+**App nueva:** `presupuestos` — 3 modelos, 9 views, 9 URLs, 5 templates, 12 tests.
+
+**Archivos creados:**
+- `presupuestos/` — app completa (models, forms, views, urls, tests, migrations, templates)
+
+**Archivos modificados:**
+- `akuna_calc/settings.py` — agrega `presupuestos` a `INSTALLED_APPS`
+- `akuna_calc/urls.py` — agrega `path('presupuestos/', ...)`
+- `core/templates/core/base.html` — link "Presupuestos" en el sidebar
+
+**Decisiones técnicas:**
+- PDF generado como HTML con `@media print` (sin librerías externas) — ver ADR-006
+- Cotizador embebido en React en `item_form.html`, delega cálculo a `/pricing/api/pricing/calculate/`
+- Presupuestos en estado `confirmado` o `cancelado` quedan bloqueados para edición
+- Número autogenerado: `PRES-AAAA-NNN`
+
+**Pendiente Fase 2:** Al confirmar un presupuesto → generar orden de producción en fábrica.
+
+---
+
 ## 2026-03-06 — Página de detalle de cliente (REQ-005 / FEAT-004)
 
 **User Story:** Como usuario del sistema, quiero ver una página de detalle de cada cliente que consolide toda su información y actividad comercial.

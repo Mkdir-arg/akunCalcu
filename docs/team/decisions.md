@@ -60,6 +60,18 @@
 
 **Consecuencias**: El estado del pedido (pendiente/confirmado/cancelado) se guarda en Django, no en n8n — esto simplifica el workflow y hace el sistema resiliente a reinicios de n8n.
 
+## ADR-006: PDF via HTML de impresión (sin librería externa)
+**Fecha**: 2026-03-11
+**Estado**: Activo
+
+**Contexto**: El módulo de presupuestos requiere generar un PDF para entregar al cliente. Las opciones eran: weasyprint, reportlab, xhtml2pdf (librerías Python) o una vista HTML optimizada para impresión.
+
+**Decisión**: Usar un template HTML dedicado (`presupuestos/pdf.html`) con estilos `@media print` y `@page`. No extiende `base.html`. El usuario abre la vista en nueva pestaña y usa la función de impresión del browser para guardar como PDF.
+
+**Consecuencias**: Sin dependencias extra. El resultado visual es controlado 100% con HTML/CSS. Si en el futuro se necesita generación server-side (adjuntar PDF a un email), se deberá agregar weasyprint y crear un nuevo ADR.
+
+---
+
 ## ADR-005: Chart.js para gráficos en detalle de cliente
 **Fecha**: 2026-03-06
 **Estado**: Activo

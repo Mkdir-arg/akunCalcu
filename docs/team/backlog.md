@@ -23,6 +23,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-003 | Como administrador, quiero agregar, editar y eliminar de forma lógica los registros de Fábrica (Extrusoras, Líneas, Productos, Marcos, Hojas, Interiores, Perfiles, Accesorios, Vidrios, Tratamientos) para gestionar la configuración de la fábrica desde la interfaz web | Grande ✅ |
 | US-004 | Como vendedor, quiero que al registrar el último pago de una venta (saldo = $0) me aparezca un popup para cambiar el estado a "Colocado" | Pequeño ✅ |
 | US-005 | Como administrador, quiero agregar fórmulas de perfiles al configurar un Marco para definir automáticamente las dimensiones de los perfiles necesarios para fabricar ese marco | Mediano ✅ |
+| US-006 | Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar N ítems con la lógica del cotizador, dejar comentarios y generar un PDF para el cliente | Grande ✅ |
 
 ---
 
