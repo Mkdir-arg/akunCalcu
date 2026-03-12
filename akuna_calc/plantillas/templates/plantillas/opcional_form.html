@@ -81,7 +81,7 @@
                             <input type="text" name="formula_{{ forloop.counter0 }}" value="{{ formula.formula }}" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                         </div>
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Ángulo</label>
                             <input type="text" name="angulo_{{ forloop.counter0 }}" value="{{ formula.angulo }}" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="90">
@@ -89,28 +89,29 @@
                         <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
                             <select name="tipo_relacionador_{{ forloop.counter0 }}" 
-                                    class="tipo-relacionador w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    class="tipo-relacionador w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white" 
+                                    style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.5em 1.5em; padding-right: 2.5rem;"
                                     onchange="actualizarRelacionador(this)">
                                 <option value="perfil" {% if formula.tipo_relacionador == 'perfil' %}selected{% endif %}>Perfil</option>
                                 <option value="hoja" {% if formula.tipo_relacionador == 'hoja' %}selected{% endif %}>Hoja</option>
                                 <option value="vidrio" {% if formula.tipo_relacionador == 'vidrio' %}selected{% endif %}>Vidrio</option>
                             </select>
                         </div>
-                        <div class="md:col-span-3">
+                        <div class="md:col-span-4">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Relacionador</label>
-                            <select name="perfil_{{ forloop.counter0 }}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select name="perfil_{{ forloop.counter0 }}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white" style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.5em 1.5em; padding-right: 2.5rem;">
                                 <option value="">Seleccionar...</option>
                                 {% if formula.tipo_relacionador == 'perfil' or not formula.tipo_relacionador %}
                                     {% for perfil in perfiles %}
-                                    <option value="{{ perfil.codigo }}" {% if formula.perfil == perfil.codigo %}selected{% endif %}>{{ perfil.codigo }}{% if perfil.descripcion %} - {{ perfil.descripcion|slice:":25" }}{% endif %}</option>
+                                    <option value="{{ perfil.codigo }}" {% if formula.perfil == perfil.codigo %}selected{% endif %}>{{ perfil.codigo }}{% if perfil.descripcion %} - {{ perfil.descripcion|slice:":30" }}{% endif %}</option>
                                     {% endfor %}
                                 {% elif formula.tipo_relacionador == 'hoja' %}
                                     {% for hoja in hojas %}
-                                    <option value="{{ hoja.id }}" {% if formula.perfil == hoja.id|stringformat:"s" %}selected{% endif %}>{{ hoja.descripcion|slice:":40" }}</option>
+                                    <option value="{{ hoja.id }}" {% if formula.perfil == hoja.id|stringformat:"s" %}selected{% endif %}>{{ hoja.descripcion|slice:":50" }}</option>
                                     {% endfor %}
                                 {% elif formula.tipo_relacionador == 'vidrio' %}
                                     {% for vidrio in vidrios %}
-                                    <option value="{{ vidrio.codigo }}" {% if formula.perfil == vidrio.codigo %}selected{% endif %}>{{ vidrio.codigo }}{% if vidrio.descripcion %} - {{ vidrio.descripcion|slice:":25" }}{% endif %}</option>
+                                    <option value="{{ vidrio.codigo }}" {% if formula.perfil == vidrio.codigo %}selected{% endif %}>{{ vidrio.codigo }}{% if vidrio.descripcion %} - {{ vidrio.descripcion|slice:":30" }}{% endif %}</option>
                                     {% endfor %}
                                 {% endif %}
                             </select>
@@ -230,6 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
             perfilesOptions += `<option value="${perfil.codigo}">${perfil.codigo}${desc}</option>`;
         });
         
+        const selectStyle = "background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.5em 1.5em; padding-right: 2.5rem;";
+        
         div.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                 <div class="md:col-span-2">
@@ -240,21 +243,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="block text-xs font-medium text-gray-600 mb-1">Fórmula</label>
                     <input type="text" name="formula_${index}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-1">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Ángulo</label>
                     <input type="text" name="angulo_${index}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="90">
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-                    <select name="tipo_relacionador_${index}" class="tipo-relacionador w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="actualizarRelacionador(this)">
+                    <select name="tipo_relacionador_${index}" class="tipo-relacionador w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white" style="${selectStyle}" onchange="actualizarRelacionador(this)">
                         <option value="perfil">Perfil</option>
                         <option value="hoja">Hoja</option>
                         <option value="vidrio">Vidrio</option>
                     </select>
                 </div>
-                <div class="md:col-span-3">
+                <div class="md:col-span-4">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Relacionador</label>
-                    <select name="perfil_${index}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select name="perfil_${index}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white" style="${selectStyle}">
                         ${perfilesOptions}
                     </select>
                 </div>
