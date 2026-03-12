@@ -256,14 +256,16 @@ function cambiarTipo(tipo) {
 
 {% if opcional and opcional.pk %}
 // Relaciones (Mosquitero)
-function filtrarLineas(selectExtrusora) {
+function filtrarLineas(selectExtrusora, limpiarSeleccion = true) {
     const row = selectExtrusora.closest('.relacion-row');
     const extrusoraId = selectExtrusora.value;
     const selectLinea = row.querySelector('.linea-select');
     const selectProducto = row.querySelector('.producto-select');
     
-    selectLinea.value = '';
-    selectProducto.value = '';
+    if (limpiarSeleccion) {
+        selectLinea.value = '';
+        selectProducto.value = '';
+    }
     
     Array.from(selectLinea.options).forEach(option => {
         if (option.value === '') {
@@ -279,12 +281,14 @@ function filtrarLineas(selectExtrusora) {
     });
 }
 
-function filtrarProductos(selectLinea) {
+function filtrarProductos(selectLinea, limpiarSeleccion = true) {
     const row = selectLinea.closest('.relacion-row');
     const lineaId = selectLinea.value;
     const selectProducto = row.querySelector('.producto-select');
     
-    selectProducto.value = '';
+    if (limpiarSeleccion) {
+        selectProducto.value = '';
+    }
     
     Array.from(selectProducto.options).forEach(option => {
         if (option.value === '') {
@@ -531,10 +535,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectLinea = row.querySelector('.linea-select');
         
         if (selectExtrusora && selectExtrusora.value) {
-            filtrarLineas(selectExtrusora);
+            filtrarLineas(selectExtrusora, false);
         }
         if (selectLinea && selectLinea.value) {
-            filtrarProductos(selectLinea);
+            filtrarProductos(selectLinea, false);
         }
     });
 });
