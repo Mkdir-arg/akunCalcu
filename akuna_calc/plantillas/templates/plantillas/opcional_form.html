@@ -76,7 +76,7 @@
                             <input type="text" name="cantidad_{{ forloop.counter0 }}" value="{{ formula.cantidad }}" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
                         </div>
-                        <div class="md:col-span-3">
+                        <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Fórmula</label>
                             <input type="text" name="formula_{{ forloop.counter0 }}" value="{{ formula.formula }}" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
@@ -96,7 +96,7 @@
                                 <option value="vidrio" {% if formula.tipo_relacionador == 'vidrio' %}selected{% endif %}>Vidrio</option>
                             </select>
                         </div>
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Relacionador</label>
                             <select name="perfil_{{ forloop.counter0 }}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seleccionar...</option>
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
                     <input type="text" name="cantidad_${index}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
                 </div>
-                <div class="md:col-span-3">
+                <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Fórmula</label>
                     <input type="text" name="formula_${index}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                 </div>
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="vidrio">Vidrio</option>
                     </select>
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-3">
                     <label class="block text-xs font-medium text-gray-600 mb-1">Relacionador</label>
                     <select name="perfil_${index}" class="perfil-selector w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         ${perfilesOptions}
