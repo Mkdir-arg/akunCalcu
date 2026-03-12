@@ -197,3 +197,42 @@ class PedidoFabricaFila(models.Model):
     @property
     def errores(self):
         return json.loads(self.errores_json) if self.errores_json else {}
+
+
+
+class OpcionalFabrica(models.Model):
+    """Opcionales que se pueden agregar a los pedidos de fábrica."""
+    codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
+    nombre = models.CharField(max_length=200, verbose_name='Nombre')
+    descripcion = models.TextField(blank=True, verbose_name='Descripción')
+    precio = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio')
+    activo = models.BooleanField(default=True, verbose_name='Activo')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Opcional de Fábrica'
+        verbose_name_plural = 'Opcionales de Fábrica'
+        ordering = ['codigo']
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+
+class FormulaOpcional(models.Model):
+    """Fórmulas de cálculo para opcionales de fábrica."""
+    opcional = models.ForeignKey(OpcionalFabrica, on_delete=models.CASCADE, related_name='formulas')
+    cantidad = models.CharField(max_length=100, verbose_name='Cantidad', help_text='Fórmula para cantidad (ej: 2, CANTIDAD_HOJAS)')
+    formula = models.CharField(max_length=200, verbose_name='Fórmula', help_text='Fórmula de cálculo (ej: Alto - 42)')
+    angulo = models.CharField(max_length=10, blank=True, verbose_name='Ángulo', help_text='Ángulo de corte (ej: 90, 45)')
+    perfil = models.CharField(max_length=100, blank=True, verbose_name='Perfil', help_text='Código del perfil')
+    precio = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio')
+    orden = models.IntegerField(default=0, verbose_name='Orden')
+
+    class Meta:
+        verbose_name = 'Fórmula de Opcional'
+        verbose_name_plural = 'Fórmulas de Opcionales'
+        ordering = ['opcional', 'orden', 'id']
+
+    def __str__(self):
+        return f"{self.opcional.codigo} - Fórmula #{self.orden}"

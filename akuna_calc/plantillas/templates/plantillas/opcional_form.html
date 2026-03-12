@@ -1,0 +1,216 @@
+{% extends 'plantillas/base_plantillas.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">{{ titulo }}</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Formulario Principal -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Datos del Opcional</h2>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.codigo.label }}</label>
+                        {{ form.codigo }}
+                        {% if form.codigo.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.codigo.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.nombre.label }}</label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.descripcion.label }}</label>
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center">
+                        {{ form.activo }}
+                        <label class="ml-2 text-sm text-gray-700">{{ form.activo.label }}</label>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-save mr-2"></i>Guardar
+                    </button>
+                    <a href="{% url 'plantillas:opcional_list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Fórmulas -->
+        {% if opcional %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Fórmulas de Cálculo</h2>
+                <button type="button" id="guardar-formulas" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-save mr-2"></i>Guardar Fórmulas
+                </button>
+            </div>
+
+            <div id="formulas-container" class="space-y-3">
+                {% for formula in formulas %}
+                <div class="formula-row border border-gray-300 rounded-lg p-3 bg-gray-50">
+                    <div class="grid grid-cols-12 gap-2 items-center">
+                        <div class="col-span-2">
+                            <input type="text" name="cantidad_{{ forloop.counter0 }}" value="{{ formula.cantidad }}" 
+                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="2">
+                        </div>
+                        <div class="col-span-3">
+                            <input type="text" name="formula_{{ forloop.counter0 }}" value="{{ formula.formula }}" 
+                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="Alto - 42">
+                        </div>
+                        <div class="col-span-2">
+                            <input type="text" name="angulo_{{ forloop.counter0 }}" value="{{ formula.angulo }}" 
+                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="90">
+                        </div>
+                        <div class="col-span-2">
+                            <input type="text" name="perfil_{{ forloop.counter0 }}" value="{{ formula.perfil }}" 
+                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="6200">
+                        </div>
+                        <div class="col-span-2">
+                            <input type="number" name="precio_{{ forloop.counter0 }}" value="{{ formula.precio }}" 
+                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="col-span-1 text-center">
+                            <button type="button" class="remove-formula text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" id="agregar-formula" class="mt-3 w-full bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition">
+                <i class="fas fa-plus mr-2"></i>Agregar Fórmula
+            </button>
+
+            <div class="mt-4 text-xs text-gray-600 space-y-1">
+                <p><strong>Cantidad:</strong> Número o fórmula (ej: 2, CANTIDAD_HOJAS)</p>
+                <p><strong>Fórmula:</strong> Expresión de cálculo (ej: Alto - 42, Ancho * 2)</p>
+                <p><strong>Ángulo:</strong> Ángulo de corte (ej: 90, 45)</p>
+                <p><strong>Perfil:</strong> Código del perfil a usar</p>
+                <p><strong>Precio:</strong> Precio unitario del opcional</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if opcional %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('formulas-container');
+    const agregarBtn = document.getElementById('agregar-formula');
+    const guardarBtn = document.getElementById('guardar-formulas');
+    
+    function getFormulaCount() {
+        return container.querySelectorAll('.formula-row').length;
+    }
+    
+    function createFormulaRow(index) {
+        const div = document.createElement('div');
+        div.className = 'formula-row border border-gray-300 rounded-lg p-3 bg-gray-50';
+        div.innerHTML = `
+            <div class="grid grid-cols-12 gap-2 items-center">
+                <div class="col-span-2">
+                    <input type="text" name="cantidad_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="2">
+                </div>
+                <div class="col-span-3">
+                    <input type="text" name="formula_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="Alto - 42">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" name="angulo_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="90">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" name="perfil_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="6200">
+                </div>
+                <div class="col-span-2">
+                    <input type="number" name="precio_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="0.00" step="0.01">
+                </div>
+                <div class="col-span-1 text-center">
+                    <button type="button" class="remove-formula text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+    
+    agregarBtn.addEventListener('click', function() {
+        const index = getFormulaCount();
+        const row = createFormulaRow(index);
+        container.appendChild(row);
+    });
+    
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-formula')) {
+            e.target.closest('.formula-row').remove();
+            reindexFormulas();
+        }
+    });
+    
+    function reindexFormulas() {
+        const rows = container.querySelectorAll('.formula-row');
+        rows.forEach((row, index) => {
+            row.querySelectorAll('input').forEach(input => {
+                const name = input.name.replace(/_\d+$/, `_${index}`);
+                input.name = name;
+            });
+        });
+    }
+    
+    guardarBtn.addEventListener('click', function() {
+        const formData = new FormData();
+        const rows = container.querySelectorAll('.formula-row');
+        
+        rows.forEach((row, index) => {
+            row.querySelectorAll('input').forEach(input => {
+                formData.append(input.name, input.value);
+            });
+        });
+        
+        fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                alert(`✓ ${data.guardadas} fórmula(s) guardada(s) correctamente`);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error al guardar: ' + error);
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

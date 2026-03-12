@@ -1,5 +1,5 @@
 from django import forms
-from .models import ProductoPlantilla, CampoPlantilla
+from .models import ProductoPlantilla, CampoPlantilla, OpcionalFabrica, FormulaOpcional
 from .services.formula_engine import FormulaEngine
 
 
@@ -57,3 +57,14 @@ class CampoPlantillaForm(forms.ModelForm):
                 raise forms.ValidationError({'clave': 'Ya existe un campo con esta clave'})
 
         return cleaned_data
+
+
+class OpcionalFabricaForm(forms.ModelForm):
+    class Meta:
+        model = OpcionalFabrica
+        fields = ['codigo', 'nombre', 'descripcion', 'activo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'OPC-001'}),
+            'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
+            'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'rows': 3}),
+        }

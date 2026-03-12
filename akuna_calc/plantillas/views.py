@@ -479,3 +479,13 @@ def pedido_item_delete(request, item_pk):
     
     messages.success(request, 'Item eliminado')
     return redirect('plantillas:pedido_detail', pk=pedido_pk)
+
+
+# Importar vistas de opcionales
+from .views_opcionales import (
+    opcional_list,
+    opcional_create,
+    opcional_edit,
+    opcional_toggle,
+    opcional_formulas_guardar
+)
