@@ -97,7 +97,7 @@ class TratamientosListView(APIView):
 class MosquiterosListView(APIView):
     def get(self, request):
         hoja_id = request.query_params.get('hoja_id')
-        qs = Mosquitero.objects.exclude(bloqueado='Si')
+        qs = Mosquitero.objects.all()
         if hoja_id:
             qs = qs.filter(hoja_id=hoja_id)
         mosquiteros = qs.values('id', 'descripcion')
@@ -107,7 +107,7 @@ class MosquiterosListView(APIView):
 class ContravidriosListView(APIView):
     def get(self, request):
         interior_id = request.query_params.get('interior_id')
-        qs = Contravidrio.objects.exclude(bloqueado='Si')
+        qs = Contravidrio.objects.all()
         if interior_id:
             qs = qs.filter(interior_id=interior_id)
         contravidrios = qs.values('id', 'descripcion')
@@ -117,7 +117,7 @@ class ContravidriosListView(APIView):
 class ContravidriosExteriorListView(APIView):
     def get(self, request):
         interior_id = request.query_params.get('interior_id')
-        qs = ContravidrioExterior.objects.exclude(bloqueado='Si')
+        qs = ContravidrioExterior.objects.all()
         if interior_id:
             qs = qs.filter(interior_id=interior_id)
         contravidrios = qs.values('id', 'descripcion')
@@ -127,7 +127,7 @@ class ContravidriosExteriorListView(APIView):
 class CrucesListView(APIView):
     def get(self, request):
         interior_id = request.query_params.get('interior_id')
-        qs = Cruce.objects.exclude(bloqueado='Si')
+        qs = Cruce.objects.all()
         if interior_id:
             qs = qs.filter(interior_id=interior_id)
         cruces = qs.values('id', 'descripcion')
@@ -137,7 +137,7 @@ class CrucesListView(APIView):
 class VidriosRepartidosListView(APIView):
     def get(self, request):
         interior_id = request.query_params.get('interior_id')
-        qs = VidrioRepartido.objects.exclude(bloqueado='Si')
+        qs = VidrioRepartido.objects.all()
         if interior_id:
             qs = qs.filter(interior_id=interior_id)
         vidrios_repartidos = qs.values('id', 'descripcion')
