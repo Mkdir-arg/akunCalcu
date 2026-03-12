@@ -60,6 +60,7 @@ urlpatterns = [
     path('api/clientes-list/', views.get_clientes_list, name='clientes_list_api'),
     path('api/pago/<int:pk>/editar/', views.editar_pago, name='editar_pago'),
     path('api/pago/<int:pk>/eliminar/', views.eliminar_pago, name='eliminar_pago'),
+    path('api/pago/<int:pk>/agregar-retencion/', views.agregar_retencion_pago, name='agregar_retencion_pago'),
     path('api/venta/<int:pk>/editar-fecha-sena/', views.editar_fecha_sena, name='editar_fecha_sena'),
     path('api/venta/<int:pk>/cambiar-estado/', views.cambiar_estado_venta, name='cambiar_estado_venta'),
     path('api/venta/<int:pk>/guardar-nota/', views.guardar_nota_venta, name='guardar_nota_venta'),

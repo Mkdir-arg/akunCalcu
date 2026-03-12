@@ -295,6 +295,7 @@ def guardar_nota_venta(request, pk):
 
 @login_required
 def registrar_pago(request, pk):
+    from .models import Retencion
     venta = get_object_or_404(Venta, pk=pk)
     
     if request.method == 'POST':
@@ -326,6 +327,26 @@ def registrar_pago(request, pk):
                 observaciones=observaciones,
                 created_by=request.user
             )
+            
+            # Procesar retenciones
+            retencion_counts = request.POST.getlist('retencion_count')
+            for count in retencion_counts:
+                tipo = request.POST.get(f'retencion_tipo_{count}')
+                importe = request.POST.get(f'retencion_importe_{count}')
+                concepto = request.POST.get(f'retencion_concepto_{count}', '')
+                comprobante = request.POST.get(f'retencion_comprobante_{count}', '')
+                
+                if tipo and importe:
+                    importe_decimal = Decimal(importe)
+                    if importe_decimal > 0:
+                        Retencion.objects.create(
+                            pago=pago,
+                            tipo=tipo,
+                            concepto=concepto,
+                            numero_comprobante=comprobante,
+                            importe_retenido=importe_decimal,
+                            fecha_comprobante=fecha_pago
+                        )
             
             # Recalcular saldo
             venta.save()
@@ -1751,6 +1772,48 @@ def eliminar_pago(request, pk):
             return JsonResponse({
                 'success': True,
                 'saldo': float(venta.saldo)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def agregar_retencion_pago(request, pk):
+    """Agregar retención a un pago existente"""
+    from .models import Retencion
+    import json
+    
+    if request.method == 'POST':
+        pago = get_object_or_404(PagoVenta, pk=pk)
+        
+        try:
+            data = json.loads(request.body)
+            tipo = data.get('tipo')
+            importe = Decimal(str(data.get('importe')))
+            concepto = data.get('concepto', '')
+            numero_comprobante = data.get('numero_comprobante', '')
+            
+            if importe <= 0:
+                return JsonResponse({'success': False, 'error': 'El importe debe ser mayor a 0'}, status=400)
+            
+            retencion = Retencion.objects.create(
+                pago=pago,
+                tipo=tipo,
+                concepto=concepto,
+                numero_comprobante=numero_comprobante,
+                importe_retenido=importe,
+                fecha_comprobante=pago.fecha_pago
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'retencion': {
+                    'id': retencion.id,
+                    'tipo': retencion.get_tipo_display(),
+                    'importe': float(retencion.importe_retenido)
+                }
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)

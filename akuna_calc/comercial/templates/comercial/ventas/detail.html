@@ -845,10 +845,10 @@ function agregarRetencion() {
             <select name="retencion_tipo_${retencionCount}" onchange="calcularTotalesPago()"
                     class="px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500">
                 <option value="ganancias">Ganancias</option>
+                <option value="iibb">Ingresos Brutos</option>
                 <option value="iva">IVA</option>
-                <option value="ingresos_brutos">Ingresos Brutos</option>
-                <option value="suss">SUSS</option>
-                <option value="otro">Otro</option>
+                <option value="seguridad_social">Seguridad Social</option>
+                <option value="otros">Otros</option>
             </select>
             <input type="number" name="retencion_importe_${retencionCount}" placeholder="Importe" step="0.01" min="0"
                    onchange="calcularTotalesPago()"
