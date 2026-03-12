@@ -71,6 +71,15 @@
         </form>
     </div>
 
+    {% if not opcional or not opcional.pk %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-blue-800">
+            <i class="fas fa-info-circle mr-2"></i>
+            Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones de productos.
+        </p>
+    </div>
+    {% endif %}
+
     {% if opcional and opcional.pk %}
     <!-- Sección para Mosquitero -->
     <div id="seccion-mosquitero" style="display: {% if opcional.tipo == 'mosquitero' %}block{% else %}none{% endif %};">
