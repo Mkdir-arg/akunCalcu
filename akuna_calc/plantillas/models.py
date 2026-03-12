@@ -205,7 +205,6 @@ class OpcionalFabrica(models.Model):
     codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
     nombre = models.CharField(max_length=200, verbose_name='Nombre')
     descripcion = models.TextField(blank=True, verbose_name='Descripción')
-    precio = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio')
     activo = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
