@@ -581,11 +581,11 @@
                         <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }})"
+                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }})"
                                         class="text-blue-600 hover:text-blue-800 font-medium text-sm">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button onclick="eliminarPago({{ pago.id }}, {{ pago.monto }})"
+                                <button onclick="eliminarPago({{ pago.id }}, {{ pago.monto|stringformat:".2f" }})"
                                         class="text-red-600 hover:text-red-800 font-medium text-sm">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -733,9 +733,9 @@ function _abrirWA(tel) {
 }
 
 // ── Conversión a dólar ───────────────────────────────────────────
-const TOTAL = {{ venta.get_total_con_percepciones }};
-const PAGADO = {{ total_pagado }};
-const SALDO = {{ venta.saldo }};
+const TOTAL = {{ venta.get_total_con_percepciones|stringformat:".2f" }};
+const PAGADO = {{ total_pagado|stringformat:".2f" }};
+const SALDO = {{ venta.saldo|stringformat:".2f" }};
 
 fetch('https://dolarapi.com/v1/dolares/blue')
     .then(r => r.json())

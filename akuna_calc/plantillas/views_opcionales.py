@@ -32,8 +32,10 @@ def opcional_create(request):
 
 @login_required
 def opcional_edit(request, pk):
+    from productos.models import Producto
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
     formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
+    perfiles = Producto.objects.filter(activo=True).order_by('nombre')
     
     if request.method == 'POST':
         form = OpcionalFabricaForm(request.POST, instance=opcional)
@@ -48,7 +50,8 @@ def opcional_edit(request, pk):
         'form': form,
         'titulo': 'Editar Opcional',
         'opcional': opcional,
-        'formulas': formulas
+        'formulas': formulas,
+        'perfiles': perfiles
     })
 
 
