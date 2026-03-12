@@ -7,5 +7,9 @@
       "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check presupuestos 2>&1)",
       "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check 2>&1)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "n8n"
+  ],
+  "enableAllProjectMcpServers": true
 }
