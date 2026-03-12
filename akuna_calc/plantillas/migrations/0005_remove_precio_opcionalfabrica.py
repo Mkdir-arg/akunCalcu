@@ -1,6 +1,22 @@
 from django.db import migrations
 
 
+def remove_precio_if_exists(apps, schema_editor):
+    with schema_editor.connection.cursor() as cursor:
+        # Verificar si la columna existe
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM information_schema.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'plantillas_opcionalfabrica' 
+            AND COLUMN_NAME = 'precio'
+        """)
+        exists = cursor.fetchone()[0]
+        
+        if exists:
+            cursor.execute("ALTER TABLE plantillas_opcionalfabrica DROP COLUMN precio")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -8,8 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="ALTER TABLE plantillas_opcionalfabrica DROP COLUMN precio;",
-            reverse_sql="ALTER TABLE plantillas_opcionalfabrica ADD COLUMN precio DECIMAL(10, 2) DEFAULT 0;"
-        ),
+        migrations.RunPython(remove_precio_if_exists, migrations.RunPython.noop),
     ]
