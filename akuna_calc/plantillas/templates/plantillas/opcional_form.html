@@ -139,28 +139,27 @@
 {% if opcional %}
 <script>
 // Datos para los selectores dinámicos
-const PERFILES = {{ perfiles|safe|default:"[]" }};
-const HOJAS = {{ hojas|safe|default:"[]" }};
-const VIDRIOS = {{ vidrios|safe|default:"[]" }};
-
-// Convertir a formato JSON para JavaScript
 const perfilesData = [
     {% for perfil in perfiles %}
-    {codigo: "{{ perfil.codigo|escapejs }}", descripcion: "{{ perfil.descripcion|escapejs|truncatechars:30 }}"},
+    {codigo: "{{ perfil.codigo|escapejs }}", descripcion: "{% if perfil.descripcion %}{{ perfil.descripcion|escapejs|slice:":30" }}{% endif %}"},
     {% endfor %}
 ];
 
 const hojasData = [
     {% for hoja in hojas %}
-    {id: "{{ hoja.id }}", descripcion: "{{ hoja.descripcion|escapejs }}"},
+    {id: "{{ hoja.id }}", descripcion: "{% if hoja.descripcion %}{{ hoja.descripcion|escapejs }}{% endif %}"},
     {% endfor %}
 ];
 
 const vidriosData = [
     {% for vidrio in vidrios %}
-    {codigo: "{{ vidrio.codigo|escapejs }}", descripcion: "{{ vidrio.descripcion|escapejs|truncatechars:30 }}"},
+    {codigo: "{{ vidrio.codigo|escapejs }}", descripcion: "{% if vidrio.descripcion %}{{ vidrio.descripcion|escapejs|slice:":30" }}{% endif %}"},
     {% endfor %}
 ];
+
+console.log('Perfiles:', perfilesData.length);
+console.log('Hojas:', hojasData.length);
+console.log('Vidrios:', vidriosData.length);
 
 function actualizarRelacionador(selectTipo) {
     const row = selectTipo.closest('.formula-row');
@@ -196,15 +195,26 @@ function actualizarRelacionador(selectTipo) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Loaded');
     const container = document.getElementById('formulas-container');
     const agregarBtn = document.getElementById('agregar-formula');
     const guardarBtn = document.getElementById('guardar-formulas');
+    
+    console.log('Container:', container);
+    console.log('Agregar Btn:', agregarBtn);
+    console.log('Guardar Btn:', guardarBtn);
+    
+    if (!container || !agregarBtn || !guardarBtn) {
+        console.error('Elementos no encontrados!');
+        return;
+    }
     
     function getFormulaCount() {
         return container.querySelectorAll('.formula-row').length;
     }
     
     function createFormulaRow(index) {
+        console.log('Creando fila con index:', index);
         const div = document.createElement('div');
         div.className = 'formula-row border border-gray-300 rounded-lg p-3 bg-gray-50';
         
@@ -248,9 +258,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     agregarBtn.addEventListener('click', function() {
+        console.log('Click en agregar fórmula');
         const index = getFormulaCount();
+        console.log('Index actual:', index);
         const row = createFormulaRow(index);
+        console.log('Fila creada:', row);
         container.appendChild(row);
+        console.log('Fila agregada al container');
     });
     
     container.addEventListener('click', function(e) {
