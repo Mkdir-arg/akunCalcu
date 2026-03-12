@@ -254,6 +254,7 @@ function cambiarTipo(tipo) {
     }
 }
 
+{% if opcional and opcional.pk %}
 // Relaciones (Mosquitero)
 function filtrarLineas(selectExtrusora) {
     const row = selectExtrusora.closest('.relacion-row');
@@ -537,5 +538,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+{% endif %}
 </script>
 {% endblock %}
