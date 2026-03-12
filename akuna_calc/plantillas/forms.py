@@ -62,10 +62,11 @@ class CampoPlantillaForm(forms.ModelForm):
 class OpcionalFabricaForm(forms.ModelForm):
     class Meta:
         model = OpcionalFabrica
-        fields = ['codigo', 'nombre', 'precio_m2', 'descripcion', 'activo']
+        fields = ['codigo', 'nombre', 'tipo', 'precio_m2', 'descripcion', 'activo']
         widgets = {
             'codigo': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'OPC-001'}),
             'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
+            'tipo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'onchange': 'cambiarTipo(this.value)'}),
             'precio_m2': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'step': '0.01', 'min': '0'}),
             'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'rows': 3}),
         }

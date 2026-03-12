@@ -202,8 +202,15 @@ class PedidoFabricaFila(models.Model):
 
 class OpcionalFabrica(models.Model):
     """Opcionales que se pueden agregar a los pedidos de fábrica."""
+    
+    TIPO_CHOICES = [
+        ('mosquitero', 'Mosquitero'),
+        ('otro', 'Otro'),
+    ]
+    
     codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
     nombre = models.CharField(max_length=200, verbose_name='Nombre')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro', verbose_name='Tipo')
     precio_m2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio por m²')
     descripcion = models.TextField(blank=True, verbose_name='Descripción')
     activo = models.BooleanField(default=True, verbose_name='Activo')
@@ -244,6 +251,22 @@ class FormulaOpcional(models.Model):
 
     def __str__(self):
         return f"{self.opcional.codigo} - Fórmula #{self.orden}"
+
+
+class AccesorioOpcional(models.Model):
+    """Accesorios para opcionales de fábrica."""
+    opcional = models.ForeignKey(OpcionalFabrica, on_delete=models.CASCADE, related_name='accesorios')
+    cantidad = models.CharField(max_length=100, verbose_name='Cantidad', help_text='Fórmula para cantidad (ej: 2, CANTIDAD_HOJAS)')
+    accesorio = models.CharField(max_length=100, verbose_name='Accesorio', help_text='Código del accesorio')
+    orden = models.IntegerField(default=0, verbose_name='Orden')
+
+    class Meta:
+        verbose_name = 'Accesorio de Opcional'
+        verbose_name_plural = 'Accesorios de Opcionales'
+        ordering = ['opcional', 'orden', 'id']
+
+    def __str__(self):
+        return f"{self.opcional.codigo} - Accesorio #{self.orden}"
 
 
 class RelacionProductoOpcional(models.Model):

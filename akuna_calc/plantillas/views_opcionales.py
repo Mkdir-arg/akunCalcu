@@ -33,12 +33,13 @@ def opcional_create(request):
 @login_required
 def opcional_edit(request, pk):
     from productos.models import Producto as ProductoSimple
-    from pricing.models import Perfil, Hoja, Vidrio, Extrusora, Linea, Producto
-    from .models import RelacionProductoOpcional
+    from pricing.models import Perfil, Hoja, Vidrio, Extrusora, Linea, Producto, Accesorio
+    from .models import RelacionProductoOpcional, AccesorioOpcional
     
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
     formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
     relaciones = RelacionProductoOpcional.objects.filter(opcional=opcional).order_by('orden')
+    accesorios = AccesorioOpcional.objects.filter(opcional=opcional).order_by('orden')
     
     # Obtener datos para los selectores
     perfiles = Perfil.objects.filter(bloqueado__isnull=True).order_by('codigo')[:200]
@@ -47,6 +48,7 @@ def opcional_edit(request, pk):
     extrusoras = Extrusora.objects.filter(bloqueado__isnull=True).order_by('nombre')
     lineas = Linea.objects.filter(bloqueado__isnull=True).order_by('nombre')
     productos = Producto.objects.filter(bloqueado__isnull=True).order_by('descripcion')[:200]
+    accesorios_list = Accesorio.objects.filter(bloqueado__isnull=True).order_by('codigo')[:200]
     
     if request.method == 'POST':
         form = OpcionalFabricaForm(request.POST, instance=opcional)
@@ -63,12 +65,14 @@ def opcional_edit(request, pk):
         'opcional': opcional,
         'formulas': formulas,
         'relaciones': relaciones,
+        'accesorios': accesorios,
         'perfiles': perfiles,
         'hojas': hojas,
         'vidrios': vidrios,
         'extrusoras': extrusoras,
         'lineas': lineas,
-        'productos': productos
+        'productos': productos,
+        'accesorios_list': accesorios_list
     })
 
 
@@ -98,7 +102,6 @@ def opcional_formulas_guardar(request, pk):
             cantidad = request.POST.get(f'cantidad_{index}', '').strip()
             formula = request.POST.get(f'formula_{index}', '').strip()
             angulo = request.POST.get(f'angulo_{index}', '').strip()
-            tipo_relacionador = request.POST.get(f'tipo_relacionador_{index}', 'perfil').strip()
             perfil = request.POST.get(f'perfil_{index}', '').strip()
             
             if cantidad and formula:
@@ -107,9 +110,43 @@ def opcional_formulas_guardar(request, pk):
                     cantidad=cantidad,
                     formula=formula,
                     angulo=angulo,
-                    tipo_relacionador=tipo_relacionador,
+                    tipo_relacionador='perfil',
                     perfil=perfil,
-                    precio=0,  # El precio se toma del producto/perfil
+                    precio=0,
+                    orden=index
+                )
+                guardadas += 1
+            
+            index += 1
+        
+        return JsonResponse({'ok': True, 'guardadas': guardadas})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def opcional_accesorios_guardar(request, pk):
+    from .models import AccesorioOpcional
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    opcional = get_object_or_404(OpcionalFabrica, pk=pk)
+    
+    try:
+        AccesorioOpcional.objects.filter(opcional=opcional).delete()
+        
+        index = 0
+        guardadas = 0
+        while f'cantidad_acc_{index}' in request.POST:
+            cantidad = request.POST.get(f'cantidad_acc_{index}', '').strip()
+            accesorio = request.POST.get(f'accesorio_{index}', '').strip()
+            
+            if cantidad and accesorio:
+                AccesorioOpcional.objects.create(
+                    opcional=opcional,
+                    cantidad=cantidad,
+                    accesorio=accesorio,
                     orden=index
                 )
                 guardadas += 1
