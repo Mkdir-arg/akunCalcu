@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            sql="ALTER TABLE plantillas_opcionalfabrica DROP COLUMN IF EXISTS precio;",
+            sql="ALTER TABLE plantillas_opcionalfabrica DROP COLUMN precio;",
             reverse_sql="ALTER TABLE plantillas_opcionalfabrica ADD COLUMN precio DECIMAL(10, 2) DEFAULT 0;"
         ),
     ]
