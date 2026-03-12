@@ -32,10 +32,16 @@ def opcional_create(request):
 
 @login_required
 def opcional_edit(request, pk):
-    from productos.models import Producto
+    from productos.models import Producto as ProductoSimple
+    from pricing.models import Perfil, Hoja, Vidrio
+    
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
     formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
-    perfiles = Producto.objects.filter(activo=True).order_by('nombre')
+    
+    # Obtener datos para los selectores
+    perfiles = Perfil.objects.filter(bloqueado__isnull=True).order_by('codigo')[:200]  # Limitar para performance
+    hojas = Hoja.objects.filter(bloqueado__isnull=True).order_by('descripcion')[:200]
+    vidrios = Vidrio.objects.filter(bloqueado__isnull=True).order_by('codigo')[:200]
     
     if request.method == 'POST':
         form = OpcionalFabricaForm(request.POST, instance=opcional)
@@ -51,7 +57,9 @@ def opcional_edit(request, pk):
         'titulo': 'Editar Opcional',
         'opcional': opcional,
         'formulas': formulas,
-        'perfiles': perfiles
+        'perfiles': perfiles,
+        'hojas': hojas,
+        'vidrios': vidrios
     })
 
 
@@ -81,22 +89,18 @@ def opcional_formulas_guardar(request, pk):
             cantidad = request.POST.get(f'cantidad_{index}', '').strip()
             formula = request.POST.get(f'formula_{index}', '').strip()
             angulo = request.POST.get(f'angulo_{index}', '').strip()
+            tipo_relacionador = request.POST.get(f'tipo_relacionador_{index}', 'perfil').strip()
             perfil = request.POST.get(f'perfil_{index}', '').strip()
-            precio = request.POST.get(f'precio_{index}', '0').strip()
             
             if cantidad and formula:
-                try:
-                    precio_decimal = float(precio) if precio else 0
-                except ValueError:
-                    precio_decimal = 0
-                
                 FormulaOpcional.objects.create(
                     opcional=opcional,
                     cantidad=cantidad,
                     formula=formula,
                     angulo=angulo,
+                    tipo_relacionador=tipo_relacionador,
                     perfil=perfil,
-                    precio=precio_decimal,
+                    precio=0,  # El precio se toma del producto/perfil
                     orden=index
                 )
                 guardadas += 1

@@ -220,10 +220,18 @@ class OpcionalFabrica(models.Model):
 
 class FormulaOpcional(models.Model):
     """Fórmulas de cálculo para opcionales de fábrica."""
+    
+    TIPO_RELACIONADOR_CHOICES = [
+        ('perfil', 'Perfil'),
+        ('hoja', 'Hoja'),
+        ('vidrio', 'Vidrio'),
+    ]
+    
     opcional = models.ForeignKey(OpcionalFabrica, on_delete=models.CASCADE, related_name='formulas')
     cantidad = models.CharField(max_length=100, verbose_name='Cantidad', help_text='Fórmula para cantidad (ej: 2, CANTIDAD_HOJAS)')
     formula = models.CharField(max_length=200, verbose_name='Fórmula', help_text='Fórmula de cálculo (ej: Alto - 42)')
     angulo = models.CharField(max_length=10, blank=True, verbose_name='Ángulo', help_text='Ángulo de corte (ej: 90, 45)')
+    tipo_relacionador = models.CharField(max_length=20, choices=TIPO_RELACIONADOR_CHOICES, default='perfil', verbose_name='Tipo')
     perfil = models.CharField(max_length=100, blank=True, verbose_name='Perfil', help_text='Código del perfil')
     precio = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio')
     orden = models.IntegerField(default=0, verbose_name='Orden')

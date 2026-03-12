@@ -84,16 +84,31 @@
                                    class="w-full px-2 py-1 border rounded text-sm" placeholder="90">
                         </div>
                         <div class="col-span-2">
-                            <select name="perfil_{{ forloop.counter0 }}" class="w-full px-2 py-1 border rounded text-sm">
-                                <option value="">Seleccionar...</option>
-                                {% for perfil in perfiles %}
-                                <option value="{{ perfil.nombre }}" {% if formula.perfil == perfil.nombre %}selected{% endif %}>{{ perfil.nombre }}</option>
-                                {% endfor %}
+                            <select name="tipo_relacionador_{{ forloop.counter0 }}" 
+                                    class="tipo-relacionador w-full px-2 py-1 border rounded text-sm" 
+                                    onchange="actualizarRelacionador(this)">
+                                <option value="perfil" {% if formula.tipo_relacionador == 'perfil' %}selected{% endif %}>Perfil</option>
+                                <option value="hoja" {% if formula.tipo_relacionador == 'hoja' %}selected{% endif %}>Hoja</option>
+                                <option value="vidrio" {% if formula.tipo_relacionador == 'vidrio' %}selected{% endif %}>Vidrio</option>
                             </select>
                         </div>
                         <div class="col-span-2">
-                            <input type="number" name="precio_{{ forloop.counter0 }}" value="{{ formula.precio }}" 
-                                   class="w-full px-2 py-1 border rounded text-sm" placeholder="0.00" step="0.01">
+                            <select name="perfil_{{ forloop.counter0 }}" class="perfil-selector w-full px-2 py-1 border rounded text-sm">
+                                <option value="">Seleccionar...</option>
+                                {% if formula.tipo_relacionador == 'perfil' or not formula.tipo_relacionador %}
+                                    {% for perfil in perfiles %}
+                                    <option value="{{ perfil.codigo }}" {% if formula.perfil == perfil.codigo %}selected{% endif %}>{{ perfil.codigo }} - {{ perfil.descripcion|truncatechars:30 }}</option>
+                                    {% endfor %}
+                                {% elif formula.tipo_relacionador == 'hoja' %}
+                                    {% for hoja in hojas %}
+                                    <option value="{{ hoja.id }}" {% if formula.perfil == hoja.id|stringformat:"s" %}selected{% endif %}>{{ hoja.descripcion }}</option>
+                                    {% endfor %}
+                                {% elif formula.tipo_relacionador == 'vidrio' %}
+                                    {% for vidrio in vidrios %}
+                                    <option value="{{ vidrio.codigo }}" {% if formula.perfil == vidrio.codigo %}selected{% endif %}>{{ vidrio.codigo }} - {{ vidrio.descripcion|truncatechars:30 }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
                         </div>
                         <div class="col-span-1 text-center">
                             <button type="button" class="remove-formula text-red-600 hover:text-red-800">
@@ -113,8 +128,8 @@
                 <p><strong>Cantidad:</strong> Número o fórmula (ej: 2, CANTIDAD_HOJAS)</p>
                 <p><strong>Fórmula:</strong> Expresión de cálculo (ej: Alto - 42, Ancho * 2)</p>
                 <p><strong>Ángulo:</strong> Ángulo de corte (ej: 90, 45)</p>
-                <p><strong>Perfil:</strong> Código del perfil a usar</p>
-                <p><strong>Precio:</strong> Precio unitario del opcional</p>
+                <p><strong>Tipo:</strong> Selecciona si es Perfil, Hoja o Vidrio</p>
+                <p><strong>Relacionador:</strong> Selecciona el elemento específico según el tipo</p>
             </div>
         </div>
         {% endif %}
@@ -123,6 +138,63 @@
 
 {% if opcional %}
 <script>
+// Datos para los selectores dinámicos
+const PERFILES = {{ perfiles|safe|default:"[]" }};
+const HOJAS = {{ hojas|safe|default:"[]" }};
+const VIDRIOS = {{ vidrios|safe|default:"[]" }};
+
+// Convertir a formato JSON para JavaScript
+const perfilesData = [
+    {% for perfil in perfiles %}
+    {codigo: "{{ perfil.codigo|escapejs }}", descripcion: "{{ perfil.descripcion|escapejs|truncatechars:30 }}"},
+    {% endfor %}
+];
+
+const hojasData = [
+    {% for hoja in hojas %}
+    {id: "{{ hoja.id }}", descripcion: "{{ hoja.descripcion|escapejs }}"},
+    {% endfor %}
+];
+
+const vidriosData = [
+    {% for vidrio in vidrios %}
+    {codigo: "{{ vidrio.codigo|escapejs }}", descripcion: "{{ vidrio.descripcion|escapejs|truncatechars:30 }}"},
+    {% endfor %}
+];
+
+function actualizarRelacionador(selectTipo) {
+    const row = selectTipo.closest('.formula-row');
+    const perfilSelect = row.querySelector('.perfil-selector');
+    const tipo = selectTipo.value;
+    
+    // Limpiar opciones actuales
+    perfilSelect.innerHTML = '<option value="">Seleccionar...</option>';
+    
+    // Agregar opciones según el tipo
+    if (tipo === 'perfil') {
+        perfilesData.forEach(perfil => {
+            const option = document.createElement('option');
+            option.value = perfil.codigo;
+            option.textContent = `${perfil.codigo} - ${perfil.descripcion}`;
+            perfilSelect.appendChild(option);
+        });
+    } else if (tipo === 'hoja') {
+        hojasData.forEach(hoja => {
+            const option = document.createElement('option');
+            option.value = hoja.id;
+            option.textContent = hoja.descripcion;
+            perfilSelect.appendChild(option);
+        });
+    } else if (tipo === 'vidrio') {
+        vidriosData.forEach(vidrio => {
+            const option = document.createElement('option');
+            option.value = vidrio.codigo;
+            option.textContent = `${vidrio.codigo} - ${vidrio.descripcion}`;
+            perfilSelect.appendChild(option);
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('formulas-container');
     const agregarBtn = document.getElementById('agregar-formula');
@@ -147,15 +219,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="text" name="angulo_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="90">
                 </div>
                 <div class="col-span-2">
-                    <select name="perfil_${index}" class="w-full px-2 py-1 border rounded text-sm">
-                        <option value="">Seleccionar...</option>
-                        {% for perfil in perfiles %}
-                        <option value="{{ perfil.nombre }}">{{ perfil.nombre }}</option>
-                        {% endfor %}
+                    <select name="tipo_relacionador_${index}" class="tipo-relacionador w-full px-2 py-1 border rounded text-sm" onchange="actualizarRelacionador(this)">
+                        <option value="perfil">Perfil</option>
+                        <option value="hoja">Hoja</option>
+                        <option value="vidrio">Vidrio</option>
                     </select>
                 </div>
                 <div class="col-span-2">
-                    <input type="number" name="precio_${index}" class="w-full px-2 py-1 border rounded text-sm" placeholder="0.00" step="0.01">
+                    <select name="perfil_${index}" class="perfil-selector w-full px-2 py-1 border rounded text-sm">
+                        <option value="">Seleccionar...</option>
+                        {% for perfil in perfiles %}
+                        <option value="{{ perfil.codigo }}">{{ perfil.codigo }} - {{ perfil.descripcion|truncatechars:30 }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="col-span-1 text-center">
                     <button type="button" class="remove-formula text-red-600 hover:text-red-800">
