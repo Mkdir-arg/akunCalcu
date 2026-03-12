@@ -204,6 +204,7 @@ class OpcionalFabrica(models.Model):
     """Opcionales que se pueden agregar a los pedidos de fábrica."""
     codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
     nombre = models.CharField(max_length=200, verbose_name='Nombre')
+    precio_m2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio por m²')
     descripcion = models.TextField(blank=True, verbose_name='Descripción')
     activo = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -243,3 +244,21 @@ class FormulaOpcional(models.Model):
 
     def __str__(self):
         return f"{self.opcional.codigo} - Fórmula #{self.orden}"
+
+
+class RelacionProductoOpcional(models.Model):
+    """Relaciones entre opcionales y productos de la base legacy."""
+    opcional = models.ForeignKey(OpcionalFabrica, on_delete=models.CASCADE, related_name='relaciones_productos')
+    extrusora_id = models.IntegerField(verbose_name='Extrusora ID')
+    linea_id = models.IntegerField(verbose_name='Línea ID')
+    producto_id = models.IntegerField(verbose_name='Producto ID')
+    cantidad = models.IntegerField(default=1, verbose_name='Cantidad')
+    orden = models.IntegerField(default=0, verbose_name='Orden')
+
+    class Meta:
+        verbose_name = 'Relación Producto-Opcional'
+        verbose_name_plural = 'Relaciones Producto-Opcional'
+        ordering = ['opcional', 'orden', 'id']
+
+    def __str__(self):
+        return f"{self.opcional.codigo} - Producto {self.producto_id}"

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views_opcionales import opcional_list, opcional_create, opcional_edit, opcional_toggle, opcional_formulas_guardar, opcional_relaciones_guardar
 
 app_name = 'plantillas'
 
@@ -39,9 +40,10 @@ urlpatterns = [
     path('pedidos/filas/<int:fila_pk>/eliminar/', views.pedido_fila_delete, name='pedido_fila_delete'),
     
     # Opcionales de Fábrica
-    path('opcionales/', views.opcional_list, name='opcional_list'),
-    path('opcionales/crear/', views.opcional_create, name='opcional_create'),
-    path('opcionales/<int:pk>/editar/', views.opcional_edit, name='opcional_edit'),
-    path('opcionales/<int:pk>/toggle/', views.opcional_toggle, name='opcional_toggle'),
-    path('opcionales/<int:pk>/formulas/guardar/', views.opcional_formulas_guardar, name='opcional_formulas_guardar'),
+    path('opcionales/', opcional_list, name='opcional_list'),
+    path('opcionales/crear/', opcional_create, name='opcional_create'),
+    path('opcionales/<int:pk>/editar/', opcional_edit, name='opcional_edit'),
+    path('opcionales/<int:pk>/toggle/', opcional_toggle, name='opcional_toggle'),
+    path('opcionales/<int:pk>/formulas/guardar/', opcional_formulas_guardar, name='opcional_formulas_guardar'),
+    path('opcionales/<int:pk>/relaciones/guardar/', opcional_relaciones_guardar, name='opcional_relaciones_guardar'),
 ]
