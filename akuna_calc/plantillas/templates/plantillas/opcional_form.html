@@ -71,7 +71,7 @@
         </form>
     </div>
 
-    {% if opcional %}
+    {% if opcional and opcional.pk %}
     <!-- Sección para Mosquitero -->
     <div id="seccion-mosquitero" style="display: {% if opcional.tipo == 'mosquitero' %}block{% else %}none{% endif %};">
         <div class="bg-white rounded-lg shadow p-6 mb-6">
