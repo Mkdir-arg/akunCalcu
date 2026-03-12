@@ -207,6 +207,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function createFormulaRow(index) {
         const div = document.createElement('div');
         div.className = 'formula-row border border-gray-300 rounded-lg p-3 bg-gray-50';
+        
+        // Crear opciones de perfiles
+        let perfilesOptions = '<option value="">Seleccionar...</option>';
+        perfilesData.forEach(perfil => {
+            perfilesOptions += `<option value="${perfil.codigo}">${perfil.codigo} - ${perfil.descripcion}</option>`;
+        });
+        
         div.innerHTML = `
             <div class="grid grid-cols-12 gap-2 items-center">
                 <div class="col-span-2">
@@ -227,10 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="col-span-2">
                     <select name="perfil_${index}" class="perfil-selector w-full px-2 py-1 border rounded text-sm">
-                        <option value="">Seleccionar...</option>
-                        {% for perfil in perfiles %}
-                        <option value="{{ perfil.codigo }}">{{ perfil.codigo }} - {{ perfil.descripcion|truncatechars:30 }}</option>
-                        {% endfor %}
+                        ${perfilesOptions}
                     </select>
                 </div>
                 <div class="col-span-1 text-center">
@@ -259,9 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function reindexFormulas() {
         const rows = container.querySelectorAll('.formula-row');
         rows.forEach((row, index) => {
-            row.querySelectorAll('input').forEach(input => {
-                const name = input.name.replace(/_\d+$/, `_${index}`);
-                input.name = name;
+            row.querySelectorAll('input, select').forEach(field => {
+                const name = field.name.replace(/_\d+$/, `_${index}`);
+                field.name = name;
             });
         });
     }
@@ -271,8 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const rows = container.querySelectorAll('.formula-row');
         
         rows.forEach((row, index) => {
-            row.querySelectorAll('input').forEach(input => {
-                formData.append(input.name, input.value);
+            row.querySelectorAll('input, select').forEach(field => {
+                formData.append(field.name, field.value);
             });
         });
         
@@ -287,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.ok) {
                 alert(`✓ ${data.guardadas} fórmula(s) guardada(s) correctamente`);
+                location.reload();
             } else {
                 alert('Error: ' + data.error);
             }
