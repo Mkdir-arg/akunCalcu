@@ -25,16 +25,18 @@ class LineaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas']
+        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas', 'horas_hombre']
         labels = {
             'descripcion': 'Nombre',
             'cantidad_hojas': 'Cantidad de Hojas',
+            'horas_hombre': 'Horas Hombre',
         }
         widgets = {
             'extrusora': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'linea': forms.Select(attrs={'class': _select_class + ' no-select2'}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad_hojas': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
+            'horas_hombre': forms.NumberInput(attrs={'class': _input_class, 'step': '0.1', 'value': '0'}),
         }
     
     def __init__(self, *args, **kwargs):

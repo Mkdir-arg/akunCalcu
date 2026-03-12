@@ -15,6 +15,7 @@ urlpatterns = [
     path('pricing/', include('pricing.urls')),
     path('pedidos/', include('pedidos.urls')),
     path('presupuestos/', include('presupuestos.urls')),
+    path('configuracion/', include('configuracion.urls')),
 ]
 
 # Serve static files in development

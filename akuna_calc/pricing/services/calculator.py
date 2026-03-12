@@ -261,11 +261,29 @@ class PriceCalculator:
                 "precio_total": round(tratamiento_total, 2),
             }
 
+        # Mano de obra (horas hombre)
+        total_mano_obra = 0.0
+        mano_obra_detalle: Optional[Dict[str, Any]] = None
+        
+        try:
+            from configuracion.models import ConfiguracionGeneral
+            valor_hora = ConfiguracionGeneral.get_valor_hora_hombre()
+            horas_hombre = _to_float(marco.producto.horas_hombre) if marco.producto.horas_hombre else 0.0
+            
+            if valor_hora > 0 and horas_hombre > 0:
+                total_mano_obra = horas_hombre * valor_hora
+                mano_obra_detalle = {
+                    "horas": horas_hombre,
+                    "valor_hora": valor_hora,
+                    "precio_total": round(total_mano_obra, 2),
+                }
+        except Exception as e:
+            logger.warning(f"Error calculando mano de obra: {e}")
+
         total_perfiles = sum(item["precio_total"] for item in perfiles_items)
         total_accesorios = sum(item["precio_total"] for item in accesorios_items)
         total_vidrios = round(precio_vidrio, 2)
         total_tratamiento = round(tratamiento_total, 2)
-        total_mano_obra = 0.0
 
         subtotal = total_perfiles + total_accesorios + total_vidrios + total_tratamiento + total_mano_obra
         margen = subtotal * cleaned["margen_porcentaje"] / 100.0
@@ -280,7 +298,7 @@ class PriceCalculator:
                 "accesorios": accesorios_items,
                 "vidrios": vidrio_detalle,
                 "tratamiento": tratamiento_detalle,
-                "mano_obra": total_mano_obra,
+                "mano_obra": mano_obra_detalle,
             },
             "resumen": {
                 "total_perfiles": round(total_perfiles, 2),

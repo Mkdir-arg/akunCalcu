@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Configuración General{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Configuración General</h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700">Valores de Configuración</h2>
+        
+        <div class="space-y-4">
+            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <h3 class="font-semibold text-gray-800">Valor Hora Hombre</h3>
+                    <p class="text-sm text-gray-600">Costo por hora de mano de obra</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl font-bold text-blue-600">${{ valor_hora_hombre|floatformat:2 }}</span>
+                    <a href="{% url 'configuracion-hora-hombre' %}" 
+                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

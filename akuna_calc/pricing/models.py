@@ -59,6 +59,7 @@ class Producto(models.Model):
     fecha_creacion = models.TextField(db_column="Fecha_creacion", null=True, blank=True)
     bloqueado = models.TextField(db_column="Bloqueado", null=True, blank=True)
     cantidad_hojas = models.IntegerField(db_column="cantidad_hojas", null=True, blank=True, default=1)
+    horas_hombre = models.FloatField(db_column="horas_hombre", null=True, blank=True, default=0)
 
     class Meta:
         managed = False

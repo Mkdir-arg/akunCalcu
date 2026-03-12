@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'pricing',
     'pedidos',
     'presupuestos',
+    'configuracion',
 ]
 
 MIDDLEWARE = [
