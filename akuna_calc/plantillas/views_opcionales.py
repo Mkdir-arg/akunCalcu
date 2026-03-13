@@ -50,6 +50,11 @@ def opcional_edit(request, pk):
     productos = Producto.objects.filter(bloqueado__isnull=True).order_by('descripcion')[:200]
     accesorios_list = Accesorio.objects.filter(bloqueado__isnull=True).order_by('codigo')[:200]
     
+    # Mapa producto_id -> {extrusora_id, linea_id} para inicializar selects
+    productos_map = {str(p.id): {'extrusora_id': str(p.extrusora_id), 'linea_id': str(p.linea_id)} for p in productos}
+    import json
+    productos_map_json = json.dumps(productos_map)
+    
     if request.method == 'POST':
         form = OpcionalFabricaForm(request.POST, instance=opcional)
         if form.is_valid():
@@ -72,7 +77,8 @@ def opcional_edit(request, pk):
         'extrusoras': extrusoras,
         'lineas': lineas,
         'productos': productos,
-        'accesorios_list': accesorios_list
+        'accesorios_list': accesorios_list,
+        'productos_map_json': productos_map_json
     })
 
 

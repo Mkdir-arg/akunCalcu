@@ -742,10 +742,12 @@ class PriceCalculator:
                     resultado = self._eval_formula(formula.formula, variables)
                     if cantidad <= 0 or resultado <= 0:
                         continue
-                    precio_formula = resultado * float(opcional.precio_m2) * cantidad
+                    # Convertir mm² a m² (las dimensiones vienen en mm)
+                    resultado_m2 = resultado / 1_000_000
+                    precio_formula = resultado_m2 * float(opcional.precio_m2) * cantidad
                     detalles_formulas.append({
                         "cantidad": cantidad,
-                        "resultado_formula": round(resultado, 2),
+                        "area_m2": round(resultado_m2, 4),
                         "precio": round(precio_formula, 2),
                     })
                     precio_opcional += precio_formula

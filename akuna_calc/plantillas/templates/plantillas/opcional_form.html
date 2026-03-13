@@ -310,17 +310,27 @@ function guardarFormulasMosq() {
 }
 
 // Inicializar filtros en filas existentes
+const productosMap = {{ productos_map_json|safe }};
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.formula-mosq-row').forEach(row => {
         const prod = row.querySelector('.producto-select');
         if (prod && prod.value) {
-            const opt = prod.querySelector(`option[value="${prod.value}"]`);
-            if (opt) {
-                const lineaId = opt.dataset.linea;
-                const selectLinea = row.querySelector('.linea-select');
-                // Mostrar todas las líneas y productos para que el selected sea visible
-                Array.from(selectLinea.options).forEach(o => o.style.display = '');
-                Array.from(prod.options).forEach(o => o.style.display = '');
+            const info = productosMap[prod.value];
+            if (info) {
+                const selExt = row.querySelector('.extrusora-select');
+                const selLin = row.querySelector('.linea-select');
+                selExt.value = info.extrusora_id;
+                // Mostrar líneas de esa extrusora
+                Array.from(selLin.options).forEach(opt => {
+                    if (opt.value === '') { opt.style.display = ''; return; }
+                    opt.style.display = (opt.dataset.extrusora === info.extrusora_id) ? '' : 'none';
+                });
+                selLin.value = info.linea_id;
+                // Mostrar productos de esa línea
+                Array.from(prod.options).forEach(opt => {
+                    if (opt.value === '') { opt.style.display = ''; return; }
+                    opt.style.display = (opt.dataset.linea === info.linea_id) ? '' : 'none';
+                });
             }
         }
     });
