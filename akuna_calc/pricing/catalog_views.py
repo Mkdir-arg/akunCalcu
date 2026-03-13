@@ -146,6 +146,11 @@ class VidriosRepartidosListView(APIView):
 
 class OpcionalesListView(APIView):
     def get(self, request):
-        from plantillas.models import OpcionalFabrica
-        opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+        from plantillas.models import OpcionalFabrica, RelacionProductoOpcional
+        producto_id = request.query_params.get('producto_id')
+        if producto_id:
+            relaciones = RelacionProductoOpcional.objects.filter(producto_id=producto_id).values_list('opcional_id', flat=True).distinct()
+            opcionales = OpcionalFabrica.objects.filter(activo=True, id__in=relaciones).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+        else:
+            opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
         return Response(list(opcionales))

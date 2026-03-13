@@ -225,7 +225,6 @@ const Cotizador = () => {
   useEffect(() => {
     fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
     fetch('/pricing/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
-    fetch('/pricing/api/pricing/opcionales/').then(r => r.json()).then(setOpcionales);
   }, []);
 
   useEffect(() => {
@@ -247,8 +246,10 @@ const Cotizador = () => {
   useEffect(() => {
     if (config.producto_id) {
       fetch(`/pricing/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
+      fetch(`/pricing/api/pricing/opcionales/?producto_id=${config.producto_id}`).then(r => r.json()).then(setOpcionales);
     } else {
       setMarcos([]);
+      setOpcionales([]);
     }
   }, [config.producto_id]);
 
