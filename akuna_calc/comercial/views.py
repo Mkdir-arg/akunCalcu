@@ -1820,3 +1820,248 @@ def agregar_retencion_pago(request, pk):
     
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
+
+
+
+@login_required
+def reporte_general(request):
+    """Vista para reporte general combinando ingresos y gastos."""
+    from .forms import ReporteForm, ReporteGastosForm
+    from django.db.models import Sum, Q, Value, DecimalField
+    from django.db.models.functions import Coalesce
+    
+    form_ingresos = ReporteForm(request.POST or None)
+    form_gastos = ReporteGastosForm(request.POST or None)
+    
+    reporte_data = None
+    
+    if request.method == 'POST':
+        # Obtener filtros de ingresos
+        fecha_desde = request.POST.get('fecha_desde')
+        fecha_hasta = request.POST.get('fecha_hasta')
+        
+        # INGRESOS
+        pagos = PagoVenta.objects.select_related('venta', 'venta__cliente').all()
+        
+        if fecha_desde:
+            pagos = pagos.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            pagos = pagos.filter(fecha__lte=fecha_hasta)
+        
+        cliente_id = request.POST.get('cliente')
+        if cliente_id:
+            pagos = pagos.filter(venta__cliente_id=cliente_id)
+        
+        razon_social = request.POST.get('razon_social', '').strip()
+        if razon_social:
+            pagos = pagos.filter(venta__razon_social__icontains=razon_social)
+        
+        estado_venta = request.POST.get('estado_venta')
+        if estado_venta:
+            pagos = pagos.filter(venta__estado=estado_venta)
+        
+        tipo_factura = request.POST.get('tipo_factura')
+        if tipo_factura:
+            pagos = pagos.filter(venta__tipo_factura=tipo_factura)
+        
+        # Calcular totales de ingresos
+        ingresos_blanco = pagos.filter(venta__tipo_factura='blanco').aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        
+        ingresos_negro = pagos.filter(venta__tipo_factura='negro').aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        
+        total_ingresos = ingresos_blanco + ingresos_negro
+        
+        # GASTOS
+        compras = Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta').all()
+        
+        if fecha_desde:
+            compras = compras.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            compras = compras.filter(fecha__lte=fecha_hasta)
+        
+        cuenta_id = request.POST.get('cuenta')
+        if cuenta_id:
+            compras = compras.filter(cuenta_id=cuenta_id)
+        
+        tipo_cuenta_id = request.POST.get('tipo_cuenta')
+        if tipo_cuenta_id:
+            compras = compras.filter(cuenta__tipo_cuenta_id=tipo_cuenta_id)
+        
+        tipo_factura_gasto = request.POST.get('tipo_factura_gasto')
+        if tipo_factura_gasto:
+            compras = compras.filter(tipo_factura=tipo_factura_gasto)
+        
+        # Calcular totales de gastos
+        gastos_blanco = compras.filter(tipo_factura='blanco').aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        
+        gastos_negro = compras.filter(tipo_factura='negro').aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        
+        total_gastos = gastos_blanco + gastos_negro
+        
+        # Calcular balance
+        balance_blanco = ingresos_blanco - gastos_blanco
+        balance_negro = ingresos_negro - gastos_negro
+        balance_total = total_ingresos - total_gastos
+        
+        reporte_data = {
+            'ingresos': {
+                'blanco': ingresos_blanco,
+                'negro': ingresos_negro,
+                'total': total_ingresos,
+                'cantidad': pagos.count(),
+            },
+            'gastos': {
+                'blanco': gastos_blanco,
+                'negro': gastos_negro,
+                'total': total_gastos,
+                'cantidad': compras.count(),
+            },
+            'balance': {
+                'blanco': balance_blanco,
+                'negro': balance_negro,
+                'total': balance_total,
+            },
+        }
+        
+        # Guardar en sesión para exportar
+        request.session['reporte_general_data'] = {
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'ingresos_blanco': float(ingresos_blanco),
+            'ingresos_negro': float(ingresos_negro),
+            'total_ingresos': float(total_ingresos),
+            'gastos_blanco': float(gastos_blanco),
+            'gastos_negro': float(gastos_negro),
+            'total_gastos': float(total_gastos),
+            'balance_blanco': float(balance_blanco),
+            'balance_negro': float(balance_negro),
+            'balance_total': float(balance_total),
+        }
+    
+    context = {
+        'form_ingresos': form_ingresos,
+        'form_gastos': form_gastos,
+        'reporte_data': reporte_data,
+    }
+    
+    return render(request, 'comercial/reportes/reporte_general.html', context)
+
+
+@login_required
+def exportar_reporte_general_excel(request):
+    """Exportar reporte general a Excel."""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from django.http import HttpResponse
+    from datetime import datetime
+    
+    data = request.session.get('reporte_general_data', {})
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reporte General"
+    
+    # Estilos
+    header_fill = PatternFill(start_color="1F4788", end_color="1F4788", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    title_font = Font(bold=True, size=14)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Título
+    ws.merge_cells('A1:E1')
+    ws['A1'] = 'REPORTE GENERAL - INGRESOS Y GASTOS'
+    ws['A1'].font = title_font
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Período
+    row = 3
+    if data.get('fecha_desde') or data.get('fecha_hasta'):
+        periodo = f"Período: {data.get('fecha_desde', 'Inicio')} - {data.get('fecha_hasta', 'Hoy')}"
+        ws.merge_cells(f'A{row}:E{row}')
+        ws[f'A{row}'] = periodo
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].alignment = Alignment(horizontal='center')
+        row += 2
+    
+    # Encabezados
+    headers = ['Concepto', 'Blanco', 'Negro', 'Total', 'Porcentaje']
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+    
+    row += 1
+    
+    # INGRESOS
+    ws.cell(row=row, column=1, value='INGRESOS').font = Font(bold=True)
+    ws.cell(row=row, column=2, value=data.get('ingresos_blanco', 0))
+    ws.cell(row=row, column=3, value=data.get('ingresos_negro', 0))
+    ws.cell(row=row, column=4, value=data.get('total_ingresos', 0))
+    ws.cell(row=row, column=5, value='100%')
+    for col in range(1, 6):
+        ws.cell(row=row, column=col).border = border
+        if col > 1:
+            ws.cell(row=row, column=col).number_format = '"$"#,##0.00'
+    row += 1
+    
+    # GASTOS
+    ws.cell(row=row, column=1, value='GASTOS').font = Font(bold=True)
+    ws.cell(row=row, column=2, value=data.get('gastos_blanco', 0))
+    ws.cell(row=row, column=3, value=data.get('gastos_negro', 0))
+    ws.cell(row=row, column=4, value=data.get('total_gastos', 0))
+    total_ingresos = data.get('total_ingresos', 0)
+    porcentaje_gastos = (data.get('total_gastos', 0) / total_ingresos * 100) if total_ingresos > 0 else 0
+    ws.cell(row=row, column=5, value=f'{porcentaje_gastos:.1f}%')
+    for col in range(1, 6):
+        ws.cell(row=row, column=col).border = border
+        if col > 1 and col < 5:
+            ws.cell(row=row, column=col).number_format = '"$"#,##0.00'
+    row += 1
+    
+    # BALANCE
+    balance_fill = PatternFill(start_color="D4EDDA" if data.get('balance_total', 0) >= 0 else "F8D7DA", 
+                               end_color="D4EDDA" if data.get('balance_total', 0) >= 0 else "F8D7DA", 
+                               fill_type="solid")
+    ws.cell(row=row, column=1, value='BALANCE').font = Font(bold=True, size=12)
+    ws.cell(row=row, column=2, value=data.get('balance_blanco', 0))
+    ws.cell(row=row, column=3, value=data.get('balance_negro', 0))
+    ws.cell(row=row, column=4, value=data.get('balance_total', 0))
+    ws.cell(row=row, column=5, value='')
+    for col in range(1, 6):
+        ws.cell(row=row, column=col).fill = balance_fill
+        ws.cell(row=row, column=col).border = border
+        ws.cell(row=row, column=col).font = Font(bold=True)
+        if col > 1 and col < 5:
+            ws.cell(row=row, column=col).number_format = '"$"#,##0.00'
+    
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 18
+    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 15
+    
+    # Preparar respuesta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'reporte_general_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response

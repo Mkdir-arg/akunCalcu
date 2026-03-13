@@ -53,6 +53,8 @@ urlpatterns = [
     path('reportes/exportar-excel/', views.exportar_reporte_excel, name='exportar_reporte_excel'),
     path('reportes/gastos/', views.reportes_gastos, name='reportes_gastos'),
     path('reportes/gastos/exportar-excel/', views.exportar_reporte_gastos_excel, name='exportar_reporte_gastos_excel'),
+    path('reportes/general/', views.reporte_general, name='reporte_general'),
+    path('reportes/general/exportar-excel/', views.exportar_reporte_general_excel, name='exportar_reporte_general_excel'),
     
     # API
     path('api/tipos-gasto-by-cuenta/', views.get_tipos_gasto_by_cuenta, name='tipos_gasto_by_cuenta'),
