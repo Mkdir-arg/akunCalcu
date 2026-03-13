@@ -23,6 +23,7 @@ class PricingCalculateSerializer(serializers.Serializer):
     margen_porcentaje = serializers.FloatField(required=False, default=0.0)
     rebaje_vidrio_mm = serializers.IntegerField(required=False, default=0)
     cantidad_hojas = serializers.IntegerField(required=False, min_value=1)
+    opcionales = serializers.ListField(child=serializers.DictField(), required=False, default=list)
 
     def validate_margen_porcentaje(self, value: float) -> float:
         if value < 0:
