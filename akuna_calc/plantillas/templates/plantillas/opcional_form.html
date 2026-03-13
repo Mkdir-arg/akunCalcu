@@ -75,13 +75,75 @@
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <p class="text-blue-800">
             <i class="fas fa-info-circle mr-2"></i>
-            Guarda primero el opcional para poder agregar fórmulas y accesorios.
+            Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones de productos.
         </p>
     </div>
     {% endif %}
 
     {% if opcional and opcional.pk %}
-    <!-- Fórmulas de Perfiles -->
+
+    {% if opcional.tipo == 'mosquitero' %}
+    <!-- Relaciones de Productos (Mosquitero) -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Relaciones de Productos</h2>
+            <button onclick="guardarRelaciones()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                <i class="fas fa-save mr-2"></i>Guardar Relaciones
+            </button>
+        </div>
+
+        <div id="relaciones-container" class="space-y-3">
+            {% for rel in relaciones %}
+            <div class="relacion-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Extrusora</label>
+                        <select class="extrusora-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="extrusora" onchange="filtrarLineas(this)">
+                            <option value="">Seleccionar...</option>
+                            {% for ext in extrusoras %}
+                            <option value="{{ ext.id }}" {% if rel.extrusora_id == ext.id %}selected{% endif %}>{{ ext.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Línea Producto</label>
+                        <select class="linea-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="linea" onchange="filtrarProductos(this)">
+                            <option value="">Seleccionar...</option>
+                            {% for lin in lineas %}
+                            <option value="{{ lin.id }}" data-extrusora="{{ lin.extrusora_id }}" {% if rel.linea_id == lin.id %}selected{% endif %}>{{ lin.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+                        <select class="producto-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="producto">
+                            <option value="">Seleccionar...</option>
+                            {% for prod in productos %}
+                            <option value="{{ prod.id }}" data-linea="{{ prod.linea_id }}" {% if rel.producto_id == prod.id %}selected{% endif %}>{{ prod.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <div class="flex gap-2">
+                            <input type="number" name="cantidad" value="{{ rel.cantidad }}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1">
+                            <button type="button" onclick="eliminarRelacion(this)" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button onclick="agregarRelacion()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
+            <i class="fas fa-plus mr-2"></i>Agregar Relación
+        </button>
+    </div>
+
+    {% else %}
+    <!-- Fórmulas de Perfiles (Otro) -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Fórmulas de Perfiles</h2>
@@ -167,10 +229,136 @@
         </button>
     </div>
     {% endif %}
+
+    {% endif %}
 </div>
 
 <script>
 {% if opcional and opcional.pk %}
+
+{% if opcional.tipo == 'mosquitero' %}
+// Relaciones de Productos
+function filtrarLineas(selectExtrusora, limpiarSeleccion = true) {
+    const row = selectExtrusora.closest('.relacion-row');
+    const extrusoraId = selectExtrusora.value;
+    const selectLinea = row.querySelector('.linea-select');
+    const selectProducto = row.querySelector('.producto-select');
+    
+    if (limpiarSeleccion) {
+        selectLinea.value = '';
+        selectProducto.value = '';
+    }
+    
+    Array.from(selectLinea.options).forEach(option => {
+        if (option.value === '') { option.style.display = ''; return; }
+        option.style.display = (extrusoraId === '' || option.getAttribute('data-extrusora') === extrusoraId) ? '' : 'none';
+    });
+    
+    Array.from(selectProducto.options).forEach(option => {
+        if (option.value !== '') option.style.display = 'none';
+    });
+}
+
+function filtrarProductos(selectLinea, limpiarSeleccion = true) {
+    const row = selectLinea.closest('.relacion-row');
+    const lineaId = selectLinea.value;
+    const selectProducto = row.querySelector('.producto-select');
+    
+    if (limpiarSeleccion) selectProducto.value = '';
+    
+    Array.from(selectProducto.options).forEach(option => {
+        if (option.value === '') { option.style.display = ''; return; }
+        option.style.display = (lineaId === '' || option.getAttribute('data-linea') === lineaId) ? '' : 'none';
+    });
+}
+
+function agregarRelacion() {
+    const container = document.getElementById('relaciones-container');
+    const div = document.createElement('div');
+    div.className = 'relacion-row bg-gray-50 p-4 rounded-lg border border-gray-200';
+    div.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Extrusora</label>
+                <select class="extrusora-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="extrusora" onchange="filtrarLineas(this)">
+                    <option value="">Seleccionar...</option>
+                    {% for ext in extrusoras %}
+                    <option value="{{ ext.id }}">{{ ext.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Línea Producto</label>
+                <select class="linea-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="linea" onchange="filtrarProductos(this)">
+                    <option value="">Seleccionar...</option>
+                    {% for lin in lineas %}
+                    <option value="{{ lin.id }}" data-extrusora="{{ lin.extrusora_id }}" style="display:none;">{{ lin.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+                <select class="producto-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="producto">
+                    <option value="">Seleccionar...</option>
+                    {% for prod in productos %}
+                    <option value="{{ prod.id }}" data-linea="{{ prod.linea_id }}" style="display:none;">{{ prod.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                <div class="flex gap-2">
+                    <input type="number" name="cantidad" value="1" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1">
+                    <button type="button" onclick="eliminarRelacion(this)" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function eliminarRelacion(btn) { btn.closest('.relacion-row').remove(); }
+
+function guardarRelaciones() {
+    const rows = document.querySelectorAll('.relacion-row');
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    rows.forEach((row, index) => {
+        formData.append(`extrusora_${index}`, row.querySelector('select[name="extrusora"]').value);
+        formData.append(`linea_${index}`, row.querySelector('select[name="linea"]').value);
+        formData.append(`producto_${index}`, row.querySelector('select[name="producto"]').value);
+        formData.append(`cantidad_${index}`, row.querySelector('input[name="cantidad"]').value);
+    });
+    
+    fetch('{% url "plantillas:opcional_relaciones_guardar" opcional.pk %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.ok) {
+            alert(`✓ ${data.guardadas} relaciones guardadas correctamente`);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => { alert('Error al guardar: ' + error); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.relacion-row').forEach(row => {
+        const selectExtrusora = row.querySelector('.extrusora-select');
+        const selectLinea = row.querySelector('.linea-select');
+        if (selectExtrusora && selectExtrusora.value) filtrarLineas(selectExtrusora, false);
+        if (selectLinea && selectLinea.value) filtrarProductos(selectLinea, false);
+    });
+});
+
+{% else %}
 // Fórmulas
 function agregarFormula() {
     const container = document.getElementById('formulas-container');
@@ -205,9 +393,7 @@ function agregarFormula() {
     container.appendChild(div);
 }
 
-function eliminarFormula(btn) {
-    btn.closest('.formula-row').remove();
-}
+function eliminarFormula(btn) { btn.closest('.formula-row').remove(); }
 
 function guardarFormulas() {
     const rows = document.querySelectorAll('.formula-row');
@@ -215,13 +401,9 @@ function guardarFormulas() {
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
     
     rows.forEach((row, index) => {
-        const cantidad = row.querySelector('input[name="cantidad"]').value;
-        const formula = row.querySelector('input[name="formula"]').value;
-        const perfil = row.querySelector('select[name="perfil"]').value;
-        
-        formData.append(`cantidad_${index}`, cantidad);
-        formData.append(`formula_${index}`, formula);
-        formData.append(`perfil_${index}`, perfil);
+        formData.append(`cantidad_${index}`, row.querySelector('input[name="cantidad"]').value);
+        formData.append(`formula_${index}`, row.querySelector('input[name="formula"]').value);
+        formData.append(`perfil_${index}`, row.querySelector('select[name="perfil"]').value);
     });
     
     fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', {
@@ -237,9 +419,7 @@ function guardarFormulas() {
             alert('Error: ' + (data.error || 'Error desconocido'));
         }
     })
-    .catch(error => {
-        alert('Error al guardar: ' + error);
-    });
+    .catch(error => { alert('Error al guardar: ' + error); });
 }
 
 // Accesorios
@@ -272,9 +452,7 @@ function agregarAccesorio() {
     container.appendChild(div);
 }
 
-function eliminarAccesorio(btn) {
-    btn.closest('.accesorio-row').remove();
-}
+function eliminarAccesorio(btn) { btn.closest('.accesorio-row').remove(); }
 
 function guardarAccesorios() {
     const rows = document.querySelectorAll('.accesorio-row');
@@ -282,11 +460,8 @@ function guardarAccesorios() {
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
     
     rows.forEach((row, index) => {
-        const cantidad = row.querySelector('input[name="cantidad_acc"]').value;
-        const accesorio = row.querySelector('select[name="accesorio"]').value;
-        
-        formData.append(`cantidad_acc_${index}`, cantidad);
-        formData.append(`accesorio_${index}`, accesorio);
+        formData.append(`cantidad_acc_${index}`, row.querySelector('input[name="cantidad_acc"]').value);
+        formData.append(`accesorio_${index}`, row.querySelector('select[name="accesorio"]').value);
     });
     
     fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', {
@@ -302,10 +477,10 @@ function guardarAccesorios() {
             alert('Error: ' + (data.error || 'Error desconocido'));
         }
     })
-    .catch(error => {
-        alert('Error al guardar: ' + error);
-    });
+    .catch(error => { alert('Error al guardar: ' + error); });
 }
+{% endif %}
+
 {% endif %}
 </script>
 {% endblock %}
