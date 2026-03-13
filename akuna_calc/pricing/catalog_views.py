@@ -146,11 +146,41 @@ class VidriosRepartidosListView(APIView):
 
 class OpcionalesListView(APIView):
     def get(self, request):
-        from plantillas.models import OpcionalFabrica, RelacionProductoOpcional
+        from plantillas.models import OpcionalFabrica, RelacionProductoOpcional, FormulaOpcional
+        from pricing.models import Perfil, DespiecePerfilesMarco, Marco
+        
         producto_id = request.query_params.get('producto_id')
+        
         if producto_id:
-            relaciones = RelacionProductoOpcional.objects.filter(producto_id=producto_id).values_list('opcional_id', flat=True).distinct()
-            opcionales = OpcionalFabrica.objects.filter(activo=True, id__in=relaciones).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+            opcionales_ids = set()
+            
+            # 1. Opcionales tipo mosquitero con relaciones directas
+            relaciones = RelacionProductoOpcional.objects.filter(
+                producto_id=producto_id
+            ).values_list('opcional_id', flat=True)
+            opcionales_ids.update(relaciones)
+            
+            # 2. Opcionales tipo otro con perfiles en sus fórmulas
+            # Obtener todos los marcos del producto
+            marcos = Marco.objects.filter(producto_id=producto_id).values_list('id', flat=True)
+            
+            # Obtener todos los perfiles usados en esos marcos
+            perfiles_producto = DespiecePerfilesMarco.objects.filter(
+                marco_id__in=marcos
+            ).values_list('perfil', flat=True).distinct()
+            
+            # Buscar opcionales que usen esos perfiles en sus fórmulas
+            formulas_con_perfiles = FormulaOpcional.objects.filter(
+                perfil__in=perfiles_producto
+            ).values_list('opcional_id', flat=True).distinct()
+            opcionales_ids.update(formulas_con_perfiles)
+            
+            # Obtener los opcionales activos que coincidan
+            opcionales = OpcionalFabrica.objects.filter(
+                activo=True,
+                id__in=opcionales_ids
+            ).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
         else:
             opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+        
         return Response(list(opcionales))
