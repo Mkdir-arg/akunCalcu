@@ -12,78 +12,56 @@
         <h2 class="text-xl font-semibold mb-4">Datos del Opcional</h2>
         <form method="post">
             {% csrf_token %}
-            
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.codigo.label }}</label>
                     {{ form.codigo }}
-                    {% if form.codigo.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.codigo.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.codigo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.codigo.errors.0 }}</p>{% endif %}
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.nombre.label }}</label>
                     {{ form.nombre }}
-                    {% if form.nombre.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.nombre.errors %}<p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>{% endif %}
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.tipo.label }}</label>
                     {{ form.tipo }}
-                    {% if form.tipo.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.tipo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>{% endif %}
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.precio_m2.label }}</label>
                     {{ form.precio_m2 }}
-                    {% if form.precio_m2.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.precio_m2.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>{% endif %}
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.descripcion.label }}</label>
                     {{ form.descripcion }}
-                    {% if form.descripcion.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.descripcion.errors %}<p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>{% endif %}
                 </div>
-
                 <div class="flex items-center">
                     {{ form.activo }}
                     <label class="ml-2 text-sm text-gray-700">{{ form.activo.label }}</label>
                 </div>
             </div>
-
             <div class="mt-6 flex gap-3">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
                     <i class="fas fa-save mr-2"></i>Guardar
                 </button>
-                <a href="{% url 'plantillas:opcional_list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">
-                    Cancelar
-                </a>
+                <a href="{% url 'plantillas:opcional_list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">Cancelar</a>
             </div>
         </form>
     </div>
 
     {% if not opcional or not opcional.pk %}
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <p class="text-blue-800">
-            <i class="fas fa-info-circle mr-2"></i>
-            Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones de productos.
-        </p>
+        <p class="text-blue-800"><i class="fas fa-info-circle mr-2"></i>Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones.</p>
     </div>
     {% endif %}
 
     {% if opcional and opcional.pk %}
 
     {% if opcional.tipo == 'mosquitero' %}
-    <!-- Fórmulas Mosquitero: Cantidad + Fórmula + Producto -->
+    <!-- Fórmulas Mosquitero: Cantidad + Fórmula + Extrusora + Línea + Producto -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Fórmulas</h2>
@@ -95,7 +73,7 @@
         <div id="formulas-mosq-container" class="space-y-3">
             {% for formula in formulas %}
             <div class="formula-mosq-row bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
                         <input type="text" name="cantidad" value="{{ formula.cantidad }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
@@ -105,11 +83,29 @@
                         <input type="text" name="formula" value="{{ formula.formula }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Extrusora</label>
+                        <select class="extrusora-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="extrusora" onchange="filtrarLineas(this)">
+                            <option value="">Todas</option>
+                            {% for ext in extrusoras %}
+                            <option value="{{ ext.id }}">{{ ext.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Línea</label>
+                        <select class="linea-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="linea" onchange="filtrarProductos(this)">
+                            <option value="">Todas</option>
+                            {% for lin in lineas %}
+                            <option value="{{ lin.id }}" data-extrusora="{{ lin.extrusora_id }}">{{ lin.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-                        <select name="producto" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <select class="producto-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="producto">
                             <option value="">Seleccionar...</option>
                             {% for prod in productos %}
-                            <option value="{{ prod.id }}" {% if formula.perfil == prod.id|stringformat:"d" %}selected{% endif %}>{{ prod.descripcion }}</option>
+                            <option value="{{ prod.id }}" data-linea="{{ prod.linea_id }}" {% if formula.perfil == prod.id|stringformat:"d" %}selected{% endif %}>{{ prod.descripcion }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -137,7 +133,6 @@
                 <i class="fas fa-save mr-2"></i>Guardar Fórmulas
             </button>
         </div>
-
         <div id="formulas-container" class="space-y-3">
             {% for formula in formulas %}
             <div class="formula-row bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -160,7 +155,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="eliminarFormula(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="this.closest('.formula-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -168,7 +163,6 @@
             </div>
             {% endfor %}
         </div>
-
         <button onclick="agregarFormula()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
         </button>
@@ -182,7 +176,6 @@
                 <i class="fas fa-save mr-2"></i>Guardar Accesorios
             </button>
         </div>
-
         <div id="accesorios-container" class="space-y-3">
             {% for acc in accesorios %}
             <div class="accesorio-row bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -201,7 +194,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="eliminarAccesorio(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="this.closest('.accesorio-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -209,7 +202,6 @@
             </div>
             {% endfor %}
         </div>
-
         <button onclick="agregarAccesorio()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
         </button>
@@ -223,12 +215,37 @@
 {% if opcional and opcional.pk %}
 
 {% if opcional.tipo == 'mosquitero' %}
+function filtrarLineas(selectExtrusora) {
+    const row = selectExtrusora.closest('.formula-mosq-row');
+    const extrusoraId = selectExtrusora.value;
+    const selectLinea = row.querySelector('.linea-select');
+    const selectProducto = row.querySelector('.producto-select');
+    selectLinea.value = '';
+    selectProducto.value = '';
+    Array.from(selectLinea.options).forEach(opt => {
+        if (opt.value === '') { opt.style.display = ''; return; }
+        opt.style.display = (!extrusoraId || opt.dataset.extrusora === extrusoraId) ? '' : 'none';
+    });
+    Array.from(selectProducto.options).forEach(opt => { if (opt.value !== '') opt.style.display = 'none'; });
+}
+
+function filtrarProductos(selectLinea) {
+    const row = selectLinea.closest('.formula-mosq-row');
+    const lineaId = selectLinea.value;
+    const selectProducto = row.querySelector('.producto-select');
+    selectProducto.value = '';
+    Array.from(selectProducto.options).forEach(opt => {
+        if (opt.value === '') { opt.style.display = ''; return; }
+        opt.style.display = (!lineaId || opt.dataset.linea === lineaId) ? '' : 'none';
+    });
+}
+
 function agregarFormulaMosq() {
     const container = document.getElementById('formulas-mosq-container');
     const div = document.createElement('div');
     div.className = 'formula-mosq-row bg-gray-50 p-4 rounded-lg border border-gray-200';
     div.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
                 <input type="text" name="cantidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
@@ -238,11 +255,29 @@ function agregarFormulaMosq() {
                 <input type="text" name="formula" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Extrusora</label>
+                <select class="extrusora-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="extrusora" onchange="filtrarLineas(this)">
+                    <option value="">Todas</option>
+                    {% for ext in extrusoras %}
+                    <option value="{{ ext.id }}">{{ ext.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Línea</label>
+                <select class="linea-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="linea" onchange="filtrarProductos(this)">
+                    <option value="">Todas</option>
+                    {% for lin in lineas %}
+                    <option value="{{ lin.id }}" data-extrusora="{{ lin.extrusora_id }}" style="display:none;">{{ lin.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-                <select name="producto" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select class="producto-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="producto">
                     <option value="">Seleccionar...</option>
                     {% for prod in productos %}
-                    <option value="{{ prod.id }}">{{ prod.descripcion }}</option>
+                    <option value="{{ prod.id }}" data-linea="{{ prod.linea_id }}" style="display:none;">{{ prod.descripcion }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -260,28 +295,36 @@ function guardarFormulasMosq() {
     const rows = document.querySelectorAll('.formula-mosq-row');
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    
     rows.forEach((row, index) => {
         formData.append(`cantidad_${index}`, row.querySelector('input[name="cantidad"]').value);
         formData.append(`formula_${index}`, row.querySelector('input[name="formula"]').value);
         formData.append(`perfil_${index}`, row.querySelector('select[name="producto"]').value);
     });
-    
-    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    .then(r => r.json())
     .then(data => {
-        if (data.ok) {
-            alert(`✓ ${data.guardadas} fórmulas guardadas correctamente`);
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Error desconocido'));
-        }
+        if (data.ok) { alert(`✓ ${data.guardadas} fórmulas guardadas`); location.reload(); }
+        else alert('Error: ' + (data.error || 'Error desconocido'));
     })
-    .catch(error => { alert('Error al guardar: ' + error); });
+    .catch(e => alert('Error: ' + e));
 }
+
+// Inicializar filtros en filas existentes
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.formula-mosq-row').forEach(row => {
+        const prod = row.querySelector('.producto-select');
+        if (prod && prod.value) {
+            const opt = prod.querySelector(`option[value="${prod.value}"]`);
+            if (opt) {
+                const lineaId = opt.dataset.linea;
+                const selectLinea = row.querySelector('.linea-select');
+                // Mostrar todas las líneas y productos para que el selected sea visible
+                Array.from(selectLinea.options).forEach(o => o.style.display = '');
+                Array.from(prod.options).forEach(o => o.style.display = '');
+            }
+        }
+    });
+});
 
 {% else %}
 function agregarFormula() {
@@ -308,7 +351,7 @@ function agregarFormula() {
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="button" onclick="eliminarFormula(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                <button type="button" onclick="this.closest('.formula-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -317,33 +360,22 @@ function agregarFormula() {
     container.appendChild(div);
 }
 
-function eliminarFormula(btn) { btn.closest('.formula-row').remove(); }
-
 function guardarFormulas() {
     const rows = document.querySelectorAll('.formula-row');
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    
     rows.forEach((row, index) => {
         formData.append(`cantidad_${index}`, row.querySelector('input[name="cantidad"]').value);
         formData.append(`formula_${index}`, row.querySelector('input[name="formula"]').value);
         formData.append(`perfil_${index}`, row.querySelector('select[name="perfil"]').value);
     });
-    
-    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    .then(r => r.json())
     .then(data => {
-        if (data.ok) {
-            alert(`✓ ${data.guardadas} fórmulas guardadas correctamente`);
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Error desconocido'));
-        }
+        if (data.ok) { alert(`✓ ${data.guardadas} fórmulas guardadas`); location.reload(); }
+        else alert('Error: ' + (data.error || 'Error desconocido'));
     })
-    .catch(error => { alert('Error al guardar: ' + error); });
+    .catch(e => alert('Error: ' + e));
 }
 
 function agregarAccesorio() {
@@ -366,7 +398,7 @@ function agregarAccesorio() {
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="button" onclick="eliminarAccesorio(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                <button type="button" onclick="this.closest('.accesorio-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -375,32 +407,21 @@ function agregarAccesorio() {
     container.appendChild(div);
 }
 
-function eliminarAccesorio(btn) { btn.closest('.accesorio-row').remove(); }
-
 function guardarAccesorios() {
     const rows = document.querySelectorAll('.accesorio-row');
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    
     rows.forEach((row, index) => {
         formData.append(`cantidad_acc_${index}`, row.querySelector('input[name="cantidad_acc"]').value);
         formData.append(`accesorio_${index}`, row.querySelector('select[name="accesorio"]').value);
     });
-    
-    fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+    fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    .then(r => r.json())
     .then(data => {
-        if (data.ok) {
-            alert(`✓ ${data.guardadas} accesorios guardados correctamente`);
-            location.reload();
-        } else {
-            alert('Error: ' + (data.error || 'Error desconocido'));
-        }
+        if (data.ok) { alert(`✓ ${data.guardadas} accesorios guardados`); location.reload(); }
+        else alert('Error: ' + (data.error || 'Error desconocido'));
     })
-    .catch(error => { alert('Error al guardar: ' + error); });
+    .catch(e => alert('Error: ' + e));
 }
 {% endif %}
 
