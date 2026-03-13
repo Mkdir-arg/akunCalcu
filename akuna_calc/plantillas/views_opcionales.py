@@ -101,7 +101,6 @@ def opcional_formulas_guardar(request, pk):
         while f'cantidad_{index}' in request.POST:
             cantidad = request.POST.get(f'cantidad_{index}', '').strip()
             formula = request.POST.get(f'formula_{index}', '').strip()
-            angulo = request.POST.get(f'angulo_{index}', '').strip()
             perfil = request.POST.get(f'perfil_{index}', '').strip()
             
             if cantidad and formula:
@@ -109,7 +108,7 @@ def opcional_formulas_guardar(request, pk):
                     opcional=opcional,
                     cantidad=cantidad,
                     formula=formula,
-                    angulo=angulo,
+                    angulo='',
                     tipo_relacionador='perfil',
                     perfil=perfil,
                     precio=0,
