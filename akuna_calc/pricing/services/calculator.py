@@ -280,12 +280,25 @@ class PriceCalculator:
         except Exception as e:
             logger.warning(f"Error calculando mano de obra: {e}")
 
+        # Opcionales
+        opcionales_items: List[Dict[str, Any]] = []
+        total_opcionales = 0.0
+        opcionales_config = cleaned.get("opcionales", [])
+        
+        if opcionales_config:
+            total_opcionales = self._calcular_opcionales(
+                opcionales_config,
+                variables,
+                cleaned["color_id"],
+                opcionales_items,
+            )
+
         total_perfiles = sum(item["precio_total"] for item in perfiles_items)
         total_accesorios = sum(item["precio_total"] for item in accesorios_items)
         total_vidrios = round(precio_vidrio, 2)
         total_tratamiento = round(tratamiento_total, 2)
 
-        subtotal = total_perfiles + total_accesorios + total_vidrios + total_tratamiento + total_mano_obra
+        subtotal = total_perfiles + total_accesorios + total_vidrios + total_tratamiento + total_mano_obra + total_opcionales
         margen = subtotal * cleaned["margen_porcentaje"] / 100.0
         total = subtotal + margen
 
@@ -299,6 +312,7 @@ class PriceCalculator:
                 "vidrios": vidrio_detalle,
                 "tratamiento": tratamiento_detalle,
                 "mano_obra": mano_obra_detalle,
+                "opcionales": opcionales_items if opcionales_items else None,
             },
             "resumen": {
                 "total_perfiles": round(total_perfiles, 2),
@@ -306,6 +320,7 @@ class PriceCalculator:
                 "total_vidrios": round(total_vidrios, 2),
                 "total_tratamiento": round(total_tratamiento, 2),
                 "total_mano_obra": round(total_mano_obra, 2),
+                "total_opcionales": round(total_opcionales, 2),
             },
         }
 
@@ -345,6 +360,7 @@ class PriceCalculator:
             "tratamiento_id": configuracion.get("tratamiento_id"),
             "margen_porcentaje": margen,
             "rebaje_vidrio_mm": configuracion.get("rebaje_vidrio_mm", 0),
+            "opcionales": configuracion.get("opcionales", []),
         }
 
         cantidad_hojas = configuracion.get("cantidad_hojas", 1)
@@ -691,6 +707,120 @@ class PriceCalculator:
             "Alto": alto_hoja if alto_hoja else variables_ventana["Alto"],
             "Cantidad": variables_ventana["Cantidad"],
         }
+
+    def _calcular_opcionales(
+        self,
+        opcionales_config: List[Dict[str, Any]],
+        variables: Dict[str, Any],
+        color_id: Optional[int],
+        items: List[Dict[str, Any]],
+    ) -> float:
+        """Calcula el precio de los opcionales seleccionados."""
+        from plantillas.models import OpcionalFabrica, FormulaOpcional, AccesorioOpcional
+        
+        total_opcionales = 0.0
+        
+        for opc_config in opcionales_config:
+            opcional_id = opc_config.get('id')
+            if not opcional_id:
+                continue
+            
+            try:
+                opcional = OpcionalFabrica.objects.get(pk=opcional_id)
+            except OpcionalFabrica.DoesNotExist:
+                logger.warning(f"Opcional no encontrado: {opcional_id}")
+                continue
+            
+            precio_opcional = 0.0
+            
+            if opcional.tipo == 'mosquitero':
+                # Calcular por área
+                area_m2 = (variables["Ancho"] * variables["Alto"]) / 1_000_000
+                precio_opcional = area_m2 * float(opcional.precio_m2)
+                
+                items.append({
+                    "codigo": opcional.codigo,
+                    "nombre": opcional.nombre,
+                    "tipo": opcional.tipo,
+                    "area_m2": round(area_m2, 4),
+                    "precio_m2": float(opcional.precio_m2),
+                    "precio_total": round(precio_opcional, 2),
+                })
+            else:
+                # Calcular por fórmulas y accesorios
+                perfiles_opc = []
+                accesorios_opc = []
+                
+                # Calcular perfiles
+                formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
+                for formula in formulas:
+                    if formula.tipo_relacionador == 'perfil' and formula.perfil:
+                        cantidad = self._eval_formula(formula.cantidad, variables)
+                        longitud_mm = self._eval_formula(formula.formula, variables)
+                        
+                        if cantidad <= 0 or longitud_mm <= 0:
+                            continue
+                        
+                        perfil = self._get_perfil(formula.perfil, color_id)
+                        longitud_m = longitud_mm / 1000.0
+                        total_longitud_m = longitud_m * cantidad
+                        peso_kg = total_longitud_m * _to_float(perfil.peso_metro)
+                        precio_perfil = peso_kg * _to_float(perfil.precio_kg)
+                        
+                        if (formula.angulo or "").strip() == "45" and perfil.corte45:
+                            precio_perfil = max(0.0, precio_perfil - (_to_float(perfil.corte45) * cantidad))
+                        
+                        perfiles_opc.append({
+                            "codigo": perfil.codigo,
+                            "descripcion": perfil.descripcion,
+                            "cantidad": cantidad,
+                            "longitud_mm": round(longitud_mm, 2),
+                            "precio_total": round(precio_perfil, 2),
+                        })
+                        precio_opcional += precio_perfil
+                
+                # Calcular accesorios
+                accesorios = AccesorioOpcional.objects.filter(opcional=opcional).order_by('orden')
+                for acc_opc in accesorios:
+                    if not acc_opc.accesorio:
+                        continue
+                    
+                    cantidad = self._eval_formula(acc_opc.cantidad, variables)
+                    if cantidad <= 0:
+                        continue
+                    
+                    accesorio = self._get_accesorio(acc_opc.accesorio)
+                    if not accesorio:
+                        continue
+                    
+                    if accesorio.tipo_calculo == 'formula' and accesorio.formula_calculo:
+                        cantidad_calculada = self._eval_formula(accesorio.formula_calculo, variables)
+                        cantidad_total = cantidad * cantidad_calculada
+                    else:
+                        cantidad_total = cantidad * _to_float(accesorio.cant or 1)
+                    
+                    precio_acc = cantidad_total * _to_float(accesorio.precio)
+                    
+                    accesorios_opc.append({
+                        "codigo": accesorio.codigo,
+                        "descripcion": accesorio.descripcion,
+                        "cantidad": cantidad_total,
+                        "precio_total": round(precio_acc, 2),
+                    })
+                    precio_opcional += precio_acc
+                
+                items.append({
+                    "codigo": opcional.codigo,
+                    "nombre": opcional.nombre,
+                    "tipo": opcional.tipo,
+                    "perfiles": perfiles_opc,
+                    "accesorios": accesorios_opc,
+                    "precio_total": round(precio_opcional, 2),
+                })
+            
+            total_opcionales += precio_opcional
+        
+        return total_opcionales
 
 
 def calcular_precio(configuracion: Dict[str, Any]) -> Dict[str, Any]:
