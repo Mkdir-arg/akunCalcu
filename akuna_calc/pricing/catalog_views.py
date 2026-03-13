@@ -142,3 +142,10 @@ class VidriosRepartidosListView(APIView):
             qs = qs.filter(interior_id=interior_id)
         vidrios_repartidos = qs.values('id', 'descripcion')
         return Response(list(vidrios_repartidos))
+
+
+class OpcionalesListView(APIView):
+    def get(self, request):
+        from plantillas.models import OpcionalFabrica
+        opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+        return Response(list(opcionales))

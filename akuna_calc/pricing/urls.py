@@ -8,7 +8,7 @@ from .catalog_views import (
     MarcosListView, HojasListView, InterioresListView, VidriosListView,
     PerfilesListView, AccesoriosListView, TratamientosListView,
     MosquiterosListView, ContravidriosListView, ContravidriosExteriorListView,
-    CrucesListView, VidriosRepartidosListView
+    CrucesListView, VidriosRepartidosListView, OpcionalesListView
 )
 from .config_views import (
     extrusoras_config, lineas_config, productos_config, marcos_config,
@@ -53,6 +53,7 @@ urlpatterns = [
     path("api/pricing/contravidrios-exterior/", ContravidriosExteriorListView.as_view(), name="contravidrios-exterior-list"),
     path("api/pricing/cruces/", CrucesListView.as_view(), name="cruces-list"),
     path("api/pricing/vidrios-repartidos/", VidriosRepartidosListView.as_view(), name="vidrios-repartidos-list"),
+    path("api/pricing/opcionales/", OpcionalesListView.as_view(), name="opcionales-list"),
     
     # Configuración ABMs — listas
     path("config/extrusoras/", extrusoras_config, name="config-extrusoras"),
