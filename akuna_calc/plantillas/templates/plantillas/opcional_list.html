@@ -19,7 +19,6 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fórmulas</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
@@ -38,29 +37,18 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-500">{{ opcional.formulas.count }} fórmula{{ opcional.formulas.count|pluralize }}</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        {% if opcional.activo %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                Activo
-                            </span>
-                        {% else %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                Inactivo
-                            </span>
-                        {% endif %}
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <a href="{% url 'plantillas:opcional_edit' opcional.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a href="{% url 'plantillas:opcional_toggle' opcional.pk %}" class="text-gray-600 hover:text-gray-900">
-                            <i class="fas fa-{% if opcional.activo %}eye-slash{% else %}eye{% endif %}"></i>
+                        <a href="{% url 'plantillas:opcional_delete' opcional.pk %}" class="text-red-600 hover:text-red-900" onclick="return confirm('¿Eliminar el opcional {{ opcional.codigo }}?')">
+                            <i class="fas fa-trash"></i>
                         </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                         <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
                         <p>No hay opcionales creados</p>
                         <a href="{% url 'plantillas:opcional_create' %}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">

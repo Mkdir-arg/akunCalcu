@@ -9,7 +9,7 @@ from .forms import OpcionalFabricaForm
 
 @login_required
 def opcional_list(request):
-    opcionales = OpcionalFabrica.objects.all().order_by('codigo')
+    opcionales = OpcionalFabrica.objects.filter(activo=True).order_by('codigo')
     return render(request, 'plantillas/opcional_list.html', {'opcionales': opcionales})
 
 
@@ -77,12 +77,11 @@ def opcional_edit(request, pk):
 
 
 @login_required
-def opcional_toggle(request, pk):
+def opcional_delete(request, pk):
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
-    opcional.activo = not opcional.activo
+    opcional.activo = False
     opcional.save()
-    estado = 'activado' if opcional.activo else 'desactivado'
-    messages.success(request, f'Opcional {opcional.codigo} {estado}.')
+    messages.success(request, f'Opcional {opcional.codigo} eliminado.')
     return redirect('plantillas:opcional_list')
 
 

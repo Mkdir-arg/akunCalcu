@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views_opcionales import opcional_list, opcional_create, opcional_edit, opcional_toggle, opcional_formulas_guardar, opcional_accesorios_guardar, opcional_relaciones_guardar
+from .views_opcionales import opcional_list, opcional_create, opcional_edit, opcional_delete, opcional_formulas_guardar, opcional_accesorios_guardar, opcional_relaciones_guardar
 
 app_name = 'plantillas'
 
@@ -43,7 +43,7 @@ urlpatterns = [
     path('opcionales/', opcional_list, name='opcional_list'),
     path('opcionales/crear/', opcional_create, name='opcional_create'),
     path('opcionales/<int:pk>/editar/', opcional_edit, name='opcional_edit'),
-    path('opcionales/<int:pk>/toggle/', opcional_toggle, name='opcional_toggle'),
+    path('opcionales/<int:pk>/eliminar/', opcional_delete, name='opcional_delete'),
     path('opcionales/<int:pk>/formulas/guardar/', opcional_formulas_guardar, name='opcional_formulas_guardar'),
     path('opcionales/<int:pk>/accesorios/guardar/', opcional_accesorios_guardar, name='opcional_accesorios_guardar'),
     path('opcionales/<int:pk>/relaciones/guardar/', opcional_relaciones_guardar, name='opcional_relaciones_guardar'),
