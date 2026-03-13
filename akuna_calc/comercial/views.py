@@ -17,12 +17,12 @@ def dashboard_comercial(request):
     import json
     from django.core.serializers.json import DjangoJSONEncoder
     
-    # Estadísticas generales
+    # Estadï¿½sticas generales
     total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     
-    # Últimos 6 meses
+    # ï¿½ltimos 6 meses
     hace_6_meses = datetime.now() - timedelta(days=180)
     
     # Ventas por mes
@@ -49,7 +49,7 @@ def dashboard_comercial(request):
         total=Sum('importe_abonado')
     ).order_by('-total')
     
-    # Formatear datos para el gráfico
+    # Formatear datos para el grï¿½fico
     compras_por_tipo = []
     for item in compras_por_tipo_raw:
         tipo_cuenta = TipoCuenta.objects.filter(id=item['cuenta__tipo_cuenta__id']).first()
@@ -129,7 +129,7 @@ def ventas_list(request):
     total_saldo = totales['total_saldo'] or 0
     total_count = totales['total_count'] or 0
 
-    # Ordenamiento especial para numero_factura (manejar valores vacíos)
+    # Ordenamiento especial para numero_factura (manejar valores vacï¿½os)
     if orden in ['numero_factura', '-numero_factura']:
         ventas = ventas.annotate(
             factura_order=Case(
@@ -145,7 +145,7 @@ def ventas_list(request):
     else:
         ventas = ventas.order_by(orden)
 
-    # Paginación
+    # Paginaciï¿½n
     paginator = Paginator(ventas, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -236,7 +236,7 @@ def venta_edit(request, pk):
 def venta_delete(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
     if request.method == 'POST':
-        venta.delete()  # Eliminado lógico
+        venta.delete()  # Eliminado lï¿½gico
         messages.success(request, 'Venta eliminada exitosamente.')
         return redirect('comercial:ventas_list')
     return redirect('comercial:ventas_list')
@@ -283,7 +283,7 @@ def duplicar_venta(request, pk):
 @login_required
 def guardar_nota_venta(request, pk):
     if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
     venta = get_object_or_404(Venta, pk=pk)
     try:
         venta.notas_internas = request.POST.get('nota', '')
@@ -352,7 +352,7 @@ def registrar_pago(request, pk):
             venta.save()
 
             messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente')
-            # Si el saldo quedó en 0 y el estado es pendiente, ofrecer avanzar al siguiente estado
+            # Si el saldo quedo en 0 y el estado es pendiente, ofrecer avanzar al siguiente estado
             if venta.saldo <= 0 and venta.estado == 'pendiente':
                 return redirect(f"{reverse('comercial:venta_detail', kwargs={'pk': pk})}?avanzar_estado=1")
             return redirect('comercial:venta_detail', pk=pk)
@@ -367,14 +367,14 @@ def registrar_pago(request, pk):
 @login_required
 def cambiar_estado_venta(request, pk):
     if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
 
     venta = get_object_or_404(Venta, pk=pk)
     nuevo_estado = request.POST.get('estado')
 
     estados_validos = [e[0] for e in Venta.ESTADO_CHOICES]
     if nuevo_estado not in estados_validos:
-        return JsonResponse({'error': 'Estado no válido'}, status=400)
+        return JsonResponse({'error': 'Estado no valido'}, status=400)
 
     venta.estado = nuevo_estado
     venta.save()
@@ -441,9 +441,9 @@ def generar_pdf_venta(request, pk):
     elements.append(Paragraph("Detalle de Venta", subtitle_style))
     elements.append(Spacer(1, 0.2*inch))
     
-    # Información de la venta
+    # Informaciï¿½n de la venta
     info_data = [
-        ['Pedido N°:', venta.numero_pedido, 'Fecha:', venta.created_at.strftime('%d/%m/%Y')],
+        ['Pedido Nï¿½:', venta.numero_pedido, 'Fecha:', venta.created_at.strftime('%d/%m/%Y')],
         ['Cliente:', f"{venta.cliente}", 'Estado:', venta.get_estado_display()],
     ]
     
@@ -476,7 +476,7 @@ def generar_pdf_venta(request, pk):
     resumen_data = [
         ['Concepto', 'Monto'],
         ['Valor Total', format_currency(venta.valor_total)],
-        ['Seña Inicial', format_currency(venta.sena)],
+        ['Seï¿½a Inicial', format_currency(venta.sena)],
         ['Pagos Adicionales', format_currency(sum(p.monto for p in pagos))],
         ['Total Pagado', format_currency(total_pagado)],
         ['Saldo Pendiente', format_currency(venta.saldo)],
@@ -507,12 +507,12 @@ def generar_pdf_venta(request, pk):
     if pagos.exists() or venta.sena > 0:
         elements.append(Paragraph("Historial de Pagos", heading_style))
         
-        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'N° Factura', 'Monto']]
+        pagos_data = [['Fecha', 'Concepto', 'Forma de Pago', 'Nï¿½ Factura', 'Monto']]
         
-        # Seña inicial
+        # Seï¿½a inicial
         pagos_data.append([
             venta.created_at.strftime('%d/%m/%Y'),
-            'Seña Inicial',
+            'Seï¿½a Inicial',
             '-',
             venta.numero_factura or '-',
             format_currency(venta.sena)
@@ -543,7 +543,7 @@ def generar_pdf_venta(request, pk):
         ]))
         elements.append(pagos_table)
     
-    # Pie de página
+    # Pie de pï¿½gina
     elements.append(Spacer(1, 0.5*inch))
     footer_style = ParagraphStyle(
         'Footer',
@@ -553,7 +553,7 @@ def generar_pdf_venta(request, pk):
         alignment=TA_CENTER
     )
     elements.append(Paragraph(f"Documento generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", footer_style))
-    elements.append(Paragraph("Akuna Aberturas - Sistema de Gestión", footer_style))
+    elements.append(Paragraph("Akuna Aberturas - Sistema de Gestiï¿½n", footer_style))
     
     # Construir PDF
     doc.build(elements)
@@ -630,7 +630,7 @@ def cliente_delete(request, pk):
         # Contar ventas relacionadas
         ventas_relacionadas = Venta.objects.filter(cliente=cliente, deleted_at__isnull=True).count()
         
-        # Eliminar el cliente (lógico)
+        # Eliminar el cliente (lï¿½gico)
         cliente.delete()
         
         if ventas_relacionadas > 0:
@@ -695,7 +695,7 @@ def exportar_ventas_excel(request):
     thin = Side(style='thin', color='CBD5E1')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    headers = ['N° Pedido', 'Fecha', 'Cliente', 'Razón Social', 'Valor Total', 'Seña', 'Saldo Pendiente', 'Estado', 'Tipo', 'N° Factura']
+    headers = ['Nï¿½ Pedido', 'Fecha', 'Cliente', 'Razï¿½n Social', 'Valor Total', 'Seï¿½a', 'Saldo Pendiente', 'Estado', 'Tipo', 'Nï¿½ Factura']
     col_widths = [14, 14, 28, 28, 16, 14, 18, 14, 10, 18]
 
     for i, (h, w) in enumerate(zip(headers, col_widths), 1):
@@ -777,11 +777,11 @@ def cliente_detail(request, pk):
     ).select_related('venta').order_by('-fecha_pago')
     total_cobrado = pagos.aggregate(total=Sum('monto'))['total'] or 0
 
-    # Facturas electrónicas
+    # Facturas electrï¿½nicas
     facturas = Factura.objects.filter(cliente=cliente).select_related('venta', 'punto_venta').order_by('-fecha')
     cantidad_facturas = facturas.count()
 
-    # Gráfico 1: ventas por mes (últimos 12 meses)
+    # Grï¿½fico 1: ventas por mes (ï¿½ltimos 12 meses)
     hace_12_meses = datetime.now() - timedelta(days=365)
     ventas_por_mes = (
         ventas.filter(created_at__gte=hace_12_meses)
@@ -794,7 +794,7 @@ def cliente_detail(request, pk):
     meses_labels = [v['mes'].strftime('%b %Y') for v in ventas_por_mes]
     meses_data = [float(v['total']) for v in ventas_por_mes]
 
-    # Gráfico 2: distribución por estado
+    # Grï¿½fico 2: distribuciï¿½n por estado
     ESTADO_DISPLAY = {'pendiente': 'Pendiente', 'entregado': 'Entregado', 'colocado': 'Colocado'}
     estados_qs = ventas.order_by().values('estado').annotate(cantidad=Count('id'))
     estados_labels = [ESTADO_DISPLAY.get(e['estado'], e['estado']) for e in estados_qs]
@@ -848,8 +848,8 @@ def compras_list(request):
     # Ordenar por fecha de pago descendente
     compras = compras.order_by('-fecha_pago')
     
-    # Paginación
-    paginator = Paginator(compras, 20)  # 20 items por página
+    # Paginaciï¿½n
+    paginator = Paginator(compras, 20)  # 20 items por pï¿½gina
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -919,7 +919,7 @@ def compra_edit(request, pk):
 def compra_delete(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
     if request.method == 'POST':
-        compra.delete()  # Eliminado lógico
+        compra.delete()  # Eliminado lï¿½gico
         messages.success(request, 'Gasto eliminado exitosamente.')
         return redirect('comercial:compras_list')
     return redirect('comercial:compras_list')
@@ -1008,7 +1008,7 @@ def cuenta_delete(request, pk):
         # Contar compras relacionadas
         compras_relacionadas = Compra.objects.filter(cuenta=cuenta, deleted_at__isnull=True).count()
         
-        # Eliminar la cuenta (lógico)
+        # Eliminar la cuenta (lï¿½gico)
         cuenta.delete()
         
         if compras_relacionadas > 0:
@@ -1094,12 +1094,12 @@ def tipo_cuenta_delete(request, pk):
         # Desactivar cuentas relacionadas
         cuentas_afectadas = Cuenta.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
         for cuenta in cuentas_afectadas:
-            cuenta.delete()  # Eliminado lógico
+            cuenta.delete()  # Eliminado lï¿½gico
         
         # Desactivar tipos de gasto relacionados
         tipos_gasto_afectados = TipoGasto.objects.filter(tipo_cuenta=tipo, deleted_at__isnull=True)
         for tipo_gasto in tipos_gasto_afectados:
-            tipo_gasto.delete()  # Eliminado lógico
+            tipo_gasto.delete()  # Eliminado lï¿½gico
         
         # Eliminar el tipo de cuenta
         tipo.delete()
@@ -1187,7 +1187,7 @@ def tipo_gasto_delete(request, pk):
         # Contar compras relacionadas
         compras_relacionadas = Compra.objects.filter(tipo_gasto=tipo, deleted_at__isnull=True).count()
         
-        # Eliminar el tipo de gasto (lógico)
+        # Eliminar el tipo de gasto (lï¿½gico)
         tipo.delete()
         
         if compras_relacionadas > 0:
@@ -1232,10 +1232,10 @@ def reportes(request):
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
     
-    # Construir lista de ingresos combinando señas y pagos
+    # Construir lista de ingresos combinando seï¿½as y pagos
     ingresos = []
     
-    # 1. Obtener ventas con seña
+    # 1. Obtener ventas con seï¿½a
     ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
     
     if fecha_desde:
@@ -1262,7 +1262,7 @@ def reportes(request):
             'factura_id': venta.id if venta.numero_factura else None,
             'cliente': str(venta.cliente),
             'razon_social': venta.cliente.razon_social or '-',
-            'forma_pago': 'Seña Inicial',
+            'forma_pago': 'Seï¿½a Inicial',
             'monto': venta.sena,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id
@@ -1423,7 +1423,7 @@ def editar_pago(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
 
 
 @login_required
@@ -1432,13 +1432,13 @@ def exportar_reporte_excel(request):
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
     
-    # Recuperar filtros de la sesión
+    # Recuperar filtros de la sesiï¿½n
     filtros = request.session.get('reporte_filtros', {})
     
-    # Construir lista de ingresos usando la misma lógica que reportes()
+    # Construir lista de ingresos usando la misma lï¿½gica que reportes()
     ingresos = []
     
-    # Obtener ventas con seña
+    # Obtener ventas con seï¿½a
     ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
     
     # Obtener pagos adicionales
@@ -1451,7 +1451,7 @@ def exportar_reporte_excel(request):
             'numero_factura': venta.numero_factura or '-',
             'cliente': str(venta.cliente),
             'razon_social': venta.cliente.razon_social or '-',
-            'forma_pago': 'Seña Inicial',
+            'forma_pago': 'Seï¿½a Inicial',
             'monto': float(venta.sena),
             'tipo': 'Blanco' if venta.con_factura else 'Negro'
         })
@@ -1491,7 +1491,7 @@ def exportar_reporte_excel(request):
     header_font = Font(bold=True, color="FFFFFF", size=12)
     title_font = Font(bold=True, size=14)
     
-    # Título
+    # Tï¿½tulo
     ws['A1'] = 'REPORTE DE INGRESOS'
     ws['A1'].font = title_font
     ws.merge_cells('A1:H1')
@@ -1514,7 +1514,7 @@ def exportar_reporte_excel(request):
     ws['B5'].font = Font(bold=True, size=12)
     
     # Headers
-    headers = ['Fecha Pago', 'Pedido', 'ID Factura', 'Cliente', 'Razón Social', 'Forma Pago', 'Monto', 'Tipo']
+    headers = ['Fecha Pago', 'Pedido', 'ID Factura', 'Cliente', 'Razï¿½n Social', 'Forma Pago', 'Monto', 'Tipo']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(7, col, header)
         cell.font = header_font
@@ -1690,7 +1690,7 @@ def exportar_reporte_gastos_excel(request):
     ws['A5'].font = Font(bold=True, size=12)
     ws['B5'].font = Font(bold=True, size=12)
     
-    headers = ['Fecha Pago', 'N° Pedido', 'N° Factura', 'Cuenta', 'Tipo Cuenta', 'Monto', 'Tipo']
+    headers = ['Fecha Pago', 'Nï¿½ Pedido', 'Nï¿½ Factura', 'Cuenta', 'Tipo Cuenta', 'Monto', 'Tipo']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(7, col, header)
         cell.font = header_font
@@ -1737,9 +1737,9 @@ def editar_fecha_sena(request, pk):
             if isinstance(fecha_sena_str, str):
                 fecha_sena = datetime.strptime(fecha_sena_str, '%Y-%m-%d')
             else:
-                return JsonResponse({'success': False, 'error': 'Formato de fecha inválido'}, status=400)
+                return JsonResponse({'success': False, 'error': 'Formato de fecha invalido'}, status=400)
             
-            # Actualizar created_at (fecha de seña) y fecha_pago (fecha de venta total)
+            # Actualizar created_at (fecha de seï¿½a) y fecha_pago (fecha de venta total)
             venta.created_at = fecha_sena
             venta.fecha_pago = fecha_sena.date()
             venta.save()
@@ -1751,7 +1751,7 @@ def editar_fecha_sena(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
 
 
 @login_required
@@ -1776,12 +1776,12 @@ def eliminar_pago(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
 
 
 @login_required
 def agregar_retencion_pago(request, pk):
-    """Agregar retención a un pago existente"""
+    """Agregar retenciï¿½n a un pago existente"""
     from .models import Retencion
     import json
     
@@ -1818,12 +1818,95 @@ def agregar_retencion_pago(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
 
 
 
 
-@login_required`ndef reporte_general(request):`n    """Vista para reporte general combinando ingresos y gastos."""`n    from django.db.models import Sum, Value, DecimalField`n    from django.db.models.functions import Coalesce`n    `n    reporte_data = None`n    `n    if request.method == 'POST':`n        fecha_desde = request.POST.get('fecha_desde')`n        fecha_hasta = request.POST.get('fecha_hasta')`n        `n        # INGRESOS (PagoVenta)`n        pagos = PagoVenta.objects.select_related('venta', 'venta__cliente').filter(venta__deleted_at__isnull=True)`n        if fecha_desde:`n            pagos = pagos.filter(fecha_pago__gte=fecha_desde)`n        if fecha_hasta:`n            pagos = pagos.filter(fecha_pago__lte=fecha_hasta)`n        `n        ingresos_blanco = pagos.filter(con_factura=True).aggregate(`n            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))`n        )['total']`n        ingresos_negro = pagos.filter(con_factura=False).aggregate(`n            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))`n        )['total']`n        total_ingresos = ingresos_blanco + ingresos_negro`n        `n        # GASTOS (Compra)`n        compras = Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta').filter(deleted_at__isnull=True)`n        if fecha_desde:`n            compras = compras.filter(fecha_pago__gte=fecha_desde)`n        if fecha_hasta:`n            compras = compras.filter(fecha_pago__lte=fecha_hasta)`n        `n        gastos_blanco = compras.filter(con_factura=True).aggregate(`n            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))`n        )['total']`n        gastos_negro = compras.filter(con_factura=False).aggregate(`n            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))`n        )['total']`n        total_gastos = gastos_blanco + gastos_negro`n        `n        # Balance`n        balance_blanco = ingresos_blanco - gastos_blanco`n        balance_negro = ingresos_negro - gastos_negro`n        balance_total = total_ingresos - total_gastos`n        `n        reporte_data = {`n            'ingresos': {`n                'blanco': ingresos_blanco,`n                'negro': ingresos_negro,`n                'total': total_ingresos,`n                'cantidad': pagos.count(),`n            },`n            'gastos': {`n                'blanco': gastos_blanco,`n                'negro': gastos_negro,`n                'total': total_gastos,`n                'cantidad': compras.count(),`n            },`n            'balance': {`n                'blanco': balance_blanco,`n                'negro': balance_negro,`n                'total': balance_total,`n            },`n        }`n        `n        request.session['reporte_general_data'] = {`n            'fecha_desde': fecha_desde,`n            'fecha_hasta': fecha_hasta,`n            'ingresos_blanco': float(ingresos_blanco),`n            'ingresos_negro': float(ingresos_negro),`n            'total_ingresos': float(total_ingresos),`n            'gastos_blanco': float(gastos_blanco),`n            'gastos_negro': float(gastos_negro),`n            'total_gastos': float(total_gastos),`n            'balance_blanco': float(balance_blanco),`n            'balance_negro': float(balance_negro),`n            'balance_total': float(balance_total),`n        }`n    `n    return render(request, 'comercial/reportes/reporte_general.html', {'reporte_data': reporte_data})
+
+
+@login_required
+def reporte_general(request):
+    """Vista para reporte general combinando ingresos y gastos."""
+    from django.db.models import Sum, Value, DecimalField
+    from django.db.models.functions import Coalesce
+    
+    reporte_data = None
+    
+    if request.method == 'POST':
+        fecha_desde = request.POST.get('fecha_desde')
+        fecha_hasta = request.POST.get('fecha_hasta')
+        
+        # INGRESOS (PagoVenta)
+        pagos = PagoVenta.objects.select_related('venta', 'venta__cliente').filter(venta__deleted_at__isnull=True)
+        if fecha_desde:
+            pagos = pagos.filter(fecha_pago__gte=fecha_desde)
+        if fecha_hasta:
+            pagos = pagos.filter(fecha_pago__lte=fecha_hasta)
+        
+        ingresos_blanco = pagos.filter(con_factura=True).aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        ingresos_negro = pagos.filter(con_factura=False).aggregate(
+            total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
+        )['total']
+        total_ingresos = ingresos_blanco + ingresos_negro
+        
+        # GASTOS (Compra)
+        compras = Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta').filter(deleted_at__isnull=True)
+        if fecha_desde:
+            compras = compras.filter(fecha_pago__gte=fecha_desde)
+        if fecha_hasta:
+            compras = compras.filter(fecha_pago__lte=fecha_hasta)
+        
+        gastos_blanco = compras.filter(con_factura=True).aggregate(
+            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))
+        )['total']
+        gastos_negro = compras.filter(con_factura=False).aggregate(
+            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))
+        )['total']
+        total_gastos = gastos_blanco + gastos_negro
+        
+        # Balance
+        balance_blanco = ingresos_blanco - gastos_blanco
+        balance_negro = ingresos_negro - gastos_negro
+        balance_total = total_ingresos - total_gastos
+        
+        reporte_data = {
+            'ingresos': {
+                'blanco': ingresos_blanco,
+                'negro': ingresos_negro,
+                'total': total_ingresos,
+                'cantidad': pagos.count(),
+            },
+            'gastos': {
+                'blanco': gastos_blanco,
+                'negro': gastos_negro,
+                'total': total_gastos,
+                'cantidad': compras.count(),
+            },
+            'balance': {
+                'blanco': balance_blanco,
+                'negro': balance_negro,
+                'total': balance_total,
+            },
+        }
+        
+        request.session['reporte_general_data'] = {
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+            'ingresos_blanco': float(ingresos_blanco),
+            'ingresos_negro': float(ingresos_negro),
+            'total_ingresos': float(total_ingresos),
+            'gastos_blanco': float(gastos_blanco),
+            'gastos_negro': float(gastos_negro),
+            'total_gastos': float(total_gastos),
+            'balance_blanco': float(balance_blanco),
+            'balance_negro': float(balance_negro),
+            'balance_total': float(balance_total),
+        }
+    
+    return render(request, 'comercial/reportes/reporte_general.html', {'reporte_data': reporte_data})
 
 
 @login_required
@@ -1851,16 +1934,16 @@ def exportar_reporte_general_excel(request):
         bottom=Side(style='thin')
     )
     
-    # Título
+    # Tï¿½tulo
     ws.merge_cells('A1:E1')
     ws['A1'] = 'REPORTE GENERAL - INGRESOS Y GASTOS'
     ws['A1'].font = title_font
     ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
     
-    # Período
+    # Perï¿½odo
     row = 3
     if data.get('fecha_desde') or data.get('fecha_hasta'):
-        periodo = f"Período: {data.get('fecha_desde', 'Inicio')} - {data.get('fecha_hasta', 'Hoy')}"
+        periodo = f"Perï¿½odo: {data.get('fecha_desde', 'Inicio')} - {data.get('fecha_hasta', 'Hoy')}"
         ws.merge_cells(f'A{row}:E{row}')
         ws[f'A{row}'] = periodo
         ws[f'A{row}'].font = Font(bold=True)
@@ -1936,4 +2019,5 @@ def exportar_reporte_general_excel(request):
     
     wb.save(response)
     return response
+
 
