@@ -116,6 +116,7 @@
                             <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="reportes-icon"></i>
                         </button>
                         <div id="reportes-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
+                            <a href="{% url 'comercial:reporte_general' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte General</a>
                             <a href="{% url 'comercial:reportes' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Ingresos</a>
                             <a href="{% url 'comercial:reportes_gastos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Gastos</a>
                         </div>
