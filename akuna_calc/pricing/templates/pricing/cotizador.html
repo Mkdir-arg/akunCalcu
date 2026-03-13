@@ -401,32 +401,18 @@ const Cotizador = () => {
                           {opc.tipo === 'mosquitero' ? `$${opc.precio_m2.toLocaleString('es-AR')}/m²` : 'Calculado por fórmulas'}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-gray-600">Cant:</label>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          value={opc.cantidad}
-                          onChange={(e) => {
-                            const newOpcionales = [...config.opcionales];
-                            newOpcionales[idx].cantidad = parseInt(e.target.value) || 1;
-                            setConfig({ ...config, opcionales: newOpcionales });
-                          }}
-                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={() => {
-                            setConfig({ 
-                              ...config, 
-                              opcionales: config.opcionales.filter((_, i) => i !== idx) 
-                            });
-                          }}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Eliminar"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setConfig({ 
+                            ...config, 
+                            opcionales: config.opcionales.filter((_, i) => i !== idx) 
+                          });
+                        }}
+                        className="text-red-600 hover:text-red-800 p-2"
+                        title="Eliminar"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -439,7 +425,7 @@ const Cotizador = () => {
                 if (!config.opcionales.find(o => o.id === opcional.id)) {
                   setConfig({ 
                     ...config, 
-                    opcionales: [...config.opcionales, { ...opcional, cantidad: 1 }] 
+                    opcionales: [...config.opcionales, opcional] 
                   });
                 }
               }}
@@ -619,6 +605,35 @@ const Cotizador = () => {
                           {result.desglose.mano_obra.horas} hs × ${result.desglose.mano_obra.valor_hora.toLocaleString('es-AR', { minimumFractionDigits: 2 })}/hora
                         </div>
                       </div>
+                    </div>
+                  </details>
+                )}
+
+                {/* Opcionales */}
+                {result.desglose.opcionales && result.desglose.opcionales.length > 0 && (
+                  <details className="mb-3 bg-indigo-50 rounded-lg" open>
+                    <summary className="cursor-pointer p-3 font-medium text-indigo-900 hover:bg-indigo-100 rounded-lg">
+                      <span className="inline-flex items-center justify-between w-full">
+                        <span><i className="fas fa-plus-circle mr-2"></i>Opcionales ({result.desglose.opcionales.length})</span>
+                        <span className="text-indigo-700">${result.resumen.total_opcionales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    </summary>
+                    <div className="p-3 pt-0 space-y-1">
+                      {result.desglose.opcionales.map((item, idx) => (
+                        <div key={idx} className="bg-white p-2 rounded text-sm">
+                          <div className="flex justify-between font-medium">
+                            <span className="text-gray-800">{item.codigo} - {item.nombre}</span>
+                            <span className="text-indigo-600">${item.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {item.tipo === 'mosquitero' ? (
+                              <span>Área: {item.area_m2}m² × ${item.precio_m2}/m²</span>
+                            ) : (
+                              <span>Calculado por fórmulas y accesorios</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </details>
                 )}
