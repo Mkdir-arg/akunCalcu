@@ -734,16 +734,28 @@ class PriceCalculator:
             precio_opcional = 0.0
             
             if opcional.tipo == 'mosquitero':
-                # Calcular por área
-                area_m2 = (variables["Ancho"] * variables["Alto"]) / 1_000_000
-                precio_opcional = area_m2 * float(opcional.precio_m2)
+                # Calcular por fórmulas: resultado_formula * precio_m2 * cantidad
+                formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
+                detalles_formulas = []
+                for formula in formulas:
+                    cantidad = self._eval_formula(formula.cantidad, variables)
+                    resultado = self._eval_formula(formula.formula, variables)
+                    if cantidad <= 0 or resultado <= 0:
+                        continue
+                    precio_formula = resultado * float(opcional.precio_m2) * cantidad
+                    detalles_formulas.append({
+                        "cantidad": cantidad,
+                        "resultado_formula": round(resultado, 2),
+                        "precio": round(precio_formula, 2),
+                    })
+                    precio_opcional += precio_formula
                 
                 items.append({
                     "codigo": opcional.codigo,
                     "nombre": opcional.nombre,
                     "tipo": opcional.tipo,
-                    "area_m2": round(area_m2, 4),
                     "precio_m2": float(opcional.precio_m2),
+                    "formulas": detalles_formulas,
                     "precio_total": round(precio_opcional, 2),
                 })
             else:
