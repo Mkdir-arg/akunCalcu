@@ -28,7 +28,7 @@
                     {{ form.tipo }}
                     {% if form.tipo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>{% endif %}
                 </div>
-                <div>
+                <div id="precio-m2-wrapper">
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.precio_m2.label }}</label>
                     {{ form.precio_m2 }}
                     {% if form.precio_m2.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>{% endif %}
@@ -43,6 +43,15 @@
                     <label class="ml-2 text-sm text-gray-700">{{ form.activo.label }}</label>
                 </div>
             </div>
+            <script>
+            (function() {
+                const tipo = document.getElementById('id_tipo');
+                const wrap = document.getElementById('precio-m2-wrapper');
+                function toggle() { wrap.style.display = tipo.value === 'mosquitero' ? '' : 'none'; }
+                tipo.addEventListener('change', toggle);
+                toggle();
+            })();
+            </script>
             <div class="mt-6 flex gap-3">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
                     <i class="fas fa-save mr-2"></i>Guardar

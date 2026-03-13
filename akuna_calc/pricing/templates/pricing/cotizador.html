@@ -633,7 +633,18 @@ const Cotizador = () => {
                                 </div>
                               ))
                             ) : (
-                              <span>Calculado por fórmulas y accesorios</span>
+                              <>
+                                {item.perfiles && item.perfiles.map((p, pi) => (
+                                  <div key={`p${pi}`}>
+                                    {p.codigo} - {p.descripcion}: Cant {p.cantidad} × {p.longitud_mm}mm = ${p.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                ))}
+                                {item.accesorios && item.accesorios.map((a, ai) => (
+                                  <div key={`a${ai}`}>
+                                    {a.codigo} - {a.descripcion}: Cant {a.cantidad} = ${a.precio_total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                  </div>
+                                ))}
+                              </>
                             )}
                           </div>
                         </div>
