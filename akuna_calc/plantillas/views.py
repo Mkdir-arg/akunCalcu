@@ -486,6 +486,6 @@ from .views_opcionales import (
     opcional_list,
     opcional_create,
     opcional_edit,
-    opcional_toggle,
+    opcional_delete,
     opcional_formulas_guardar
 )
