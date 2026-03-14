@@ -66,15 +66,21 @@ class InterioresListView(APIView):
 
 class VidriosListView(APIView):
     def get(self, request):
-        from .models import VidrioHoja
         hoja_id = request.query_params.get('hoja_id')
         qs = Vidrio.objects.exclude(bloqueado='Si')
         if hoja_id:
-            # Buscar por tabla nueva VidrioHoja + campo legacy hoja_id
-            codigos_nuevos = VidrioHoja.objects.filter(hoja_id=hoja_id).values_list('vidrio_id', flat=True)
+            # Buscar codigos en tabla nueva vidrio_hojas
+            from django.db import connection
+            codigos_nuevos = []
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT vidrio_codigo FROM vidrio_hojas WHERE hoja_id = %s', [hoja_id])
+                    codigos_nuevos = [row[0] for row in cursor.fetchall()]
+            except Exception:
+                pass
             qs = qs.filter(
                 models.Q(hoja_id=hoja_id) | models.Q(codigo__in=codigos_nuevos)
-            )
+            ) if codigos_nuevos else qs.filter(hoja_id=hoja_id)
         return Response(list(qs.values('codigo', 'descripcion', 'precio')))
 
 
