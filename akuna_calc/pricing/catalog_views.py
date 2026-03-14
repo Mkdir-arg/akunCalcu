@@ -69,18 +69,18 @@ class VidriosListView(APIView):
         hoja_id = request.query_params.get('hoja_id')
         qs = Vidrio.objects.exclude(bloqueado='Si')
         if hoja_id:
-            # Buscar codigos en tabla nueva vidrio_hojas
             from django.db import connection
-            codigos_nuevos = []
+            codigos = []
             try:
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT vidrio_codigo FROM vidrio_hojas WHERE hoja_id = %s', [hoja_id])
-                    codigos_nuevos = [row[0] for row in cursor.fetchall()]
+                    codigos = [row[0] for row in cursor.fetchall()]
             except Exception:
                 pass
-            qs = qs.filter(
-                models.Q(hoja_id=hoja_id) | models.Q(codigo__in=codigos_nuevos)
-            ) if codigos_nuevos else qs.filter(hoja_id=hoja_id)
+            if codigos:
+                qs = qs.filter(codigo__in=codigos)
+            else:
+                qs = qs.none()
         return Response(list(qs.values('codigo', 'descripcion', 'precio')))
 
 
