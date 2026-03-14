@@ -152,29 +152,19 @@ class OpcionalesListView(APIView):
         producto_id = request.query_params.get('producto_id')
         
         if producto_id:
-            opcionales_ids = set()
+            from django.db import models as db_models
             
-            # 1. Mosquiteros: fórmulas con producto_id guardado en campo perfil
+            # Mosquiteros: filtrar por relacion con producto
             mosq_ids = FormulaOpcional.objects.filter(
                 perfil=str(producto_id),
                 opcional__tipo='mosquitero'
             ).values_list('opcional_id', flat=True).distinct()
-            opcionales_ids.update(mosq_ids)
             
-            # 2. Tipo otro: fórmulas con perfiles del producto
-            marcos = Marco.objects.filter(producto_id=producto_id).values_list('id', flat=True)
-            perfiles_producto = DespiecePerfilesMarco.objects.filter(
-                marco_id__in=marcos
-            ).values_list('perfil', flat=True).distinct()
-            otro_ids = FormulaOpcional.objects.filter(
-                perfil__in=perfiles_producto,
-                opcional__tipo='otro'
-            ).values_list('opcional_id', flat=True).distinct()
-            opcionales_ids.update(otro_ids)
-            
+            # Tipo otro: mostrar todos (aplican a cualquier producto)
             opcionales = OpcionalFabrica.objects.filter(
-                activo=True,
-                id__in=opcionales_ids
+                activo=True
+            ).filter(
+                db_models.Q(id__in=mosq_ids) | db_models.Q(tipo='otro')
             ).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
         else:
             opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
