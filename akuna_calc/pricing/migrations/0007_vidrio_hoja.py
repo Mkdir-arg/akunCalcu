@@ -5,7 +5,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pricing', '0006_add_horas_hombre_v2'),
+        ('pricing', '0006_add_horas_hombre'),
     ]
 
     operations = [
