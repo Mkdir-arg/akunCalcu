@@ -1,5 +1,4 @@
-from django.db import migrations, models
-import django.db.models.deletion
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -9,28 +8,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='VidrioHoja',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('vidrio', models.ForeignKey(
-                    db_column='vidrio_codigo',
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name='vidrio_hojas',
-                    to='pricing.vidrio',
-                    to_field='codigo',
-                )),
-                ('hoja', models.ForeignKey(
-                    db_column='hoja_id',
-                    db_constraint=False,
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name='vidrio_hojas',
-                    to='pricing.hoja',
-                )),
-            ],
-            options={
-                'db_table': 'vidrio_hojas',
-                'unique_together': {('vidrio', 'hoja')},
-            },
+        migrations.RunSQL(
+            sql="""
+                CREATE TABLE vidrio_hojas (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    vidrio_codigo VARCHAR(255) NOT NULL,
+                    hoja_id INT NOT NULL,
+                    UNIQUE KEY uq_vidrio_hoja (vidrio_codigo, hoja_id)
+                );
+            """,
+            reverse_sql="DROP TABLE IF EXISTS vidrio_hojas;",
         ),
     ]
