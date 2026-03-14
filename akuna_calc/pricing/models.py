@@ -329,6 +329,31 @@ class Tratamiento(models.Model):
         return self.descripcion or f"Tratamiento {self.id}"
 
 
+class VidrioHoja(models.Model):
+    """Relacion many-to-many entre Vidrio y Hoja."""
+    vidrio = models.ForeignKey(
+        Vidrio,
+        db_column='vidrio_codigo',
+        on_delete=models.CASCADE,
+        to_field='codigo',
+        related_name='vidrio_hojas',
+    )
+    hoja = models.ForeignKey(
+        Hoja,
+        db_column='hoja_id',
+        on_delete=models.CASCADE,
+        related_name='vidrio_hojas',
+        db_constraint=False,
+    )
+
+    class Meta:
+        db_table = 'vidrio_hojas'
+        unique_together = [['vidrio', 'hoja']]
+
+    def __str__(self):
+        return f"{self.vidrio_id} -> Hoja {self.hoja_id}"
+
+
 class DespiecePerfilesMarco(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
     marco = models.ForeignKey(

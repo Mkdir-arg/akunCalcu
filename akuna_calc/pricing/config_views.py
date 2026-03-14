@@ -709,36 +709,52 @@ def vidrios_config(request):
 def vidrio_create(request):
     form = VidrioCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        vidrio = form.save(commit=False)
-        # Convertir producto_id a string si es un objeto
-        if hasattr(form.cleaned_data.get('producto_id'), 'id'):
-            vidrio.producto_id = str(form.cleaned_data['producto_id'].id)
-        vidrio.save()
+        form.save()
         messages.success(request, 'Vidrio creado correctamente.')
-        return redirect('config-vidrios')
+        return redirect('config-vidrio-edit', pk=form.instance.codigo)
     return render(request, 'pricing/config/vidrio_form.html', {'form': form, 'titulo': 'Nuevo Vidrio', 'cancel_url': 'config-vidrios'})
 
 
 @login_required
 @user_passes_test(is_staff)
 def vidrio_edit(request, pk):
+    import json as _json
     obj = get_object_or_404(Vidrio, pk=pk)
     form = VidrioEditForm(request.POST or None, instance=obj)
-    
-    if request.method == 'POST' and form.is_valid():
-        vidrio = form.save(commit=False)
-        # Convertir producto_id a string si es un objeto
-        if hasattr(form.cleaned_data.get('producto_id'), 'id'):
-            vidrio.producto_id = str(form.cleaned_data['producto_id'].id)
-        vidrio.save()
-        messages.success(request, 'Vidrio actualizado correctamente.')
-        return redirect('config-vidrios')
-    
+
+    from .models import VidrioHoja
+    relaciones = list(VidrioHoja.objects.filter(vidrio=obj).select_related('hoja'))
+    hojas = Hoja.objects.exclude(bloqueado='Si')
+
+    if request.method == 'POST':
+        # AJAX: guardar relaciones de hojas
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            try:
+                VidrioHoja.objects.filter(vidrio=obj).delete()
+                index = 0
+                guardadas = 0
+                while f'hoja_{index}' in request.POST:
+                    hoja_id = request.POST.get(f'hoja_{index}')
+                    if hoja_id:
+                        VidrioHoja.objects.create(vidrio=obj, hoja_id=int(hoja_id))
+                        guardadas += 1
+                    index += 1
+                return JsonResponse({'ok': True, 'guardadas': guardadas})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Vidrio actualizado correctamente.')
+            return redirect('config-vidrios')
+
     return render(request, 'pricing/config/vidrio_form.html', {
-        'form': form, 
-        'titulo': 'Editar Vidrio', 
-        'cancel_url': 'config-vidrios', 
-        'object': obj
+        'form': form,
+        'titulo': 'Editar Vidrio',
+        'cancel_url': 'config-vidrios',
+        'object': obj,
+        'relaciones': relaciones,
+        'hojas': hojas,
     })
 
 

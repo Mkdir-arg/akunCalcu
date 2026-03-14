@@ -211,7 +211,15 @@ class PriceCalculator:
             except PricingError:
                 logger.warning(f"Vidrio seleccionado no encontrado: {vidrio_codigo}")
         elif hoja_id:
-            vidrio_obj = Vidrio.objects.filter(hoja_id=hoja_id).first()
+            try:
+                from .models import VidrioHoja
+                rel = VidrioHoja.objects.filter(hoja_id=hoja_id).first()
+                if rel:
+                    vidrio_obj = Vidrio.objects.filter(codigo=rel.vidrio_id).first()
+            except Exception:
+                pass
+            if not vidrio_obj:
+                vidrio_obj = Vidrio.objects.filter(hoja_id=hoja_id).first()
 
         if vidrio_obj:
             vidrio = vidrio_obj

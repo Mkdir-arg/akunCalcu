@@ -12,8 +12,6 @@
     <div class="bg-white rounded-2xl shadow-lg p-6">
         <form method="post">
             {% csrf_token %}
-            
-            <!-- Datos Básicos -->
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-slate-800 mb-4 pb-2 border-b">Datos Básicos</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -21,43 +19,23 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.codigo.label }}</label>
                         {{ form.codigo }}
-                        {% if form.codigo.errors %}
-                            <p class="text-red-600 text-xs mt-1">{{ form.codigo.errors.0 }}</p>
-                        {% endif %}
+                        {% if form.codigo.errors %}<p class="text-red-600 text-xs mt-1">{{ form.codigo.errors.0 }}</p>{% endif %}
                     </div>
                     {% endif %}
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.producto_id.label }}</label>
-                        {{ form.producto_id }}
-                        {% if form.producto_id.errors %}
-                            <p class="text-red-600 text-xs mt-1">{{ form.producto_id.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.hoja_id.label }}</label>
-                        {{ form.hoja_id }}
-                        {% if form.hoja_id.errors %}
-                            <p class="text-red-600 text-xs mt-1">{{ form.hoja_id.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.descripcion.label }}</label>
                         {{ form.descripcion }}
-                        {% if form.descripcion.errors %}
-                            <p class="text-red-600 text-xs mt-1">{{ form.descripcion.errors.0 }}</p>
-                        {% endif %}
+                        {% if form.descripcion.errors %}<p class="text-red-600 text-xs mt-1">{{ form.descripcion.errors.0 }}</p>{% endif %}
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">Valor m²</label>
                         {{ form.precio }}
-                        {% if form.precio.errors %}
-                            <p class="text-red-600 text-xs mt-1">{{ form.precio.errors.0 }}</p>
-                        {% endif %}
+                        {% if form.precio.errors %}<p class="text-red-600 text-xs mt-1">{{ form.precio.errors.0 }}</p>{% endif %}
                     </div>
                 </div>
             </div>
 
-<div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <a href="{% url 'config-vidrios' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
                 <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
                     <i class="fas fa-save mr-2"></i>Guardar
@@ -65,5 +43,91 @@
             </div>
         </form>
     </div>
+
+    {% if object %}
+    <!-- Relacionar a Hoja -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mt-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-slate-800">Relacionar a Hoja</h2>
+            <button onclick="guardarHojas()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                <i class="fas fa-save mr-2"></i>Guardar Relaciones
+            </button>
+        </div>
+
+        <div id="hojas-container" class="space-y-3">
+            {% for rel in relaciones %}
+            <div class="hoja-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                    <div class="md:col-span-5">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hoja</label>
+                        <select name="hoja" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Seleccionar...</option>
+                            {% for h in hojas %}
+                            <option value="{{ h.id }}" {% if rel.hoja_id == h.id %}selected{% endif %}>{{ h.id }} - {{ h.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <button type="button" onclick="this.closest('.hoja-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button onclick="agregarHoja()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
+            <i class="fas fa-plus mr-2"></i>Agregar Hoja
+        </button>
+    </div>
+
+    <script>
+    function agregarHoja() {
+        const container = document.getElementById('hojas-container');
+        const div = document.createElement('div');
+        div.className = 'hoja-row bg-gray-50 p-4 rounded-lg border border-gray-200';
+        div.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                <div class="md:col-span-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hoja</label>
+                    <select name="hoja" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Seleccionar...</option>
+                        {% for h in hojas %}
+                        <option value="{{ h.id }}">{{ h.id }} - {{ h.descripcion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <button type="button" onclick="this.closest('.hoja-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function guardarHojas() {
+        const rows = document.querySelectorAll('.hoja-row');
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        rows.forEach((row, index) => {
+            formData.append(`hoja_${index}`, row.querySelector('select[name="hoja"]').value);
+        });
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) { alert(`✓ ${data.guardadas} relaciones guardadas`); location.reload(); }
+            else alert('Error: ' + (data.error || 'Error desconocido'));
+        })
+        .catch(e => alert('Error: ' + e));
+    }
+    </script>
+    {% endif %}
 </div>
 {% endblock %}

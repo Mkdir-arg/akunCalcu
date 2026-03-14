@@ -351,66 +351,26 @@ class AccesorioEditForm(forms.ModelForm):
 
 
 class VidrioCreateForm(forms.ModelForm):
-    from productos.models import Producto as ProductoComercial
-    
-    producto_id = forms.ModelChoiceField(
-        queryset=ProductoComercial.objects.filter(activo=True, categoria='Vidrio'),
-        widget=forms.Select(attrs={'class': _select_class}),
-        label='Interior',
-        required=False
-    )
-    
-    hoja_id = forms.IntegerField(
-        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
-        label='Hoja',
-        required=False
-    )
-    
     class Meta:
         model = Vidrio
-        fields = ['codigo', 'producto_id', 'hoja_id', 'descripcion', 'precio']
+        fields = ['codigo', 'descripcion', 'precio']
         labels = {'precio': 'Precio / m²'}
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        hojas = [(h.id, str(h)) for h in Hoja.objects.all()]
-        self.fields['hoja_id'].widget.choices = [('', '---------')] + hojas
 
 
 class VidrioEditForm(forms.ModelForm):
-    from productos.models import Producto as ProductoComercial
-    
-    producto_id = forms.ModelChoiceField(
-        queryset=ProductoComercial.objects.filter(activo=True, categoria='Vidrio'),
-        widget=forms.Select(attrs={'class': _select_class}),
-        label='Interior',
-        required=False
-    )
-    
-    hoja_id = forms.IntegerField(
-        widget=forms.Select(attrs={'class': _select_class}, choices=[]),
-        label='Hoja',
-        required=False
-    )
-    
     class Meta:
         model = Vidrio
-        fields = ['producto_id', 'hoja_id', 'descripcion', 'precio']
+        fields = ['descripcion', 'precio']
         labels = {'precio': 'Precio / m²'}
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        hojas = [(h.id, str(h)) for h in Hoja.objects.all()]
-        self.fields['hoja_id'].widget.choices = [('', '---------')] + hojas
 
 
 class TratamientoForm(forms.ModelForm):

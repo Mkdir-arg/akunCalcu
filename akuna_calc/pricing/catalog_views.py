@@ -3,6 +3,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import models
 
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Vidrio, Perfil, Accesorio, Tratamiento, Mosquitero, Contravidrio, ContravidrioExterior, Cruce, VidrioRepartido
 
@@ -65,10 +66,15 @@ class InterioresListView(APIView):
 
 class VidriosListView(APIView):
     def get(self, request):
+        from .models import VidrioHoja
         hoja_id = request.query_params.get('hoja_id')
         qs = Vidrio.objects.exclude(bloqueado='Si')
         if hoja_id:
-            qs = qs.filter(hoja_id=hoja_id)
+            # Buscar por tabla nueva VidrioHoja + campo legacy hoja_id
+            codigos_nuevos = VidrioHoja.objects.filter(hoja_id=hoja_id).values_list('vidrio_id', flat=True)
+            qs = qs.filter(
+                models.Q(hoja_id=hoja_id) | models.Q(codigo__in=codigos_nuevos)
+            )
         return Response(list(qs.values('codigo', 'descripcion', 'precio')))
 
 
