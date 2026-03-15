@@ -41,11 +41,13 @@ class ProductoForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.instance.pk:
-            self.fields['linea'].queryset = Linea.objects.none()
+        if self.instance.pk and self.instance.extrusora:
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.extrusora)
+        elif self.data:
+            ext_id = self.data.get('extrusora')
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora_id=ext_id) if ext_id else Linea.objects.none()
         else:
-            if self.instance.extrusora:
-                self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.extrusora)
+            self.fields['linea'].queryset = Linea.objects.none()
 
 
 class MarcoForm(forms.ModelForm):
@@ -126,9 +128,6 @@ class HojaForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['linea'].queryset = Linea.objects.none()
-        self.fields['producto'].queryset = Producto.objects.none()
-        self.fields['marco'].queryset = Marco.objects.none()
         self.order_fields(['extrusora', 'linea', 'producto', 'marco', 'descripcion', 'cantidad'])
 
         if self.instance and self.instance.pk and self.instance.marco:
@@ -138,6 +137,17 @@ class HojaForm(forms.ModelForm):
             self.fields['producto'].queryset = Producto.objects.filter(linea=self.instance.marco.producto.linea)
             self.fields['producto'].initial = self.instance.marco.producto
             self.fields['marco'].queryset = Marco.objects.filter(producto=self.instance.marco.producto)
+        elif self.data:
+            ext_id = self.data.get('extrusora')
+            linea_id = self.data.get('linea')
+            producto_id = self.data.get('producto')
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora_id=ext_id) if ext_id else Linea.objects.none()
+            self.fields['producto'].queryset = Producto.objects.filter(linea_id=linea_id) if linea_id else Producto.objects.none()
+            self.fields['marco'].queryset = Marco.objects.filter(producto_id=producto_id) if producto_id else Marco.objects.none()
+        else:
+            self.fields['linea'].queryset = Linea.objects.none()
+            self.fields['producto'].queryset = Producto.objects.none()
+            self.fields['marco'].queryset = Marco.objects.none()
 
 
 class InteriorForm(forms.ModelForm):
