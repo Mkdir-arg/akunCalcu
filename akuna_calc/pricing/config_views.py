@@ -361,6 +361,7 @@ def hojas_config(request):
 @login_required
 @user_passes_test(is_staff)
 def hoja_create(request):
+    import json
     form = HojaForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
@@ -369,7 +370,14 @@ def hoja_create(request):
         obj.save()
         messages.success(request, 'Hoja creada correctamente.')
         return redirect('config-hoja-edit', pk=obj.id)
-    return render(request, 'pricing/config/hoja_form.html', {'form': form, 'titulo': 'Nueva Hoja', 'cancel_url': 'config-hojas'})
+    perfiles_json = json.dumps(list(Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')))
+    return render(request, 'pricing/config/hoja_form.html', {
+        'form': form,
+        'titulo': 'Nueva Hoja',
+        'cancel_url': 'config-hojas',
+        'perfiles_json': perfiles_json,
+        'accesorios_hoja_json': '[]',
+    })
 
 
 @login_required
