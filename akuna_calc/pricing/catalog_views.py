@@ -17,7 +17,7 @@ class ExtrusorasListView(APIView):
 class LineasListView(APIView):
     def get(self, request):
         extrusora_id = request.query_params.get('extrusora_id')
-        qs = Linea.objects.filter(bloqueado__isnull=True) | Linea.objects.exclude(bloqueado='Si')
+        qs = Linea.objects.exclude(bloqueado='Si')
         if extrusora_id:
             qs = qs.filter(extrusora_id=extrusora_id)
         lineas = qs.values('id', 'nombre')
@@ -27,7 +27,7 @@ class LineasListView(APIView):
 class ProductosListView(APIView):
     def get(self, request):
         linea_id = request.query_params.get('linea_id')
-        qs = Producto.objects.filter(bloqueado__isnull=True) | Producto.objects.exclude(bloqueado='Si')
+        qs = Producto.objects.exclude(bloqueado='Si')
         if linea_id:
             qs = qs.filter(linea_id=linea_id)
         productos = qs.values('id', 'descripcion', 'linea_id')
