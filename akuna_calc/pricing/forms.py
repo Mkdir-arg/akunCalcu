@@ -82,6 +82,11 @@ class MarcoForm(forms.ModelForm):
             self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.producto.extrusora)
             self.fields['linea'].initial = self.instance.producto.linea
             self.fields['producto'].queryset = Producto.objects.filter(linea=self.instance.producto.linea)
+        elif self.data:
+            ext_id = self.data.get('extrusora')
+            linea_id = self.data.get('linea')
+            self.fields['linea'].queryset = Linea.objects.filter(extrusora_id=ext_id) if ext_id else Linea.objects.none()
+            self.fields['producto'].queryset = Producto.objects.filter(linea_id=linea_id) if linea_id else Producto.objects.none()
         else:
             self.fields['linea'].queryset = Linea.objects.none()
             self.fields['producto'].queryset = Producto.objects.none()
