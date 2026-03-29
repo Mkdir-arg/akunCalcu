@@ -6,7 +6,11 @@
       "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py test presupuestos --verbosity=2 2>&1)",
       "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check presupuestos 2>&1)",
       "Bash(cd \"C:/Users/mkdir/Proyectos/akunCalcu\" && docker-compose exec web python manage.py check 2>&1)",
-      "Bash(grep -r \"Agregar Retención\\\\|agregar-retencion\\\\|historial.*pago\\\\|editar.*pago\" /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/comercial/templates/ --include=\"*.html\" 2>/dev/null | head -20)"
+      "Bash(grep -r \"Agregar Retención\\\\|agregar-retencion\\\\|historial.*pago\\\\|editar.*pago\" /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/comercial/templates/ --include=\"*.html\" 2>/dev/null | head -20)",
+      "Bash(docker-compose exec:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

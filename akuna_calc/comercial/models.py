@@ -218,31 +218,76 @@ class Cuenta(models.Model):
 
 
 class Compra(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('pagado', 'Pagado'),
+    ]
+
     numero_pedido = models.CharField(max_length=50)
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE)
     tipo_gasto = models.ForeignKey(TipoGasto, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_pago = models.DateField()
-    importe_abonado = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    valor_total = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     con_factura = models.BooleanField(default=True, verbose_name="Compra en blanco (con factura)")
     numero_factura = models.CharField(max_length=50, blank=True)
     descripcion = models.TextField(blank=True)
     comprobante = models.CharField(max_length=100, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    notas_internas = models.TextField(blank=True, verbose_name="Notas internas")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            total_pagos = sum(pago.monto for pago in self.pagos_compra.all())
+            self.saldo = self.valor_total - self.sena - total_pagos
+        else:
+            self.saldo = self.valor_total - self.sena
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Compra {self.numero_pedido} - {self.cuenta}"
-    
+
     def delete(self, *args, **kwargs):
         """Eliminado lógico"""
         from django.utils import timezone
         self.deleted_at = timezone.now()
         self.save()
-    
+
     class Meta:
         verbose_name = "Compra"
         verbose_name_plural = "Compras"
+        ordering = ['-fecha_pago']
+
+
+class PagoCompra(models.Model):
+    FORMA_PAGO_CHOICES = [
+        ('transferencia', 'Transferencia'),
+        ('efectivo', 'Efectivo'),
+        ('cheque', 'Cheque'),
+        ('tarjeta', 'Tarjeta'),
+    ]
+
+    compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='pagos_compra')
+    monto = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    fecha_pago = models.DateField()
+    forma_pago = models.CharField(max_length=20, choices=FORMA_PAGO_CHOICES)
+    con_factura = models.BooleanField(default=True, verbose_name="Pago en blanco (con factura)")
+    numero_factura = models.CharField(max_length=50, blank=True, verbose_name='Número de Factura')
+    observaciones = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Pago ${self.monto} - Compra {self.compra.numero_pedido}"
+
+    class Meta:
+        verbose_name = "Pago de Compra"
+        verbose_name_plural = "Pagos de Compras"
         ordering = ['-fecha_pago']
 
 

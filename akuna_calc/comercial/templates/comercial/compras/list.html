@@ -72,6 +72,7 @@
                         <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo Cuenta</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha Pago</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Importe</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Saldo</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -102,7 +103,12 @@
                             {{ compra.fecha_pago|date:"d/m/Y" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ compra.importe_abonado|formato_numero }}
+                            ${{ compra.valor_total|formato_numero }}
+                        </td>
+                        <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="font-semibold {% if compra.saldo > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
+                                ${{ compra.saldo|formato_numero }}
+                            </span>
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm">
                             {% if compra.con_factura %}
@@ -117,6 +123,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'comercial:compra_detail' compra.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                                 <a href="{% url 'comercial:compra_edit' compra.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -128,7 +137,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-8 text-center">
+                        <td colspan="9" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay gastos registrados</p>
                         </td>

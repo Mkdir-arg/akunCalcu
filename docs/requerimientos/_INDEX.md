@@ -26,3 +26,4 @@
 | [REQ-004](./REQ-004-formulas-marcos.md) | Sistema de Fórmulas para Marcos | Implementado | 2026-03-06 | FEAT-003 |
 | [REQ-005](./REQ-005-detalle-cliente.md) | Página de detalle de cliente | En desarrollo | 2026-03-06 | FEAT-004 |
 | [REQ-006](./REQ-006-modulo-presupuestos.md) | Módulo de Presupuestos | Implementado | 2026-03-11 | FEAT-005 |
+| [REQ-007](./REQ-007-pagos-parciales-compras.md) | Pagos Parciales en Compras | Implementado | 2026-03-28 | FEAT-006 |

@@ -18,7 +18,7 @@ def home(request):
     
     # Estadísticas comerciales
     total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0')
-    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or Decimal('0')
+    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0')
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     clientes_count = Cliente.objects.filter(deleted_at__isnull=True).count()
     

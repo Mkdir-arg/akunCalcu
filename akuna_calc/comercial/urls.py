@@ -27,8 +27,10 @@ urlpatterns = [
     # Compras
     path('compras/', views.compras_list, name='compras_list'),
     path('compras/nueva/', views.compra_create, name='compra_create'),
+    path('compras/<int:pk>/', views.compra_detail, name='compra_detail'),
     path('compras/<int:pk>/editar/', views.compra_edit, name='compra_edit'),
     path('compras/<int:pk>/eliminar/', views.compra_delete, name='compra_delete'),
+    path('compras/<int:pk>/pago/', views.registrar_pago_compra, name='registrar_pago_compra'),
     
     # Cuentas
     path('cuentas/', views.cuentas_list, name='cuentas_list'),
@@ -67,4 +69,9 @@ urlpatterns = [
     path('api/venta/<int:pk>/cambiar-estado/', views.cambiar_estado_venta, name='cambiar_estado_venta'),
     path('api/venta/<int:pk>/guardar-nota/', views.guardar_nota_venta, name='guardar_nota_venta'),
     path('ventas/<int:pk>/duplicar/', views.duplicar_venta, name='duplicar_venta'),
+
+    # API Pagos Compra
+    path('api/pago-compra/<int:pk>/editar/', views.editar_pago_compra, name='editar_pago_compra'),
+    path('api/pago-compra/<int:pk>/eliminar/', views.eliminar_pago_compra, name='eliminar_pago_compra'),
+    path('api/compra/<int:pk>/guardar-nota/', views.guardar_nota_compra, name='guardar_nota_compra'),
 ]

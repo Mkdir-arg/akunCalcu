@@ -6,7 +6,7 @@ from django.db.models import Sum, Q
 from django.http import JsonResponse
 from datetime import datetime
 from decimal import Decimal
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
 
 
@@ -19,7 +19,7 @@ def dashboard_comercial(request):
     
     # Estad�sticas generales
     total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('importe_abonado'))['importe_abonado__sum'] or 0
+    total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     
     # �ltimos 6 meses
@@ -36,7 +36,7 @@ def dashboard_comercial(request):
     compras_por_mes = Compra.objects.filter(deleted_at__isnull=True, fecha_pago__gte=hace_6_meses).annotate(
         mes=TruncMonth('fecha_pago')
     ).values('mes').annotate(
-        total=Sum('importe_abonado')
+        total=Sum('valor_total')
     ).order_by('mes')
     
     # Top 5 clientes
@@ -46,7 +46,7 @@ def dashboard_comercial(request):
     
     # Compras por tipo de cuenta
     compras_por_tipo_raw = Compra.objects.filter(deleted_at__isnull=True).values('cuenta__tipo_cuenta__id', 'cuenta__tipo_cuenta__tipo').annotate(
-        total=Sum('importe_abonado')
+        total=Sum('valor_total')
     ).order_by('-total')
     
     # Formatear datos para el gr�fico
@@ -874,7 +874,7 @@ def compra_create(request):
             compra.created_by = request.user
             compra.save()
             messages.success(request, 'Gasto registrado exitosamente.')
-            return redirect('comercial:compras_list')
+            return redirect('comercial:compra_detail', pk=compra.pk)
     else:
         form = CompraForm()
     
@@ -895,7 +895,7 @@ def compra_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Gasto actualizado exitosamente.')
-            return redirect('comercial:compras_list')
+            return redirect('comercial:compra_detail', pk=pk)
         # Si hay errores, pre-seleccionar el tipo de cuenta del POST
         tipo_cuenta_id = request.POST.get('tipo_cuenta_filter')
         if tipo_cuenta_id:
@@ -919,10 +919,141 @@ def compra_edit(request, pk):
 def compra_delete(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
     if request.method == 'POST':
-        compra.delete()  # Eliminado l�gico
+        compra.delete()
         messages.success(request, 'Gasto eliminado exitosamente.')
         return redirect('comercial:compras_list')
     return redirect('comercial:compras_list')
+
+
+@login_required
+def compra_detail(request, pk):
+    from django.utils import timezone
+    compra = get_object_or_404(Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta', 'tipo_gasto').prefetch_related('pagos_compra'), pk=pk, deleted_at__isnull=True)
+    pagos = compra.pagos_compra.all().order_by('fecha_pago')
+    total_pagado = compra.sena + sum(p.monto for p in pagos)
+    porcentaje_pagado = int((total_pagado / compra.valor_total * 100)) if compra.valor_total > 0 else 0
+    dias_abierta = (timezone.now().date() - compra.created_at.date()).days
+
+    context = {
+        'compra': compra,
+        'pagos': pagos,
+        'total_pagado': total_pagado,
+        'porcentaje_pagado': porcentaje_pagado,
+        'dias_abierta': dias_abierta,
+        'today': timezone.now().date(),
+    }
+    return render(request, 'comercial/compras/detail.html', context)
+
+
+@login_required
+def registrar_pago_compra(request, pk):
+    compra = get_object_or_404(Compra, pk=pk)
+    if request.method == 'POST':
+        monto = request.POST.get('monto')
+        fecha_pago = request.POST.get('fecha_pago')
+        forma_pago = request.POST.get('forma_pago')
+        con_factura = request.POST.get('con_factura') == 'true'
+        numero_factura = request.POST.get('numero_factura', '')
+        observaciones = request.POST.get('observaciones', '')
+
+        try:
+            monto_decimal = Decimal(monto)
+            if monto_decimal <= 0:
+                messages.error(request, 'El monto debe ser mayor a 0')
+                return redirect('comercial:compra_detail', pk=pk)
+            if monto_decimal > compra.saldo:
+                messages.error(request, f'El monto no puede exceder el saldo pendiente (${compra.saldo})')
+                return redirect('comercial:compra_detail', pk=pk)
+
+            PagoCompra.objects.create(
+                compra=compra,
+                monto=monto_decimal,
+                fecha_pago=fecha_pago,
+                forma_pago=forma_pago,
+                con_factura=con_factura,
+                numero_factura=numero_factura,
+                observaciones=observaciones,
+                created_by=request.user
+            )
+            compra.save()
+            messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente.')
+
+            if compra.saldo <= 0 and compra.estado == 'pendiente':
+                compra.estado = 'pagado'
+                compra.save()
+                messages.success(request, 'La compra fue marcada como pagada.')
+
+            return redirect('comercial:compra_detail', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error al registrar pago: {str(e)}')
+            return redirect('comercial:compra_detail', pk=pk)
+    return redirect('comercial:compra_detail', pk=pk)
+
+
+@login_required
+def editar_pago_compra(request, pk):
+    if request.method == 'POST':
+        import json
+        pago = get_object_or_404(PagoCompra, pk=pk)
+        try:
+            data = json.loads(request.body)
+            monto = Decimal(str(data.get('monto')))
+            fecha_pago_str = data.get('fecha_pago')
+            forma_pago = data.get('forma_pago')
+            con_factura = data.get('con_factura', True)
+            numero_factura = data.get('numero_factura', '')
+            observaciones = data.get('observaciones', '')
+
+            if monto <= 0:
+                return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
+
+            pago.monto = monto
+            pago.fecha_pago = datetime.strptime(fecha_pago_str, '%Y-%m-%d').date()
+            pago.forma_pago = forma_pago
+            pago.con_factura = con_factura
+            pago.numero_factura = numero_factura
+            pago.observaciones = observaciones
+            pago.save()
+
+            pago.compra.save()
+
+            return JsonResponse({
+                'success': True,
+                'saldo': float(pago.compra.saldo)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def eliminar_pago_compra(request, pk):
+    if request.method == 'POST':
+        pago = get_object_or_404(PagoCompra, pk=pk)
+        compra = pago.compra
+        try:
+            pago.delete()
+            compra.save()
+            if compra.saldo > 0 and compra.estado == 'pagado':
+                compra.estado = 'pendiente'
+                compra.save()
+            return JsonResponse({
+                'success': True,
+                'saldo': float(compra.saldo)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def guardar_nota_compra(request, pk):
+    if request.method == 'POST':
+        compra = get_object_or_404(Compra, pk=pk)
+        nota = request.POST.get('nota', '')
+        Compra.objects.filter(pk=pk).update(notas_internas=nota)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
 
 # CUENTAS
@@ -1604,7 +1735,7 @@ def reportes_gastos(request):
             'numero_factura': compra.numero_factura or '-',
             'cuenta': str(compra.cuenta),
             'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
-            'monto': compra.importe_abonado,
+            'monto': compra.valor_total,
             'tipo': 'Blanco' if compra.con_factura else 'Negro'
         })
     
@@ -1652,7 +1783,7 @@ def exportar_reporte_gastos_excel(request):
             'numero_factura': compra.numero_factura or '-',
             'cuenta': str(compra.cuenta),
             'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
-            'monto': float(compra.importe_abonado),
+            'monto': float(compra.valor_total),
             'tipo': 'Blanco' if compra.con_factura else 'Negro'
         })
     
@@ -1860,10 +1991,10 @@ def reporte_general(request):
             compras = compras.filter(fecha_pago__lte=fecha_hasta)
         
         gastos_blanco = compras.filter(con_factura=True).aggregate(
-            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))
+            total=Coalesce(Sum('valor_total'), Value(0, output_field=DecimalField()))
         )['total']
         gastos_negro = compras.filter(con_factura=False).aggregate(
-            total=Coalesce(Sum('importe_abonado'), Value(0, output_field=DecimalField()))
+            total=Coalesce(Sum('valor_total'), Value(0, output_field=DecimalField()))
         )['total']
         total_gastos = gastos_blanco + gastos_negro
         

@@ -14,6 +14,28 @@
 
 ---
 
+## 2026-03-28 — Pagos Parciales en Compras (REQ-007 / FEAT-006)
+
+**User Story:** Como administrador, quiero registrar compras con monto total, seña y pagos parciales, y ver el detalle de cada compra con el saldo pendiente, para llevar el mismo control de deuda que tengo en ventas pero del lado de proveedores.
+
+**Archivos modificados:**
+- `comercial/models.py` — Compra refactorizado (`importe_abonado`→`valor_total`, +`sena`, `saldo`, `estado`, `notas_internas`), nuevo modelo `PagoCompra`
+- `comercial/views.py` — 5 views nuevas + renombre en reportes/dashboard
+- `comercial/forms.py` — CompraForm actualizado
+- `comercial/urls.py` — 6 rutas nuevas
+- `comercial/admin.py` — CompraAdmin actualizado + PagoCompraAdmin
+- `comercial/templates/comercial/compras/form.html` — campos valor_total + seña
+- `comercial/templates/comercial/compras/list.html` — columna saldo + botón Ver
+- `core/views.py` — renombre en dashboard home
+
+**Archivos creados:**
+- `comercial/templates/comercial/compras/detail.html` — vista detalle completa
+- `comercial/migrations/0014_rename_importe_abonado_compra_valor_total_and_more.py`
+
+**Descripción:** Se replicó la lógica de seña + pagos parciales + saldo dinámico de Ventas al módulo de Compras. La vista de detalle incluye KPIs, barra de progreso, formulario de pago, timeline, notas internas y historial de pagos con edición/eliminación AJAX.
+
+---
+
 ## 2026-03-11 — Módulo de Presupuestos — Paso 1 de Fábrica (REQ-006 / FEAT-005)
 
 **User Story:** Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar múltiples ítems usando la lógica del cotizador, dejar comentarios de seguimiento y generar un PDF para entregar al cliente.
