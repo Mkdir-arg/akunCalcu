@@ -15,14 +15,23 @@ from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
 @login_required
 def lista(request):
     all_qs = Presupuesto.objects.all()
-    kpis = all_qs.aggregate(
-        total=Count('id'),
-        total_monto=Sum('total'),
-        borradores=Count('id', filter=Q(estado='borrador')),
-        enviados=Count('id', filter=Q(estado='enviado')),
-        confirmados=Count('id', filter=Q(estado='confirmado')),
-        monto_confirmado=Sum('total', filter=Q(estado='confirmado')),
-    )
+    
+    # Calcular KPIs manualmente para evitar problemas con Sum en versiones antiguas
+    total_count = all_qs.count()
+    total_monto = sum(p.total for p in all_qs) if total_count > 0 else 0
+    borradores = all_qs.filter(estado='borrador').count()
+    enviados = all_qs.filter(estado='enviado').count()
+    confirmados = all_qs.filter(estado='confirmado').count()
+    monto_confirmado = sum(p.total for p in all_qs.filter(estado='confirmado'))
+    
+    kpis = {
+        'total': total_count,
+        'total_monto': total_monto,
+        'borradores': borradores,
+        'enviados': enviados,
+        'confirmados': confirmados,
+        'monto_confirmado': monto_confirmado,
+    }
 
     qs = Presupuesto.objects.select_related('cliente', 'created_by')
 
