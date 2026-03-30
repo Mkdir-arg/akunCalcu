@@ -10,7 +10,8 @@
       "Bash(docker-compose exec:*)",
       "Bash(docker-compose up:*)",
       "Bash(docker-compose logs:*)",
-      "Bash(docker-compose run:*)"
+      "Bash(docker-compose run:*)",
+      "Bash(ls -la /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/pricing/*.py)"
     ]
   },
   "enableAllProjectMcpServers": true,

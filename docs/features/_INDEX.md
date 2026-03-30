@@ -12,6 +12,7 @@
 | [FEAT-004](./FEAT-004-detalle-cliente.md) | Página de detalle de cliente | Implementado | 2026-03-06 | — |
 | [FEAT-005](./FEAT-005-modulo-presupuestos.md) | Módulo de Presupuestos (Paso 1 de Fábrica) | Implementado | 2026-03-11 | — |
 | [FEAT-006](./FEAT-006-pagos-parciales-compras.md) | Pagos Parciales en Compras | Implementado | 2026-03-28 | — |
+| [FEAT-007](./FEAT-007-mejora-presupuestos-cotizador.md) | Mejora Presupuestos: Paridad con Cotizador + UI | Implementado | 2026-03-30 | — |
 
 ---
 
@@ -22,4 +23,4 @@
 | `pedidos` | FEAT-001 | 2026-03-04 |
 | `pricing` | FEAT-002, FEAT-003 | 2026-03-06 |
 | `comercial` | FEAT-004, FEAT-006 | 2026-03-28 |
-| `presupuestos` | FEAT-005 | 2026-03-11 |
+| `presupuestos` | FEAT-005, FEAT-007 | 2026-03-30 |

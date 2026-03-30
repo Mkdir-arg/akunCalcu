@@ -14,6 +14,22 @@
 
 ---
 
+## 2026-03-30 — Mejora Presupuestos: Paridad con Cotizador + UI (REQ-008 / FEAT-007)
+
+**User Story:** Como vendedor, quiero que el cotizador embebido en presupuestos tenga las mismas funcionalidades que el cotizador principal (opcionales, desglose completo, mano de obra) y una UI mejorada, para poder armar presupuestos completos sin tener que ir al cotizador aparte.
+
+**Archivos modificados:**
+- `presupuestos/views.py` — KPIs con aggregate, filtro Q(), soporte opcionales_json
+- `presupuestos/templates/presupuestos/lista.html` — tarjetas KPI, UI mejorada
+- `presupuestos/templates/presupuestos/detalle.html` — cotizador React con opcionales + desglose completo + modal desglose
+
+**Archivos eliminados:**
+- `presupuestos/templates/presupuestos/item_form.html` — unificado en detalle.html
+
+**Descripción:** Se llevó el cotizador embebido en presupuestos a paridad con el cotizador principal de pricing. Se agregó soporte de opcionales, desglose expandible completo, mano de obra, modal de desglose para ítems guardados, KPIs de resumen en la lista, y se unificó el código eliminando la duplicación entre item_form.html y detalle.html.
+
+---
+
 ## 2026-03-28 — Pagos Parciales en Compras (REQ-007 / FEAT-006)
 
 **User Story:** Como administrador, quiero registrar compras con monto total, seña y pagos parciales, y ver el detalle de cada compra con el saldo pendiente, para llevar el mismo control de deuda que tengo en ventas pero del lado de proveedores.

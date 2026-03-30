@@ -4,11 +4,11 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 animate-fade-in">
+<div class="max-w-6xl mx-auto animate-fade-in px-4">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
-            <p class="text-slate-500 font-medium mt-1">Complete los datos del gasto</p>
+            <p class="text-slate-500 font-medium mt-1">Complete los datos de la compra</p>
         </div>
         <a href="{% url 'comercial:compras_list' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
             <i class="fas fa-arrow-left mr-2"></i>Volver
@@ -19,17 +19,44 @@
         <form method="post" class="space-y-8">
             {% csrf_token %}
 
+            <!-- Informacion Basica -->
+            <div class="border-b pb-6">
+                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                    Informacion Basica
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Numero de Pedido <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.numero_pedido }}
+                        {% if form.numero_pedido.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Fecha de Pago <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.fecha_pago }}
+                        {% if form.fecha_pago.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <!-- Cuenta / Proveedor -->
             <div class="border-b pb-6">
                 <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-building mr-2 text-blue-600"></i>
+                    <i class="fas fa-building mr-2 text-purple-600"></i>
                     Cuenta / Proveedor
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Tipo de Cuenta <span class="text-red-500">*</span>
-                        </label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Cuenta</label>
                         {{ form.tipo_cuenta_filter }}
                         {% if form.tipo_cuenta_filter.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.tipo_cuenta_filter.errors.0 }}</p>
@@ -67,7 +94,7 @@
                     <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
                     Valores y Montos
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Valor Total <span class="text-red-500">*</span>
@@ -79,42 +106,39 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Sena</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sena (anticipo)</label>
                         {{ form.sena }}
                         {% if form.sena.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-slate-500">Pago inicial / anticipo (opcional)</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Fecha de Pago <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.fecha_pago }}
-                        {% if form.fecha_pago.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
-                        {% endif %}
+                        <p class="mt-1 text-xs text-slate-400">Dejar en 0 si no hay anticipo</p>
                     </div>
                 </div>
 
-                <!-- Preview saldo -->
-                <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <div class="flex flex-wrap gap-6 items-center justify-center">
-                        <div class="text-center">
-                            <span class="text-xs text-slate-500 font-semibold uppercase">Valor Total</span>
-                            <p class="text-lg font-bold text-blue-700" id="preview-total">$0,00</p>
+                <!-- Preview saldo en tiempo real -->
+                <div class="mt-6 bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl border border-slate-200 p-5">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Valor Total</span>
+                            <p class="text-xl font-bold text-blue-700" id="preview-total">$0,00</p>
                         </div>
-                        <div class="text-slate-300 text-xl">-</div>
-                        <div class="text-center">
-                            <span class="text-xs text-slate-500 font-semibold uppercase">Sena</span>
-                            <p class="text-lg font-bold text-purple-700" id="preview-sena">$0,00</p>
+                        <div class="relative">
+                            <span class="absolute -left-2 top-1/2 text-slate-300 text-lg font-bold">-</span>
+                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Sena</span>
+                            <p class="text-xl font-bold text-purple-700" id="preview-sena">$0,00</p>
+                            <span class="absolute -right-2 top-1/2 text-slate-300 text-lg font-bold">=</span>
                         </div>
-                        <div class="text-slate-300 text-xl">=</div>
-                        <div class="text-center">
-                            <span class="text-xs text-slate-500 font-semibold uppercase">Saldo Pendiente</span>
-                            <p class="text-lg font-bold text-orange-600" id="preview-saldo">$0,00</p>
+                        <div>
+                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Saldo Pendiente</span>
+                            <p class="text-xl font-bold" id="preview-saldo">$0,00</p>
                         </div>
+                    </div>
+                    <!-- Barra de progreso -->
+                    <div class="mt-4">
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div id="preview-progress" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 text-right mt-1" id="preview-pct">0% anticipado</p>
                     </div>
                 </div>
             </div>
@@ -125,15 +149,10 @@
                     <i class="fas fa-file-invoice mr-2 text-indigo-600"></i>
                     Facturacion
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Numero de Pedido <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.numero_pedido }}
-                        {% if form.numero_pedido.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
-                        {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex items-center bg-green-50 p-4 rounded-xl border border-green-200">
+                        {{ form.con_factura }}
+                        <label class="ml-3 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
                     </div>
 
                     <div>
@@ -142,13 +161,6 @@
                         {% if form.numero_factura.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.0 }}</p>
                         {% endif %}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div class="flex items-center bg-green-50 p-4 rounded-xl border border-green-200">
-                        {{ form.con_factura }}
-                        <label class="ml-3 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
                     </div>
 
                     <div>
@@ -161,11 +173,11 @@
                 </div>
             </div>
 
-            <!-- Detalle -->
+            <!-- Detalle / Observaciones -->
             <div>
                 <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-align-left mr-2 text-slate-500"></i>
-                    Detalle
+                    <i class="fas fa-clipboard-list mr-2 text-slate-500"></i>
+                    Detalle y Observaciones
                 </h2>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Descripcion</label>
@@ -179,10 +191,10 @@
             <!-- Botones -->
             <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t">
                 <a href="{% url 'comercial:compras_list' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    Cancelar
+                    <i class="fas fa-times mr-2"></i>Cancelar
                 </a>
                 <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-save mr-2"></i>Guardar
+                    <i class="fas fa-save mr-2"></i>Guardar Compra
                 </button>
             </div>
         </form>
@@ -192,9 +204,9 @@
 <!-- Modal Crear Cuenta -->
 <div id="cuentaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white"><i class="fas fa-building mr-2"></i>Nueva Cuenta</h2>
-            <button type="button" onclick="closeCuentaModal()" class="text-white hover:text-gray-200">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center rounded-t-2xl">
+            <h2 class="text-2xl font-bold text-slate-800"><i class="fas fa-building mr-2"></i>Nueva Cuenta</h2>
+            <button type="button" onclick="closeCuentaModal()" class="text-gray-500 hover:text-gray-700">
                 <i class="fas fa-times text-2xl"></i>
             </button>
         </div>
@@ -274,24 +286,30 @@
 
 {% block extra_js %}
 <script>
-// ── Preview de saldo en tiempo real ──────────────────────────────
+// -- Preview de saldo en tiempo real --
 function actualizarPreview() {
     const total = parseFloat(document.querySelector('[name="valor_total"]')?.value || 0);
     const sena = parseFloat(document.querySelector('[name="sena"]')?.value || 0);
     const saldo = Math.max(0, total - sena);
+    const pct = total > 0 ? Math.min(100, (sena / total) * 100) : 0;
     const fmt = n => '$' + n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
     document.getElementById('preview-total').textContent = fmt(total);
     document.getElementById('preview-sena').textContent = fmt(sena);
+
     const elSaldo = document.getElementById('preview-saldo');
     elSaldo.textContent = fmt(saldo);
-    elSaldo.className = 'text-lg font-bold ' + (saldo > 0 ? 'text-orange-600' : 'text-green-600');
+    elSaldo.className = 'text-xl font-bold ' + (saldo > 0 ? 'text-orange-600' : 'text-green-600');
+
+    document.getElementById('preview-progress').style.width = pct + '%';
+    document.getElementById('preview-pct').textContent = Math.round(pct) + '% anticipado';
 }
 
 document.querySelector('[name="valor_total"]')?.addEventListener('input', actualizarPreview);
 document.querySelector('[name="sena"]')?.addEventListener('input', actualizarPreview);
 actualizarPreview();
 
-// ── Modal Cuenta ─────────────────────────────────────────────────
+// -- Modal Cuenta --
 function openCuentaModal() {
     document.getElementById('cuentaModal').classList.remove('hidden');
     document.getElementById('cuentaForm').reset();
@@ -360,7 +378,7 @@ document.getElementById('cuentaForm').addEventListener('submit', async function(
     }
 });
 
-// ── Filtros AJAX ─────────────────────────────────────────────────
+// -- Filtros AJAX de Tipo Cuenta / Cuenta / Tipo Gasto --
 $('#id_tipo_cuenta_filter').on('change', function() {
     const tipoCuentaId = $(this).val();
     const cuentaSelect = $('#id_cuenta');

@@ -40,7 +40,7 @@
             </a>
             <button onclick="abrirModalItem()"
                 class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>Agregar ítem
+                <i class="fas fa-plus mr-2"></i>Agregar item
             </button>
             {% endif %}
             <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank"
@@ -85,12 +85,12 @@
                 </div>
             </div>
 
-            <!-- Ítems -->
+            <!-- Items -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <div class="px-5 py-4 border-b flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-slate-800">Ítems</h2>
+                    <h2 class="text-lg font-bold text-slate-800">Items</h2>
                     <div class="flex items-center gap-3">
-                        <span class="text-slate-400 text-sm">{{ presupuesto.items.count }} ítem{{ presupuesto.items.count|pluralize:"s" }}</span>
+                        <span class="text-slate-400 text-sm">{{ presupuesto.items.count }} item{{ presupuesto.items.count|pluralize:"s" }}</span>
                         {% if not presupuesto.esta_bloqueado %}
                         <button onclick="abrirModalItem()"
                             class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
@@ -108,8 +108,8 @@
                             <div class="flex-1 min-w-0">
                                 <p class="font-semibold text-slate-800 truncate">{{ item.descripcion }}</p>
                                 <p class="text-xs text-slate-500 mt-0.5">
-                                    {{ item.ancho_mm }}mm × {{ item.alto_mm }}mm · Margen {{ item.margen_porcentaje }}%
-                                    {% if item.cantidad > 1 %} · <span class="text-blue-600">×{{ item.cantidad }} unidades</span>{% endif %}
+                                    {{ item.ancho_mm }}mm x {{ item.alto_mm }}mm · Margen {{ item.margen_porcentaje }}%
+                                    {% if item.cantidad > 1 %} · <span class="text-blue-600">x{{ item.cantidad }} unidades</span>{% endif %}
                                 </p>
                             </div>
                             <div class="text-right shrink-0">
@@ -144,10 +144,10 @@
                 {% else %}
                 <div class="px-5 py-14 text-center">
                     <i class="fas fa-inbox text-slate-200 text-5xl mb-4"></i>
-                    <p class="text-slate-400 font-medium">No hay ítems todavía</p>
+                    <p class="text-slate-400 font-medium">No hay items todavia</p>
                     {% if not presupuesto.esta_bloqueado %}
                     <button onclick="abrirModalItem()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold text-sm inline-flex items-center transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Agregar el primer ítem
+                        <i class="fas fa-plus mr-2"></i>Agregar el primer item
                     </button>
                     {% endif %}
                 </div>
@@ -176,7 +176,7 @@
                         </div>
                     </div>
                     {% empty %}
-                    <div class="px-5 py-6 text-center text-slate-400 text-sm">Sin comentarios todavía</div>
+                    <div class="px-5 py-6 text-center text-slate-400 text-sm">Sin comentarios todavia</div>
                     {% endfor %}
                 </div>
                 <div class="px-5 py-4 bg-slate-50 border-t">
@@ -216,7 +216,7 @@
                 <h3 class="font-bold text-slate-800 mb-3">Resumen</h3>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Ítems</span>
+                        <span class="text-slate-500">Items</span>
                         <span class="font-semibold text-slate-800">{{ presupuesto.items.count }}</span>
                     </div>
                     <div class="flex justify-between">
@@ -237,14 +237,14 @@
     </div>
 </div>
 
-<!-- ===== MODAL AGREGAR ÍTEM ===== -->
+<!-- ===== MODAL AGREGAR ITEM ===== -->
 {% if not presupuesto.esta_bloqueado %}
 <div id="modal-item" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalItem()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
-                <h2 class="text-lg font-bold text-slate-800">Agregar ítem al presupuesto</h2>
+                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-calculator mr-2 text-blue-600"></i>Agregar item al presupuesto</h2>
                 <button onclick="cerrarModalItem()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
@@ -268,21 +268,39 @@
     <input type="hidden" name="margen_porcentaje" id="f-margen_porcentaje">
     <input type="hidden" name="descripcion" id="f-descripcion">
     <input type="hidden" name="cantidad" id="f-cantidad">
+    <input type="hidden" name="opcionales_json" id="f-opcionales_json">
 </form>
 {% endif %}
+
+<!-- ===== MODAL VER DESGLOSE ===== -->
+<div id="modal-desglose" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalDesglose()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
+                <h2 class="text-lg font-bold text-slate-800" id="desglose-titulo">Desglose</h2>
+                <button onclick="cerrarModalDesglose()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-6" id="desglose-contenido"></div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// -- Modales y acciones --
 function confirmarEliminarItem(form, nombre) {
     Swal.fire({
-        title: '¿Eliminar ítem?',
-        html: `<p>¿Eliminar <strong>${nombre}</strong> del presupuesto?</p>`,
+        title: 'Eliminar item?',
+        html: '<p>Eliminar <strong>' + nombre + '</strong> del presupuesto?</p>',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'Si, eliminar',
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) form.submit();
@@ -293,21 +311,131 @@ function abrirModalItem() {
     document.getElementById('modal-item').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
-
 function cerrarModalItem() {
     document.getElementById('modal-item').classList.add('hidden');
     document.body.style.overflow = '';
 }
 
+function cerrarModalDesglose() {
+    document.getElementById('modal-desglose').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarModalItem();
+    if (e.key === 'Escape') {
+        cerrarModalItem();
+        cerrarModalDesglose();
+    }
 });
+
+// -- Ver desglose de un item guardado --
+function verDetalleItem(resultado, descripcion) {
+    document.getElementById('desglose-titulo').textContent = 'Desglose: ' + descripcion;
+    const cont = document.getElementById('desglose-contenido');
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    if (!resultado || !resultado.desglose) {
+        cont.innerHTML = '<p class="text-slate-400 text-center py-8">No hay desglose disponible para este item</p>';
+        document.getElementById('modal-desglose').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
+    }
+
+    let html = '';
+
+    // Precio total
+    html += '<div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">';
+    html += '<p class="text-sm opacity-80 mb-1">Precio Total</p>';
+    html += '<p class="text-3xl font-bold">$' + fmt(resultado.precio_total) + '</p>';
+    html += '<div class="flex gap-6 mt-2 text-sm opacity-80">';
+    html += '<span>Subtotal: $' + fmt(resultado.subtotal) + '</span>';
+    html += '<span>Margen: $' + fmt(resultado.margen) + '</span>';
+    html += '</div></div>';
+
+    // Perfiles
+    const d = resultado.desglose;
+    const r = resultado.resumen || {};
+
+    if (d.perfiles && d.perfiles.length > 0) {
+        html += buildSection('Perfiles', 'fa-ruler', 'blue', r.total_perfiles, d.perfiles.map(i =>
+            '<div class="flex justify-between font-medium"><span>' + i.codigo + ' - ' + i.descripcion + '</span><span class="text-blue-600">$' + fmt(i.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">Cant: ' + i.cantidad + ' x ' + i.longitud_mm + 'mm (' + i.longitud_m + 'm) | ' + i.peso_kg + 'kg x $' + i.precio_kg + '/kg' + (i.angulo ? ' | Angulo: ' + i.angulo + 'deg' : '') + '</div>'
+        ));
+    }
+
+    // Accesorios
+    if (d.accesorios && d.accesorios.length > 0) {
+        html += buildSection('Accesorios', 'fa-tools', 'green', r.total_accesorios, d.accesorios.map(i =>
+            '<div class="flex justify-between font-medium"><span>' + i.codigo + ' - ' + i.descripcion + '</span><span class="text-green-600">$' + fmt(i.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">Cantidad: ' + i.cantidad + ' x $' + fmt(i.precio_unitario) + (i.dimensiones ? ' (' + i.dimensiones.ancho + 'mm x ' + i.dimensiones.alto + 'mm)' : '') + '</div>'
+        ));
+    }
+
+    // Vidrio
+    if (d.vidrios) {
+        html += buildSection('Vidrio', 'fa-square', 'purple', r.total_vidrios, [
+            '<div class="flex justify-between font-medium"><span>' + d.vidrios.codigo + ' - ' + d.vidrios.descripcion + '</span><span class="text-purple-600">$' + fmt(d.vidrios.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">' + d.vidrios.ancho_mm + 'mm x ' + d.vidrios.alto_mm + 'mm = ' + d.vidrios.area_m2 + 'm2 x $' + d.vidrios.precio_m2 + '/m2' + (d.vidrios.cantidad_hojas > 1 ? ' x ' + d.vidrios.cantidad_hojas + ' hojas' : '') + '</div>'
+        ]);
+    }
+
+    // Tratamiento
+    if (d.tratamiento) {
+        html += buildSection('Tratamiento', 'fa-paint-brush', 'yellow', r.total_tratamiento, [
+            '<div class="flex justify-between font-medium"><span>' + d.tratamiento.descripcion + '</span><span class="text-yellow-600">$' + fmt(d.tratamiento.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">' + d.tratamiento.peso_total_kg + 'kg x $' + d.tratamiento.precio_kg + '/kg</div>'
+        ]);
+    }
+
+    // Mano de obra
+    if (d.mano_obra && r.total_mano_obra > 0) {
+        html += buildSection('Mano de Obra', 'fa-hard-hat', 'orange', r.total_mano_obra, [
+            '<div class="flex justify-between font-medium"><span>Horas Hombre</span><span class="text-orange-600">$' + fmt(d.mano_obra.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">' + d.mano_obra.horas + ' hs x $' + fmt(d.mano_obra.valor_hora) + '/hora</div>'
+        ]);
+    }
+
+    // Opcionales
+    if (d.opcionales && d.opcionales.length > 0) {
+        html += buildSection('Opcionales', 'fa-plus-circle', 'indigo', r.total_opcionales, d.opcionales.map(i => {
+            let detail = '<div class="flex justify-between font-medium"><span>' + i.codigo + ' - ' + i.nombre + '</span><span class="text-indigo-600">$' + fmt(i.precio_total) + '</span></div>';
+            detail += '<div class="text-xs text-gray-500 mt-0.5">';
+            if (i.tipo === 'mosquitero' && i.formulas) {
+                i.formulas.forEach(f => { detail += 'Cant: ' + f.cantidad + ' x ' + f.area_m2 + 'm2 x $' + (i.precio_m2 || 0).toLocaleString('es-AR') + '/m2 = $' + fmt(f.precio) + '<br>'; });
+            } else {
+                if (i.perfiles) i.perfiles.forEach(p => { detail += p.codigo + ': Cant ' + p.cantidad + ' x ' + p.longitud_mm + 'mm = $' + fmt(p.precio_total) + '<br>'; });
+                if (i.accesorios) i.accesorios.forEach(a => { detail += a.codigo + ': Cant ' + a.cantidad + ' = $' + fmt(a.precio_total) + '<br>'; });
+            }
+            detail += '</div>';
+            return detail;
+        }));
+    }
+
+    cont.innerHTML = html;
+    document.getElementById('modal-desglose').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function buildSection(title, icon, color, total, items) {
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let h = '<details class="mb-3 bg-' + color + '-50 rounded-lg" open>';
+    h += '<summary class="cursor-pointer p-3 font-medium text-' + color + '-900 hover:bg-' + color + '-100 rounded-lg">';
+    h += '<span class="inline-flex items-center justify-between w-full">';
+    h += '<span><i class="fas ' + icon + ' mr-2"></i>' + title + '</span>';
+    h += '<span class="text-' + color + '-700">$' + fmt(total) + '</span>';
+    h += '</span></summary>';
+    h += '<div class="p-3 pt-0 space-y-1">';
+    items.forEach(item => { h += '<div class="bg-white p-2 rounded text-sm">' + item + '</div>'; });
+    h += '</div></details>';
+    return h;
+}
 </script>
 
 {% if not presupuesto.esta_bloqueado %}
 <script type="text/babel">
 const { useState, useEffect } = React;
 
+// -- Componente Select con busqueda --
 const Sel = ({ label, options, value, onChange, placeholder, disabled = false }) => {
     const [search, setSearch] = useState('');
     const [isOpen, setIsOpen] = useState(false);
@@ -353,12 +481,109 @@ const Sel = ({ label, options, value, onChange, placeholder, disabled = false })
     );
 };
 
+// -- Modal de opcionales --
+const OpcionalesModal = ({ opcionales, onSelect }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const filtered = opcionales.filter(opt => `${opt.codigo} ${opt.nombre}`.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <>
+            <button type="button" onClick={() => setIsOpen(true)}
+                className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition flex items-center justify-center text-sm font-semibold">
+                <i className="fas fa-plus mr-2"></i>Agregar Opcional
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsOpen(false)} />
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="p-5 border-b">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-lg font-bold text-slate-800">
+                                        <i className="fas fa-plus-circle mr-2 text-blue-600"></i>Seleccionar Opcional
+                                    </h3>
+                                    <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl">
+                                        <i className="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                                    placeholder="Buscar por codigo o nombre..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div className="overflow-y-auto max-h-96 p-5">
+                                {filtered.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-400">
+                                        <i className="fas fa-search text-4xl mb-3 opacity-50"></i>
+                                        <p>No se encontraron opcionales</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {filtered.map(opcional => (
+                                            <button key={opcional.id} onClick={() => { onSelect(opcional); setIsOpen(false); setSearch(''); }}
+                                                className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="font-medium text-gray-900">{opcional.codigo} - {opcional.nombre}</div>
+                                                        <div className="text-sm text-gray-500 mt-1">
+                                                            {opcional.tipo === 'mosquitero'
+                                                                ? <span><i className="fas fa-dollar-sign mr-1"></i>${opcional.precio_m2.toLocaleString('es-AR')}/m2</span>
+                                                                : <span><i className="fas fa-calculator mr-1"></i>Calculado por formulas</span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${opcional.tipo === 'mosquitero' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                                                        {opcional.tipo === 'mosquitero' ? 'Mosquitero' : 'Otro'}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+        </>
+    );
+};
+
+// -- Componente de desglose expandible --
+const DesgloseSection = ({ title, icon, color, total, children }) => {
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+    return (
+        <details className={`mb-2 bg-${color}-50 rounded-lg`} open>
+            <summary className={`cursor-pointer p-3 font-medium text-${color}-900 hover:bg-${color}-100 rounded-lg`}>
+                <span className="inline-flex items-center justify-between w-full">
+                    <span><i className={`fas ${icon} mr-2`}></i>{title}</span>
+                    <span className={`text-${color}-700`}>${fmt(total)}</span>
+                </span>
+            </summary>
+            <div className="p-3 pt-0 space-y-1">{children}</div>
+        </details>
+    );
+};
+
+const DesgloseItem = ({ left, right, detail, color = 'blue' }) => (
+    <div className="bg-white p-2 rounded text-sm">
+        <div className="flex justify-between font-medium">
+            <span className="text-gray-800">{left}</span>
+            <span className={`text-${color}-600`}>${(right || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        </div>
+        {detail && <div className="text-xs text-gray-500 mt-0.5">{detail}</div>}
+    </div>
+);
+
+// -- Componente principal --
 const CotizadorModal = () => {
     const [config, setConfig] = useState({
         extrusora_id: null, linea_id: null, producto_id: null,
         marco_id: null, hoja_id: null, vidrio_codigo: null,
         interior_id: null, tratamiento_id: null,
         ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30,
+        opcionales: [],
     });
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
@@ -370,6 +595,7 @@ const CotizadorModal = () => {
     const [vidrios, setVidrios] = useState([]);
     const [interiores, setInteriores] = useState([]);
     const [tratamientos, setTratamientos] = useState([]);
+    const [opcionalesDisp, setOpcionalesDisp] = useState([]);
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -388,8 +614,10 @@ const CotizadorModal = () => {
         else setProductos([]);
     }, [config.linea_id]);
     useEffect(() => {
-        if (config.producto_id) fetch(`/pricing/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
-        else setMarcos([]);
+        if (config.producto_id) {
+            fetch(`/pricing/api/pricing/marcos/?producto_id=${config.producto_id}`).then(r => r.json()).then(setMarcos);
+            fetch(`/pricing/api/pricing/opcionales/?producto_id=${config.producto_id}`).then(r => r.json()).then(setOpcionalesDisp);
+        } else { setMarcos([]); setOpcionalesDisp([]); }
     }, [config.producto_id]);
     useEffect(() => {
         if (config.marco_id) fetch(`/pricing/api/pricing/hojas/?marco_id=${config.marco_id}`).then(r => r.json()).then(setHojas);
@@ -403,7 +631,7 @@ const CotizadorModal = () => {
     }, [config.hoja_id]);
 
     const calcular = async () => {
-        if (!config.marco_id) { setError('Seleccioná un marco primero'); return; }
+        if (!config.marco_id) { setError('Selecciona un marco primero'); return; }
         setLoading(true); setError(null);
         try {
             const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -419,7 +647,7 @@ const CotizadorModal = () => {
     };
 
     const guardar = () => {
-        if (!result) { setError('Calculá el precio primero'); return; }
+        if (!result) { setError('Calcula el precio primero'); return; }
         setSaving(true);
         document.getElementById('f-marco_id').value = config.marco_id || '';
         document.getElementById('f-hoja_id').value = config.hoja_id || '';
@@ -431,6 +659,7 @@ const CotizadorModal = () => {
         document.getElementById('f-margen_porcentaje').value = config.margen_porcentaje;
         document.getElementById('f-descripcion').value = descripcion || `Abertura ${config.ancho_mm}x${config.alto_mm}mm`;
         document.getElementById('f-cantidad').value = cantidad;
+        document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id })));
         document.getElementById('item-save-form').submit();
     };
 
@@ -440,12 +669,11 @@ const CotizadorModal = () => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* Configuración */}
+            {/* Configuracion */}
             <div>
-                {/* Descripción y cantidad */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="col-span-2">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Descripción</label>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Descripcion</label>
                         <input type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)}
                             placeholder="Ej: Ventana cocina"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -459,14 +687,14 @@ const CotizadorModal = () => {
 
                 <div className="grid grid-cols-2 gap-x-4">
                     <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id}
-                        onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null })}
+                        onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
                         placeholder="Seleccionar..." />
-                    <Sel label="Línea" options={lineas} value={config.linea_id} disabled={!config.extrusora_id}
-                        onChange={v => set('linea_id', v, { producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null })}
+                    <Sel label="Linea" options={lineas} value={config.linea_id} disabled={!config.extrusora_id}
+                        onChange={v => set('linea_id', v, { producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
                         placeholder={config.extrusora_id ? "Seleccionar..." : "Primero extrusora"} />
                     <Sel label="Producto" options={productos} value={config.producto_id} disabled={!config.linea_id}
-                        onChange={v => set('producto_id', v, { marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null })}
-                        placeholder={config.linea_id ? "Seleccionar..." : "Primero línea"} />
+                        onChange={v => set('producto_id', v, { marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
+                        placeholder={config.linea_id ? "Seleccionar..." : "Primero linea"} />
                     <Sel label="Marco *" options={marcos} value={config.marco_id} disabled={!config.producto_id}
                         onChange={v => set('marco_id', v, { hoja_id:null, vidrio_codigo:null, interior_id:null })}
                         placeholder={config.producto_id ? "Seleccionar..." : "Primero producto"} />
@@ -498,6 +726,39 @@ const CotizadorModal = () => {
                     ))}
                 </div>
 
+                {/* Opcionales */}
+                {config.producto_id && opcionalesDisp.length > 0 && (
+                    <div className="mt-4 border-t pt-4">
+                        <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
+                            <i className="fas fa-plus-circle mr-1 text-blue-600"></i>Opcionales
+                        </label>
+                        {config.opcionales.length > 0 && (
+                            <div className="mb-2 space-y-1.5">
+                                {config.opcionales.map((opc, idx) => (
+                                    <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-medium text-sm text-gray-800">{opc.codigo} - {opc.nombre}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {opc.tipo === 'mosquitero' ? `$${opc.precio_m2.toLocaleString('es-AR')}/m2` : 'Calculado por formulas'}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setConfig(c => ({ ...c, opcionales: c.opcionales.filter((_, i) => i !== idx) }))}
+                                            className="text-red-500 hover:text-red-700 p-1.5" title="Quitar">
+                                            <i className="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <OpcionalesModal opcionales={opcionalesDisp}
+                            onSelect={opcional => {
+                                if (!config.opcionales.find(o => o.id === opcional.id)) {
+                                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, opcional] }));
+                                }
+                            }} />
+                    </div>
+                )}
+
                 {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
 
                 <button onClick={calcular} disabled={loading || !config.marco_id}
@@ -513,23 +774,92 @@ const CotizadorModal = () => {
                         <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
                             <p className="text-sm opacity-80 mb-1">Precio unitario</p>
                             <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>
-                            {cantidad > 1 && <p className="text-sm opacity-80 mt-2">× {cantidad} = <strong>${fmt(result.precio_total * cantidad)}</strong></p>}
+                            {cantidad > 1 && <p className="text-sm opacity-80 mt-2">x {cantidad} = <strong>${fmt(result.precio_total * cantidad)}</strong></p>}
+                            <div className="flex gap-4 mt-2 text-sm opacity-80">
+                                <span>Subtotal: ${fmt(result.subtotal)}</span>
+                                <span>Margen ({config.margen_porcentaje}%): ${fmt(result.margen)}</span>
+                            </div>
                         </div>
 
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm flex-1">
-                            {[
-                                ['Subtotal', result.subtotal, 'text-slate-700'],
-                                [`Margen (${config.margen_porcentaje}%)`, result.margen, 'text-green-600'],
-                                result.resumen.total_perfiles > 0 && ['Perfiles', result.resumen.total_perfiles, 'text-blue-600'],
-                                result.resumen.total_accesorios > 0 && ['Accesorios', result.resumen.total_accesorios, 'text-green-600'],
-                                result.resumen.total_vidrios > 0 && ['Vidrio', result.resumen.total_vidrios, 'text-purple-600'],
-                                result.resumen.total_tratamiento > 0 && ['Tratamiento', result.resumen.total_tratamiento, 'text-yellow-600'],
-                            ].filter(Boolean).map(([label, val, cls]) => (
-                                <div key={label} className="flex justify-between">
-                                    <span className="text-slate-500">{label}</span>
-                                    <span className={`font-semibold ${cls}`}>${fmt(val)}</span>
-                                </div>
-                            ))}
+                        <div className="flex-1 space-y-0">
+                            {/* Perfiles */}
+                            {result.desglose.perfiles && result.desglose.perfiles.length > 0 && (
+                                <DesgloseSection title={`Perfiles (${result.desglose.perfiles.length})`} icon="fa-ruler" color="blue" total={result.resumen.total_perfiles}>
+                                    {result.desglose.perfiles.map((item, idx) => (
+                                        <DesgloseItem key={idx} color="blue"
+                                            left={`${item.codigo} - ${item.descripcion}`}
+                                            right={item.precio_total}
+                                            detail={`Cant: ${item.cantidad} x ${item.longitud_mm}mm (${item.longitud_m}m) | ${item.peso_kg}kg x $${item.precio_kg}/kg${item.angulo ? ` | Angulo: ${item.angulo}` : ''}`} />
+                                    ))}
+                                </DesgloseSection>
+                            )}
+                            {/* Accesorios */}
+                            {result.desglose.accesorios && result.desglose.accesorios.length > 0 && (
+                                <DesgloseSection title={`Accesorios (${result.desglose.accesorios.length})`} icon="fa-tools" color="green" total={result.resumen.total_accesorios}>
+                                    {result.desglose.accesorios.map((item, idx) => (
+                                        <DesgloseItem key={idx} color="green"
+                                            left={`${item.codigo} - ${item.descripcion}`}
+                                            right={item.precio_total}
+                                            detail={`Cantidad: ${item.cantidad} x $${fmt(item.precio_unitario)}${item.dimensiones ? ` (${item.dimensiones.ancho}mm x ${item.dimensiones.alto}mm)` : ''}`} />
+                                    ))}
+                                </DesgloseSection>
+                            )}
+                            {/* Vidrio */}
+                            {result.desglose.vidrios && (
+                                <DesgloseSection title="Vidrio" icon="fa-square" color="purple" total={result.resumen.total_vidrios}>
+                                    <DesgloseItem color="purple"
+                                        left={`${result.desglose.vidrios.codigo} - ${result.desglose.vidrios.descripcion}`}
+                                        right={result.desglose.vidrios.precio_total}
+                                        detail={`${result.desglose.vidrios.ancho_mm}mm x ${result.desglose.vidrios.alto_mm}mm = ${result.desglose.vidrios.area_m2}m2 x $${result.desglose.vidrios.precio_m2}/m2${result.desglose.vidrios.cantidad_hojas > 1 ? ` x ${result.desglose.vidrios.cantidad_hojas} hojas` : ''}`} />
+                                </DesgloseSection>
+                            )}
+                            {/* Tratamiento */}
+                            {result.desglose.tratamiento && (
+                                <DesgloseSection title="Tratamiento" icon="fa-paint-brush" color="yellow" total={result.resumen.total_tratamiento}>
+                                    <DesgloseItem color="yellow"
+                                        left={result.desglose.tratamiento.descripcion}
+                                        right={result.desglose.tratamiento.precio_total}
+                                        detail={`${result.desglose.tratamiento.peso_total_kg}kg x $${result.desglose.tratamiento.precio_kg}/kg`} />
+                                </DesgloseSection>
+                            )}
+                            {/* Mano de obra */}
+                            {result.desglose.mano_obra && result.resumen.total_mano_obra > 0 && (
+                                <DesgloseSection title="Mano de Obra" icon="fa-hard-hat" color="orange" total={result.resumen.total_mano_obra}>
+                                    <DesgloseItem color="orange"
+                                        left="Horas Hombre"
+                                        right={result.desglose.mano_obra.precio_total}
+                                        detail={`${result.desglose.mano_obra.horas} hs x $${fmt(result.desglose.mano_obra.valor_hora)}/hora`} />
+                                </DesgloseSection>
+                            )}
+                            {/* Opcionales */}
+                            {result.desglose.opcionales && result.desglose.opcionales.length > 0 && (
+                                <DesgloseSection title={`Opcionales (${result.desglose.opcionales.length})`} icon="fa-plus-circle" color="indigo" total={result.resumen.total_opcionales}>
+                                    {result.desglose.opcionales.map((item, idx) => (
+                                        <div key={idx} className="bg-white p-2 rounded text-sm">
+                                            <div className="flex justify-between font-medium">
+                                                <span className="text-gray-800">{item.codigo} - {item.nombre}</span>
+                                                <span className="text-indigo-600">${fmt(item.precio_total)}</span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-0.5">
+                                                {item.tipo === 'mosquitero' ? (
+                                                    item.formulas && item.formulas.map((f, fi) => (
+                                                        <div key={fi}>Cant: {f.cantidad} x {f.area_m2}m2 x ${(item.precio_m2 || 0).toLocaleString('es-AR')}/m2 = ${fmt(f.precio)}</div>
+                                                    ))
+                                                ) : (
+                                                    <>
+                                                        {item.perfiles && item.perfiles.map((p, pi) => (
+                                                            <div key={`p${pi}`}>{p.codigo}: Cant {p.cantidad} x {p.longitud_mm}mm = ${fmt(p.precio_total)}</div>
+                                                        ))}
+                                                        {item.accesorios && item.accesorios.map((a, ai) => (
+                                                            <div key={`a${ai}`}>{a.codigo}: Cant {a.cantidad} = ${fmt(a.precio_total)}</div>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </DesgloseSection>
+                            )}
                         </div>
 
                         <button onClick={guardar} disabled={saving}
@@ -540,8 +870,8 @@ const CotizadorModal = () => {
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-16 text-slate-300">
                         <i className="fas fa-calculator text-6xl mb-4"></i>
-                        <p className="font-semibold text-slate-400">Configurá y calculá</p>
-                        <p className="text-sm mt-1">El resultado aparece acá</p>
+                        <p className="font-semibold text-slate-400">Configura y calcula</p>
+                        <p className="text-sm mt-1">El resultado aparece aca</p>
                     </div>
                 )}
             </div>

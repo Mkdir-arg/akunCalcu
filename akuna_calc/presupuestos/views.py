@@ -2,6 +2,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -13,6 +14,16 @@ from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
 
 @login_required
 def lista(request):
+    all_qs = Presupuesto.objects.all()
+    kpis = all_qs.aggregate(
+        total=Count('id'),
+        total_monto=Sum('total'),
+        borradores=Count('id', filter=Q(estado='borrador')),
+        enviados=Count('id', filter=Q(estado='enviado')),
+        confirmados=Count('id', filter=Q(estado='confirmado')),
+        monto_confirmado=Sum('total', filter=Q(estado='confirmado')),
+    )
+
     qs = Presupuesto.objects.select_related('cliente', 'created_by')
 
     estado = request.GET.get('estado', '')
@@ -22,11 +33,9 @@ def lista(request):
         qs = qs.filter(estado=estado)
     if cliente_q:
         qs = qs.filter(
-            cliente__nombre__icontains=cliente_q
-        ) | qs.filter(
-            cliente__apellido__icontains=cliente_q
-        ) | qs.filter(
-            cliente__razon_social__icontains=cliente_q
+            Q(cliente__nombre__icontains=cliente_q) |
+            Q(cliente__apellido__icontains=cliente_q) |
+            Q(cliente__razon_social__icontains=cliente_q)
         )
 
     return render(request, 'presupuestos/lista.html', {
@@ -34,6 +43,7 @@ def lista(request):
         'estado_actual': estado,
         'cliente_q': cliente_q,
         'estados': Presupuesto.ESTADO_CHOICES,
+        'kpis': kpis,
     })
 
 
@@ -103,6 +113,15 @@ def agregar_item(request, pk):
             'alto_mm': int(data.get('alto_mm', 1500)),
             'margen_porcentaje': float(data.get('margen_porcentaje', 30)),
         }
+
+        opcionales_raw = data.get('opcionales_json', '[]')
+        try:
+            opcionales_list = json.loads(opcionales_raw)
+            if opcionales_list:
+                config['opcionales'] = opcionales_list
+        except (json.JSONDecodeError, TypeError):
+            pass
+
         descripcion = data.get('descripcion', '').strip() or 'Abertura sin descripción'
         cantidad = max(1, int(data.get('cantidad', 1)))
 
@@ -126,7 +145,7 @@ def agregar_item(request, pk):
         except PricingError as e:
             messages.error(request, f'Error al calcular: {e}')
 
-    return render(request, 'presupuestos/item_form.html', {'presupuesto': presupuesto})
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
 @login_required

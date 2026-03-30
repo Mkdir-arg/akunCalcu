@@ -6,11 +6,62 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Presupuestos</h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de cotizaciones para clientes</p>
+            <p class="text-slate-500 font-medium mt-1">Gestion de cotizaciones para clientes</p>
         </div>
         <a href="{% url 'presupuestos:presupuestos-crear' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-xl inline-flex items-center">
             <i class="fas fa-plus mr-2"></i>Nuevo Presupuesto
         </a>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ kpis.total|default:0 }}</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <i class="fas fa-file-invoice text-slate-500"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Borradores</p>
+                    <p class="text-2xl font-bold text-gray-700 mt-1">{{ kpis.borradores|default:0 }}</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                    <i class="fas fa-edit text-gray-500"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Enviados</p>
+                    <p class="text-2xl font-bold text-blue-700 mt-1">{{ kpis.enviados|default:0 }}</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-paper-plane text-blue-500"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Confirmados</p>
+                    <p class="text-2xl font-bold text-green-700 mt-1">{{ kpis.confirmados|default:0 }}</p>
+                    {% if kpis.monto_confirmado %}
+                    <p class="text-xs text-green-600 font-medium mt-0.5">${{ kpis.monto_confirmado|floatformat:2 }}</p>
+                    {% endif %}
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-500"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Filtros -->
@@ -45,8 +96,9 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Número</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Numero</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Items</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Vencimiento</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Total</th>
@@ -58,6 +110,7 @@
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ p.numero }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ p.cliente.get_nombre_completo }}</td>
+                        <td class="px-6 py-4 text-center text-sm text-slate-600">{{ p.items.count }}</td>
                         <td class="px-6 py-4 text-center">
                             {% if p.estado == 'borrador' %}
                                 <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Borrador</span>
@@ -76,15 +129,21 @@
                             ${{ p.total|floatformat:2 }}
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <a href="{% url 'presupuestos:presupuestos-detalle' p.pk %}"
-                                class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                <i class="fas fa-eye mr-1"></i>Ver
-                            </a>
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'presupuestos:presupuestos-detalle' p.pk %}"
+                                    class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-eye mr-1"></i>Ver
+                                </a>
+                                <a href="{% url 'presupuestos:presupuestos-pdf' p.pk %}" target="_blank"
+                                    class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-file-pdf mr-1"></i>PDF
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center">
+                        <td colspan="7" class="px-6 py-12 text-center">
                             <i class="fas fa-file-invoice text-slate-300 text-4xl mb-3"></i>
                             <p class="text-slate-500 font-medium">No hay presupuestos</p>
                             <a href="{% url 'presupuestos:presupuestos-crear' %}" class="text-blue-600 hover:underline text-sm mt-1 inline-block">Crear el primero</a>
