@@ -87,6 +87,7 @@ def ventas_list(request):
     razon_social = request.GET.get('razon_social', '')
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
+    tipo_fecha = request.GET.get('tipo_fecha', 'pago')
     orden = request.GET.get('orden', '-created_at')
     con_saldo = request.GET.get('con_saldo', '')
 
@@ -111,10 +112,16 @@ def ventas_list(request):
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
 
     if fecha_desde:
-        ventas = ventas.filter(created_at__date__gte=fecha_desde)
+        if tipo_fecha == 'factura':
+            ventas = ventas.filter(fecha_factura__gte=fecha_desde)
+        else:
+            ventas = ventas.filter(fecha_pago__gte=fecha_desde)
 
     if fecha_hasta:
-        ventas = ventas.filter(created_at__date__lte=fecha_hasta)
+        if tipo_fecha == 'factura':
+            ventas = ventas.filter(fecha_factura__lte=fecha_hasta)
+        else:
+            ventas = ventas.filter(fecha_pago__lte=fecha_hasta)
 
     if con_saldo == 'si':
         ventas = ventas.filter(saldo__gt=0)
@@ -161,6 +168,7 @@ def ventas_list(request):
         'razon_social': razon_social,
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
+        'tipo_fecha': tipo_fecha,
         'orden_actual': orden,
         'razones_sociales': Cliente.objects.filter(deleted_at__isnull=True, razon_social__isnull=False).exclude(razon_social='').values_list('razon_social', flat=True).distinct().order_by('razon_social'),
         'total_monto': total_monto,
