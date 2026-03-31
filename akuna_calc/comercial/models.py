@@ -74,6 +74,7 @@ class Venta(models.Model):
     con_factura = models.BooleanField(default=True, verbose_name="Venta en blanco (con factura)")
     tipo_factura = models.CharField(max_length=2, choices=TIPO_FACTURA_CHOICES, blank=True)
     numero_factura = models.CharField(max_length=50, blank=True)
+    fecha_factura = models.DateField(null=True, blank=True, verbose_name="Fecha de Factura")
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
     observaciones = models.TextField(blank=True)
     notas_internas = models.TextField(blank=True, verbose_name="Notas internas")

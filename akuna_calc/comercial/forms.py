@@ -27,6 +27,8 @@ class VentaForm(forms.ModelForm):
         # El input[type=date] necesita YYYY-MM-DD para renderizar el valor inicial.
         self.fields['fecha_pago'].widget.format = '%Y-%m-%d'
         self.fields['fecha_pago'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        self.fields['fecha_factura'].widget.format = '%Y-%m-%d'
+        self.fields['fecha_factura'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
 
     class Meta:
         model = Venta
@@ -43,6 +45,7 @@ class VentaForm(forms.ModelForm):
             'con_factura': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
             'tipo_factura': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'numero_factura': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'fecha_factura': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'}),
             'estado': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'observaciones': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'rows': 3}),
         }
