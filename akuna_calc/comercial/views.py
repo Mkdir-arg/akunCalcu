@@ -1503,6 +1503,7 @@ def construir_reporte_cobranzas(
     razon_social_filtro=None,
     estado_venta_filtro=None,
     tipo_factura_filtro=None,
+    numero_factura_filtro=None,
 ):
     cobranzas = []
 
@@ -1523,6 +1524,8 @@ def construir_reporte_cobranzas(
             ventas_query = ventas_query.filter(con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
             ventas_query = ventas_query.filter(con_factura=False)
+    if numero_factura_filtro:
+        ventas_query = ventas_query.filter(numero_factura__icontains=numero_factura_filtro)
 
     for venta in ventas_query:
         cobranzas.append({
@@ -1558,6 +1561,11 @@ def construir_reporte_cobranzas(
             pagos_query = pagos_query.filter(con_factura=True)
         elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
             pagos_query = pagos_query.filter(con_factura=False)
+    if numero_factura_filtro:
+        pagos_query = pagos_query.filter(
+            Q(numero_factura__icontains=numero_factura_filtro) |
+            Q(venta__numero_factura__icontains=numero_factura_filtro)
+        )
 
     for pago in pagos_query.order_by('-fecha_pago', '-created_at'):
         cobranzas.append({
@@ -1657,6 +1665,7 @@ def reportes_cobranzas(request):
     razon_social_filtro = None
     estado_venta_filtro = None
     tipo_factura_filtro = None
+    numero_factura_filtro = None
 
     if request.method == 'POST':
         form = ReporteForm(request.POST)
@@ -1667,6 +1676,7 @@ def reportes_cobranzas(request):
             razon_social_filtro = form.cleaned_data.get('razon_social')
             estado_venta_filtro = form.cleaned_data.get('estado_venta')
             tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
+            numero_factura_filtro = form.cleaned_data.get('numero_factura')
 
     cobranzas = construir_reporte_cobranzas(
         fecha_desde=fecha_desde,
@@ -1675,6 +1685,7 @@ def reportes_cobranzas(request):
         razon_social_filtro=razon_social_filtro,
         estado_venta_filtro=estado_venta_filtro,
         tipo_factura_filtro=tipo_factura_filtro,
+        numero_factura_filtro=numero_factura_filtro,
     )
 
     total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')

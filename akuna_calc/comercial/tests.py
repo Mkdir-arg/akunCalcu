@@ -510,3 +510,48 @@ class ReporteCobranzasTest(TestCase):
 
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,05')
+
+    def test_reporte_cobranzas_filtra_por_numero_factura(self):
+        venta_ok = Venta.objects.create(
+            numero_pedido='VTA-200',
+            cliente=self.cliente,
+            valor_total=Decimal('300'),
+            sena=Decimal('0'),
+            numero_factura='0001-00001234',
+        )
+        venta_otra = Venta.objects.create(
+            numero_pedido='VTA-201',
+            cliente=self.cliente,
+            valor_total=Decimal('400'),
+            sena=Decimal('0'),
+            numero_factura='0001-00009999',
+        )
+        PagoVenta.objects.create(
+            venta=venta_ok,
+            monto=Decimal('100'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+            con_factura=True,
+            numero_factura='0001-00001234',
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=venta_otra,
+            monto=Decimal('150'),
+            fecha_pago='2026-04-12',
+            forma_pago='efectivo',
+            con_factura=True,
+            numero_factura='0001-00009999',
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes_cobranzas'), {
+            'numero_factura': '1234',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reporte_cobranzas = response.context['reporte_data']['cobranzas']
+        self.assertEqual(reporte_cobranzas['cantidad'], 1)
+        self.assertEqual(reporte_cobranzas['lista'][0]['pedido'], 'VTA-200')
+        self.assertContains(response, '0001-00001234')
+        self.assertNotContains(response, '0001-00009999')
