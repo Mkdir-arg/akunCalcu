@@ -140,6 +140,7 @@ class CompraForm(forms.ModelForm):
             'fecha_pago': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'}),
             'valor_total': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
             'sena': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
+            'forma_pago_sena': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_forma_pago_sena'}),
             'con_factura': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
             'numero_factura': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'rows': 3}),
@@ -150,7 +151,21 @@ class CompraForm(forms.ModelForm):
             'tipo_gasto': 'Tipo de Gasto',
             'valor_total': 'Valor Total',
             'sena': 'Seña',
+            'forma_pago_sena': 'Forma de Pago de la Seña',
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        sena = cleaned_data.get('sena') or Decimal('0')
+        forma_pago_sena = cleaned_data.get('forma_pago_sena')
+
+        if sena > 0 and not forma_pago_sena:
+            self.add_error('forma_pago_sena', 'Debe indicar la forma de pago cuando registra una seña.')
+
+        if sena <= 0:
+            cleaned_data['forma_pago_sena'] = ''
+
+        return cleaned_data
 
 
 class ReporteForm(forms.Form):
@@ -239,3 +254,16 @@ class ReporteGastosForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['fecha_desde'].widget.format = '%Y-%m-%d'
         self.fields['fecha_hasta'].widget.format = '%Y-%m-%d'
+
+
+class ReporteProveedorForm(forms.Form):
+    proveedor = forms.ModelChoiceField(
+        queryset=Cuenta.objects.filter(
+            deleted_at__isnull=True,
+            activo=True,
+            tipo_cuenta__tipo='proveedores',
+        ).select_related('tipo_cuenta').order_by('nombre'),
+        required=False,
+        empty_label='Todos los proveedores',
+        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'})
+    )

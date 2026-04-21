@@ -1,4 +1,4 @@
-# Requerimientos — AkunCalcu
+s# Requerimientos — AkunCalcu
 
 > Los requerimientos son ideas que pasaron por el análisis del equipo funcional (/idea) y están listas para entrar al flujo de desarrollo (/feature).
 > Este archivo se actualiza al crear o cambiar el estado de un requerimiento.
@@ -28,3 +28,5 @@
 | [REQ-006](./REQ-006-modulo-presupuestos.md) | Módulo de Presupuestos | Implementado | 2026-03-11 | FEAT-005 |
 | [REQ-007](./REQ-007-pagos-parciales-compras.md) | Pagos Parciales en Compras | Implementado | 2026-03-28 | FEAT-006 |
 | [REQ-008](./REQ-008-mejora-presupuestos-cotizador.md) | Mejora Presupuestos: Paridad con Cotizador + UI | Implementado | 2026-03-30 | FEAT-007 |
+| [REQ-009](./REQ-009-dolares-cobro-estado-colocado.md) | Registro de dólares en cobros + Estado obligatorio a Colocado | En desarrollo | 2026-04-01 | — |
+| [REQ-010](./REQ-010-cuenta-corriente-proveedores.md) | Cuenta corriente por proveedor + forma de pago en gastos | En desarrollo | 2026-04-21 | — |

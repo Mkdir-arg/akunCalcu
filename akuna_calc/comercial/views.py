@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from datetime import datetime
 from decimal import Decimal
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra
-from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm
+from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
 
 
 @login_required
@@ -70,6 +70,83 @@ def dashboard_comercial(request):
         'compras_por_tipo': json.dumps(compras_por_tipo),
     }
     return render(request, 'comercial/dashboard.html', context)
+
+
+def construir_cuenta_corriente_proveedor(proveedor):
+    compras = list(
+        Compra.objects.filter(
+            deleted_at__isnull=True,
+            cuenta=proveedor,
+        ).prefetch_related('pagos_compra').order_by('fecha_pago', 'created_at', 'pk')
+    )
+
+    movimientos = []
+    saldo_acumulado = Decimal('0')
+
+    for compra in compras:
+        saldo_acumulado += compra.valor_total
+        movimientos.append({
+            'fecha': compra.fecha_pago,
+            'tipo': 'compra',
+            'descripcion': f'Compra #{compra.numero_pedido}',
+            'referencia': compra.numero_factura or compra.numero_pedido,
+            'forma_pago': '-',
+            'debe': compra.valor_total,
+            'haber': Decimal('0'),
+            'saldo': saldo_acumulado,
+            'compra': compra,
+        })
+
+        if compra.sena > 0:
+            saldo_acumulado -= compra.sena
+            movimientos.append({
+                'fecha': compra.fecha_pago,
+                'tipo': 'sena',
+                'descripcion': f'Seña inicial de compra #{compra.numero_pedido}',
+                'referencia': compra.numero_factura or compra.numero_pedido,
+                'forma_pago': compra.get_forma_pago_sena_display() if compra.forma_pago_sena else 'Sin informar',
+                'debe': Decimal('0'),
+                'haber': compra.sena,
+                'saldo': saldo_acumulado,
+                'compra': compra,
+            })
+
+        for pago in compra.pagos_compra.all().order_by('fecha_pago', 'created_at', 'pk'):
+            saldo_acumulado -= pago.monto
+            movimientos.append({
+                'fecha': pago.fecha_pago,
+                'tipo': 'pago',
+                'descripcion': f'Pago de compra #{compra.numero_pedido}',
+                'referencia': pago.numero_factura or compra.numero_pedido,
+                'forma_pago': pago.get_forma_pago_display(),
+                'debe': Decimal('0'),
+                'haber': pago.monto,
+                'saldo': saldo_acumulado,
+                'compra': compra,
+                'pago': pago,
+            })
+
+    movimientos.sort(key=lambda item: (item['fecha'], 0 if item['tipo'] == 'compra' else 1, item['descripcion']))
+
+    saldo_acumulado = Decimal('0')
+    for movimiento in movimientos:
+        saldo_acumulado += movimiento['debe'] - movimiento['haber']
+        movimiento['saldo'] = saldo_acumulado
+
+    total_compras = sum(compra.valor_total for compra in compras)
+    total_senas = sum(compra.sena for compra in compras)
+    total_pagos = sum(sum(pago.monto for pago in compra.pagos_compra.all()) for compra in compras)
+    saldo_actual = total_compras - total_senas - total_pagos
+
+    return {
+        'proveedor': proveedor,
+        'compras': compras,
+        'movimientos': movimientos,
+        'total_compras': total_compras,
+        'total_senas': total_senas,
+        'total_pagos': total_pagos,
+        'saldo_actual': saldo_actual,
+    }
 
 
 # VENTAS
@@ -267,7 +344,7 @@ def venta_detail(request, pk):
         'porcentaje_cobrado': porcentaje_cobrado,
         'dias_abierta': dias_abierta,
         'today': timezone.now().date(),
-        'avanzar_estado': request.GET.get('avanzar_estado') == '1',
+        'forzar_colocado': request.GET.get('forzar_colocado') == '1',
     }
     return render(request, 'comercial/ventas/detail.html', context)
 
@@ -313,18 +390,21 @@ def registrar_pago(request, pk):
         con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
-        
+        pago_en_dolares = request.POST.get('pago_en_dolares') == 'true'
+        monto_usd = request.POST.get('monto_usd', '') or None
+        cotizacion_usd = request.POST.get('cotizacion_usd', '') or None
+
         try:
             monto_decimal = Decimal(monto)
-            
+
             if monto_decimal <= 0:
                 messages.error(request, 'El monto debe ser mayor a 0')
                 return redirect('comercial:venta_detail', pk=pk)
-            
+
             if monto_decimal > venta.saldo:
                 messages.error(request, f'El monto no puede ser mayor al saldo pendiente (${venta.saldo})')
                 return redirect('comercial:venta_detail', pk=pk)
-            
+
             pago = PagoVenta.objects.create(
                 venta=venta,
                 monto=monto_decimal,
@@ -333,6 +413,9 @@ def registrar_pago(request, pk):
                 con_factura=con_factura,
                 numero_factura=numero_factura,
                 observaciones=observaciones,
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=Decimal(monto_usd) if pago_en_dolares and monto_usd else None,
+                cotizacion_usd=Decimal(cotizacion_usd) if pago_en_dolares and cotizacion_usd else None,
                 created_by=request.user
             )
             
@@ -360,9 +443,9 @@ def registrar_pago(request, pk):
             venta.save()
 
             messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente')
-            # Si el saldo quedo en 0 y el estado es pendiente, ofrecer avanzar al siguiente estado
-            if venta.saldo <= 0 and venta.estado == 'pendiente':
-                return redirect(f"{reverse('comercial:venta_detail', kwargs={'pk': pk})}?avanzar_estado=1")
+            # Si el saldo quedo en 0 y el estado no es colocado, forzar cambio a colocado
+            if venta.saldo <= 0 and venta.estado != 'colocado':
+                return redirect(f"{reverse('comercial:venta_detail', kwargs={'pk': pk})}?forzar_colocado=1")
             return redirect('comercial:venta_detail', pk=pk)
             
         except Exception as e:
@@ -949,6 +1032,7 @@ def compra_detail(request, pk):
         'porcentaje_pagado': porcentaje_pagado,
         'dias_abierta': dias_abierta,
         'today': timezone.now().date(),
+        'permite_pago_adicional': compra.saldo > 0 or compra.es_proveedor,
     }
     return render(request, 'comercial/compras/detail.html', context)
 
@@ -963,13 +1047,14 @@ def registrar_pago_compra(request, pk):
         con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
+        es_proveedor = compra.es_proveedor
 
         try:
             monto_decimal = Decimal(monto)
             if monto_decimal <= 0:
                 messages.error(request, 'El monto debe ser mayor a 0')
                 return redirect('comercial:compra_detail', pk=pk)
-            if monto_decimal > compra.saldo:
+            if not es_proveedor and monto_decimal > compra.saldo:
                 messages.error(request, f'El monto no puede exceder el saldo pendiente (${compra.saldo})')
                 return redirect('comercial:compra_detail', pk=pk)
 
@@ -990,6 +1075,9 @@ def registrar_pago_compra(request, pk):
                 compra.estado = 'pagado'
                 compra.save()
                 messages.success(request, 'La compra fue marcada como pagada.')
+
+            if es_proveedor and compra.saldo < 0:
+                messages.info(request, f'El proveedor quedó con saldo a favor de ${abs(compra.saldo)}.')
 
             return redirect('comercial:compra_detail', pk=pk)
         except Exception as e:
@@ -1541,11 +1629,15 @@ def editar_pago(request, pk):
             pago.con_factura = con_factura
             pago.numero_factura = numero_factura
             pago.observaciones = observaciones
+            pago_en_dolares = data.get('pago_en_dolares', False)
+            pago.pago_en_dolares = pago_en_dolares
+            pago.monto_usd = Decimal(str(data['monto_usd'])) if pago_en_dolares and data.get('monto_usd') else None
+            pago.cotizacion_usd = Decimal(str(data['cotizacion_usd'])) if pago_en_dolares and data.get('cotizacion_usd') else None
             pago.save()
-            
+
             # Recalcular saldo de la venta
             pago.venta.save()
-            
+
             return JsonResponse({
                 'success': True,
                 'pago': {
@@ -1555,7 +1647,10 @@ def editar_pago(request, pk):
                     'forma_pago': pago.get_forma_pago_display(),
                     'con_factura': pago.con_factura,
                     'numero_factura': pago.numero_factura or '-',
-                    'observaciones': pago.observaciones or '-'
+                    'observaciones': pago.observaciones or '-',
+                    'pago_en_dolares': pago.pago_en_dolares,
+                    'monto_usd': float(pago.monto_usd) if pago.monto_usd else None,
+                    'cotizacion_usd': float(pago.cotizacion_usd) if pago.cotizacion_usd else None,
                 },
                 'saldo': float(pago.venta.saldo)
             })
@@ -1773,6 +1868,118 @@ def reportes_gastos(request):
         'reporte_data': reporte_data,
     }
     return render(request, 'comercial/reportes/reportes_gastos.html', context)
+
+
+@login_required
+def reportes_proveedores(request):
+    form = ReporteProveedorForm(request.GET or None)
+    proveedores = Cuenta.objects.filter(
+        deleted_at__isnull=True,
+        activo=True,
+        tipo_cuenta__tipo='proveedores',
+    ).select_related('tipo_cuenta').order_by('nombre')
+
+    resumen_proveedores = []
+    for proveedor in proveedores:
+        cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor)
+        resumen_proveedores.append(cuenta_corriente)
+
+    proveedor_seleccionado = None
+    cuenta_corriente = None
+    if form.is_valid() and form.cleaned_data.get('proveedor'):
+        proveedor_seleccionado = form.cleaned_data['proveedor']
+        cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor_seleccionado)
+
+    context = {
+        'form': form,
+        'resumen_proveedores': resumen_proveedores,
+        'cuenta_corriente': cuenta_corriente,
+        'proveedor_seleccionado': proveedor_seleccionado,
+    }
+    return render(request, 'comercial/reportes/reportes_proveedores.html', context)
+
+
+@login_required
+def exportar_reporte_proveedores_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
+
+    proveedor_id = request.GET.get('proveedor')
+    proveedor = get_object_or_404(
+        Cuenta.objects.filter(
+            deleted_at__isnull=True,
+            activo=True,
+            tipo_cuenta__tipo='proveedores',
+        ).select_related('tipo_cuenta'),
+        pk=proveedor_id,
+    )
+
+    cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Cuenta Proveedor'
+
+    title_font = Font(bold=True, size=14)
+    section_font = Font(bold=True, size=11)
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid')
+
+    ws['A1'] = 'CUENTA CORRIENTE DE PROVEEDOR'
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:G1')
+
+    ws['A3'] = 'Proveedor:'
+    ws['B3'] = proveedor.nombre
+    ws['A4'] = 'Razón Social:'
+    ws['B4'] = proveedor.razon_social or '-'
+    ws['A5'] = 'Total Compras:'
+    ws['B5'] = float(cuenta_corriente['total_compras'])
+    ws['A6'] = 'Total Señas:'
+    ws['B6'] = float(cuenta_corriente['total_senas'])
+    ws['A7'] = 'Total Pagos:'
+    ws['B7'] = float(cuenta_corriente['total_pagos'])
+    ws['A8'] = 'Saldo Actual:'
+    ws['B8'] = float(cuenta_corriente['saldo_actual'])
+
+    for cell_ref in ('A3', 'A4', 'A5', 'A6', 'A7', 'A8'):
+        ws[cell_ref].font = section_font
+
+    for cell_ref in ('B5', 'B6', 'B7', 'B8'):
+        ws[cell_ref].number_format = '$#,##0.00'
+
+    headers = ['Fecha', 'Movimiento', 'Referencia', 'Forma de Pago', 'Debe', 'Haber', 'Saldo']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(10, col, header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    for row, movimiento in enumerate(cuenta_corriente['movimientos'], 11):
+        ws.cell(row, 1, movimiento['fecha'].strftime('%d/%m/%Y'))
+        ws.cell(row, 2, movimiento['descripcion'])
+        ws.cell(row, 3, movimiento['referencia'])
+        ws.cell(row, 4, movimiento['forma_pago'])
+
+        debe_cell = ws.cell(row, 5, float(movimiento['debe']))
+        haber_cell = ws.cell(row, 6, float(movimiento['haber']))
+        saldo_cell = ws.cell(row, 7, float(movimiento['saldo']))
+        for money_cell in (debe_cell, haber_cell, saldo_cell):
+            money_cell.number_format = '$#,##0.00'
+
+    ws.column_dimensions['A'].width = 14
+    ws.column_dimensions['B'].width = 34
+    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 14
+    ws.column_dimensions['F'].width = 14
+    ws.column_dimensions['G'].width = 14
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=cuenta_proveedor_{proveedor.id}.xlsx'
+    wb.save(response)
+    return response
 
 
 @login_required

@@ -100,17 +100,8 @@
     </div>
     {% endif %}
 
-    {% if avanzar_estado %}
-    <div class="mb-6 p-5 bg-green-50 border-2 border-green-300 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-            <p class="font-bold text-green-800 text-lg"><i class="fas fa-check-circle mr-2"></i>Venta cobrada en su totalidad</p>
-            <p class="text-green-700 text-sm">¿Querés avanzar el estado a "Entregado"?</p>
-        </div>
-        <button onclick="cambiarEstadoInline('entregado')"
-                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-            <i class="fas fa-truck mr-2"></i>Marcar como Entregado
-        </button>
-    </div>
+    {% if forzar_colocado %}
+    <!-- SweetAlert2 obligatorio se dispara desde JS -->
     {% endif %}
 
     <!-- KPI Cards -->
@@ -348,6 +339,31 @@
                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
                     </div>
 
+                    <!-- Pago en dólares -->
+                    <div class="border-t pt-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="pago_en_dolares_check" name="pago_en_dolares" value="true"
+                                   onchange="toggleCamposDolares()"
+                                   class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
+                            <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pagó en dólares</span>
+                        </label>
+                        <div id="campos-dolares" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-xl space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-green-800 mb-1">Monto USD</label>
+                                    <input type="number" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                           class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-green-800 mb-1">Cotización usada</label>
+                                    <input type="number" name="cotizacion_usd" id="cotizacion_usd_input" step="0.01" min="0" placeholder="Ej: 1350"
+                                           class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                                </div>
+                            </div>
+                            <p class="text-xs text-green-700"><i class="fas fa-info-circle mr-1"></i>Solo informativo. El monto en pesos es lo que cuenta para el saldo.</p>
+                        </div>
+                    </div>
+
                     <!-- Retenciones -->
                     <div class="border-t pt-4">
                         <h4 class="text-base font-bold text-slate-800 mb-3"><i class="fas fa-file-invoice-dollar mr-2"></i>Retenciones</h4>
@@ -541,6 +557,12 @@
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4" data-field="monto">
                             <div class="text-base font-bold text-green-700">${{ pago.monto|formato_numero }}</div>
+                            {% if pago.pago_en_dolares and pago.monto_usd %}
+                            <div class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-dollar-sign mr-1"></i>USD {{ pago.monto_usd|formato_numero }}
+                                {% if pago.cotizacion_usd %}<span class="text-slate-400 ml-1">(cotiz: ${{ pago.cotizacion_usd|formato_numero }})</span>{% endif %}
+                            </div>
+                            {% endif %}
                             {% if pago.retenciones.exists %}
                             <div class="text-xs text-red-600 mt-1">
                                 <i class="fas fa-minus-circle mr-1"></i>Ret: ${{ pago.get_total_retenciones|formato_numero }}
@@ -581,7 +603,7 @@
                         <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }})"
+                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }}, {{ pago.pago_en_dolares|lower }}, {{ pago.monto_usd|default:'null' }}, {{ pago.cotizacion_usd|default:'null' }})"
                                         class="text-blue-600 hover:text-blue-800 font-medium text-sm">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -653,6 +675,28 @@
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
                 <textarea id="edit_observaciones" rows="3" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <!-- Dólares en edición -->
+            <div class="border-t pt-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="edit_pago_en_dolares" onchange="toggleCamposDolaresEdit()"
+                           class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
+                    <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pagó en dólares</span>
+                </label>
+                <div id="campos-dolares-edit" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-green-800 mb-1">Monto USD</label>
+                            <input type="number" id="edit_monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                   class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-green-800 mb-1">Cotización usada</label>
+                            <input type="number" id="edit_cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
+                                   class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" onclick="cerrarModalEditar()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-all">Cancelar</button>
@@ -890,7 +934,7 @@ function toggleRetenciones(id) {
 }
 
 // ── Modal Editar Pago ────────────────────────────────────────────
-function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura) {
+function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura, pagoEnDolares, montoUsd, cotizUsd) {
     document.getElementById('edit_pago_id').value = id;
     document.getElementById('edit_fecha_pago').value = fecha;
     document.getElementById('edit_monto').value = monto;
@@ -898,6 +942,10 @@ function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura) {
     document.getElementById('edit_numero_factura').value = numFactura;
     document.getElementById('edit_observaciones').value = obs;
     document.getElementById('edit_con_factura').value = conFactura ? 'true' : 'false';
+    document.getElementById('edit_pago_en_dolares').checked = pagoEnDolares || false;
+    document.getElementById('edit_monto_usd').value = montoUsd || '';
+    document.getElementById('edit_cotizacion_usd').value = cotizUsd || '';
+    toggleCamposDolaresEdit();
     document.getElementById('editarPagoModal').classList.remove('hidden');
 }
 
@@ -908,16 +956,24 @@ function cerrarModalEditar() {
 document.getElementById('editarPagoForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('edit_pago_id').value;
-    const data = new FormData();
-    data.append('monto', document.getElementById('edit_monto').value);
-    data.append('fecha_pago', document.getElementById('edit_fecha_pago').value);
-    data.append('forma_pago', document.getElementById('edit_forma_pago').value);
-    data.append('numero_factura', document.getElementById('edit_numero_factura').value);
-    data.append('observaciones', document.getElementById('edit_observaciones').value);
-    data.append('con_factura', document.getElementById('edit_con_factura').value);
-    data.append('csrfmiddlewaretoken', CSRF_TOKEN);
+    const pagoEnDolares = document.getElementById('edit_pago_en_dolares').checked;
+    const payload = {
+        monto: document.getElementById('edit_monto').value,
+        fecha_pago: document.getElementById('edit_fecha_pago').value,
+        forma_pago: document.getElementById('edit_forma_pago').value,
+        numero_factura: document.getElementById('edit_numero_factura').value,
+        observaciones: document.getElementById('edit_observaciones').value,
+        con_factura: document.getElementById('edit_con_factura').value === 'true',
+        pago_en_dolares: pagoEnDolares,
+        monto_usd: pagoEnDolares ? document.getElementById('edit_monto_usd').value || null : null,
+        cotizacion_usd: pagoEnDolares ? document.getElementById('edit_cotizacion_usd').value || null : null,
+    };
 
-    fetch(`/comercial/api/pago/${id}/editar/`, {method: 'POST', body: data})
+    fetch(`/comercial/api/pago/${id}/editar/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+        body: JSON.stringify(payload)
+    })
         .then(r => r.json())
         .then(d => {
             if (d.success) {
@@ -985,5 +1041,37 @@ function guardarFechaSena() {
             }
         });
 }
+
+// ── Toggle campos dólares ───────────────────────────────────────
+function toggleCamposDolares() {
+    const checked = document.getElementById('pago_en_dolares_check').checked;
+    document.getElementById('campos-dolares').classList.toggle('hidden', !checked);
+}
+
+function toggleCamposDolaresEdit() {
+    const checked = document.getElementById('edit_pago_en_dolares').checked;
+    document.getElementById('campos-dolares-edit').classList.toggle('hidden', !checked);
+}
+
+// ── Forzar estado Colocado (SweetAlert2 obligatorio) ────────────
+{% if forzar_colocado %}
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: '¡Venta cobrada en su totalidad!',
+        html: '<p class="text-gray-600">El saldo llegó a <strong>$0</strong>.</p><p class="text-gray-600 mt-2">Se debe cambiar el estado a <strong>"Colocado"</strong>.</p>',
+        icon: 'success',
+        confirmButtonText: '<i class="fas fa-check-double mr-2"></i>Marcar como Colocado',
+        confirmButtonColor: '#16a34a',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCancelButton: false,
+        showCloseButton: false,
+    }).then(result => {
+        if (result.isConfirmed) {
+            cambiarEstadoInline('colocado');
+        }
+    });
+});
+{% endif %}
 </script>
 {% endblock %}

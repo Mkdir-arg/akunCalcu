@@ -219,6 +219,11 @@ class Cuenta(models.Model):
 
 
 class Compra(models.Model):
+    FORMA_PAGO_SENA_CHOICES = [
+        ('transferencia', 'Transferencia'),
+        ('efectivo', 'Efectivo'),
+    ]
+
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
         ('pagado', 'Pagado'),
@@ -230,6 +235,7 @@ class Compra(models.Model):
     fecha_pago = models.DateField()
     valor_total = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     sena = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    forma_pago_sena = models.CharField(max_length=20, choices=FORMA_PAGO_SENA_CHOICES, blank=True, verbose_name='Forma de pago de la seña')
     saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     con_factura = models.BooleanField(default=True, verbose_name="Compra en blanco (con factura)")
     numero_factura = models.CharField(max_length=50, blank=True)
@@ -252,6 +258,10 @@ class Compra(models.Model):
 
     def __str__(self):
         return f"Compra {self.numero_pedido} - {self.cuenta}"
+
+    @property
+    def es_proveedor(self):
+        return bool(self.cuenta_id and self.cuenta.tipo_cuenta.tipo == 'proveedores')
 
     def delete(self, *args, **kwargs):
         """Eliminado lógico"""
@@ -307,6 +317,9 @@ class PagoVenta(models.Model):
     con_factura = models.BooleanField(default=True, verbose_name="Pago en blanco (con factura)")
     numero_factura = models.CharField(max_length=50, blank=True, verbose_name='Número de Factura')
     observaciones = models.TextField(blank=True)
+    pago_en_dolares = models.BooleanField(default=False, verbose_name="Pagó en dólares")
+    monto_usd = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Monto en USD")
+    cotizacion_usd = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Cotización USD utilizada")
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     

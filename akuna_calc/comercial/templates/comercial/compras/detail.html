@@ -109,7 +109,7 @@
                     <i class="fas fa-{% if compra.saldo > 0 %}exclamation-circle{% else %}check-circle{% endif %} text-white text-lg"></i>
                 </div>
                 <div>
-                    <p class="text-xs {% if compra.saldo > 0 %}text-orange-100{% else %}text-green-100{% endif %} font-medium">Saldo Pendiente</p>
+                    <p class="text-xs {% if compra.saldo > 0 %}text-orange-100{% else %}text-green-100{% endif %} font-medium">{% if compra.saldo < 0 %}Saldo a Favor{% else %}Saldo Pendiente{% endif %}</p>
                     <p class="text-2xl font-bold text-white">${{ compra.saldo|formato_numero }}</p>
                 </div>
             </div>
@@ -184,6 +184,12 @@
                     <span class="text-slate-600 font-medium">Sena Inicial:</span>
                     <span class="font-bold text-green-700">${{ compra.sena|formato_numero }}</span>
                 </div>
+                {% if compra.sena > 0 and compra.forma_pago_sena %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Pago de la Sena:</span>
+                    <span class="font-bold text-slate-800">{{ compra.get_forma_pago_sena_display }}</span>
+                </div>
+                {% endif %}
                 {% if compra.descripcion %}
                 <div class="pt-2 border-t">
                     <p class="text-xs text-slate-500 font-semibold mb-1">DESCRIPCION</p>
@@ -194,7 +200,7 @@
         </div>
 
         <!-- Registrar Pago / Pagada -->
-        {% if compra.saldo > 0 %}
+        {% if permite_pago_adicional %}
         <div class="card-elegant bg-gradient-to-br from-green-50 to-blue-50 rounded-3xl shadow-xl p-6 border-2 border-green-200">
             <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-cash-register mr-2"></i>Registrar Pago</h3>
             <form method="post" action="{% url 'comercial:registrar_pago_compra' compra.pk %}">
@@ -202,9 +208,15 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
-                        <input type="number" name="monto" step="0.01" max="{{ compra.saldo }}" required
+                        <input type="number" name="monto" step="0.01" {% if not compra.es_proveedor %}max="{{ compra.saldo }}"{% endif %} required
                                class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <p class="text-xs text-slate-500 mt-1">Maximo: ${{ compra.saldo|formato_numero }}</p>
+                        <p class="text-xs text-slate-500 mt-1">
+                            {% if compra.es_proveedor %}
+                            Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.
+                            {% else %}
+                            Maximo: ${{ compra.saldo|formato_numero }}
+                            {% endif %}
+                        </p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
@@ -282,7 +294,7 @@
                         </div>
                         <div class="pt-1">
                             <p class="font-semibold text-slate-800 text-sm">Sena inicial registrada</p>
-                            <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y" }}</p>
+                            <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y" }}{% if compra.forma_pago_sena %} — {{ compra.get_forma_pago_sena_display }}{% endif %}</p>
                             <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ compra.sena|formato_numero }}</p>
                         </div>
                     </div>
@@ -382,7 +394,7 @@
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ compra.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-base font-bold text-blue-700">${{ compra.sena|formato_numero }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Sena Inicial</span>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{% if compra.forma_pago_sena %}{{ compra.get_forma_pago_sena_display }}{% else %}Sena Inicial{% endif %}</span>
                         </td>
                         <td class="px-6 py-4 text-sm">
                             <span class="px-3 py-1 {% if compra.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
