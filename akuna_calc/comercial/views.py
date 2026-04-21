@@ -1879,24 +1879,40 @@ def reportes_proveedores(request):
         tipo_cuenta__tipo='proveedores',
     ).select_related('tipo_cuenta').order_by('nombre')
 
+    proveedor_filtro = None
+    if form.is_valid() and form.cleaned_data.get('proveedor'):
+        proveedor_filtro = form.cleaned_data['proveedor']
+        proveedores = proveedores.filter(pk=proveedor_filtro.pk)
+
     resumen_proveedores = []
     for proveedor in proveedores:
         cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor)
         resumen_proveedores.append(cuenta_corriente)
 
-    proveedor_seleccionado = None
-    cuenta_corriente = None
-    if form.is_valid() and form.cleaned_data.get('proveedor'):
-        proveedor_seleccionado = form.cleaned_data['proveedor']
-        cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor_seleccionado)
-
     context = {
         'form': form,
         'resumen_proveedores': resumen_proveedores,
-        'cuenta_corriente': cuenta_corriente,
-        'proveedor_seleccionado': proveedor_seleccionado,
+        'proveedor_filtro': proveedor_filtro,
     }
     return render(request, 'comercial/reportes/reportes_proveedores.html', context)
+
+
+@login_required
+def reporte_proveedor_detalle(request, pk):
+    proveedor = get_object_or_404(
+        Cuenta.objects.filter(
+            deleted_at__isnull=True,
+            activo=True,
+            tipo_cuenta__tipo='proveedores',
+        ).select_related('tipo_cuenta'),
+        pk=pk,
+    )
+    cuenta_corriente = construir_cuenta_corriente_proveedor(proveedor)
+
+    context = {
+        'cuenta_corriente': cuenta_corriente,
+    }
+    return render(request, 'comercial/reportes/reporte_proveedor_detalle.html', context)
 
 
 @login_required

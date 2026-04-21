@@ -250,6 +250,32 @@ class ComprasProveedorTest(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Proveedor Uno')
+        self.assertEqual(response.context['resumen_proveedores'][0]['saldo_actual'], Decimal('-100.00'))
+
+    def test_reporte_proveedor_detalle(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-104B',
+            cuenta=self.proveedor,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('1000'),
+            sena=Decimal('200'),
+            forma_pago_sena='efectivo',
+            created_by=self.user,
+        )
+        PagoCompra.objects.create(
+            compra=compra,
+            monto=Decimal('900'),
+            fecha_pago='2026-04-22',
+            forma_pago='transferencia',
+            con_factura=True,
+            created_by=self.user,
+        )
+        compra.save()
+
+        response = self.client_http.get(reverse('comercial:reporte_proveedor_detalle', args=[self.proveedor.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cuenta activa')
+        self.assertContains(response, 'Proveedor Uno')
         self.assertEqual(response.context['cuenta_corriente']['saldo_actual'], Decimal('-100.00'))
 
     def test_exportar_reporte_proveedores_excel(self):

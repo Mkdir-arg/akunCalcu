@@ -56,6 +56,7 @@ urlpatterns = [
     path('reportes/gastos/', views.reportes_gastos, name='reportes_gastos'),
     path('reportes/gastos/exportar-excel/', views.exportar_reporte_gastos_excel, name='exportar_reporte_gastos_excel'),
     path('reportes/proveedores/', views.reportes_proveedores, name='reportes_proveedores'),
+    path('reportes/proveedores/<int:pk>/', views.reporte_proveedor_detalle, name='reporte_proveedor_detalle'),
     path('reportes/proveedores/exportar-excel/', views.exportar_reporte_proveedores_excel, name='exportar_reporte_proveedores_excel'),
     path('reportes/general/', views.reporte_general, name='reporte_general'),
     path('reportes/general/exportar-excel/', views.exportar_reporte_general_excel, name='exportar_reporte_general_excel'),
