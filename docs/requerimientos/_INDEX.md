@@ -30,3 +30,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-008](./REQ-008-mejora-presupuestos-cotizador.md) | Mejora Presupuestos: Paridad con Cotizador + UI | Implementado | 2026-03-30 | FEAT-007 |
 | [REQ-009](./REQ-009-dolares-cobro-estado-colocado.md) | Registro de dólares en cobros + Estado obligatorio a Colocado | En desarrollo | 2026-04-01 | — |
 | [REQ-010](./REQ-010-cuenta-corriente-proveedores.md) | Cuenta corriente por proveedor + forma de pago en gastos | En desarrollo | 2026-04-21 | — |
+| [REQ-011](./REQ-011-navegacion-contexto-y-reporte-ventas-facturado.md) | Navegación con retorno contextual + reporte de ventas por importe facturado | En desarrollo | 2026-04-21 | — |

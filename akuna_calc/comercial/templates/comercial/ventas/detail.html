@@ -8,84 +8,103 @@
 <div class="max-w-7xl mx-auto animate-fade-in px-4">
 
     <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-6 lg:p-8 text-white shadow-2xl mb-6">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div>
-                <div class="flex flex-wrap items-center gap-3 mb-2">
-                    <h1 class="text-2xl lg:text-4xl font-bold tracking-tight text-white">
-                        <i class="fas fa-file-invoice mr-3"></i>Venta #{{ venta.numero_pedido }}
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 lg:px-8 py-7 text-white">
+            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-3 mb-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            Detalle de venta
+                        </span>
+                        <span id="badge-estado" class="px-4 py-1.5 rounded-full text-sm font-bold shadow
+                            {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900
+                            {% elif venta.estado == 'entregado' %}bg-blue-300 text-blue-900
+                            {% else %}bg-green-400 text-green-900{% endif %}">
+                            <i class="fas fa-circle mr-1 text-xs"></i>{{ venta.get_estado_display }}
+                        </span>
+                    </div>
+                    <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-white">
+                        Venta #{{ venta.numero_pedido }}
                     </h1>
-                    <!-- Badge estado grande -->
-                    <span id="badge-estado" class="px-4 py-1.5 rounded-full text-sm font-bold shadow
-                        {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900
-                        {% elif venta.estado == 'entregado' %}bg-blue-300 text-blue-900
-                        {% else %}bg-green-400 text-green-900{% endif %}">
-                        <i class="fas fa-circle mr-1 text-xs"></i>{{ venta.get_estado_display }}
-                    </span>
+                    <p class="text-slate-300 mt-2 text-sm lg:text-base">
+                        {{ venta.cliente.get_nombre_completo }}
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3 mt-4 text-sm">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100">
+                            <i class="far fa-calendar mr-2"></i>{{ venta.created_at|date:"d/m/Y H:i" }}
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 {% if dias_abierta > 60 %}text-red-200{% elif dias_abierta > 30 %}text-yellow-200{% else %}text-slate-100{% endif %}">
+                            <i class="fas fa-clock mr-2"></i>
+                            {% if dias_abierta == 0 %}Creada hoy
+                            {% elif dias_abierta == 1 %}Hace 1 día
+                            {% else %}Hace {{ dias_abierta }} días{% endif %}
+                        </span>
+                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100 hover:bg-white/20 transition-all">
+                            <i class="fas fa-user mr-2"></i>Ver cliente
+                        </a>
+                    </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-4 text-blue-100 text-sm font-medium">
-                    <span><i class="far fa-calendar mr-1"></i>{{ venta.created_at|date:"d/m/Y H:i" }}</span>
-                    <!-- Antigüedad -->
-                    <span class="{% if dias_abierta > 60 %}text-red-300{% elif dias_abierta > 30 %}text-yellow-300{% else %}text-blue-100{% endif %}">
-                        <i class="fas fa-clock mr-1"></i>
-                        {% if dias_abierta == 0 %}Creada hoy
-                        {% elif dias_abierta == 1 %}Hace 1 día
-                        {% else %}Hace {{ dias_abierta }} días{% endif %}
-                        {% if dias_abierta > 60 %} — Vencida{% elif dias_abierta > 30 %} — Demorada{% endif %}
-                    </span>
-                    <!-- Link cliente -->
-                    <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-blue-200 hover:text-white underline">
-                        <i class="fas fa-user mr-1"></i>{{ venta.cliente.get_nombre_completo }}
+
+                <div class="flex flex-col sm:flex-row gap-3 xl:min-w-[260px] xl:justify-end">
+                    <a href="{% url 'comercial:venta_edit' venta.pk %}"
+                       class="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-blue-900/20">
+                        <i class="fas fa-edit mr-2"></i>Editar venta
+                    </a>
+                    <a href="{% url 'comercial:ventas_list' %}"
+                       class="inline-flex items-center justify-center bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all border border-white/15">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver
                     </a>
                 </div>
             </div>
+        </div>
 
-            <!-- Acciones -->
-            <div class="flex flex-wrap gap-2">
-                <!-- Cambiar estado inline — botones pill -->
-                <div class="flex items-center bg-black bg-opacity-25 rounded-2xl p-1 gap-1 border border-white border-opacity-20" id="estado-btn-group">
-                    <button onclick="cambiarEstadoInline('pendiente')"
-                            class="estado-btn px-3 py-1.5 rounded-xl text-xs font-bold transition-all
-                            {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900 shadow{% else %}text-white hover:bg-white hover:bg-opacity-20{% endif %}">
-                        <i class="fas fa-clock mr-1"></i>Pendiente
-                    </button>
-                    <button onclick="cambiarEstadoInline('entregado')"
-                            class="estado-btn px-3 py-1.5 rounded-xl text-xs font-bold transition-all
-                            {% if venta.estado == 'entregado' %}bg-blue-300 text-blue-900 shadow{% else %}text-white hover:bg-white hover:bg-opacity-20{% endif %}">
-                        <i class="fas fa-truck mr-1"></i>Entregado
-                    </button>
-                    <button onclick="cambiarEstadoInline('colocado')"
-                            class="estado-btn px-3 py-1.5 rounded-xl text-xs font-bold transition-all
-                            {% if venta.estado == 'colocado' %}bg-green-400 text-green-900 shadow{% else %}text-white hover:bg-white hover:bg-opacity-20{% endif %}">
-                        <i class="fas fa-check-double mr-1"></i>Colocado
-                    </button>
+        <div class="px-6 lg:px-8 py-5 bg-slate-50 border-t border-slate-200">
+            <div class="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr] gap-4">
+                <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Estado de la venta</p>
+                            <p class="text-sm text-slate-600 mt-1">Cambiá el estado sin salir del detalle.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2" id="estado-btn-group">
+                        <button onclick="cambiarEstadoInline('pendiente')"
+                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
+                                {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900 border-yellow-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-yellow-300 hover:bg-yellow-50{% endif %}">
+                            <i class="fas fa-clock mr-2"></i>Pendiente
+                        </button>
+                        <button onclick="cambiarEstadoInline('entregado')"
+                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
+                                {% if venta.estado == 'entregado' %}bg-blue-400 text-blue-950 border-blue-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50{% endif %}">
+                            <i class="fas fa-truck mr-2"></i>Entregado
+                        </button>
+                        <button onclick="cambiarEstadoInline('colocado')"
+                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
+                                {% if venta.estado == 'colocado' %}bg-green-400 text-green-950 border-green-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-green-300 hover:bg-green-50{% endif %}">
+                            <i class="fas fa-check-double mr-2"></i>Colocado
+                        </button>
+                    </div>
                 </div>
 
-                <!-- WhatsApp -->
-                <button onclick="abrirWhatsApp()"
-                   class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fab fa-whatsapp mr-2 text-base"></i>WhatsApp
-                </button>
-
-                <!-- Duplicar -->
-                <a href="{% url 'comercial:duplicar_venta' venta.pk %}"
-                   onclick="return confirm('¿Duplicar esta venta?')"
-                   class="inline-flex items-center bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border border-white border-opacity-40">
-                    <i class="fas fa-copy mr-2"></i>Duplicar
-                </a>
-
-                <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank"
-                   class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fas fa-file-pdf mr-2"></i>PDF
-                </a>
-                <a href="{% url 'comercial:venta_edit' venta.pk %}"
-                   class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fas fa-edit mr-2"></i>Editar
-                </a>
-                <a href="{% url 'comercial:ventas_list' %}"
-                   class="inline-flex items-center bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver
-                </a>
+                <div class="bg-white rounded-2xl border border-slate-200 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 mb-1">Acciones</p>
+                    <p class="text-sm text-slate-600 mb-3">Herramientas rápidas sin sobrecargar el encabezado.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="abrirWhatsApp()"
+                           class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
+                            <i class="fab fa-whatsapp mr-2 text-base"></i>WhatsApp
+                        </button>
+                        <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank"
+                           class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </a>
+                        <a href="{% url 'comercial:duplicar_venta' venta.pk %}"
+                           onclick="return confirm('¿Duplicar esta venta?')"
+                           class="inline-flex items-center bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all">
+                            <i class="fas fa-copy mr-2"></i>Duplicar
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -211,91 +230,9 @@
 
     <!-- Info + Pago -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- Información de la venta -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Información de la Venta</h3>
-            <div class="space-y-3">
-                <div class="pb-3 border-b">
-                    <p class="text-xs text-slate-500 font-semibold mb-2">CLIENTE</p>
-                    <p class="font-bold text-slate-800">{{ venta.cliente.get_nombre_completo }}</p>
-                    {% if venta.cliente.cuit %}<p class="text-sm text-slate-600">CUIT: {{ venta.cliente.cuit }}</p>{% endif %}
-                    {% if venta.cliente.dni %}<p class="text-sm text-slate-600">DNI: {{ venta.cliente.dni }}</p>{% endif %}
-                    <p class="text-sm text-slate-600">{{ venta.cliente.get_condicion_iva_display }}</p>
-                    <p class="text-sm text-slate-600">{{ venta.cliente.direccion }}, {{ venta.cliente.localidad }}</p>
-                    {% if venta.cliente.telefono %}
-                    <p class="text-sm text-slate-600"><i class="fas fa-phone mr-1"></i>{{ venta.cliente.telefono }}</p>
-                    {% endif %}
-                    {% if venta.cliente.email %}
-                    <p class="text-sm text-slate-600"><i class="fas fa-envelope mr-1"></i>{{ venta.cliente.email }}</p>
-                    {% endif %}
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Estado:</span>
-                    <span class="px-3 py-1 {% if venta.estado == 'pendiente' %}bg-yellow-100 text-yellow-800{% elif venta.estado == 'entregado' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %} rounded-full text-xs font-semibold">
-                        {{ venta.get_estado_display }}
-                    </span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Tipo:</span>
-                    <span class="px-3 py-1 {% if venta.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
-                        {% if venta.con_factura %}<i class="fas fa-file-invoice mr-1"></i>Blanco{% else %}Negro{% endif %}
-                    </span>
-                </div>
-                {% if venta.tipo_factura %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Tipo Factura:</span>
-                    <span class="font-bold text-slate-800">Factura {{ venta.tipo_factura }}</span>
-                </div>
-                {% endif %}
-                {% if venta.numero_factura %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Factura:</span>
-                    <span class="font-bold text-slate-800">{{ venta.get_numero_factura_display }}</span>
-                </div>
-                {% endif %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Seña Inicial:</span>
-                    <span class="font-bold text-green-700">${{ venta.sena|formato_numero }}</span>
-                </div>
-                {% if venta.percepciones.exists %}
-                <div class="pt-2 border-t">
-                    <p class="text-xs text-slate-500 font-semibold mb-2">PERCEPCIONES</p>
-                    {% for percepcion in venta.percepciones.all %}
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-blue-600">+ {{ percepcion.get_tipo_display }}</span>
-                        <span class="font-bold text-blue-600">${{ percepcion.importe|formato_numero }}</span>
-                    </div>
-                    {% endfor %}
-                    <div class="flex justify-between pt-2 border-t border-blue-200">
-                        <span class="text-slate-700 font-semibold">Total con Percepciones:</span>
-                        <span class="font-bold text-blue-700">${{ venta.get_total_con_percepciones|formato_numero }}</span>
-                    </div>
-                </div>
-                {% endif %}
-                {% if venta.tiene_retenciones %}
-                <div class="flex justify-between bg-red-50 p-2 rounded">
-                    <span class="text-slate-600 font-medium">Retenciones:</span>
-                    <span class="font-bold text-red-600">-${{ venta.monto_retenciones|formato_numero }}</span>
-                </div>
-                {% endif %}
-                {% if venta.forma_pago %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Forma de Pago:</span>
-                    <span class="font-bold text-slate-800">{{ venta.get_forma_pago_display }}</span>
-                </div>
-                {% endif %}
-                {% if venta.observaciones %}
-                <div class="pt-2 border-t">
-                    <p class="text-xs text-slate-500 font-semibold mb-1">OBSERVACIONES</p>
-                    <p class="text-sm text-slate-700">{{ venta.observaciones }}</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
         <!-- Registrar Pago / Pagada -->
         {% if venta.saldo > 0 %}
-        <div class="card-elegant bg-gradient-to-br from-green-50 to-blue-50 rounded-3xl shadow-xl p-6 border-2 border-green-200">
+        <div class="card-elegant bg-gradient-to-br from-green-50 to-blue-50 rounded-3xl shadow-xl p-6 border-2 border-green-200 lg:col-span-2">
             <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-cash-register mr-2"></i>Registrar Pago</h3>
             <form method="post" action="{% url 'comercial:registrar_pago' venta.pk %}">
                 {% csrf_token %}
@@ -391,7 +328,7 @@
             </form>
         </div>
         {% else %}
-        <div class="card-elegant bg-gradient-to-br from-green-50 to-green-100 rounded-3xl shadow-xl p-6 border-2 border-green-300">
+        <div class="card-elegant bg-gradient-to-br from-green-50 to-green-100 rounded-3xl shadow-xl p-6 border-2 border-green-300 lg:col-span-2">
             <div class="text-center py-8">
                 <i class="fas fa-check-circle text-green-600 text-6xl mb-4"></i>
                 <h3 class="text-2xl font-bold text-green-800 mb-2">Venta Cobrada</h3>
@@ -403,71 +340,8 @@
 
     <!-- Timeline + Notas (2 columnas) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-        <!-- Timeline -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-5"><i class="fas fa-stream mr-2"></i>Línea de tiempo</h3>
-            <div class="relative">
-                <!-- Línea vertical -->
-                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
-
-                <div class="space-y-5">
-                    <!-- Venta creada -->
-                    <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-file-invoice text-white text-xs"></i>
-                        </div>
-                        <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Venta creada</p>
-                            <p class="text-xs text-slate-500">{{ venta.created_at|date:"d/m/Y H:i" }}</p>
-                            <p class="text-xs text-slate-600 mt-0.5">Total: ${{ venta.get_total_con_percepciones|formato_numero }} — Seña: ${{ venta.sena|formato_numero }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Seña -->
-                    {% if venta.sena > 0 %}
-                    <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-hand-holding-usd text-white text-xs"></i>
-                        </div>
-                        <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Seña inicial registrada</p>
-                            <p class="text-xs text-slate-500">{{ venta.created_at|date:"d/m/Y" }}</p>
-                            <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ venta.sena|formato_numero }}</p>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Pagos -->
-                    {% for pago in pagos %}
-                    <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-money-bill text-white text-xs"></i>
-                        </div>
-                        <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Pago registrado</p>
-                            <p class="text-xs text-slate-500">{{ pago.fecha_pago|date:"d/m/Y" }} — {{ pago.get_forma_pago_display }}</p>
-                            <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ pago.monto|formato_numero }}</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- Estado actual -->
-                    <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 {% if venta.estado == 'colocado' %}bg-green-600{% elif venta.estado == 'entregado' %}bg-blue-500{% else %}bg-yellow-500{% endif %} rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-{% if venta.estado == 'colocado' %}check-double{% elif venta.estado == 'entregado' %}truck{% else %}clock{% endif %} text-white text-xs"></i>
-                        </div>
-                        <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Estado actual: {{ venta.get_estado_display }}</p>
-                            <p class="text-xs text-slate-500">Última actualización: {{ venta.updated_at|date:"d/m/Y H:i" }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Notas Internas -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
+        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 lg:col-span-2">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-sticky-note mr-2"></i>Notas Internas</h3>
                 <span class="text-xs text-slate-400 italic">Solo visible para el equipo</span>
