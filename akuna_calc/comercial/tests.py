@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -118,6 +119,23 @@ class RegistrarPagoUSDTest(TestCase):
         self.assertTrue(pago.pago_en_dolares)
         self.assertEqual(pago.monto_usd, Decimal('37.04'))
 
+    def test_registrar_pago_con_dolares_calcula_monto_en_pesos(self):
+        url = reverse('comercial:registrar_pago', args=[self.venta.pk])
+        response = self.client_http.post(url, {
+            'fecha_pago': '2026-04-01',
+            'forma_pago': 'efectivo',
+            'con_factura': 'true',
+            'pago_en_dolares': 'true',
+            'monto_usd': '10',
+            'cotizacion_usd': '1000',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        pago = PagoVenta.objects.get(venta=self.venta)
+        self.venta.refresh_from_db()
+        self.assertEqual(pago.monto, Decimal('10000.00'))
+        self.assertEqual(self.venta.saldo, Decimal('90000.00'))
+
     def test_registrar_pago_sin_dolares(self):
         url = reverse('comercial:registrar_pago', args=[self.venta.pk])
         self.client_http.post(url, {
@@ -142,6 +160,54 @@ class RegistrarPagoUSDTest(TestCase):
         response = self.client_http.get(url + '?forzar_colocado=1')
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['forzar_colocado'])
+
+    def test_venta_detail_muestra_cobro_en_usd_en_historial(self):
+        PagoVenta.objects.create(
+            venta=self.venta,
+            monto=Decimal('50000'),
+            fecha_pago='2026-04-01',
+            forma_pago='efectivo',
+            created_by=self.user,
+            pago_en_dolares=True,
+            monto_usd=Decimal('50'),
+            cotizacion_usd=Decimal('1000'),
+        )
+
+        response = self.client_http.get(reverse('comercial:venta_detail', args=[self.venta.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cobro en USD')
+        self.assertContains(response, 'Se descontó en saldo por $50.000,00')
+
+    def test_editar_pago_con_dolares_calcula_monto_en_pesos(self):
+        pago = PagoVenta.objects.create(
+            venta=self.venta,
+            monto=Decimal('1000.00'),
+            fecha_pago='2026-04-01',
+            forma_pago='efectivo',
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(
+            reverse('comercial:editar_pago', args=[pago.pk]),
+            data=json.dumps({
+                'monto': '',
+                'fecha_pago': '2026-04-02',
+                'forma_pago': 'transferencia',
+                'con_factura': True,
+                'numero_factura': '',
+                'observaciones': '',
+                'pago_en_dolares': True,
+                'monto_usd': '12.5',
+                'cotizacion_usd': '1000',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        pago.refresh_from_db()
+        self.assertEqual(pago.monto, Decimal('12500.00'))
+        self.assertTrue(pago.pago_en_dolares)
 
 
 class EditarFechaSenaTest(TestCase):

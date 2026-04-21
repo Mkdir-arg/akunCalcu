@@ -10,6 +10,20 @@ from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoV
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
 
 
+def _resolver_monto_pago_venta(monto, pago_en_dolares, monto_usd, cotizacion_usd):
+    monto_usd_decimal = Decimal(monto_usd) if monto_usd else None
+    cotizacion_usd_decimal = Decimal(cotizacion_usd) if cotizacion_usd else None
+
+    if monto not in (None, ''):
+        monto_decimal = Decimal(monto)
+    elif pago_en_dolares and monto_usd_decimal and cotizacion_usd_decimal:
+        monto_decimal = (monto_usd_decimal * cotizacion_usd_decimal).quantize(Decimal('0.01'))
+    else:
+        raise ValueError('Debe indicar el monto en pesos o completar monto USD y cotizacion.')
+
+    return monto_decimal, monto_usd_decimal, cotizacion_usd_decimal
+
+
 @login_required
 def dashboard_comercial(request):
     from datetime import datetime, timedelta
@@ -395,7 +409,12 @@ def registrar_pago(request, pk):
         cotizacion_usd = request.POST.get('cotizacion_usd', '') or None
 
         try:
-            monto_decimal = Decimal(monto)
+            monto_decimal, monto_usd_decimal, cotizacion_usd_decimal = _resolver_monto_pago_venta(
+                monto=monto,
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=monto_usd,
+                cotizacion_usd=cotizacion_usd,
+            )
 
             if monto_decimal <= 0:
                 messages.error(request, 'El monto debe ser mayor a 0')
@@ -414,8 +433,8 @@ def registrar_pago(request, pk):
                 numero_factura=numero_factura,
                 observaciones=observaciones,
                 pago_en_dolares=pago_en_dolares,
-                monto_usd=Decimal(monto_usd) if pago_en_dolares and monto_usd else None,
-                cotizacion_usd=Decimal(cotizacion_usd) if pago_en_dolares and cotizacion_usd else None,
+                monto_usd=monto_usd_decimal if pago_en_dolares else None,
+                cotizacion_usd=cotizacion_usd_decimal if pago_en_dolares else None,
                 created_by=request.user
             )
             
@@ -1093,7 +1112,13 @@ def editar_pago_compra(request, pk):
         pago = get_object_or_404(PagoCompra, pk=pk)
         try:
             data = json.loads(request.body)
-            monto = Decimal(str(data.get('monto')))
+            pago_en_dolares = data.get('pago_en_dolares', False)
+            monto, monto_usd, cotizacion_usd = _resolver_monto_pago_venta(
+                monto=data.get('monto'),
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=data.get('monto_usd'),
+                cotizacion_usd=data.get('cotizacion_usd'),
+            )
             fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
             con_factura = data.get('con_factura', True)
@@ -1728,10 +1753,9 @@ def editar_pago(request, pk):
             pago.con_factura = con_factura
             pago.numero_factura = numero_factura
             pago.observaciones = observaciones
-            pago_en_dolares = data.get('pago_en_dolares', False)
             pago.pago_en_dolares = pago_en_dolares
-            pago.monto_usd = Decimal(str(data['monto_usd'])) if pago_en_dolares and data.get('monto_usd') else None
-            pago.cotizacion_usd = Decimal(str(data['cotizacion_usd'])) if pago_en_dolares and data.get('cotizacion_usd') else None
+            pago.monto_usd = monto_usd if pago_en_dolares else None
+            pago.cotizacion_usd = cotizacion_usd if pago_en_dolares else None
             pago.save()
 
             # Recalcular saldo de la venta

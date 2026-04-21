@@ -236,7 +236,7 @@
             <div class="mb-5">
                 <div>
                     <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-cash-register mr-2 text-green-600"></i>Registrar Pago</h3>
-                    <p class="text-sm text-slate-500 mt-1">Cargá el cobro en pesos y, si corresponde, registrá la referencia en dólares.</p>
+                    <p id="pago-form-intro" class="text-sm text-slate-500 mt-1">Cargá el cobro en pesos o registrá un pago en dólares para que el sistema calcule su impacto en saldo.</p>
                 </div>
             </div>
             <form method="post" action="{% url 'comercial:registrar_pago' venta.pk %}">
@@ -245,11 +245,11 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 lg:p-5">
                         <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
-                                <input type="number" name="monto" step="0.01" max="{{ venta.saldo }}" required
+                                <label id="monto-pesos-label" class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
+                                <input type="number" id="monto-pesos-input" name="monto" step="0.01" max="{{ venta.saldo }}" required
                                        class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                                        onchange="calcularTotalesPago()">
-                                <p class="text-xs text-slate-500 mt-1">Máximo: ${{ venta.saldo|formato_numero }}</p>
+                                <p id="monto-pesos-help" class="text-xs text-slate-500 mt-1">Máximo: ${{ venta.saldo|formato_numero }}</p>
                             </div>
                             <div class="xl:col-span-4">
                                 <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
@@ -296,22 +296,25 @@
                                            class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
                                     <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pagó en dólares</span>
                                 </label>
-                                <p class="text-xs text-emerald-700 md:text-right">Solo informativo. El monto en pesos sigue siendo el que impacta en el saldo.</p>
+                                <p id="pago-usd-help" class="text-xs text-emerald-700 md:text-right">Si completás USD y cotización, el monto en pesos se calcula solo y ese es el que impacta en el saldo.</p>
                             </div>
 
                             <div id="campos-dolares" class="hidden mt-4 pt-4 border-t border-emerald-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
-                                        <input type="number" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                        <input type="number" id="monto-usd-input" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                               oninput="actualizarMontoPesosDesdeUsd()"
                                                class="w-full px-4 py-3 border border-emerald-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
                                         <input type="number" name="cotizacion_usd" id="cotizacion_usd_input" step="0.01" min="0" placeholder="Ej: 1350"
+                                               oninput="actualizarMontoPesosDesdeUsd()"
                                                class="w-full px-4 py-3 border border-emerald-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
                                     </div>
                                 </div>
+                                <p class="text-xs text-emerald-800 mt-3">El cliente puede pagar en USD, pero el saldo de la venta siempre se descuenta en pesos.</p>
                             </div>
                         </div>
                     </div>
@@ -448,9 +451,10 @@
                         <td class="px-6 py-4" data-field="monto">
                             <div class="text-base font-bold text-green-700">${{ pago.monto|formato_numero }}</div>
                             {% if pago.pago_en_dolares and pago.monto_usd %}
-                            <div class="text-xs text-green-600 mt-1">
-                                <i class="fas fa-dollar-sign mr-1"></i>USD {{ pago.monto_usd|formato_numero }}
-                                {% if pago.cotizacion_usd %}<span class="text-slate-400 ml-1">(cotiz: ${{ pago.cotizacion_usd|formato_numero }})</span>{% endif %}
+                            <div class="text-xs text-emerald-700 mt-1 font-semibold">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 mr-2">Cobro en USD</span>
+                                USD {{ pago.monto_usd|formato_numero }}
+                                {% if pago.cotizacion_usd %}<span class="text-slate-500 ml-1">a ${{ pago.cotizacion_usd|formato_numero }}</span>{% endif %}
                             </div>
                             {% endif %}
                             {% if pago.retenciones.exists %}
@@ -469,6 +473,9 @@
                                 {% if pago.con_factura %}Blanco{% else %}Negro{% endif %}
                             </span>
                             <p class="text-xs text-slate-500 mt-2" data-field="numero_factura">Factura: {% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}—{% endif %}</p>
+                            {% if pago.pago_en_dolares %}
+                            <p class="text-xs text-emerald-700 mt-2 font-medium">Se descontó en saldo por ${{ pago.monto|formato_numero }}</p>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600" data-field="observaciones">
                             {{ pago.observaciones|default:"—" }}
@@ -817,6 +824,45 @@ function calcularTotalesPago() {
     if (elNeto) elNeto.textContent = fmt(Math.max(0, monto - totalRet));
 }
 
+function actualizarMontoPesosDesdeUsd() {
+    const checked = document.getElementById('pago_en_dolares_check')?.checked;
+    const montoInput = document.getElementById('monto-pesos-input');
+    const label = document.getElementById('monto-pesos-label');
+    const help = document.getElementById('monto-pesos-help');
+    const intro = document.getElementById('pago-form-intro');
+    const montoUsd = parseFloat(document.getElementById('monto-usd-input')?.value || 0);
+    const cotizacionUsd = parseFloat(document.getElementById('cotizacion_usd_input')?.value || 0);
+
+    if (!montoInput || !label || !help || !intro) return;
+
+    if (!checked) {
+        montoInput.readOnly = false;
+        montoInput.required = true;
+        montoInput.classList.remove('bg-emerald-50', 'border-emerald-300');
+        label.innerHTML = 'Monto que impacta en saldo (pesos) <span class="text-red-500">*</span>';
+        help.textContent = 'Máximo: ${{ venta.saldo|formato_numero }}';
+        intro.textContent = 'Cargá el cobro en pesos o registrá un pago en dólares para que el sistema calcule su impacto en saldo.';
+        calcularTotalesPago();
+        return;
+    }
+
+    montoInput.readOnly = true;
+    montoInput.required = false;
+    montoInput.classList.add('bg-emerald-50', 'border-emerald-300');
+    label.textContent = 'Monto calculado en pesos';
+    intro.textContent = 'En pagos en dólares, el sistema guarda el equivalente en pesos para descontarlo del saldo y conserva el dato en USD en el historial.';
+
+    if (montoUsd > 0 && cotizacionUsd > 0) {
+        montoInput.value = (montoUsd * cotizacionUsd).toFixed(2);
+        help.textContent = `Se descontarán $${Number(montoInput.value).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} del saldo.`;
+    } else {
+        montoInput.value = '';
+        help.textContent = 'Completá monto USD y cotización para calcular automáticamente el importe en pesos.';
+    }
+
+    calcularTotalesPago();
+}
+
 // ── Retenciones toggle ───────────────────────────────────────────
 function toggleRetenciones(id) {
     const el = document.getElementById(`retenciones-${id}`);
@@ -936,12 +982,17 @@ function guardarFechaSena() {
 function toggleCamposDolares() {
     const checked = document.getElementById('pago_en_dolares_check').checked;
     document.getElementById('campos-dolares').classList.toggle('hidden', !checked);
+    actualizarMontoPesosDesdeUsd();
 }
 
 function toggleCamposDolaresEdit() {
     const checked = document.getElementById('edit_pago_en_dolares').checked;
     document.getElementById('campos-dolares-edit').classList.toggle('hidden', !checked);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarMontoPesosDesdeUsd();
+});
 
 // ── Forzar estado Colocado (SweetAlert2 obligatorio) ────────────
 {% if forzar_colocado %}
