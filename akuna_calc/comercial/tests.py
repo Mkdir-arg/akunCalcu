@@ -385,3 +385,53 @@ class ReportesVentasTest(TestCase):
         self.assertEqual(reporte_ventas['total_blanco'], Decimal('100'))
         self.assertEqual(reporte_ventas['total_negro'], Decimal('200'))
         self.assertEqual([item['pedido'] for item in reporte_ventas['lista']], ['VTA-002', 'VTA-001'])
+
+
+class ReporteCobranzasTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='cobranzas', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='cobranzas', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Maria', apellido='Cobro',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def test_reporte_cobranzas_muestra_movimientos_individuales(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-100',
+            cliente=self.cliente,
+            valor_total=Decimal('300'),
+            sena=Decimal('100'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('50'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+            con_factura=True,
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('150'),
+            fecha_pago='2026-04-12',
+            forma_pago='efectivo',
+            con_factura=False,
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes_cobranzas'), {})
+
+        self.assertEqual(response.status_code, 200)
+        reporte_cobranzas = response.context['reporte_data']['cobranzas']
+        self.assertEqual(reporte_cobranzas['cantidad'], 3)
+        self.assertEqual(reporte_cobranzas['total'], Decimal('300'))
+        self.assertEqual(reporte_cobranzas['cantidad_blanco'], 2)
+        self.assertEqual(reporte_cobranzas['cantidad_negro'], 1)
+        self.assertEqual(
+            [(item['concepto'], item['monto']) for item in reporte_cobranzas['lista']],
+            [('Pago', Decimal('150')), ('Pago', Decimal('50')), ('Seña inicial', Decimal('100'))]
+        )

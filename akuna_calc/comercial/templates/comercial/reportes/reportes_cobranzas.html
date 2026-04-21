@@ -1,0 +1,165 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Reporte Cobranza{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto animate-fade-in px-4">
+    <div class="mb-8">
+        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reporte Cobranza</h1>
+        <p class="text-slate-500 font-medium mt-1">Detalle de ingresos por movimiento individual de cobro</p>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
+        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
+                    {{ form.fecha_desde }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
+                    {{ form.fecha_hasta }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                    {{ form.cliente }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Razón Social</label>
+                    {{ form.razon_social }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estado</label>
+                    {{ form.estado_venta }}
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
+                    {{ form.tipo_factura }}
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-4">
+                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+                    <i class="fas fa-search mr-2"></i>Generar Reporte
+                </button>
+                <a href="{% url 'comercial:reportes_cobranzas' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                    <i class="fas fa-redo mr-2"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if reporte_data %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Cobranza Blanco</p>
+                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.cobranzas.total_blanco|formato_numero }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad_blanco }} movimientos</p>
+                </div>
+                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-file-invoice text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-gray-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Cobranza Negro</p>
+                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.cobranzas.total_negro|formato_numero }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad_negro }} movimientos</p>
+                </div>
+                <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-receipt text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Cobranza</p>
+                    <p class="text-3xl font-bold text-blue-600">${{ reporte_data.cobranzas.total|formato_numero }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad }} movimientos</p>
+                </div>
+                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-hand-holding-usd text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-teal-50 to-sky-50 px-8 py-6 border-b border-slate-200">
+            <div class="flex justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Cobranza</h3>
+                    <p class="text-sm text-slate-500 mt-1">Una venta puede aparecer varias veces si tiene más de un cobro registrado.</p>
+                </div>
+                <span class="text-3xl font-bold text-teal-600">${{ reporte_data.cobranzas.total|formato_numero }}</span>
+            </div>
+        </div>
+        {% if reporte_data.cobranzas.lista %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Factura</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Razón Social</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forma Pago</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in reporte_data.cobranzas.lista %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.fecha|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ item.pedido }}</a>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.numero_factura }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.cliente }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.razon_social }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.concepto }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.forma_pago }}</td>
+                        <td class="px-6 py-4 text-sm text-teal-600 font-semibold">${{ item.monto|formato_numero }}</td>
+                        <td class="px-6 py-4">
+                            {% if item.tipo == 'Blanco' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-4 text-center text-gray-500">
+            No hay cobranzas registradas con los filtros seleccionados
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
+        <i class="fas fa-hand-holding-usd text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-2xl font-bold text-gray-700 mb-2">No hay cobranzas registradas</h3>
+        <p class="text-gray-500 mb-6">Comenzá registrando cobros en tus ventas para ver este reporte</p>
+        <a href="{% url 'comercial:ventas_list' %}" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+            <i class="fas fa-list mr-2"></i>Ver Ventas
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

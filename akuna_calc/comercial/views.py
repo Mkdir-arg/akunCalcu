@@ -1471,6 +1471,84 @@ def construir_reporte_ventas(
     return ventas
 
 
+def construir_reporte_cobranzas(
+    fecha_desde=None,
+    fecha_hasta=None,
+    cliente_filtro=None,
+    razon_social_filtro=None,
+    estado_venta_filtro=None,
+    tipo_factura_filtro=None,
+):
+    cobranzas = []
+
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
+
+    if fecha_desde:
+        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
+    if fecha_hasta:
+        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
+    if cliente_filtro:
+        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
+    if estado_venta_filtro:
+        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=False)
+
+    for venta in ventas_query:
+        cobranzas.append({
+            'fecha': venta.created_at.date(),
+            'pedido': venta.numero_pedido,
+            'numero_factura': venta.numero_factura or '-',
+            'cliente': str(venta.cliente),
+            'razon_social': venta.cliente.razon_social or '-',
+            'concepto': 'Seña inicial',
+            'forma_pago': venta.get_forma_pago_display() if venta.forma_pago else '-',
+            'monto': venta.sena,
+            'tipo': 'Blanco' if venta.con_factura else 'Negro',
+            'venta_id': venta.id,
+        })
+
+    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
+
+    if fecha_desde:
+        pagos_query = pagos_query.filter(fecha_pago__gte=fecha_desde)
+    if fecha_hasta:
+        pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
+    if cliente_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        pagos_query = pagos_query.filter(venta__cliente__razon_social__in=razon_social_filtro)
+    if estado_venta_filtro:
+        pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            pagos_query = pagos_query.filter(con_factura=False)
+
+    for pago in pagos_query.order_by('-fecha_pago', '-created_at'):
+        cobranzas.append({
+            'fecha': pago.fecha_pago,
+            'pedido': pago.venta.numero_pedido,
+            'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
+            'cliente': str(pago.venta.cliente),
+            'razon_social': pago.venta.cliente.razon_social or '-',
+            'concepto': 'Pago',
+            'forma_pago': pago.get_forma_pago_display(),
+            'monto': pago.monto,
+            'tipo': 'Blanco' if pago.con_factura else 'Negro',
+            'venta_id': pago.venta.id,
+        })
+
+    cobranzas.sort(key=lambda item: item['fecha'], reverse=True)
+    return cobranzas
+
+
 @login_required
 def reportes(request):
     form = ReporteForm()
@@ -1536,6 +1614,58 @@ def reportes(request):
         'reporte_data': reporte_data,
     }
     return render(request, 'comercial/reportes/reportes.html', context)
+
+
+@login_required
+def reportes_cobranzas(request):
+    form = ReporteForm()
+
+    fecha_desde = None
+    fecha_hasta = None
+    cliente_filtro = None
+    razon_social_filtro = None
+    estado_venta_filtro = None
+    tipo_factura_filtro = None
+
+    if request.method == 'POST':
+        form = ReporteForm(request.POST)
+        if form.is_valid():
+            fecha_desde = form.cleaned_data.get('fecha_desde')
+            fecha_hasta = form.cleaned_data.get('fecha_hasta')
+            cliente_filtro = form.cleaned_data.get('cliente')
+            razon_social_filtro = form.cleaned_data.get('razon_social')
+            estado_venta_filtro = form.cleaned_data.get('estado_venta')
+            tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
+
+    cobranzas = construir_reporte_cobranzas(
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        cliente_filtro=cliente_filtro,
+        razon_social_filtro=razon_social_filtro,
+        estado_venta_filtro=estado_venta_filtro,
+        tipo_factura_filtro=tipo_factura_filtro,
+    )
+
+    total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')
+    total_negro = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Negro')
+    total = total_blanco + total_negro
+
+    reporte_data = {
+        'cobranzas': {
+            'total_blanco': total_blanco,
+            'total_negro': total_negro,
+            'total': total,
+            'cantidad_blanco': len([item for item in cobranzas if item['tipo'] == 'Blanco']),
+            'cantidad_negro': len([item for item in cobranzas if item['tipo'] == 'Negro']),
+            'cantidad': len(cobranzas),
+            'lista': cobranzas,
+        }
+    }
+
+    return render(request, 'comercial/reportes/reportes_cobranzas.html', {
+        'form': form,
+        'reporte_data': reporte_data,
+    })
 
 
 @login_required
