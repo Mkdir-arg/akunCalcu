@@ -3,6 +3,54 @@
 from django.db import migrations, models
 
 
+def _column_names(schema_editor, table_name):
+    with schema_editor.connection.cursor() as cursor:
+        description = schema_editor.connection.introspection.get_table_description(cursor, table_name)
+    return {column.name for column in description}
+
+
+def add_columns_if_missing(apps, schema_editor):
+    statements = [
+        (
+            'comercial_pagoventa',
+            'cotizacion_usd',
+            'ALTER TABLE comercial_pagoventa ADD COLUMN cotizacion_usd NUMERIC(10, 2) NULL',
+        ),
+        (
+            'comercial_pagoventa',
+            'monto_usd',
+            'ALTER TABLE comercial_pagoventa ADD COLUMN monto_usd NUMERIC(12, 2) NULL',
+        ),
+        (
+            'comercial_pagoventa',
+            'pago_en_dolares',
+            'ALTER TABLE comercial_pagoventa ADD COLUMN pago_en_dolares BOOL NOT NULL DEFAULT 0',
+        ),
+        (
+            'comercial_venta',
+            'fecha_factura',
+            'ALTER TABLE comercial_venta ADD COLUMN fecha_factura DATE NULL',
+        ),
+    ]
+
+    for table_name, column_name, sql in statements:
+        if column_name not in _column_names(schema_editor, table_name):
+            schema_editor.execute(sql)
+
+
+def remove_columns_if_present(apps, schema_editor):
+    statements = [
+        ('comercial_pagoventa', 'cotizacion_usd'),
+        ('comercial_pagoventa', 'monto_usd'),
+        ('comercial_pagoventa', 'pago_en_dolares'),
+        ('comercial_venta', 'fecha_factura'),
+    ]
+
+    for table_name, column_name in statements:
+        if column_name in _column_names(schema_editor, table_name):
+            schema_editor.execute(f'ALTER TABLE {table_name} DROP COLUMN {column_name}')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -12,12 +60,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql=(
-                        "ALTER TABLE comercial_pagoventa "
-                        "ADD COLUMN IF NOT EXISTS cotizacion_usd NUMERIC(10, 2) NULL"
-                    ),
-                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS cotizacion_usd",
+                migrations.RunPython(
+                    add_columns_if_missing,
+                    remove_columns_if_present,
                 ),
             ],
             state_operations=[
@@ -26,55 +71,16 @@ class Migration(migrations.Migration):
                     name='cotizacion_usd',
                     field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Cotización USD utilizada'),
                 ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunSQL(
-                    sql=(
-                        "ALTER TABLE comercial_pagoventa "
-                        "ADD COLUMN IF NOT EXISTS monto_usd NUMERIC(12, 2) NULL"
-                    ),
-                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS monto_usd",
-                ),
-            ],
-            state_operations=[
                 migrations.AddField(
                     model_name='pagoventa',
                     name='monto_usd',
                     field=models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True, verbose_name='Monto en USD'),
                 ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunSQL(
-                    sql=(
-                        "ALTER TABLE comercial_pagoventa "
-                        "ADD COLUMN IF NOT EXISTS pago_en_dolares BOOL NOT NULL DEFAULT 0"
-                    ),
-                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS pago_en_dolares",
-                ),
-            ],
-            state_operations=[
                 migrations.AddField(
                     model_name='pagoventa',
                     name='pago_en_dolares',
                     field=models.BooleanField(default=False, verbose_name='Pagó en dólares'),
                 ),
-            ],
-        ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunSQL(
-                    sql=(
-                        "ALTER TABLE comercial_venta "
-                        "ADD COLUMN IF NOT EXISTS fecha_factura DATE NULL"
-                    ),
-                    reverse_sql="ALTER TABLE comercial_venta DROP COLUMN IF EXISTS fecha_factura",
-                ),
-            ],
-            state_operations=[
                 migrations.AddField(
                     model_name='venta',
                     name='fecha_factura',
