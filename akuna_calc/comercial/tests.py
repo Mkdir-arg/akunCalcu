@@ -478,6 +478,9 @@ class ReporteCobranzasTest(TestCase):
             fecha_pago='2026-04-11',
             forma_pago='transferencia',
             con_factura=True,
+            pago_en_dolares=True,
+            monto_usd=Decimal('0.05'),
+            cotizacion_usd=Decimal('1000'),
             created_by=self.user,
         )
         PagoVenta.objects.create(
@@ -497,7 +500,13 @@ class ReporteCobranzasTest(TestCase):
         self.assertEqual(reporte_cobranzas['total'], Decimal('300'))
         self.assertEqual(reporte_cobranzas['cantidad_blanco'], 2)
         self.assertEqual(reporte_cobranzas['cantidad_negro'], 1)
+        pago_usd = next(item for item in reporte_cobranzas['lista'] if item['monto'] == Decimal('50'))
+        self.assertTrue(pago_usd['pago_en_dolares'])
+        self.assertEqual(pago_usd['monto_usd'], Decimal('0.05'))
         self.assertEqual(
             [(item['concepto'], item['monto']) for item in reporte_cobranzas['lista']],
             [('Pago', Decimal('150')), ('Pago', Decimal('50')), ('Seña inicial', Decimal('100'))]
         )
+
+        self.assertContains(response, 'Cobrado en USD')
+        self.assertContains(response, 'USD 0,05')

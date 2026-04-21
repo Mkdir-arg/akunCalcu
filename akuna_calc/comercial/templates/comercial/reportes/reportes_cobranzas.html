@@ -131,8 +131,23 @@
                         <td class="px-6 py-4 text-sm text-gray-900">{{ item.cliente }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ item.razon_social }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ item.concepto }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.forma_pago }}</td>
-                        <td class="px-6 py-4 text-sm text-teal-600 font-semibold">${{ item.monto|formato_numero }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <div>{{ item.forma_pago }}</div>
+                            {% if item.pago_en_dolares and item.monto_usd %}
+                            <div class="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">
+                                Cobrado en USD
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-teal-600 font-semibold">
+                            <div>${{ item.monto|formato_numero }}</div>
+                            {% if item.pago_en_dolares and item.monto_usd %}
+                            <div class="text-xs text-emerald-700 font-medium mt-1">
+                                USD {{ item.monto_usd|formato_numero }}
+                                {% if item.cotizacion_usd %}<span class="text-slate-500"> a ${{ item.cotizacion_usd|formato_numero }}</span>{% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4">
                             {% if item.tipo == 'Blanco' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>

@@ -1536,6 +1536,9 @@ def construir_reporte_cobranzas(
             'monto': venta.sena,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id,
+            'pago_en_dolares': False,
+            'monto_usd': None,
+            'cotizacion_usd': None,
         })
 
     pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
@@ -1568,6 +1571,9 @@ def construir_reporte_cobranzas(
             'monto': pago.monto,
             'tipo': 'Blanco' if pago.con_factura else 'Negro',
             'venta_id': pago.venta.id,
+            'pago_en_dolares': pago.pago_en_dolares,
+            'monto_usd': pago.monto_usd,
+            'cotizacion_usd': pago.cotizacion_usd,
         })
 
     cobranzas.sort(key=lambda item: item['fecha'], reverse=True)
