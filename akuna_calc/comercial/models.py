@@ -111,6 +111,19 @@ class Venta(models.Model):
         if hasattr(self, 'factura_electronica'):
             return self.factura_electronica.get_numero_completo()
         return self.numero_factura or '-'
+
+    def get_facturas_relacionadas(self):
+        facturas = []
+
+        factura_principal = self.get_numero_factura_display()
+        if factura_principal and factura_principal != '-':
+            facturas.append(factura_principal)
+
+        for pago in self.pagos.all():
+            if pago.numero_factura and pago.numero_factura not in facturas:
+                facturas.append(pago.numero_factura)
+
+        return facturas
     
     def get_total_percepciones(self):
         """Calcula el total de percepciones"""

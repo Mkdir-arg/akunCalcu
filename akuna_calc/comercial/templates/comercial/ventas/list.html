@@ -175,7 +175,25 @@
                                 <span class="text-xs text-slate-400 font-normal block">{{ venta.created_at|date:"d/m/Y" }}</span>
                             </td>
                             <td class="hidden lg:table-cell px-4 py-3 text-xs text-slate-500">
-                                {{ venta.get_numero_factura_display }}
+                                {% with facturas=venta.get_facturas_relacionadas %}
+                                    {% if facturas %}
+                                        <div class="space-y-1">
+                                            {% for factura in facturas %}
+                                                <div class="{% if forloop.first %}text-slate-700 font-semibold{% else %}text-slate-500{% endif %}">
+                                                    {% if forloop.first %}
+                                                        {{ factura }}
+                                                    {% else %}
+                                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-medium">
+                                                            <i class="fas fa-receipt text-[10px]"></i>{{ factura }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                {% endwith %}
                             </td>
                             <td class="hidden xl:table-cell px-4 py-3 text-center text-xs text-slate-600">
                                 {% if venta.fecha_factura %}<span class="bg-blue-50 px-2 py-1 rounded">{{ venta.fecha_factura|date:"d/m/Y" }}</span>{% else %}<span class="text-slate-300">-</span>{% endif %}

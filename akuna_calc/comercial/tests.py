@@ -453,6 +453,51 @@ class ReportesVentasTest(TestCase):
         self.assertEqual([item['pedido'] for item in reporte_ventas['lista']], ['VTA-002', 'VTA-001'])
 
 
+class VentasListFacturasTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='ventaslist', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='ventaslist', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Laura', apellido='Facturas',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def test_ventas_list_muestra_factura_principal_y_facturas_de_pagos(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-FACT-1',
+            cliente=self.cliente,
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            numero_factura='0001-00000001',
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('200'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+            con_factura=True,
+            numero_factura='0001-00000002',
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('300'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+            con_factura=True,
+            numero_factura='0001-00000003',
+            created_by=self.user,
+        )
+
+        response = self.client_http.get(reverse('comercial:ventas_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '0001-00000001')
+        self.assertContains(response, '0001-00000002')
+        self.assertContains(response, '0001-00000003')
+
+
 class ReporteCobranzasTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='cobranzas', password='testpass')

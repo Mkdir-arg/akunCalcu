@@ -169,7 +169,7 @@ def ventas_list(request):
     from django.core.paginator import Paginator
     from django.db.models import Case, When, Value, IntegerField, Sum, Count
 
-    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').all()
+    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('pagos', 'percepciones').all()
 
     # Filtros
     estado = request.GET.get('estado', '')
