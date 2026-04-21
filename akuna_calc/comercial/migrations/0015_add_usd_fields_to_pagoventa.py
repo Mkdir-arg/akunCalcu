@@ -10,24 +10,76 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='pagoventa',
-            name='cotizacion_usd',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Cotización USD utilizada'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE comercial_pagoventa "
+                        "ADD COLUMN IF NOT EXISTS cotizacion_usd NUMERIC(10, 2) NULL"
+                    ),
+                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS cotizacion_usd",
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='pagoventa',
+                    name='cotizacion_usd',
+                    field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Cotización USD utilizada'),
+                ),
+            ],
         ),
-        migrations.AddField(
-            model_name='pagoventa',
-            name='monto_usd',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True, verbose_name='Monto en USD'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE comercial_pagoventa "
+                        "ADD COLUMN IF NOT EXISTS monto_usd NUMERIC(12, 2) NULL"
+                    ),
+                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS monto_usd",
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='pagoventa',
+                    name='monto_usd',
+                    field=models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True, verbose_name='Monto en USD'),
+                ),
+            ],
         ),
-        migrations.AddField(
-            model_name='pagoventa',
-            name='pago_en_dolares',
-            field=models.BooleanField(default=False, verbose_name='Pagó en dólares'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE comercial_pagoventa "
+                        "ADD COLUMN IF NOT EXISTS pago_en_dolares BOOL NOT NULL DEFAULT 0"
+                    ),
+                    reverse_sql="ALTER TABLE comercial_pagoventa DROP COLUMN IF EXISTS pago_en_dolares",
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='pagoventa',
+                    name='pago_en_dolares',
+                    field=models.BooleanField(default=False, verbose_name='Pagó en dólares'),
+                ),
+            ],
         ),
-        migrations.AddField(
-            model_name='venta',
-            name='fecha_factura',
-            field=models.DateField(blank=True, null=True, verbose_name='Fecha de Factura'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE comercial_venta "
+                        "ADD COLUMN IF NOT EXISTS fecha_factura DATE NULL"
+                    ),
+                    reverse_sql="ALTER TABLE comercial_venta DROP COLUMN IF EXISTS fecha_factura",
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='venta',
+                    name='fecha_factura',
+                    field=models.DateField(blank=True, null=True, verbose_name='Fecha de Factura'),
+                ),
+            ],
         ),
     ]
