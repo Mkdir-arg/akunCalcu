@@ -2092,8 +2092,14 @@ def editar_fecha_sena(request, pk):
         venta = get_object_or_404(Venta, pk=pk)
         
         try:
-            data = json.loads(request.body)
-            fecha_sena_str = data.get('fecha_sena')
+            if request.POST:
+                fecha_sena_str = request.POST.get('fecha') or request.POST.get('fecha_sena')
+            else:
+                data = json.loads(request.body)
+                fecha_sena_str = data.get('fecha') or data.get('fecha_sena')
+
+            if not fecha_sena_str:
+                return JsonResponse({'success': False, 'error': 'Debe indicar una fecha valida'}, status=400)
             
             # Convertir fecha string a objeto datetime
             if isinstance(fecha_sena_str, str):

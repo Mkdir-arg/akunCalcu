@@ -144,6 +144,36 @@ class RegistrarPagoUSDTest(TestCase):
         self.assertTrue(response.context['forzar_colocado'])
 
 
+class EditarFechaSenaTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='fechauser', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='fechauser', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Fecha', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+        self.venta = Venta.objects.create(
+            numero_pedido='TEST-FECHA-001', cliente=self.cliente,
+            valor_total=Decimal('100000'), sena=Decimal('1000'),
+            fecha_pago='2026-04-01',
+        )
+
+    def test_editar_fecha_sena_acepta_form_post(self):
+        url = reverse('comercial:editar_fecha_sena', args=[self.venta.pk])
+        response = self.client_http.post(url, {'fecha': '2026-04-15'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, {
+            'success': True,
+            'fecha': '15/04/2026',
+        })
+
+        self.venta.refresh_from_db()
+        self.assertEqual(str(self.venta.fecha_pago), '2026-04-15')
+        self.assertEqual(self.venta.created_at.date().isoformat(), '2026-04-15')
+
+
 class ComprasProveedorTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='compras', password='testpass')
