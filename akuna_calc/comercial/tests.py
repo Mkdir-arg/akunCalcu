@@ -497,6 +497,56 @@ class VentasListFacturasTest(TestCase):
         self.assertContains(response, '0001-00000002')
         self.assertContains(response, '0001-00000003')
 
+    def test_ventas_list_busca_por_factura_de_pago(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-FACT-2',
+            cliente=self.cliente,
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+        )
+        otra_venta = Venta.objects.create(
+            numero_pedido='VTA-FACT-3',
+            cliente=self.cliente,
+            valor_total=Decimal('800'),
+            sena=Decimal('0'),
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('200'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+            con_factura=True,
+            numero_factura='0001-00000999',
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('100'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+            con_factura=True,
+            numero_factura='0001-00000998',
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=otra_venta,
+            monto=Decimal('150'),
+            fecha_pago='2026-04-12',
+            forma_pago='efectivo',
+            con_factura=True,
+            numero_factura='0001-00000111',
+            created_by=self.user,
+        )
+
+        response = self.client_http.get(reverse('comercial:ventas_list'), {'q': '999'})
+
+        self.assertEqual(response.status_code, 200)
+        ventas = list(response.context['ventas'])
+        self.assertEqual(len(ventas), 1)
+        self.assertEqual(ventas[0].pk, venta.pk)
+        self.assertContains(response, 'VTA-FACT-2')
+        self.assertNotContains(response, 'VTA-FACT-3')
+
 
 class ReporteCobranzasTest(TestCase):
     def setUp(self):

@@ -196,8 +196,9 @@ def ventas_list(request):
             Q(cliente__nombre__icontains=buscar) |
             Q(cliente__apellido__icontains=buscar) |
             Q(cliente__razon_social__icontains=buscar) |
-            Q(numero_factura__icontains=buscar)
-        )
+            Q(numero_factura__icontains=buscar) |
+            Q(pagos__numero_factura__icontains=buscar)
+        ).distinct()
 
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
