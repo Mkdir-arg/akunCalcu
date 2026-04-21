@@ -1427,9 +1427,52 @@ def tipo_gasto_delete(request, pk):
 
 
 # REPORTES
+def construir_reporte_ventas(
+    fecha_desde=None,
+    fecha_hasta=None,
+    cliente_filtro=None,
+    razon_social_filtro=None,
+    estado_venta_filtro=None,
+    tipo_factura_filtro=None,
+):
+    ventas_query = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('percepciones')
+
+    if fecha_desde:
+        ventas_query = ventas_query.filter(fecha_pago__gte=fecha_desde)
+    if fecha_hasta:
+        ventas_query = ventas_query.filter(fecha_pago__lte=fecha_hasta)
+    if cliente_filtro:
+        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
+    if razon_social_filtro:
+        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
+    if estado_venta_filtro:
+        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
+    if tipo_factura_filtro:
+        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=True)
+        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+            ventas_query = ventas_query.filter(con_factura=False)
+
+    ventas = []
+    for venta in ventas_query.order_by('-fecha_pago', '-created_at'):
+        ventas.append({
+            'fecha': venta.fecha_pago or venta.created_at.date(),
+            'pedido': venta.numero_pedido,
+            'numero_factura': venta.numero_factura or '-',
+            'factura_id': venta.id if venta.numero_factura else None,
+            'cliente': str(venta.cliente),
+            'razon_social': venta.cliente.razon_social or '-',
+            'forma_pago': venta.get_forma_pago_display() if venta.forma_pago else '-',
+            'monto': venta.get_total_con_percepciones(),
+            'tipo': 'Blanco' if venta.con_factura else 'Negro',
+            'venta_id': venta.id,
+        })
+
+    return ventas
+
+
 @login_required
 def reportes(request):
-    from datetime import datetime
     form = ReporteForm()
     
     # Obtener filtros
@@ -1459,96 +1502,22 @@ def reportes(request):
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
     
-    # Construir lista de ingresos combinando se�as y pagos
-    ingresos = []
-    
-    # 1. Obtener ventas con se�a
-    ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
-    
-    if fecha_desde:
-        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
-    if fecha_hasta:
-        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
-    if cliente_filtro:
-        ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
-    if razon_social_filtro:
-        ventas_query = ventas_query.filter(cliente__razon_social__in=razon_social_filtro)
-    if estado_venta_filtro:
-        ventas_query = ventas_query.filter(estado__in=estado_venta_filtro)
-    if tipo_factura_filtro:
-        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            ventas_query = ventas_query.filter(con_factura=True)
-        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            ventas_query = ventas_query.filter(con_factura=False)
-    
-    for venta in ventas_query:
-        ingresos.append({
-            'fecha': venta.created_at.date(),
-            'pedido': venta.numero_pedido,
-            'numero_factura': venta.numero_factura or '-',
-            'factura_id': venta.id if venta.numero_factura else None,
-            'cliente': str(venta.cliente),
-            'razon_social': venta.cliente.razon_social or '-',
-            'forma_pago': 'Se�a Inicial',
-            'monto': venta.sena,
-            'tipo': 'Blanco' if venta.con_factura else 'Negro',
-            'venta_id': venta.id
-        })
-    
-    # 2. Obtener pagos adicionales
-    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
-    
-    if fecha_desde:
-        pagos_query = pagos_query.filter(fecha_pago__gte=fecha_desde)
-    if fecha_hasta:
-        pagos_query = pagos_query.filter(fecha_pago__lte=fecha_hasta)
-    if cliente_filtro:
-        pagos_query = pagos_query.filter(venta__cliente__in=cliente_filtro)
-    if razon_social_filtro:
-        pagos_query = pagos_query.filter(venta__cliente__razon_social__in=razon_social_filtro)
-    if estado_venta_filtro:
-        pagos_query = pagos_query.filter(venta__estado__in=estado_venta_filtro)
-    if tipo_factura_filtro:
-        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            try:
-                pagos_query = pagos_query.filter(con_factura=True)
-            except:
-                pagos_query = pagos_query.filter(venta__con_factura=True)
-        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            try:
-                pagos_query = pagos_query.filter(con_factura=False)
-            except:
-                pagos_query = pagos_query.filter(venta__con_factura=False)
-    
-    for pago in pagos_query:
-        try:
-            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
-        except:
-            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
-        
-        ingresos.append({
-            'fecha': pago.fecha_pago,
-            'pedido': pago.venta.numero_pedido,
-            'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
-            'factura_id': pago.venta.id if (pago.numero_factura or pago.venta.numero_factura) else None,
-            'cliente': str(pago.venta.cliente),
-            'razon_social': pago.venta.cliente.razon_social or '-',
-            'forma_pago': pago.get_forma_pago_display(),
-            'monto': pago.monto,
-            'tipo': tipo_pago,
-            'venta_id': pago.venta.id
-        })
-    
-    # Ordenar por fecha descendente
-    ingresos.sort(key=lambda x: x['fecha'], reverse=True)
+    ventas_reporte = construir_reporte_ventas(
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        cliente_filtro=cliente_filtro,
+        razon_social_filtro=razon_social_filtro,
+        estado_venta_filtro=estado_venta_filtro,
+        tipo_factura_filtro=tipo_factura_filtro,
+    )
     
     # Calcular totales
-    total_blanco = sum(i['monto'] for i in ingresos if i['tipo'] == 'Blanco')
-    total_negro = sum(i['monto'] for i in ingresos if i['tipo'] == 'Negro')
+    total_blanco = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Blanco')
+    total_negro = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Negro')
     total = total_blanco + total_negro
     
-    cantidad_blanco = len([i for i in ingresos if i['tipo'] == 'Blanco'])
-    cantidad_negro = len([i for i in ingresos if i['tipo'] == 'Negro'])
+    cantidad_blanco = len([i for i in ventas_reporte if i['tipo'] == 'Blanco'])
+    cantidad_negro = len([i for i in ventas_reporte if i['tipo'] == 'Negro'])
     
     reporte_data = {
         'ventas': {
@@ -1557,8 +1526,8 @@ def reportes(request):
             'total': total,
             'cantidad_blanco': cantidad_blanco,
             'cantidad_negro': cantidad_negro,
-            'cantidad': len(ingresos),
-            'lista': ingresos
+            'cantidad': len(ventas_reporte),
+            'lista': ventas_reporte
         }
     }
     
@@ -1669,56 +1638,26 @@ def exportar_reporte_excel(request):
     # Recuperar filtros de la sesi�n
     filtros = request.session.get('reporte_filtros', {})
     
-    # Construir lista de ingresos usando la misma l�gica que reportes()
-    ingresos = []
-    
-    # Obtener ventas con se�a
-    ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
-    
-    # Obtener pagos adicionales
-    pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')
-    
-    for venta in ventas_query:
-        ingresos.append({
-            'fecha': venta.created_at.date(),
-            'pedido': venta.numero_pedido,
-            'numero_factura': venta.numero_factura or '-',
-            'cliente': str(venta.cliente),
-            'razon_social': venta.cliente.razon_social or '-',
-            'forma_pago': 'Se�a Inicial',
-            'monto': float(venta.sena),
-            'tipo': 'Blanco' if venta.con_factura else 'Negro'
-        })
-    
-    for pago in pagos_query:
-        try:
-            tipo_pago = 'Blanco' if pago.con_factura else 'Negro'
-        except:
-            tipo_pago = 'Blanco' if pago.venta.con_factura else 'Negro'
-        
-        ingresos.append({
-            'fecha': pago.fecha_pago,
-            'pedido': pago.venta.numero_pedido,
-            'numero_factura': pago.numero_factura or pago.venta.numero_factura or '-',
-            'cliente': str(pago.venta.cliente),
-            'razon_social': pago.venta.cliente.razon_social or '-',
-            'forma_pago': pago.get_forma_pago_display(),
-            'monto': float(pago.monto),
-            'tipo': tipo_pago
-        })
-    
-    # Ordenar por fecha
-    ingresos.sort(key=lambda x: x['fecha'], reverse=True)
+    cliente_ids = filtros.get('cliente_id')
+    cliente_filtro = Cliente.objects.filter(id__in=cliente_ids) if cliente_ids else None
+    ventas_reporte = construir_reporte_ventas(
+        fecha_desde=datetime.fromisoformat(filtros['fecha_desde']).date() if filtros.get('fecha_desde') else None,
+        fecha_hasta=datetime.fromisoformat(filtros['fecha_hasta']).date() if filtros.get('fecha_hasta') else None,
+        cliente_filtro=cliente_filtro,
+        razon_social_filtro=filtros.get('razon_social'),
+        estado_venta_filtro=filtros.get('estado_venta'),
+        tipo_factura_filtro=filtros.get('tipo_factura'),
+    )
     
     # Calcular totales
-    total_blanco = sum(i['monto'] for i in ingresos if i['tipo'] == 'Blanco')
-    total_negro = sum(i['monto'] for i in ingresos if i['tipo'] == 'Negro')
+    total_blanco = sum(float(i['monto']) for i in ventas_reporte if i['tipo'] == 'Blanco')
+    total_negro = sum(float(i['monto']) for i in ventas_reporte if i['tipo'] == 'Negro')
     total = total_blanco + total_negro
     
     # Crear workbook
     wb = Workbook()
     ws = wb.active
-    ws.title = "Reporte Ingresos"
+    ws.title = "Reporte Ventas"
     
     # Estilos
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
@@ -1726,29 +1665,29 @@ def exportar_reporte_excel(request):
     title_font = Font(bold=True, size=14)
     
     # T�tulo
-    ws['A1'] = 'REPORTE DE INGRESOS'
+    ws['A1'] = 'REPORTE DE VENTAS'
     ws['A1'].font = title_font
     ws.merge_cells('A1:H1')
     
     # Resumen
-    ws['A3'] = 'Total Ingresos Blanco:'
+    ws['A3'] = 'Total Ventas Blanco:'
     ws['B3'] = total_blanco
     ws['B3'].number_format = '$#,##0.00'
     ws['A3'].font = Font(bold=True)
     
-    ws['A4'] = 'Total Ingresos Negro:'
+    ws['A4'] = 'Total Ventas Negro:'
     ws['B4'] = total_negro
     ws['B4'].number_format = '$#,##0.00'
     ws['A4'].font = Font(bold=True)
     
-    ws['A5'] = 'TOTAL INGRESOS:'
+    ws['A5'] = 'TOTAL VENTAS:'
     ws['B5'] = total
     ws['B5'].number_format = '$#,##0.00'
     ws['A5'].font = Font(bold=True, size=12)
     ws['B5'].font = Font(bold=True, size=12)
     
     # Headers
-    headers = ['Fecha Pago', 'Pedido', 'ID Factura', 'Cliente', 'Raz�n Social', 'Forma Pago', 'Monto', 'Tipo']
+    headers = ['Fecha Venta', 'Pedido', 'ID Factura', 'Cliente', 'Raz�n Social', 'Forma Pago', 'Monto', 'Tipo']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(7, col, header)
         cell.font = header_font
@@ -1756,7 +1695,7 @@ def exportar_reporte_excel(request):
         cell.alignment = Alignment(horizontal='center')
     
     # Datos
-    for row, ingreso in enumerate(ingresos, 8):
+    for row, ingreso in enumerate(ventas_reporte, 8):
         ws.cell(row, 1, ingreso['fecha'].strftime('%d/%m/%Y'))
         ws.cell(row, 2, ingreso['pedido'])
         ws.cell(row, 3, ingreso['numero_factura'])
@@ -1779,7 +1718,7 @@ def exportar_reporte_excel(request):
     
     # Respuesta HTTP
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=reporte_ingresos.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=reporte_ventas.xlsx'
     wb.save(response)
     return response
 

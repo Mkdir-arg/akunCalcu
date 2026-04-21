@@ -337,3 +337,51 @@ class ComprasProveedorTest(TestCase):
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
         self.assertIn('cuenta_proveedor_', response['Content-Disposition'])
+
+
+class ReportesVentasTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='reportes', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='reportes', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Ana', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def test_reporte_muestra_solo_ventas_y_no_pagos(self):
+        venta_1 = Venta.objects.create(
+            numero_pedido='VTA-001',
+            cliente=self.cliente,
+            valor_total=Decimal('100'),
+            sena=Decimal('50'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+        Venta.objects.create(
+            numero_pedido='VTA-002',
+            cliente=self.cliente,
+            valor_total=Decimal('200'),
+            sena=Decimal('0'),
+            fecha_pago='2026-04-12',
+            forma_pago='transferencia',
+            con_factura=False,
+        )
+        PagoVenta.objects.create(
+            venta=venta_1,
+            monto=Decimal('50'),
+            fecha_pago='2026-04-17',
+            forma_pago='efectivo',
+            con_factura=True,
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes'), {})
+
+        self.assertEqual(response.status_code, 200)
+        reporte_ventas = response.context['reporte_data']['ventas']
+        self.assertEqual(reporte_ventas['cantidad'], 2)
+        self.assertEqual(reporte_ventas['total'], Decimal('300'))
+        self.assertEqual(reporte_ventas['total_blanco'], Decimal('100'))
+        self.assertEqual(reporte_ventas['total_negro'], Decimal('200'))
+        self.assertEqual([item['pedido'] for item in reporte_ventas['lista']], ['VTA-002', 'VTA-001'])
