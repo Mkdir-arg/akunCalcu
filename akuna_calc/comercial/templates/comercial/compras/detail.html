@@ -256,6 +256,7 @@
             </form>
         </div>
         {% else %}
+        {% if total_pagado > 0 %}
         <div class="card-elegant bg-gradient-to-br from-green-50 to-green-100 rounded-3xl shadow-xl p-6 border-2 border-green-300">
             <div class="text-center py-8">
                 <i class="fas fa-check-circle text-green-600 text-6xl mb-4"></i>
@@ -263,6 +264,7 @@
                 <p class="text-green-700">Esta compra ha sido pagada en su totalidad</p>
             </div>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 
