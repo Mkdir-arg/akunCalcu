@@ -1,4 +1,4 @@
-from akuna_calc.comercial.models import Compra
+from comercial.models import Compra
 from django.db import transaction
 
 # Script para cerrar compras pagadas
