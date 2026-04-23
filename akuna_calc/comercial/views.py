@@ -2317,7 +2317,7 @@ def agregar_retencion_pago(request, pk):
 @login_required
 def reporte_general(request):
     """Vista para reporte general combinando ingresos y gastos."""
-    from django.db.models import Sum, Value, DecimalField
+    from django.db.models import Sum, Value, DecimalField, Q
     from django.db.models.functions import Coalesce
     
     reporte_data = None
@@ -2326,23 +2326,42 @@ def reporte_general(request):
         fecha_desde = request.POST.get('fecha_desde')
         fecha_hasta = request.POST.get('fecha_hasta')
         
-        # INGRESOS (PagoVenta)
-        pagos = PagoVenta.objects.select_related('venta', 'venta__cliente').filter(venta__deleted_at__isnull=True)
+        # INGRESOS = Señas + Pagos adicionales
+        # 1. Señas de ventas
+        ventas_senas = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0)
+        if fecha_desde:
+            ventas_senas = ventas_senas.filter(created_at__date__gte=fecha_desde)
+        if fecha_hasta:
+            ventas_senas = ventas_senas.filter(created_at__date__lte=fecha_hasta)
+        
+        senas_blanco = ventas_senas.filter(con_factura=True).aggregate(
+            total=Coalesce(Sum('sena'), Value(0, output_field=DecimalField()))
+        )['total']
+        senas_negro = ventas_senas.filter(con_factura=False).aggregate(
+            total=Coalesce(Sum('sena'), Value(0, output_field=DecimalField()))
+        )['total']
+        
+        # 2. Pagos adicionales
+        pagos = PagoVenta.objects.filter(venta__deleted_at__isnull=True)
         if fecha_desde:
             pagos = pagos.filter(fecha_pago__gte=fecha_desde)
         if fecha_hasta:
             pagos = pagos.filter(fecha_pago__lte=fecha_hasta)
         
-        ingresos_blanco = pagos.filter(con_factura=True).aggregate(
+        pagos_blanco = pagos.filter(con_factura=True).aggregate(
             total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
         )['total']
-        ingresos_negro = pagos.filter(con_factura=False).aggregate(
+        pagos_negro = pagos.filter(con_factura=False).aggregate(
             total=Coalesce(Sum('monto'), Value(0, output_field=DecimalField()))
         )['total']
+        
+        # Total ingresos = señas + pagos
+        ingresos_blanco = senas_blanco + pagos_blanco
+        ingresos_negro = senas_negro + pagos_negro
         total_ingresos = ingresos_blanco + ingresos_negro
         
         # GASTOS (Compra)
-        compras = Compra.objects.select_related('cuenta', 'cuenta__tipo_cuenta').filter(deleted_at__isnull=True)
+        compras = Compra.objects.filter(deleted_at__isnull=True)
         if fecha_desde:
             compras = compras.filter(fecha_pago__gte=fecha_desde)
         if fecha_hasta:
@@ -2366,7 +2385,7 @@ def reporte_general(request):
                 'blanco': ingresos_blanco,
                 'negro': ingresos_negro,
                 'total': total_ingresos,
-                'cantidad': pagos.count(),
+                'cantidad': ventas_senas.count() + pagos.count(),
             },
             'gastos': {
                 'blanco': gastos_blanco,
