@@ -2321,6 +2321,8 @@ def reporte_general(request):
     from django.db.models.functions import Coalesce
     
     reporte_data = None
+    fecha_desde = None
+    fecha_hasta = None
     
     if request.method == 'POST':
         fecha_desde = request.POST.get('fecha_desde')
@@ -2414,7 +2416,11 @@ def reporte_general(request):
             'balance_total': float(balance_total),
         }
     
-    return render(request, 'comercial/reportes/reporte_general.html', {'reporte_data': reporte_data})
+    return render(request, 'comercial/reportes/reporte_general.html', {
+        'reporte_data': reporte_data,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+    })
 
 
 @login_required
