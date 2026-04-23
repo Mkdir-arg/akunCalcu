@@ -1055,7 +1055,7 @@ def compra_detail(request, pk):
         'porcentaje_pagado': porcentaje_pagado,
         'dias_abierta': dias_abierta,
         'today': timezone.now().date(),
-        'permite_pago_adicional': compra.saldo > 0 or compra.es_proveedor,
+        'permite_pago_adicional': (compra.saldo > 0) or (compra.es_proveedor and compra.saldo != 0),
     }
     return render(request, 'comercial/compras/detail.html', context)
 
