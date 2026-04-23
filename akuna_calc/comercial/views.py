@@ -404,7 +404,9 @@ def registrar_pago(request, pk):
         forma_pago = request.POST.get('forma_pago')
         con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
+
         observaciones = request.POST.get('observaciones', '')
+        fecha_factura = request.POST.get('fecha_factura', None)
         pago_en_dolares = request.POST.get('pago_en_dolares') == 'true'
         monto_usd = request.POST.get('monto_usd', '') or None
         cotizacion_usd = request.POST.get('cotizacion_usd', '') or None
@@ -432,6 +434,7 @@ def registrar_pago(request, pk):
                 forma_pago=forma_pago,
                 con_factura=con_factura,
                 numero_factura=numero_factura,
+                fecha_factura=fecha_factura if fecha_factura else None,
                 observaciones=observaciones,
                 pago_en_dolares=pago_en_dolares,
                 monto_usd=monto_usd_decimal if pago_en_dolares else None,
@@ -1464,9 +1467,9 @@ def construir_reporte_ventas(
     ventas_query = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('percepciones')
 
     if fecha_desde:
-        ventas_query = ventas_query.filter(fecha_pago__gte=fecha_desde)
+        ventas_query = ventas_query.filter(fecha_factura__gte=fecha_desde)
     if fecha_hasta:
-        ventas_query = ventas_query.filter(fecha_pago__lte=fecha_hasta)
+        ventas_query = ventas_query.filter(fecha_factura__lte=fecha_hasta)
     if cliente_filtro:
         ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
     if razon_social_filtro:
@@ -1480,16 +1483,16 @@ def construir_reporte_ventas(
             ventas_query = ventas_query.filter(con_factura=False)
 
     ventas = []
-    for venta in ventas_query.order_by('-fecha_pago', '-created_at'):
+    for venta in ventas_query.order_by('-fecha_factura', '-created_at'):
         ventas.append({
-            'fecha': venta.fecha_pago or venta.created_at.date(),
+            'fecha': venta.fecha_factura or venta.created_at.date(),
             'pedido': venta.numero_pedido,
             'numero_factura': venta.numero_factura or '-',
             'factura_id': venta.id if venta.numero_factura else None,
             'cliente': str(venta.cliente),
             'razon_social': venta.cliente.razon_social or '-',
             'forma_pago': venta.get_forma_pago_display() if venta.forma_pago else '-',
-            'monto': venta.get_total_con_percepciones(),
+            'monto': venta.get_monto_reporte_ventas(),
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id,
         })

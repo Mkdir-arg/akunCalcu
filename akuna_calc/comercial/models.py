@@ -132,6 +132,12 @@ class Venta(models.Model):
     def get_total_con_percepciones(self):
         """Calcula el total de la venta incluyendo percepciones"""
         return self.valor_total + self.get_total_percepciones()
+
+    def get_monto_reporte_ventas(self):
+        """Devuelve el monto que debe computar el reporte de ventas para la factura inicial."""
+        if self.numero_factura and self.sena > 0:
+            return self.sena
+        return self.get_total_con_percepciones()
     
     def __str__(self):
         return f"Pedido {self.numero_pedido} - {self.cliente}"

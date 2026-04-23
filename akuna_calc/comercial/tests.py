@@ -87,6 +87,20 @@ class PagoVentaUSDFieldsTest(TestCase):
 
 
 class RegistrarPagoUSDTest(TestCase):
+        def test_registrar_pago_con_fecha_factura(self):
+            url = reverse('comercial:registrar_pago', args=[self.venta.pk])
+            response = self.client_http.post(url, {
+                'monto': '50000',
+                'fecha_pago': '2026-04-01',
+                'forma_pago': 'efectivo',
+                'con_factura': 'true',
+                'numero_factura': '0001-00001234',
+                'fecha_factura': '2026-04-10',
+            })
+            self.assertEqual(response.status_code, 302)
+            pago = PagoVenta.objects.filter(venta=self.venta).first()
+            self.assertEqual(str(pago.fecha_factura), '2026-04-10')
+            self.assertEqual(pago.numero_factura, '0001-00001234')
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
         self.client_http = Client()
@@ -451,6 +465,35 @@ class ReportesVentasTest(TestCase):
         self.assertEqual(reporte_ventas['total_blanco'], Decimal('100'))
         self.assertEqual(reporte_ventas['total_negro'], Decimal('200'))
         self.assertEqual([item['pedido'] for item in reporte_ventas['lista']], ['VTA-002', 'VTA-001'])
+
+    def test_reporte_usa_monto_facturado_inicial_cuando_la_factura_es_por_sena(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-003',
+            cliente=self.cliente,
+            valor_total=Decimal('100'),
+            sena=Decimal('50'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+            numero_factura='0001-00000010',
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('50'),
+            fecha_pago='2026-04-20',
+            forma_pago='transferencia',
+            con_factura=True,
+            numero_factura='0001-00000011',
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes'), {})
+
+        self.assertEqual(response.status_code, 200)
+        reporte_ventas = response.context['reporte_data']['ventas']
+        item = next(item for item in reporte_ventas['lista'] if item['pedido'] == 'VTA-003')
+        self.assertEqual(item['monto'], Decimal('50'))
+        self.assertEqual(reporte_ventas['total'], Decimal('50'))
+        self.assertEqual(reporte_ventas['total_blanco'], Decimal('50'))
 
 
 class VentasListFacturasTest(TestCase):
