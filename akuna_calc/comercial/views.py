@@ -1467,9 +1467,9 @@ def construir_reporte_ventas(
     ventas_query = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('percepciones')
 
     if fecha_desde:
-        ventas_query = ventas_query.filter(fecha_factura__gte=fecha_desde)
+        ventas_query = ventas_query.filter(fecha_pago__gte=fecha_desde)
     if fecha_hasta:
-        ventas_query = ventas_query.filter(fecha_factura__lte=fecha_hasta)
+        ventas_query = ventas_query.filter(fecha_pago__lte=fecha_hasta)
     if cliente_filtro:
         ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
     if razon_social_filtro:
@@ -1483,16 +1483,16 @@ def construir_reporte_ventas(
             ventas_query = ventas_query.filter(con_factura=False)
 
     ventas = []
-    for venta in ventas_query.order_by('-fecha_factura', '-created_at'):
+    for venta in ventas_query.order_by('-fecha_pago', '-created_at'):
         ventas.append({
-            'fecha': venta.fecha_factura or venta.created_at.date(),
+            'fecha': venta.fecha_pago or venta.created_at.date(),
             'pedido': venta.numero_pedido,
             'numero_factura': venta.numero_factura or '-',
             'factura_id': venta.id if venta.numero_factura else None,
             'cliente': str(venta.cliente),
             'razon_social': venta.cliente.razon_social or '-',
             'forma_pago': venta.get_forma_pago_display() if venta.forma_pago else '-',
-            'monto': venta.get_monto_reporte_ventas(),
+            'monto': venta.valor_total,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id,
         })
