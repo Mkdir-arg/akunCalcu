@@ -1752,22 +1752,29 @@ def editar_pago(request, pk):
         
         try:
             data = json.loads(request.body)
-            monto = Decimal(str(data.get('monto')))
+
+            pago_en_dolares = data.get('pago_en_dolares', False)
+            monto, monto_usd, cotizacion_usd = _resolver_monto_pago_venta(
+                monto=data.get('monto'),
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=data.get('monto_usd'),
+                cotizacion_usd=data.get('cotizacion_usd'),
+            )
             fecha_pago_str = data.get('fecha_pago')
             forma_pago = data.get('forma_pago')
             con_factura = data.get('con_factura', True)
             numero_factura = data.get('numero_factura', '')
             observaciones = data.get('observaciones', '')
-            
+
             if monto <= 0:
                 return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
-            
+
             # Convertir fecha string a objeto date
             if isinstance(fecha_pago_str, str):
                 fecha_pago = datetime.strptime(fecha_pago_str, '%Y-%m-%d').date()
             else:
                 fecha_pago = fecha_pago_str
-            
+
             pago.monto = monto
             pago.fecha_pago = fecha_pago
             pago.forma_pago = forma_pago
