@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Cliente, Venta, TipoCuenta, TipoGasto, Cuenta, Compra, PagoCompra, PagoVenta, Percepcion, Retencion
+from .models import Cliente, Venta, TipoCuenta, TipoGasto, Cuenta, Compra, PagoCompra, PagoVenta, Percepcion, Retencion, Recibo
+
+@admin.register(Recibo)
+class ReciboAdmin(admin.ModelAdmin):
+    list_display = ['numero', 'venta', 'pago', 'importe', 'fecha', 'created_at']
+    search_fields = ['numero', 'venta__numero_pedido', 'pago__id']
+    list_filter = ['fecha', 'created_at']
 
 
 @admin.register(Cliente)

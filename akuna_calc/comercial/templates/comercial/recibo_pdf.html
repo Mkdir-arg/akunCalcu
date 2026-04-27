@@ -1,0 +1,104 @@
+{# Template base para PDF de recibo, diseño pixel-perfect según modelo adjunto #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo N° {{ recibo.numero }}</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; margin: 0; padding: 0; }
+        .recibo-box { width: 800px; margin: 0 auto; border: 2px solid #000; padding: 16px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .logo { width: 180px; }
+        .titulo-x { font-size: 80px; font-weight: bold; text-align: center; line-height: 0.8; }
+        .datos-empresa { font-size: 13px; }
+        .datos-cliente, .datos-empresa { margin-bottom: 8px; }
+        .tabla-detalle { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .tabla-detalle th, .tabla-detalle td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
+        .tabla-detalle th { background: #f2f2f2; }
+        .firmas { margin-top: 32px; display: flex; justify-content: flex-end; }
+        .firma-box { text-align: center; margin-left: 80px; }
+        .firma-linea { border-top: 1px solid #000; width: 180px; margin: 0 auto 4px auto; }
+        .total-box { font-weight: bold; text-align: right; margin-top: 8px; }
+        .original { position: absolute; top: 10px; right: 30px; font-size: 13px; font-weight: bold; }
+        .nota { font-size: 12px; color: #444; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="recibo-box">
+    <div class="original">ORIGINAL</div>
+    <div class="header">
+        <div>
+            <img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">
+            <div class="datos-empresa">
+                Elpidio Gonzalez 5326<br>
+                CP.: 1407<br>
+                Ciudad de Buenos Aires - Argentina<br>
+                I.V.A.: RI
+            </div>
+        </div>
+        <div class="titulo-x">X</div>
+        <div class="datos-empresa">
+            <strong>RECIBO N° {{ recibo.numero }}</strong><br>
+            <span style="font-size:11px;">DOCUMENTO NO VALIDO COMO FACTURA</span><br>
+            <strong>FECHA</strong> {{ recibo.fecha|date:'d/m/Y' }}<br>
+            <br>
+            Cuit: 23-24203136-9<br>
+            Ing. Brutos: 1588778-02<br>
+            Inicio de Actividades: Enero de 2020
+        </div>
+    </div>
+    <hr>
+    <div class="datos-cliente">
+        <strong>Señor (es):</strong> {{ recibo.pago.venta.cliente.get_nombre_completo }}<br>
+        <strong>Domicilio:</strong> {{ recibo.pago.venta.cliente.direccion }}<br>
+        <strong>Localidad:</strong> {{ recibo.pago.venta.cliente.localidad }}
+        {% if recibo.pago.venta.cliente.cuit %}<br><strong>Cuit:</strong> {{ recibo.pago.venta.cliente.cuit }}{% endif %}
+    </div>
+    <div>
+        Recibimos la suma de PESOS: <strong>{{ recibo.importe_letras }}</strong><br>
+        Pago en concepto de: <strong>{{ recibo.concepto }}</strong>
+    </div>
+    <table class="tabla-detalle">
+        <tr>
+            <th>FECHA</th>
+            <th>BANCO</th>
+            <th>NRO.</th>
+            <th>IMPORTE</th>
+        </tr>
+        <tr>
+            <td>{{ recibo.fecha|date:'d/m/Y' }}</td>
+            <td></td>
+            <td></td>
+            <td style="text-align:right;">{{ recibo.importe|floatformat:0 }}</td>
+        </tr>
+    </table>
+    <table class="tabla-detalle" style="margin-top:0;">
+        <tr>
+            <td>RET. GANANCIAS</td>
+            <td>RET. ING. BRUTOS</td>
+            <td>RET. IVA</td>
+            <td>TOTAL</td>
+        </tr>
+        <tr>
+            <td style="text-align:right;">{{ ret_ganancias|default:"" }}</td>
+            <td style="text-align:right;">{{ ret_iibb|default:"" }}</td>
+            <td style="text-align:right;">{{ ret_iva|default:"" }}</td>
+            <td style="text-align:right;">{{ recibo.importe|floatformat:0 }}</td>
+        </tr>
+    </table>
+    <div class="firmas">
+        <div class="firma-box">
+            <div style="height:40px;"></div>
+            <div class="firma-linea"></div>
+            <div>VERONICA</div>
+            <div>Firma</div>
+            <div>AKUN</div>
+            <div>Aclaración</div>
+        </div>
+    </div>
+    <div class="nota">
+        Documento no válido como factura. Para reclamos presentar este recibo.
+    </div>
+</div>
+</body>
+</html>

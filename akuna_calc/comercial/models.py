@@ -384,6 +384,25 @@ class Percepcion(models.Model):
         verbose_name_plural = "Percepciones"
 
 
+class Recibo(models.Model):
+    numero = models.PositiveIntegerField(unique=True, verbose_name="Nro. Recibo")
+    fecha = models.DateField(auto_now_add=True)
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name="recibos")
+    pago = models.ForeignKey(PagoVenta, on_delete=models.CASCADE, related_name="recibos")
+    importe = models.DecimalField(max_digits=12, decimal_places=2)
+    importe_letras = models.CharField(max_length=300)
+    concepto = models.CharField(max_length=100)
+    pdf = models.FileField(upload_to="recibos/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Recibo {self.numero} - Venta {self.venta.numero_pedido} - ${self.importe}"
+
+    class Meta:
+        verbose_name = "Recibo"
+        verbose_name_plural = "Recibos"
+        ordering = ["-fecha"]
+
 class Retencion(models.Model):
     """Retenciones aplicadas a los pagos (se descuentan del cobro)"""
     

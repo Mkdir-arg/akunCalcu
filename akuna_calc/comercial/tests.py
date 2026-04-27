@@ -1,9 +1,29 @@
+from django.test import TestCase
+
+class ReciboModelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser2', password='testpass')
+        self.cliente = Cliente.objects.create(nombre='Ana', apellido='Gomez', condicion_iva='CF', direccion='Calle 1', localidad='CABA')
+        self.venta = Venta.objects.create(numero_pedido='V001', cliente=self.cliente, valor_total=1000, sena=0)
+        self.pago = PagoVenta.objects.create(venta=self.venta, monto=1000, fecha_pago='2026-04-27', forma_pago='efectivo', con_factura=True, created_by=self.user)
+
+    def test_creacion_recibo(self):
+        from .models import Recibo
+        recibo = Recibo.objects.create(
+            numero=1,
+            venta=self.venta,
+            pago=self.pago,
+            importe=1000,
+            importe_letras='MIL',
+            concepto='SALDO',
+        )
+        self.assertEqual(str(recibo), f"Recibo 1 - Venta {self.venta.numero_pedido} - $1000")
 from decimal import Decimal
 import json
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
-from .models import Cliente, Venta, PagoVenta, TipoCuenta, Cuenta, Compra, PagoCompra
+from .models import Cliente, Venta, PagoVenta, TipoCuenta, Cuenta, Compra, PagoCompra, Recibo
 
 
 class ClienteDetailViewTest(TestCase):
@@ -87,20 +107,6 @@ class PagoVentaUSDFieldsTest(TestCase):
 
 
 class RegistrarPagoUSDTest(TestCase):
-        def test_registrar_pago_con_fecha_factura(self):
-            url = reverse('comercial:registrar_pago', args=[self.venta.pk])
-            response = self.client_http.post(url, {
-                'monto': '50000',
-                'fecha_pago': '2026-04-01',
-                'forma_pago': 'efectivo',
-                'con_factura': 'true',
-                'numero_factura': '0001-00001234',
-                'fecha_factura': '2026-04-10',
-            })
-            self.assertEqual(response.status_code, 302)
-            pago = PagoVenta.objects.filter(venta=self.venta).first()
-            self.assertEqual(str(pago.fecha_factura), '2026-04-10')
-            self.assertEqual(pago.numero_factura, '0001-00001234')
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
         self.client_http = Client()
@@ -113,6 +119,21 @@ class RegistrarPagoUSDTest(TestCase):
             numero_pedido='TEST-002', cliente=self.cliente,
             valor_total=Decimal('100000'), sena=Decimal('0'),
         )
+
+    def test_registrar_pago_con_fecha_factura(self):
+        url = reverse('comercial:registrar_pago', args=[self.venta.pk])
+        response = self.client_http.post(url, {
+            'monto': '50000',
+            'fecha_pago': '2026-04-01',
+            'forma_pago': 'efectivo',
+            'con_factura': 'true',
+            'numero_factura': '0001-00001234',
+            'fecha_factura': '2026-04-10',
+        })
+        self.assertEqual(response.status_code, 302)
+        pago = PagoVenta.objects.filter(venta=self.venta).first()
+        self.assertEqual(str(pago.fecha_factura), '2026-04-10')
+        self.assertEqual(pago.numero_factura, '0001-00001234')
 
     def test_registrar_pago_requiere_login(self):
         self.client_http.logout()
