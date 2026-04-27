@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
             name='recibo',
             options={'ordering': ['-fecha'], 'verbose_name': 'Recibo', 'verbose_name_plural': 'Recibos'},
         ),
-        migrations.AddField(
-            model_name='pagoventa',
-            name='fecha_factura',
-            field=models.DateField(blank=True, null=True, verbose_name='Fecha de Factura'),
-        ),
+        # migrations.AddField(
+        #     model_name='pagoventa',
+        #     name='fecha_factura',
+        #     field=models.DateField(blank=True, null=True, verbose_name='Fecha de Factura'),
+        # ),
         migrations.AlterField(
             model_name='recibo',
             name='id',
