@@ -1,3 +1,18 @@
+from django.http import FileResponse, Http404
+from .models import Recibo
+# Vista para descargar recibo PDF actualizado
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def descargar_pdf_recibo(request, pk):
+    try:
+        recibo = Recibo.objects.get(pk=pk)
+    except Recibo.DoesNotExist:
+        raise Http404("Recibo no encontrado")
+    recibo.generar_pdf(force=True)
+    if not recibo.pdf:
+        raise Http404("No se pudo generar el PDF del recibo")
+    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required

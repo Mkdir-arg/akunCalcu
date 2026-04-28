@@ -1,3 +1,4 @@
+    path('recibos/<int:pk>/pdf/', views.descargar_pdf_recibo, name='descargar_pdf_recibo'),
 from django.urls import path
 from . import views
 

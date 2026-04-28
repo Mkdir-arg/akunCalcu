@@ -94,10 +94,16 @@
                            class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
                             <i class="fab fa-whatsapp mr-2 text-base"></i>WhatsApp
                         </button>
-                        <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank"
+                        {% if venta.recibos.all %}
+                        <a href="{% url 'comercial:descargar_pdf_recibo' venta.recibos.first.pk %}" target="_blank"
                            class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                            <i class="fas fa-file-pdf mr-2"></i>Recibo PDF
                         </a>
+                        {% else %}
+                        <span class="inline-flex items-center bg-gray-300 text-gray-500 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-not-allowed">
+                            <i class="fas fa-file-pdf mr-2"></i>Sin recibo
+                        </span>
+                        {% endif %}
                         <a href="{% url 'comercial:duplicar_venta' venta.pk %}"
                            onclick="return confirm('¿Duplicar esta venta?')"
                            class="inline-flex items-center bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all">
