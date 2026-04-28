@@ -1,7 +1,72 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
+from django.db.models import Max
 from decimal import Decimal
+from pathlib import Path
+
+
+_UNIDADES = {
+    0: 'CERO', 1: 'UNO', 2: 'DOS', 3: 'TRES', 4: 'CUATRO', 5: 'CINCO',
+    6: 'SEIS', 7: 'SIETE', 8: 'OCHO', 9: 'NUEVE', 10: 'DIEZ', 11: 'ONCE',
+    12: 'DOCE', 13: 'TRECE', 14: 'CATORCE', 15: 'QUINCE', 16: 'DIECISEIS',
+    17: 'DIECISIETE', 18: 'DIECIOCHO', 19: 'DIECINUEVE', 20: 'VEINTE',
+    21: 'VEINTIUNO', 22: 'VEINTIDOS', 23: 'VEINTITRES', 24: 'VEINTICUATRO',
+    25: 'VEINTICINCO', 26: 'VEINTISEIS', 27: 'VEINTISIETE', 28: 'VEINTIOCHO',
+    29: 'VEINTINUEVE',
+}
+_DECENAS = {
+    30: 'TREINTA', 40: 'CUARENTA', 50: 'CINCUENTA', 60: 'SESENTA',
+    70: 'SETENTA', 80: 'OCHENTA', 90: 'NOVENTA',
+}
+_CENTENAS = {
+    100: 'CIEN', 200: 'DOSCIENTOS', 300: 'TRESCIENTOS', 400: 'CUATROCIENTOS',
+    500: 'QUINIENTOS', 600: 'SEISCIENTOS', 700: 'SETECIENTOS',
+    800: 'OCHOCIENTOS', 900: 'NOVECIENTOS',
+}
+
+
+def _numero_a_letras(numero):
+    numero = int(numero)
+
+    if numero < 30:
+        return _UNIDADES[numero]
+    if numero < 100:
+        decena = (numero // 10) * 10
+        resto = numero % 10
+        return _DECENAS[decena] if resto == 0 else f"{_DECENAS[decena]} Y {_numero_a_letras(resto)}"
+    if numero < 1000:
+        if numero == 100:
+            return 'CIEN'
+        centena = (numero // 100) * 100
+        resto = numero % 100
+        prefijo = 'CIENTO' if centena == 100 else _CENTENAS[centena]
+        return prefijo if resto == 0 else f"{prefijo} {_numero_a_letras(resto)}"
+    if numero < 1000000:
+        miles = numero // 1000
+        resto = numero % 1000
+        prefijo = 'MIL' if miles == 1 else f"{_numero_a_letras(miles)} MIL"
+        return prefijo if resto == 0 else f"{prefijo} {_numero_a_letras(resto)}"
+    millones = numero // 1000000
+    resto = numero % 1000000
+    prefijo = 'UN MILLON' if millones == 1 else f"{_numero_a_letras(millones)} MILLONES"
+    return prefijo if resto == 0 else f"{prefijo} {_numero_a_letras(resto)}"
+
+
+def _importe_a_letras(valor):
+    valor = Decimal(valor).quantize(Decimal('0.01'))
+    enteros = int(valor)
+    centavos = int((valor - Decimal(enteros)) * 100)
+    texto = _numero_a_letras(enteros)
+    return texto if centavos == 0 else f"{texto} CON {centavos:02d}/100"
+
+
+def _formatear_cuit(cuit):
+    cuit = ''.join(ch for ch in str(cuit or '') if ch.isdigit())
+    if len(cuit) == 11:
+        return f"{cuit[:2]}-{cuit[2:10]}-{cuit[10:]}"
+    return cuit
 
 
 class Cliente(models.Model):
@@ -395,24 +460,67 @@ class Recibo(models.Model):
     pdf = models.FileField(upload_to="recibos/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @classmethod
+    def siguiente_numero(cls):
+        ultimo = cls.objects.aggregate(max_numero=Max('numero'))['max_numero'] or 0
+        return ultimo + 1
+
+    @classmethod
+    def obtener_o_crear_desde_pago(cls, pago, force=False):
+        recibo = cls.objects.filter(pago=pago).order_by('-created_at', '-pk').first()
+        es_nuevo = recibo is None
+        if es_nuevo:
+            recibo = cls(
+                numero=cls.siguiente_numero(),
+                venta=pago.venta,
+                pago=pago,
+            )
+
+        recibo.importe = pago.monto
+        recibo.importe_letras = _importe_a_letras(pago.monto)
+        recibo.concepto = 'SALDO' if pago.venta.saldo <= 0 else 'PAGO PARCIAL'
+        if es_nuevo:
+            recibo.save()
+        else:
+            recibo.save(update_fields=['importe', 'importe_letras', 'concepto', 'venta', 'pago'])
+
+        recibo.generar_pdf(force=force)
+        return recibo
+
     def generar_pdf(self, force=False):
         """
         Genera el PDF del recibo usando el template HTML y lo guarda en el campo pdf.
         Si force=True, lo regenera aunque ya exista.
         """
         import io
-        import os
 
         from django.conf import settings
+        from django.template.defaultfilters import date as date_filter
         from django.template.loader import render_to_string
         from xhtml2pdf import pisa
 
         if self.pdf and not force:
             return
 
+        cliente = self.venta.cliente
+        retenciones = {ret.tipo: ret.importe_retenido for ret in self.pago.retenciones.all()}
+        logo_path = Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png'
+
         context = {
             'recibo': self,
-            'logo_url': os.path.join(settings.STATIC_ROOT, 'logo.png'),
+            'logo_url': logo_path.resolve().as_uri() if logo_path.exists() else '',
+            'cliente_nombre': cliente.get_nombre_completo(),
+            'cliente_direccion': cliente.direccion,
+            'cliente_localidad': cliente.localidad,
+            'cliente_cp': '',
+            'cliente_cuit': _formatear_cuit(cliente.cuit),
+            'cliente_condicion_iva': cliente.get_condicion_iva_display(),
+            'fecha_texto': date_filter(self.fecha, 'd/m/Y'),
+            'ret_ganancias': retenciones.get('ganancias'),
+            'ret_iibb': retenciones.get('iibb'),
+            'ret_iva': retenciones.get('iva'),
+            'numero_comprobante': self.pago.numero_factura or '',
+            'banco': '',
         }
         html = render_to_string('comercial/recibo_pdf.html', context)
 
@@ -422,7 +530,8 @@ class Recibo(models.Model):
             raise Exception('Error generando PDF de recibo')
 
         filename = f"recibo_{self.numero}.pdf"
-        self.pdf.save(filename, result, save=True)
+        result.seek(0)
+        self.pdf.save(filename, ContentFile(result.read()), save=True)
 
     def __str__(self):
         return f"Recibo {self.numero} - Venta {self.venta.numero_pedido} - ${self.importe}"

@@ -1,104 +1,163 @@
-{# Template base para PDF de recibo, diseño pixel-perfect según modelo adjunto #}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Recibo N° {{ recibo.numero }}</title>
     <style>
-        body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; margin: 0; padding: 0; }
-        .recibo-box { width: 800px; margin: 0 auto; border: 2px solid #000; padding: 16px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .logo { width: 180px; }
-        .titulo-x { font-size: 80px; font-weight: bold; text-align: center; line-height: 0.8; }
-        .datos-empresa { font-size: 13px; }
-        .datos-cliente, .datos-empresa { margin-bottom: 8px; }
-        .tabla-detalle { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        .tabla-detalle th, .tabla-detalle td { border: 1px solid #000; padding: 4px 6px; text-align: left; }
-        .tabla-detalle th { background: #f2f2f2; }
-        .firmas { margin-top: 32px; display: flex; justify-content: flex-end; }
-        .firma-box { text-align: center; margin-left: 80px; }
-        .firma-linea { border-top: 1px solid #000; width: 180px; margin: 0 auto 4px auto; }
-        .total-box { font-weight: bold; text-align: right; margin-top: 8px; }
-        .original { position: absolute; top: 10px; right: 30px; font-size: 13px; font-weight: bold; }
-        .nota { font-size: 12px; color: #444; margin-top: 8px; }
+        @page { size: A4 landscape; margin: 10mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #000; margin: 0; }
+        table { border-collapse: collapse; width: 100%; }
+        .sheet { width: 100%; }
+        .top-label { width: 100%; text-align: right; font-weight: 700; font-size: 12px; }
+        .top-label span { background: #d9d9d9; padding: 4px 24px; display: inline-block; }
+        .header td { vertical-align: top; }
+        .logo { width: 170px; }
+        .company { font-size: 12px; font-weight: 700; line-height: 1.35; padding-top: 8px; }
+        .mark-x { font-size: 86px; font-weight: 700; text-align: center; vertical-align: middle; }
+        .receipt-meta { font-size: 12px; font-weight: 700; line-height: 1.35; }
+        .date-box { border: 2px solid #000; padding: 4px 14px; display: inline-block; font-size: 12px; }
+        .section-line td { border-top: 2px solid #000; }
+        .field-table td { border-bottom: 1px solid #9a9a9a; padding: 2px 4px; }
+        .label { font-weight: 700; white-space: nowrap; }
+        .value { background: #efefef; }
+        .spacer { height: 10px; }
+        .money-table td, .money-table th { border: 1px solid #000; padding: 3px 6px; font-size: 12px; }
+        .money-table th { font-weight: 700; text-align: center; }
+        .money-table td { height: 18px; }
+        .amount-right { text-align: right; }
+        .signature-block { text-align: center; font-size: 12px; padding-left: 40px; }
+        .signature-line { border-top: 2px solid #000; width: 180px; margin: 18px auto 2px auto; }
+        .totals-table { width: 330px; margin-left: auto; }
+        .small { font-size: 11px; }
     </style>
 </head>
 <body>
-<div class="recibo-box">
-    <div class="original">ORIGINAL</div>
-    <div class="header">
-        <div>
-            <img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">
-            <div class="datos-empresa">
-                Elpidio Gonzalez 5326<br>
-                CP.: 1407<br>
-                Ciudad de Buenos Aires - Argentina<br>
-                I.V.A.: RI
-            </div>
-        </div>
-        <div class="titulo-x">X</div>
-        <div class="datos-empresa">
-            <strong>RECIBO N° {{ recibo.numero }}</strong><br>
-            <span style="font-size:11px;">DOCUMENTO NO VALIDO COMO FACTURA</span><br>
-            <strong>FECHA</strong> {{ recibo.fecha|date:'d/m/Y' }}<br>
-            <br>
-            Cuit: 23-24203136-9<br>
-            Ing. Brutos: 1588778-02<br>
-            Inicio de Actividades: Enero de 2020
-        </div>
-    </div>
-    <hr>
-    <div class="datos-cliente">
-        <strong>Señor (es):</strong> {{ recibo.pago.venta.cliente.get_nombre_completo }}<br>
-        <strong>Domicilio:</strong> {{ recibo.pago.venta.cliente.direccion }}<br>
-        <strong>Localidad:</strong> {{ recibo.pago.venta.cliente.localidad }}
-        {% if recibo.pago.venta.cliente.cuit %}<br><strong>Cuit:</strong> {{ recibo.pago.venta.cliente.cuit }}{% endif %}
-    </div>
-    <div>
-        Recibimos la suma de PESOS: <strong>{{ recibo.importe_letras }}</strong><br>
-        Pago en concepto de: <strong>{{ recibo.concepto }}</strong>
-    </div>
-    <table class="tabla-detalle">
+    <table class="sheet">
         <tr>
-            <th>FECHA</th>
-            <th>BANCO</th>
-            <th>NRO.</th>
-            <th>IMPORTE</th>
-        </tr>
-        <tr>
-            <td>{{ recibo.fecha|date:'d/m/Y' }}</td>
-            <td></td>
-            <td></td>
-            <td style="text-align:right;">{{ recibo.importe|floatformat:0 }}</td>
+            <td class="top-label"><span>ORIGINAL</span></td>
         </tr>
     </table>
-    <table class="tabla-detalle" style="margin-top:0;">
+
+    <table class="header">
         <tr>
-            <td>RET. GANANCIAS</td>
-            <td>RET. ING. BRUTOS</td>
-            <td>RET. IVA</td>
-            <td>TOTAL</td>
-        </tr>
-        <tr>
-            <td style="text-align:right;">{{ ret_ganancias|default:"" }}</td>
-            <td style="text-align:right;">{{ ret_iibb|default:"" }}</td>
-            <td style="text-align:right;">{{ ret_iva|default:"" }}</td>
-            <td style="text-align:right;">{{ recibo.importe|floatformat:0 }}</td>
+            <td style="width:34%;">
+                {% if logo_url %}<img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">{% endif %}
+                <div class="company">
+                    Elpidio Gonzalez 5326<br>
+                    CP.: 1407<br>
+                    Ciudad de Buenos Aires - Argentina<br>
+                    I.V.A.: RI
+                </div>
+            </td>
+            <td style="width:16%;" class="mark-x">X</td>
+            <td style="width:50%;" class="receipt-meta">
+                <table>
+                    <tr>
+                        <td style="font-size:18px; font-weight:700;">RECIBO N° {{ recibo.numero }}</td>
+                    </tr>
+                    <tr>
+                        <td class="small">DOCUMENTO NO VALIDO COMO FACTURA</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top:8px;">
+                            <table>
+                                <tr>
+                                    <td style="width:45%; font-size:18px; font-weight:700;">FECHA</td>
+                                    <td><span class="date-box">{{ fecha_texto }}</span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr><td style="height:28px;"></td></tr>
+                    <tr><td>Cuit: 23-24203136-9</td></tr>
+                    <tr><td>Ing. Brutos: 1588778-02</td></tr>
+                    <tr><td>Inicio de Actividades: Enero de 2020</td></tr>
+                </table>
+            </td>
         </tr>
     </table>
-    <div class="firmas">
-        <div class="firma-box">
-            <div style="height:40px;"></div>
-            <div class="firma-linea"></div>
-            <div>VERONICA</div>
-            <div>Firma</div>
-            <div>AKUN</div>
-            <div>Aclaración</div>
-        </div>
-    </div>
-    <div class="nota">
-        Documento no válido como factura. Para reclamos presentar este recibo.
-    </div>
-</div>
+
+    <table class="section-line"><tr><td></td></tr></table>
+
+    <table class="field-table">
+        <tr>
+            <td class="label" style="width:14%;">Señor (es):</td>
+            <td class="value" style="width:40%;">{{ cliente_nombre }}</td>
+            <td class="label" style="width:8%;">I.V.A:</td>
+            <td class="value" style="width:18%;">{{ cliente_condicion_iva }}</td>
+            <td style="width:20%;"></td>
+        </tr>
+        <tr>
+            <td class="label">Domicilio:</td>
+            <td class="value">{{ cliente_direccion }}</td>
+            <td class="label">Cuit:</td>
+            <td class="value">{{ cliente_cuit }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="label">Localidad:</td>
+            <td class="value">{{ cliente_localidad }}</td>
+            <td class="label">Cp.:</td>
+            <td class="value">{{ cliente_cp }}</td>
+            <td></td>
+        </tr>
+    </table>
+
+    <table class="section-line"><tr><td></td></tr></table>
+
+    <table class="field-table">
+        <tr>
+            <td class="label" style="width:32%;">Recibimos la suma de PESOS :</td>
+            <td class="value">{{ recibo.importe_letras }}</td>
+        </tr>
+        <tr>
+            <td class="label">Pago en concepto de :</td>
+            <td class="value">{{ recibo.concepto }}</td>
+        </tr>
+    </table>
+
+    <div class="spacer"></div>
+
+    <table>
+        <tr>
+            <td style="width:64%; vertical-align:top;">
+                <table class="money-table">
+                    <tr>
+                        <th style="width:16%;">FECHA</th>
+                        <th style="width:36%;">BANCO</th>
+                        <th style="width:28%;">NRO.</th>
+                        <th style="width:20%;">IMPORTE</th>
+                    </tr>
+                    <tr>
+                        <td>{{ fecha_texto }}</td>
+                        <td>{{ banco }}</td>
+                        <td>{{ numero_comprobante }}</td>
+                        <td class="amount-right">{{ recibo.importe|floatformat:0 }}</td>
+                    </tr>
+                    <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+                </table>
+
+                <table class="money-table totals-table">
+                    <tr><td class="label">RET. GANANCIAS</td><td></td><td class="amount-right">{{ ret_ganancias|default_if_none:'' }}</td></tr>
+                    <tr><td class="label">RET. ING. BRUTOS</td><td></td><td class="amount-right">{{ ret_iibb|default_if_none:'' }}</td></tr>
+                    <tr><td class="label">RET. IVA</td><td></td><td class="amount-right">{{ ret_iva|default_if_none:'' }}</td></tr>
+                    <tr><td class="label">TOTAL</td><td></td><td class="amount-right">{{ recibo.importe|floatformat:0 }}</td></tr>
+                </table>
+            </td>
+            <td style="width:36%; vertical-align:bottom;">
+                <div class="signature-block">
+                    <div style="height:100px;"></div>
+                    <div style="font-size:18px; margin-bottom:22px;">VERONICA</div>
+                    <div class="signature-line"></div>
+                    <div>Firma</div>
+                    <div class="signature-line" style="margin-top:16px;"></div>
+                    <div>AKUN</div>
+                    <div>Aclaración</div>
+                </div>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

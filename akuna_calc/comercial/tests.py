@@ -181,6 +181,33 @@ class RegistrarPagoUSDTest(TestCase):
         self.assertFalse(pago.pago_en_dolares)
         self.assertIsNone(pago.monto_usd)
 
+    def test_registrar_pago_crea_recibo(self):
+        url = reverse('comercial:registrar_pago', args=[self.venta.pk])
+        response = self.client_http.post(url, {
+            'monto': '30000',
+            'fecha_pago': '2026-04-01',
+            'forma_pago': 'transferencia',
+            'con_factura': 'true',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Recibo.objects.filter(venta=self.venta).exists())
+
+    def test_descargar_recibo_pdf_desde_venta(self):
+        pago = PagoVenta.objects.create(
+            venta=self.venta,
+            monto=Decimal('30000.00'),
+            fecha_pago='2026-04-01',
+            forma_pago='transferencia',
+            created_by=self.user,
+        )
+        Recibo.obtener_o_crear_desde_pago(pago, force=False)
+
+        response = self.client_http.get(reverse('comercial:descargar_pdf_recibo_venta', args=[self.venta.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
     def test_forzar_colocado_cuando_saldo_cero(self):
         url = reverse('comercial:registrar_pago', args=[self.venta.pk])
         response = self.client_http.post(url, {

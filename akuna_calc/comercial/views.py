@@ -1,28 +1,38 @@
-from django.http import FileResponse, Http404
-from .models import Recibo
-# Vista para descargar recibo PDF actualizado
-from django.contrib.auth.decorators import login_required
-
-@login_required
-def descargar_pdf_recibo(request, pk):
-    try:
-        recibo = Recibo.objects.get(pk=pk)
-    except Recibo.DoesNotExist:
-        raise Http404("Recibo no encontrado")
-    recibo.generar_pdf(force=True)
-    if not recibo.pdf:
-        raise Http404("No se pudo generar el PDF del recibo")
-    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from datetime import datetime
 from decimal import Decimal
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra, Recibo
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
+
+
+@login_required
+def descargar_pdf_recibo(request, pk):
+    recibo = get_object_or_404(Recibo.objects.select_related('venta', 'pago', 'venta__cliente').prefetch_related('pago__retenciones'), pk=pk)
+    recibo.generar_pdf(force=True)
+    if not recibo.pdf:
+        raise Http404("No se pudo generar el PDF del recibo")
+    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
+
+
+@login_required
+def descargar_pdf_recibo_venta(request, pk):
+    venta = get_object_or_404(
+        Venta.objects.select_related('cliente').prefetch_related('pagos__retenciones'),
+        pk=pk,
+    )
+    pago = venta.pagos.order_by('fecha_pago', 'pk').last()
+    if pago is None:
+        raise Http404('La venta no tiene pagos registrados para emitir un recibo.')
+
+    recibo = Recibo.obtener_o_crear_desde_pago(pago, force=True)
+    if not recibo.pdf:
+        raise Http404('No se pudo generar el PDF del recibo.')
+    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
 
 
 def _resolver_monto_pago_venta(monto, pago_en_dolares, monto_usd, cotizacion_usd):
@@ -360,7 +370,7 @@ def venta_delete(request, pk):
 @login_required
 def venta_detail(request, pk):
     from django.utils import timezone
-    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos'), pk=pk)
+    venta = get_object_or_404(Venta.objects.select_related('cliente').prefetch_related('pagos__retenciones', 'recibos'), pk=pk)
     pagos = venta.pagos.all().order_by('fecha_pago')
     total_pagado = venta.sena + sum(p.monto for p in pagos)
     total = venta.get_total_con_percepciones()
@@ -375,6 +385,7 @@ def venta_detail(request, pk):
         'dias_abierta': dias_abierta,
         'today': timezone.now().date(),
         'forzar_colocado': request.GET.get('forzar_colocado') == '1',
+        'puede_generar_recibo': pagos.exists(),
     }
     return render(request, 'comercial/ventas/detail.html', context)
 
@@ -479,6 +490,11 @@ def registrar_pago(request, pk):
             
             # Recalcular saldo
             venta.save()
+
+            try:
+                Recibo.obtener_o_crear_desde_pago(pago, force=True)
+            except Exception as recibo_error:
+                messages.warning(request, f'Pago registrado, pero no se pudo generar el recibo PDF: {recibo_error}')
 
             messages.success(request, f'Pago de ${monto_decimal} registrado exitosamente')
             # Si el saldo quedo en 0 y el estado no es colocado, forzar cambio a colocado
