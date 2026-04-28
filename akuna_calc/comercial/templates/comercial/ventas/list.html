@@ -233,9 +233,15 @@
                                     <a href="{% url 'comercial:venta_detail' venta.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Ver">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg text-xs transition-all" title="PDF">
+                                    {% if venta.pagos.exists %}
+                                    <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Recibo PDF">
                                         <i class="fas fa-file-pdf"></i>
                                     </a>
+                                    {% else %}
+                                    <span class="bg-gray-300 text-gray-500 p-1.5 rounded-lg text-xs cursor-not-allowed" title="Sin pagos">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </span>
+                                    {% endif %}
                                     <a href="{% url 'comercial:venta_edit' venta.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
@@ -365,9 +371,15 @@
                             <a href="{% url 'comercial:venta_detail' venta.pk %}" class="flex-1 text-center bg-slate-800 hover:bg-slate-900 text-white py-1 rounded-md text-xs font-semibold transition-all">
                                 <i class="fas fa-eye mr-1"></i>Ver
                             </a>
-                            <a href="{% url 'comercial:generar_pdf_venta' venta.pk %}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md text-xs font-semibold transition-all">
+                            {% if venta.pagos.exists %}
+                            <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md text-xs font-semibold transition-all" title="Recibo PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </a>
+                            {% else %}
+                            <span class="bg-gray-300 text-gray-500 px-2 py-1 rounded-md text-xs font-semibold cursor-not-allowed" title="Sin pagos">
+                                <i class="fas fa-file-pdf"></i>
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}{% endfor %}
