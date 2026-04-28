@@ -503,6 +503,7 @@ class Recibo(models.Model):
             return
 
         cliente = self.venta.cliente
+        venta = self.venta
         retenciones = {ret.tipo: ret.importe_retenido for ret in self.pago.retenciones.all()}
         logo_candidates = [
             Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
@@ -511,6 +512,26 @@ class Recibo(models.Model):
             Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
         ]
         logo_path = next((path for path in logo_candidates if path.exists()), None)
+        payment_rows = []
+
+        if venta.sena > 0:
+            payment_rows.append({
+                'fecha': venta.created_at.date(),
+                'medio': venta.get_forma_pago_display() if venta.forma_pago else 'Seña Inicial',
+                'referencia': venta.numero_factura or 'Seña Inicial',
+                'importe': venta.sena,
+            })
+
+        for pago in venta.pagos.order_by('fecha_pago', 'pk'):
+            payment_rows.append({
+                'fecha': pago.fecha_pago,
+                'medio': pago.get_forma_pago_display(),
+                'referencia': pago.numero_factura or ('Saldo' if pago.pk == self.pago_id else 'Pago'),
+                'importe': pago.monto,
+            })
+
+        payment_rows = payment_rows[-4:]
+        blank_payment_rows = range(max(0, 4 - len(payment_rows)))
 
         context = {
             'recibo': self,
@@ -526,7 +547,8 @@ class Recibo(models.Model):
             'ret_iibb': retenciones.get('iibb'),
             'ret_iva': retenciones.get('iva'),
             'numero_comprobante': self.pago.numero_factura or '',
-            'banco': '',
+            'payment_rows': payment_rows,
+            'blank_payment_rows': blank_payment_rows,
         }
         html = render_to_string('comercial/recibo_pdf.html', context)
 
