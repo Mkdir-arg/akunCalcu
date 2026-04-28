@@ -504,11 +504,17 @@ class Recibo(models.Model):
 
         cliente = self.venta.cliente
         retenciones = {ret.tipo: ret.importe_retenido for ret in self.pago.retenciones.all()}
-        logo_path = Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png'
+        logo_candidates = [
+            Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
+            Path(settings.BASE_DIR) / 'static' / 'AKUN-LOGO.png',
+            Path(settings.STATIC_ROOT) / 'imagenes' / 'AKUN-LOGO.png',
+            Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
+        ]
+        logo_path = next((path for path in logo_candidates if path.exists()), None)
 
         context = {
             'recibo': self,
-            'logo_url': logo_path.resolve().as_uri() if logo_path.exists() else '',
+            'logo_url': str(logo_path.resolve()) if logo_path else '',
             'cliente_nombre': cliente.get_nombre_completo(),
             'cliente_direccion': cliente.direccion,
             'cliente_localidad': cliente.localidad,
