@@ -385,33 +385,6 @@ class Percepcion(models.Model):
 
 
 class Recibo(models.Model):
-        def generar_pdf(self, force=False):
-            """
-            Genera el PDF del recibo usando el template HTML y lo guarda en el campo pdf.
-            Si force=True, lo regenera aunque ya exista.
-            """
-            import io
-            from django.template.loader import render_to_string
-            from django.conf import settings
-            from xhtml2pdf import pisa
-            import os
-
-            if self.pdf and not force:
-                return  # Ya existe y no se fuerza regeneración
-
-            # Renderizar HTML
-            context = {'recibo': self, 'logo_url': os.path.join(settings.STATIC_ROOT, 'logo.png')}
-            html = render_to_string('comercial/recibo_pdf.html', context)
-
-            # Generar PDF
-            result = io.BytesIO()
-            pisa_status = pisa.CreatePDF(html, dest=result)
-            if pisa_status.err:
-                raise Exception('Error generando PDF de recibo')
-
-            # Guardar en FileField
-            filename = f"recibo_{self.numero}.pdf"
-            self.pdf.save(filename, result, save=True)
     numero = models.PositiveIntegerField(unique=True, verbose_name="Nro. Recibo")
     fecha = models.DateField(auto_now_add=True)
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name="recibos")
@@ -421,6 +394,35 @@ class Recibo(models.Model):
     concepto = models.CharField(max_length=100)
     pdf = models.FileField(upload_to="recibos/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def generar_pdf(self, force=False):
+        """
+        Genera el PDF del recibo usando el template HTML y lo guarda en el campo pdf.
+        Si force=True, lo regenera aunque ya exista.
+        """
+        import io
+        import os
+
+        from django.conf import settings
+        from django.template.loader import render_to_string
+        from xhtml2pdf import pisa
+
+        if self.pdf and not force:
+            return
+
+        context = {
+            'recibo': self,
+            'logo_url': os.path.join(settings.STATIC_ROOT, 'logo.png'),
+        }
+        html = render_to_string('comercial/recibo_pdf.html', context)
+
+        result = io.BytesIO()
+        pisa_status = pisa.CreatePDF(html, dest=result)
+        if pisa_status.err:
+            raise Exception('Error generando PDF de recibo')
+
+        filename = f"recibo_{self.numero}.pdf"
+        self.pdf.save(filename, result, save=True)
 
     def __str__(self):
         return f"Recibo {self.numero} - Venta {self.venta.numero_pedido} - ${self.importe}"
