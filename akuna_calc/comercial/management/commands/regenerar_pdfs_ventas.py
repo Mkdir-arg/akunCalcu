@@ -13,8 +13,13 @@ class Command(BaseCommand):
         total = 0
         output_dir = os.path.join(settings.MEDIA_ROOT, "ventas_pdf")
         os.makedirs(output_dir, exist_ok=True)
+
+        # Usar un usuario anónimo para evitar error de request.user
+        from django.contrib.auth.models import AnonymousUser
+
         for venta in Venta.objects.all():
             request = factory.get("/")
+            request.user = AnonymousUser()
             response = generar_pdf_venta(request, venta.pk)
             pdf_path = os.path.join(output_dir, f"venta_{venta.numero_pedido}.pdf")
             with open(pdf_path, "wb") as f:
