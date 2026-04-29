@@ -3,20 +3,30 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from datetime import datetime
 from decimal import Decimal
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra, Recibo
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
 
 
+def _respuesta_pdf_recibo(recibo):
+    pdf_bytes = recibo.construir_pdf_bytes()
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="recibo_{recibo.numero}.pdf"'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
 @login_required
 def descargar_pdf_recibo(request, pk):
-    recibo = get_object_or_404(Recibo.objects.select_related('venta', 'pago', 'venta__cliente').prefetch_related('pago__retenciones'), pk=pk)
-    recibo.generar_pdf(force=True)
-    if not recibo.pdf:
-        raise Http404("No se pudo generar el PDF del recibo")
-    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
+    recibo = get_object_or_404(
+        Recibo.objects.select_related('venta', 'pago', 'venta__cliente').prefetch_related('pago__retenciones'),
+        pk=pk,
+    )
+    return _respuesta_pdf_recibo(recibo)
 
 
 @login_required
@@ -29,10 +39,8 @@ def descargar_pdf_recibo_venta(request, pk):
     if pago is None:
         raise Http404('La venta no tiene pagos registrados para emitir un recibo.')
 
-    recibo = Recibo.obtener_o_crear_desde_pago(pago, force=True)
-    if not recibo.pdf:
-        raise Http404('No se pudo generar el PDF del recibo.')
-    return FileResponse(recibo.pdf.open('rb'), as_attachment=True, filename=f"recibo_{recibo.numero}.pdf")
+    recibo = Recibo.obtener_o_crear_desde_pago(pago, force=False)
+    return _respuesta_pdf_recibo(recibo)
 
 
 def _resolver_monto_pago_venta(monto, pago_en_dolares, monto_usd, cotizacion_usd):

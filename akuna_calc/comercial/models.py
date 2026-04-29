@@ -487,20 +487,14 @@ class Recibo(models.Model):
         recibo.generar_pdf(force=force)
         return recibo
 
-    def generar_pdf(self, force=False):
-        """
-        Genera el PDF del recibo usando el template HTML y lo guarda en el campo pdf.
-        Si force=True, lo regenera aunque ya exista.
-        """
+    def construir_pdf_bytes(self):
+        """Renderiza el template y devuelve los bytes del PDF en memoria, sin tocar disco."""
         import io
 
         from django.conf import settings
         from django.template.defaultfilters import date as date_filter
         from django.template.loader import render_to_string
         from xhtml2pdf import pisa
-
-        if self.pdf and not force:
-            return
 
         cliente = self.venta.cliente
         venta = self.venta
@@ -557,9 +551,17 @@ class Recibo(models.Model):
         if pisa_status.err:
             raise Exception('Error generando PDF de recibo')
 
-        filename = f"recibo_{self.numero}.pdf"
         result.seek(0)
-        self.pdf.save(filename, ContentFile(result.read()), save=True)
+        return result.read()
+
+    def generar_pdf(self, force=False):
+        """Genera el PDF y lo guarda en el campo pdf. Si force=True, lo regenera aunque ya exista."""
+        if self.pdf and not force:
+            return
+
+        pdf_bytes = self.construir_pdf_bytes()
+        filename = f"recibo_{self.numero}.pdf"
+        self.pdf.save(filename, ContentFile(pdf_bytes), save=True)
 
     def __str__(self):
         return f"Recibo {self.numero} - Venta {self.venta.numero_pedido} - ${self.importe}"
