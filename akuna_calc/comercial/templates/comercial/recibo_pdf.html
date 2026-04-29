@@ -23,15 +23,16 @@
         .value { background: #efefef; }
         .spacer { height: 10px; }
         .detail-layout { width: 100%; }
-        .money-table { width: 500px; }
-        .money-table td, .money-table th { border: 1px solid #000; padding: 4px 6px; font-size: 11px; }
+        .money-table { width: 640px; }
+        .money-table td, .money-table th { border: 1px solid #000; padding: 6px 8px; font-size: 13px; }
         .money-table th { font-weight: 700; text-align: center; }
-        .money-table td { height: 18px; vertical-align: middle; }
+        .money-table td { height: 24px; vertical-align: middle; }
         .nowrap { white-space: nowrap; }
         .amount-right { text-align: right; }
         .signature-block { text-align: center; font-size: 12px; padding-left: 40px; }
         .signature-line { border-top: 2px solid #000; width: 180px; margin: 18px auto 2px auto; }
-        .totals-table { width: 360px; margin-top: 8px; margin-left: 140px; }
+        .totals-table { width: 640px; margin-top: 8px; }
+        .totals-table td.spacer { border: 0; }
         .small { font-size: 11px; }
     </style>
 </head>
@@ -123,52 +124,68 @@
     <div class="spacer"></div>
 
     <table class="detail-layout">
+        <colgroup>
+            <col width="660">
+            <col width="220">
+        </colgroup>
         <tr>
-            <td style="width:520px; vertical-align:top;">
-                <table class="money-table" width="500">
+            <td style="vertical-align:top;">
+                <table class="money-table">
+                    <colgroup>
+                        <col width="110">
+                        <col width="200">
+                        <col width="130">
+                        <col width="200">
+                    </colgroup>
                     <tr>
-                        <th width="95">FECHA</th>
-                        <th width="155">BANCO</th>
-                        <th width="110">NRO.</th>
-                        <th width="140">IMPORTE</th>
+                        <th>FECHA</th>
+                        <th>BANCO</th>
+                        <th>NRO.</th>
+                        <th>IMPORTE</th>
                     </tr>
                     {% for row in payment_rows %}
                     <tr>
-                        <td width="95" class="nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
-                        <td width="155">{{ row.medio }}</td>
-                        <td width="110">{{ row.referencia }}</td>
-                        <td width="140" class="amount-right nowrap">{{ row.importe|formato_numero }}</td>
+                        <td class="nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
+                        <td>{{ row.medio }}</td>
+                        <td>{{ row.referencia }}</td>
+                        <td class="amount-right nowrap">{{ row.importe|formato_numero }}</td>
                     </tr>
                     {% endfor %}
                     {% for _ in blank_payment_rows %}
-                    <tr><td width="95">&nbsp;</td><td width="155"></td><td width="110"></td><td width="140"></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
                     {% endfor %}
                 </table>
 
-                <table class="money-table totals-table" width="360">
+                <table class="money-table totals-table">
+                    <colgroup>
+                        <col width="110">
+                        <col width="200">
+                        <col width="130">
+                        <col width="200">
+                    </colgroup>
                     <tr>
-                        <td width="220" class="label">RET. GANANCIAS</td>
-                        <td width="50"></td>
-                        <td width="90" class="amount-right nowrap">{{ ret_ganancias|default_if_none:'' }}</td>
+                        <td class="spacer" colspan="2"></td>
+                        <td class="label">RET. GANANCIAS</td>
+                        <td class="amount-right nowrap">{{ ret_ganancias|default_if_none:'' }}</td>
                     </tr>
                     <tr>
-                        <td width="220" class="label">RET. ING. BRUTOS</td>
-                        <td width="50"></td>
-                        <td width="90" class="amount-right nowrap">{{ ret_iibb|default_if_none:'' }}</td>
+                        <td class="spacer" colspan="2"></td>
+                        <td class="label">RET. ING. BRUTOS</td>
+                        <td class="amount-right nowrap">{{ ret_iibb|default_if_none:'' }}</td>
                     </tr>
                     <tr>
-                        <td width="220" class="label">RET. IVA</td>
-                        <td width="50"></td>
-                        <td width="90" class="amount-right nowrap">{{ ret_iva|default_if_none:'' }}</td>
+                        <td class="spacer" colspan="2"></td>
+                        <td class="label">RET. IVA</td>
+                        <td class="amount-right nowrap">{{ ret_iva|default_if_none:'' }}</td>
                     </tr>
                     <tr>
-                        <td width="220" class="label">TOTAL</td>
-                        <td width="50"></td>
-                        <td width="90" class="amount-right nowrap">{{ recibo.importe|formato_numero }}</td>
+                        <td class="spacer" colspan="2"></td>
+                        <td class="label">TOTAL</td>
+                        <td class="amount-right nowrap">{{ recibo.importe|formato_numero }}</td>
                     </tr>
                 </table>
             </td>
-            <td style="width:220px; vertical-align:bottom;">
+            <td style="vertical-align:bottom;">
                 <div class="signature-block">
                     <div style="height:100px;"></div>
                     <div style="font-size:18px; margin-bottom:22px;">VERONICA</div>
