@@ -20,6 +20,7 @@ class ReciboModelTest(TestCase):
         self.assertEqual(str(recibo), f"Recibo 1 - Venta {self.venta.numero_pedido} - $1000")
 from decimal import Decimal
 import json
+from unittest.mock import patch
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -207,6 +208,34 @@ class RegistrarPagoUSDTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(
+            response['Content-Disposition'],
+            f'inline; filename="recibo_{Recibo.objects.get(venta=self.venta).numero}.pdf"',
+        )
+
+    def test_descargar_recibo_pdf_desde_venta_requiere_login(self):
+        self.client_http.logout()
+
+        response = self.client_http.get(reverse('comercial:descargar_pdf_recibo_venta', args=[self.venta.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response['Location'])
+
+    def test_descargar_recibo_pdf_desde_venta_informa_error_controlado(self):
+        pago = PagoVenta.objects.create(
+            venta=self.venta,
+            monto=Decimal('30000.00'),
+            fecha_pago='2026-04-01',
+            forma_pago='transferencia',
+            created_by=self.user,
+        )
+        Recibo.obtener_o_crear_desde_pago(pago, force=False)
+
+        with patch.object(Recibo, 'construir_pdf_bytes', side_effect=Exception('boom')):
+            response = self.client_http.get(reverse('comercial:descargar_pdf_recibo_venta', args=[self.venta.pk]))
+
+        self.assertEqual(response.status_code, 500)
+        self.assertContains(response, 'No se pudo generar la vista previa del recibo PDF.', status_code=500)
 
     def test_forzar_colocado_cuando_saldo_cero(self):
         url = reverse('comercial:registrar_pago', args=[self.venta.pk])

@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
@@ -10,14 +12,26 @@ from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoV
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
 
 
-def _respuesta_pdf_recibo(recibo):
+logger = logging.getLogger(__name__)
+
+
+def _respuesta_pdf_recibo(recibo, *, inline=True):
     pdf_bytes = recibo.construir_pdf_bytes()
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="recibo_{recibo.numero}.pdf"'
+    disposition = 'inline' if inline else 'attachment'
+    response['Content-Disposition'] = f'{disposition}; filename="recibo_{recibo.numero}.pdf"'
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
+
+
+def _respuesta_error_pdf():
+    return HttpResponse(
+        'No se pudo generar la vista previa del recibo PDF. Intente nuevamente.',
+        content_type='text/plain; charset=utf-8',
+        status=500,
+    )
 
 
 @login_required
@@ -26,7 +40,11 @@ def descargar_pdf_recibo(request, pk):
         Recibo.objects.select_related('venta', 'pago', 'venta__cliente').prefetch_related('pago__retenciones'),
         pk=pk,
     )
-    return _respuesta_pdf_recibo(recibo)
+    try:
+        return _respuesta_pdf_recibo(recibo)
+    except Exception:
+        logger.exception('No se pudo generar el PDF del recibo %s', recibo.pk)
+        return _respuesta_error_pdf()
 
 
 @login_required
@@ -39,8 +57,12 @@ def descargar_pdf_recibo_venta(request, pk):
     if pago is None:
         raise Http404('La venta no tiene pagos registrados para emitir un recibo.')
 
-    recibo = Recibo.obtener_o_crear_desde_pago(pago, force=False)
-    return _respuesta_pdf_recibo(recibo)
+    try:
+        recibo = Recibo.obtener_o_crear_desde_pago(pago, force=False)
+        return _respuesta_pdf_recibo(recibo)
+    except Exception:
+        logger.exception('No se pudo generar el PDF del recibo para la venta %s', venta.pk)
+        return _respuesta_error_pdf()
 
 
 def _resolver_monto_pago_venta(monto, pago_en_dolares, monto_usd, cotizacion_usd):

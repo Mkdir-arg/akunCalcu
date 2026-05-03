@@ -34,3 +34,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-012](./REQ-012-reporte-cobranzas.md) | Reporte de cobranzas por cobro individual | En desarrollo | 2026-04-22 | — |
 | [REQ-013](./REQ-013-reporte-ventas-todos.md) | Reporte de ventas muestra Blanco y Negro | En desarrollo | 2026-04-23 | — |
 | [REQ-014](./REQ-014-premarco-en-opcionales-y-formulas-marcos.md) | Tipo Premarco en opcionales + relaciones con Líneas y Perfiles | En desarrollo | 2026-05-02 | — |
+| [REQ-015](./REQ-015-vista-previa-pdf-ventas.md) | Vista previa de PDF desde ventas | En desarrollo | 2026-05-03 | — |
