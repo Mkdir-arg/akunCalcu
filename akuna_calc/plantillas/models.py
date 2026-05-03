@@ -205,12 +205,14 @@ class OpcionalFabrica(models.Model):
     
     TIPO_CHOICES = [
         ('mosquitero', 'Mosquitero'),
+        ('premarco', 'Premarco'),
         ('otro', 'Otro'),
     ]
     
     codigo = models.CharField(max_length=50, unique=True, verbose_name='Código')
     nombre = models.CharField(max_length=200, verbose_name='Nombre')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro', verbose_name='Tipo')
+    linea_id = models.IntegerField(null=True, blank=True, verbose_name='Línea ID')
     precio_m2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio por m²')
     descripcion = models.TextField(blank=True, verbose_name='Descripción')
     activo = models.BooleanField(default=True, verbose_name='Activo')

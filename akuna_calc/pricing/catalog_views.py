@@ -159,7 +159,6 @@ class VidriosRepartidosListView(APIView):
 class OpcionalesListView(APIView):
     def get(self, request):
         from plantillas.models import OpcionalFabrica, FormulaOpcional
-        from pricing.models import DespiecePerfilesMarco, Marco
         
         producto_id = request.query_params.get('producto_id')
         
@@ -171,12 +170,17 @@ class OpcionalesListView(APIView):
                 perfil=str(producto_id),
                 opcional__tipo='mosquitero'
             ).values_list('opcional_id', flat=True).distinct()
+
+            premarco_filter = db_models.Q(pk__in=[])
+            producto = Producto.objects.exclude(bloqueado='Si').filter(pk=producto_id).first()
+            if producto:
+                premarco_filter = db_models.Q(tipo='premarco', linea_id=producto.linea_id)
             
-            # Tipo otro: mostrar todos (aplican a cualquier producto)
+            # Tipo otro: mostrar todos. Premarco: filtrar por línea del producto.
             opcionales = OpcionalFabrica.objects.filter(
                 activo=True
             ).filter(
-                db_models.Q(id__in=mosq_ids) | db_models.Q(tipo='otro')
+                db_models.Q(id__in=mosq_ids) | premarco_filter | db_models.Q(tipo='otro')
             ).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
         else:
             opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')

@@ -33,3 +33,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-011](./REQ-011-navegacion-contexto-y-reporte-ventas-facturado.md) | Navegación con retorno contextual + reporte de ventas por importe facturado | En desarrollo | 2026-04-21 | — |
 | [REQ-012](./REQ-012-reporte-cobranzas.md) | Reporte de cobranzas por cobro individual | En desarrollo | 2026-04-22 | — |
 | [REQ-013](./REQ-013-reporte-ventas-todos.md) | Reporte de ventas muestra Blanco y Negro | En desarrollo | 2026-04-23 | — |
+| [REQ-014](./REQ-014-premarco-en-opcionales-y-formulas-marcos.md) | Tipo Premarco en opcionales + relaciones con Líneas y Perfiles | En desarrollo | 2026-05-02 | — |

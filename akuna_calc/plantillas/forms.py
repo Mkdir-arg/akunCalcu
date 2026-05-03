@@ -1,4 +1,7 @@
 from django import forms
+
+from pricing.models import Linea
+
 from .models import ProductoPlantilla, CampoPlantilla, OpcionalFabrica, FormulaOpcional
 from .services.formula_engine import FormulaEngine
 
@@ -60,13 +63,50 @@ class CampoPlantillaForm(forms.ModelForm):
 
 
 class OpcionalFabricaForm(forms.ModelForm):
+    linea_id = forms.TypedChoiceField(
+        required=False,
+        coerce=int,
+        empty_value=None,
+        label='Línea',
+        widget=forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'})
+    )
+
     class Meta:
         model = OpcionalFabrica
-        fields = ['codigo', 'nombre', 'tipo', 'precio_m2', 'descripcion', 'activo']
+        fields = ['codigo', 'nombre', 'tipo', 'linea_id', 'precio_m2', 'descripcion', 'activo']
         widgets = {
             'codigo': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'OPC-001'}),
             'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'tipo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'onchange': 'cambiarTipo(this.value)'}),
+            'tipo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
             'precio_m2': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'step': '0.01', 'min': '0'}),
             'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        choices = [('', 'Seleccionar línea...')]
+        try:
+            lineas = Linea.objects.exclude(bloqueado='Si').order_by('nombre')
+            choices.extend((linea.id, str(linea)) for linea in lineas)
+        except Exception:
+            # In test environments the legacy table may be unavailable.
+            pass
+
+        self.fields['linea_id'].choices = choices
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo')
+        linea_id = cleaned_data.get('linea_id')
+
+        if tipo == 'premarco' and not linea_id:
+            self.add_error('linea_id', 'La línea es obligatoria para un opcional de tipo Premarco.')
+
+        if tipo != 'premarco':
+            cleaned_data['linea_id'] = None
+
+        if tipo != 'mosquitero':
+            cleaned_data['precio_m2'] = 0
+
+        return cleaned_data
