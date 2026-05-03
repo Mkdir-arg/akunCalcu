@@ -525,7 +525,8 @@ class Recibo(models.Model):
             })
 
         payment_rows = payment_rows[-4:]
-        blank_payment_rows = range(max(0, 4 - len(payment_rows)))
+        minimum_visible_rows = 2
+        blank_payment_rows = range(max(0, minimum_visible_rows - len(payment_rows)))
 
         context = {
             'recibo': self,
