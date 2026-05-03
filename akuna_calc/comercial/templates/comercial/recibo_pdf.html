@@ -24,18 +24,17 @@
         .value { background: #efefef; }
         .spacer { height: 10px; }
         .detail-layout { width: 100%; table-layout: fixed; }
-        .detail-main { width: 76%; vertical-align: top; padding-right: 16px; }
-        .detail-side { width: 24%; vertical-align: bottom; }
-        .money-table { width: 100%; table-layout: fixed; }
+        .money-table { width: 100%; table-layout: fixed; page-break-inside: avoid; }
         .money-table th { border: 1px solid #000; padding: 12px 12px; font-weight: 700; text-align: center; font-size: 20px; }
-        .money-table td { border: 1px solid #000; padding: 12px 12px; height: 42px; vertical-align: middle; font-size: 18px; }
-        .cell-text { font-size: 18px; font-weight: 600; }
-        .cell-head { font-size: 20px; font-weight: 700; }
-        .totals-label { font-size: 17px; font-weight: 700; }
-        .totals-value { font-size: 18px; font-weight: 600; }
+        .money-table td { border: 1px solid #000; padding: 12px 12px; height: 42px; vertical-align: middle; }
+        .money-data-cell { font-size: 22px; font-weight: 700; line-height: 1.2; }
+        .money-head-cell { font-size: 20px; font-weight: 700; }
+        .totals-label-cell { font-size: 18px; font-weight: 700; }
+        .totals-value-cell { font-size: 20px; font-weight: 700; }
         .nowrap { white-space: nowrap; }
         .amount-right { text-align: right; }
-        .signature-block { text-align: center; font-size: 13px; padding-left: 16px; }
+        .signature-layout { width: 100%; margin-top: 14px; page-break-inside: avoid; }
+        .signature-block { text-align: center; font-size: 13px; }
         .signature-line { border-top: 2px solid #000; width: 180px; margin: 18px auto 2px auto; }
         .totals-table { width: 100%; margin-top: 12px; }
         .totals-table td.spacer { border: 0; }
@@ -129,64 +128,64 @@
 
     <div class="spacer"></div>
 
-    <table class="detail-layout">
+    <table class="money-table">
         <tr>
-            <td class="detail-main">
-                <table class="money-table">
-                    <tr>
-                        <th style="width:20%;"><span class="cell-head">FECHA</span></th>
-                        <th style="width:30%;"><span class="cell-head">BANCO</span></th>
-                        <th style="width:22%;"><span class="cell-head">NRO.</span></th>
-                        <th style="width:28%;"><span class="cell-head">IMPORTE</span></th>
-                    </tr>
-                    {% for row in payment_rows %}
-                    <tr>
-                        <td class="nowrap"><span class="cell-text">{{ row.fecha|date:'d/m/Y' }}</span></td>
-                        <td><span class="cell-text">{{ row.medio }}</span></td>
-                        <td><span class="cell-text">{{ row.referencia }}</span></td>
-                        <td class="amount-right nowrap"><span class="cell-text">{{ row.importe|formato_numero }}</span></td>
-                    </tr>
-                    {% endfor %}
-                    {% for _ in blank_payment_rows %}
-                    <tr>
-                        <td><span class="cell-text">&nbsp;</span></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    {% endfor %}
-                </table>
+            <th style="width:20%;" class="money-head-cell">FECHA</th>
+            <th style="width:30%;" class="money-head-cell">BANCO</th>
+            <th style="width:22%;" class="money-head-cell">NRO.</th>
+            <th style="width:28%;" class="money-head-cell">IMPORTE</th>
+        </tr>
+        {% for row in payment_rows %}
+        <tr>
+            <td class="money-data-cell nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
+            <td class="money-data-cell">{{ row.medio }}</td>
+            <td class="money-data-cell">{{ row.referencia }}</td>
+            <td class="money-data-cell amount-right nowrap">{{ row.importe|formato_numero }}</td>
+        </tr>
+        {% endfor %}
+        {% for _ in blank_payment_rows %}
+        <tr>
+            <td class="money-data-cell">&nbsp;</td>
+            <td class="money-data-cell"></td>
+            <td class="money-data-cell"></td>
+            <td class="money-data-cell"></td>
+        </tr>
+        {% endfor %}
+    </table>
 
-                <table class="money-table totals-table">
-                    <tr>
-                        <td style="width:20%; border:0;"></td>
-                        <td style="width:30%; border:0;"></td>
-                        <td style="width:22%;"><span class="totals-label">RET. GANANCIAS</span></td>
-                        <td style="width:28%;" class="amount-right nowrap"><span class="totals-value">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</span></td>
-                    </tr>
-                    <tr>
-                        <td style="width:20%; border:0;"></td>
-                        <td style="width:30%; border:0;"></td>
-                        <td style="width:22%;"><span class="totals-label">RET. ING. BRUTOS</span></td>
-                        <td style="width:28%;" class="amount-right nowrap"><span class="totals-value">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</span></td>
-                    </tr>
-                    <tr>
-                        <td style="width:20%; border:0;"></td>
-                        <td style="width:30%; border:0;"></td>
-                        <td style="width:22%;"><span class="totals-label">RET. IVA</span></td>
-                        <td style="width:28%;" class="amount-right nowrap"><span class="totals-value">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</span></td>
-                    </tr>
-                    <tr>
-                        <td style="width:20%; border:0;"></td>
-                        <td style="width:30%; border:0;"></td>
-                        <td style="width:22%;"><span class="totals-label">TOTAL</span></td>
-                        <td style="width:28%;" class="amount-right nowrap"><span class="totals-value">{{ recibo.importe|formato_numero }}</span></td>
-                    </tr>
-                </table>
-            </td>
-            <td class="detail-side">
+    <table class="money-table totals-table">
+        <tr>
+            <td style="width:20%; border:0;"></td>
+            <td style="width:30%; border:0;"></td>
+            <td style="width:22%;" class="totals-label-cell">RET. GANANCIAS</td>
+            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td style="width:20%; border:0;"></td>
+            <td style="width:30%; border:0;"></td>
+            <td style="width:22%;" class="totals-label-cell">RET. ING. BRUTOS</td>
+            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td style="width:20%; border:0;"></td>
+            <td style="width:30%; border:0;"></td>
+            <td style="width:22%;" class="totals-label-cell">RET. IVA</td>
+            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td style="width:20%; border:0;"></td>
+            <td style="width:30%; border:0;"></td>
+            <td style="width:22%;" class="totals-label-cell">TOTAL</td>
+            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{{ recibo.importe|formato_numero }}</td>
+        </tr>
+    </table>
+
+    <table class="signature-layout">
+        <tr>
+            <td style="width:68%; border:0;"></td>
+            <td style="width:32%; border:0; vertical-align:bottom;">
                 <div class="signature-block">
-                    <div style="height:100px;"></div>
+                    <div style="height:36px;"></div>
                     <div style="font-size:18px; margin-bottom:22px;">VERONICA</div>
                     <div class="signature-line"></div>
                     <div>Firma</div>
