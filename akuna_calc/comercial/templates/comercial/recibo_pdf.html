@@ -23,21 +23,23 @@
         .label { font-weight: 700; white-space: nowrap; }
         .value { background: #efefef; }
         .spacer { height: 10px; }
-        .detail-layout { width: 100%; table-layout: fixed; }
-        .money-table { width: 100%; table-layout: fixed; page-break-inside: avoid; }
-        .money-table th { border: 1px solid #000; padding: 12px 12px; font-weight: 700; text-align: center; font-size: 20px; }
-        .money-table td { border: 1px solid #000; padding: 12px 12px; height: 42px; vertical-align: middle; }
-        .money-data-cell { font-size: 22px; font-weight: 700; line-height: 1.2; }
-        .money-head-cell { font-size: 20px; font-weight: 700; }
-        .totals-label-cell { font-size: 18px; font-weight: 700; }
-        .totals-value-cell { font-size: 20px; font-weight: 700; }
+        .payments-title { font-size: 15pt; font-weight: 700; margin: 10pt 0 6pt 0; }
+        .payments-table { width: 100%; table-layout: fixed; -pdf-keep-in-frame-mode: overflow; }
+        .payments-table th { border: 1px solid #000; padding: 9pt 10pt; background: #f2f2f2; text-align: center; font-size: 14pt; font-weight: 700; }
+        .payments-table td { border: 1px solid #000; padding: 10pt 10pt; vertical-align: middle; font-size: 14pt; font-weight: 700; line-height: 1.15; }
+        .payments-date { width: 18%; }
+        .payments-bank { width: 26%; }
+        .payments-reference { width: 26%; }
+        .payments-amount { width: 30%; text-align: right; }
+        .summary-table { width: 100%; table-layout: fixed; margin-top: 10pt; page-break-inside: avoid; -pdf-keep-in-frame-mode: overflow; }
+        .summary-table td { border: 1px solid #000; padding: 6pt 8pt; font-size: 13pt; font-weight: 700; }
+        .summary-label { background: #f2f2f2; }
+        .summary-value { text-align: right; font-size: 14pt; }
+        .summary-total td { font-size: 14pt; }
         .nowrap { white-space: nowrap; }
-        .amount-right { text-align: right; }
         .signature-layout { width: 100%; margin-top: 14px; page-break-inside: avoid; }
         .signature-block { text-align: center; font-size: 13px; }
         .signature-line { border-top: 2px solid #000; width: 180px; margin: 18px auto 2px auto; }
-        .totals-table { width: 100%; margin-top: 12px; }
-        .totals-table td.spacer { border: 0; }
         .small { font-size: 11px; }
     </style>
 </head>
@@ -128,55 +130,53 @@
 
     <div class="spacer"></div>
 
-    <table class="money-table">
+    {% if payments_start_new_page %}
+    <pdf:nextpage />
+    {% endif %}
+
+    <div class="payments-title">Detalle de pagos</div>
+
+    <table class="payments-table" repeat="1">
         <tr>
-            <th style="width:20%;" class="money-head-cell">FECHA</th>
-            <th style="width:30%;" class="money-head-cell">BANCO</th>
-            <th style="width:22%;" class="money-head-cell">NRO.</th>
-            <th style="width:28%;" class="money-head-cell">IMPORTE</th>
+            <th class="payments-date">FECHA</th>
+            <th class="payments-bank">BANCO</th>
+            <th class="payments-reference">NRO.</th>
+            <th class="payments-amount">IMPORTE</th>
         </tr>
         {% for row in payment_rows %}
         <tr>
-            <td class="money-data-cell nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
-            <td class="money-data-cell">{{ row.medio }}</td>
-            <td class="money-data-cell">{{ row.referencia }}</td>
-            <td class="money-data-cell amount-right nowrap">{{ row.importe|formato_numero }}</td>
-        </tr>
-        {% endfor %}
-        {% for _ in blank_payment_rows %}
-        <tr>
-            <td class="money-data-cell">&nbsp;</td>
-            <td class="money-data-cell"></td>
-            <td class="money-data-cell"></td>
-            <td class="money-data-cell"></td>
+            <td class="payments-date nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
+            <td class="payments-bank">{{ row.medio }}</td>
+            <td class="payments-reference">{{ row.referencia }}</td>
+            <td class="payments-amount nowrap">{{ row.importe|formato_numero }}</td>
         </tr>
         {% endfor %}
     </table>
 
-    <table class="money-table totals-table">
+    {% if summary_start_new_page %}
+    <pdf:nextpage />
+    {% endif %}
+
+    <table class="summary-table">
         <tr>
-            <td style="width:20%; border:0;"></td>
-            <td style="width:30%; border:0;"></td>
-            <td style="width:22%;" class="totals-label-cell">RET. GANANCIAS</td>
-            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+            <td style="width:54%; border:0;"></td>
+            <td style="width:26%;" class="summary-label">RET. GANANCIAS</td>
+            <td style="width:20%;" class="summary-value nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
         </tr>
         <tr>
-            <td style="width:20%; border:0;"></td>
-            <td style="width:30%; border:0;"></td>
-            <td style="width:22%;" class="totals-label-cell">RET. ING. BRUTOS</td>
-            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
+            <td style="width:54%; border:0;"></td>
+            <td style="width:26%;" class="summary-label">RET. ING. BRUTOS</td>
+            <td style="width:20%;" class="summary-value nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
         </tr>
         <tr>
-            <td style="width:20%; border:0;"></td>
-            <td style="width:30%; border:0;"></td>
-            <td style="width:22%;" class="totals-label-cell">RET. IVA</td>
-            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
+            <td style="width:54%; border:0;"></td>
+            <td style="width:26%;" class="summary-label">RET. IVA</td>
+            <td style="width:20%;" class="summary-value nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
         </tr>
-        <tr>
-            <td style="width:20%; border:0;"></td>
-            <td style="width:30%; border:0;"></td>
-            <td style="width:22%;" class="totals-label-cell">TOTAL</td>
-            <td style="width:28%;" class="totals-value-cell amount-right nowrap">{{ recibo.importe|formato_numero }}</td>
+        <tr class="summary-total">
+            <td style="width:54%; border:0;"></td>
+            <td style="width:26%;" class="summary-label">TOTAL</td>
+            <td style="width:20%;" class="summary-value nowrap">{{ recibo.importe|formato_numero }}</td>
         </tr>
     </table>
 

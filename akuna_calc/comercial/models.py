@@ -524,10 +524,6 @@ class Recibo(models.Model):
                 'importe': pago.monto,
             })
 
-        payment_rows = payment_rows[-4:]
-        minimum_visible_rows = 2
-        blank_payment_rows = range(max(0, minimum_visible_rows - len(payment_rows)))
-
         context = {
             'recibo': self,
             'logo_url': str(logo_path.resolve()) if logo_path else '',
@@ -543,7 +539,8 @@ class Recibo(models.Model):
             'ret_iva': retenciones.get('iva'),
             'numero_comprobante': self.pago.numero_factura or '',
             'payment_rows': payment_rows,
-            'blank_payment_rows': blank_payment_rows,
+            'payments_start_new_page': len(payment_rows) > 5,
+            'summary_start_new_page': 6 <= len(payment_rows) <= 8,
         }
         html = render_to_string('comercial/recibo_pdf.html', context)
 
