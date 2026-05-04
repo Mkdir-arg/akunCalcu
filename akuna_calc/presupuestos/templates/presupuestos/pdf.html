@@ -1,3 +1,4 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,535 +6,481 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ presupuesto.numero }}</title>
     <style>
-        :root {
-            --ink: #16202f;
-            --muted: #5b6577;
-            --line: #d8dee8;
-            --paper: #f4f0e8;
-            --accent: #b98231;
-            --accent-soft: #efe1c8;
-            --white: #ffffff;
+        @page {
+            size: A4;
+            margin: 12mm;
         }
 
         * {
             box-sizing: border-box;
         }
 
-        @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .no-print { display: none !important; }
-            @page { margin: 1.2cm; }
-            .document-shell {
-                margin: 0;
-                box-shadow: none;
-                max-width: none;
-            }
-        }
-
         body {
             margin: 0;
-            background: linear-gradient(180deg, #eef2f7 0%, #f6f8fb 100%);
-            color: var(--ink);
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-
-        .screen-actions {
-            max-width: 980px;
-            margin: 24px auto 0;
-            padding: 0 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .action-button {
-            border: 0;
-            border-radius: 999px;
-            padding: 12px 20px;
-            color: var(--white);
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            text-decoration: none;
-        }
-
-        .action-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        }
-
-        .action-secondary {
-            background: #6b7280;
-        }
-
-        .document-shell {
-            max-width: 980px;
-            margin: 24px auto 40px;
-            background: var(--white);
-            border-radius: 28px;
-            overflow: hidden;
-            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
-        }
-
-        .header {
-            padding: 40px 42px 32px;
-            background:
-                radial-gradient(circle at top right, rgba(185, 130, 49, 0.18), transparent 34%),
-                linear-gradient(135deg, #152033 0%, #24344c 100%);
-            color: var(--white);
-        }
-
-        .header-grid {
-            display: grid;
-            grid-template-columns: 1.6fr 1fr;
-            gap: 24px;
-            align-items: start;
-        }
-
-        .eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.24em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.72);
-            margin-bottom: 12px;
-        }
-
-        .brand {
-            font-size: 34px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin: 0;
-        }
-
-        .subtitle {
-            max-width: 540px;
-            margin: 10px 0 0;
-            color: rgba(255, 255, 255, 0.76);
-            font-size: 15px;
-            line-height: 1.55;
-        }
-
-        .header-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 22px;
-            padding: 22px 24px;
-            text-align: right;
-        }
-
-        .budget-label {
-            margin: 0;
-            color: rgba(255, 255, 255, 0.72);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        .budget-number {
-            margin: 10px 0 6px;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-
-        .budget-date {
-            margin: 0;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.82);
-        }
-
-        .body {
-            padding: 34px 42px 40px;
-        }
-
-        .meta-grid {
-            display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
-        .meta-card {
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 22px 24px;
-            background: #fbfcfe;
-        }
-
-        .meta-title {
-            margin: 0 0 12px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .client-name {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-
-        .client-detail,
-        .meta-row {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-size: 14px;
+            background: #e9edf2;
+            color: #111827;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
             line-height: 1.45;
         }
 
-        .meta-row {
+        .no-print {
             display: flex;
-            justify-content: space-between;
-            gap: 16px;
+            justify-content: flex-end;
+            gap: 10px;
+            max-width: 210mm;
+            margin: 16px auto 0;
+            padding: 0 6px;
         }
 
-        .meta-row strong {
-            color: var(--ink);
-            font-weight: 700;
-        }
-
-        .section-label {
-            margin: 0 0 14px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .intro {
-            margin: 0 0 26px;
-            padding: 18px 20px;
-            border-radius: 18px;
-            background: var(--paper);
-            color: #4d4538;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .item-card {
-            position: relative;
-            margin-bottom: 18px;
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            overflow: hidden;
-            background: var(--white);
-        }
-
-        .item-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 6px;
-            background: linear-gradient(180deg, var(--accent) 0%, #e1b267 100%);
-        }
-
-        .item-inner {
-            padding: 22px 24px 22px 28px;
-        }
-
-        .item-head {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: flex-start;
-            margin-bottom: 14px;
-        }
-
-        .item-kicker {
-            margin: 0 0 6px;
-            color: var(--accent);
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        .item-title {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-
-        .item-quantity {
-            white-space: nowrap;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: var(--accent-soft);
-            color: #7a5517;
+        .no-print a,
+        .no-print button {
+            border: 0;
+            background: #1f2937;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 16px;
             font-size: 12px;
-            font-weight: 800;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .no-print a {
+            background: #6b7280;
+        }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 16px auto 24px;
+            background: #ffffff;
+            padding: 10mm 12mm 12mm;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+        }
+
+        .top-table,
+        .field-table,
+        .items-table,
+        .totals-table,
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .company-cell,
+        .meta-cell {
+            vertical-align: top;
+        }
+
+        .company-cell {
+            width: 58%;
+            padding-right: 12px;
+        }
+
+        .meta-cell {
+            width: 42%;
+        }
+
+        .company-name {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .company-copy {
+            margin: 4px 0 12px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .company-data {
+            margin: 0;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        .document-box {
+            border: 2px solid #111827;
+        }
+
+        .document-title {
+            margin: 0;
+            padding: 10px 12px;
+            background: #f3f4f6;
+            border-bottom: 2px solid #111827;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .document-meta td {
+            border-bottom: 1px solid #d1d5db;
+            padding: 7px 9px;
+            font-size: 11px;
+        }
+
+        .document-meta tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .meta-label {
+            width: 42%;
+            font-weight: 700;
+            background: #f9fafb;
+            white-space: nowrap;
+        }
+
+        .meta-value {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .section-title {
+            margin: 16px 0 8px;
+            padding: 6px 0;
+            border-top: 1.5px solid #111827;
+            border-bottom: 1px solid #111827;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .field-table td {
+            border: 1px solid #c7ccd3;
+            padding: 7px 8px;
+            vertical-align: top;
+        }
+
+        .field-label {
+            width: 16%;
+            font-weight: 700;
+            white-space: nowrap;
+            background: #f3f4f6;
+        }
+
+        .field-value {
+            background: #ffffff;
+        }
+
+        .intro-copy {
+            margin: 0 0 10px;
+            font-size: 11px;
+            color: #374151;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #9ca3af;
+            padding: 8px;
+            vertical-align: top;
+        }
+
+        .items-table th {
+            background: #f3f4f6;
+            font-size: 10px;
+            font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
-        .item-description {
+        .col-item {
+            width: 7%;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .col-detail {
+            width: 53%;
+        }
+
+        .col-qty {
+            width: 10%;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .col-unit,
+        .col-total {
+            width: 15%;
+            text-align: right;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .item-title {
+            margin: 0 0 4px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .item-text {
             margin: 0;
-            color: #313c4d;
-            font-size: 15px;
-            line-height: 1.65;
+            font-size: 11px;
+            line-height: 1.55;
         }
 
         .item-summary {
-            margin-top: 14px;
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.6;
-            letter-spacing: 0.01em;
+            margin: 6px 0 0;
+            font-size: 10px;
+            color: #4b5563;
         }
 
-        .item-pricing {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-            margin-top: 18px;
+        .totals-wrap {
+            margin-top: 10px;
         }
 
-        .price-box {
-            border-radius: 18px;
-            padding: 16px 18px;
-            background: #f8fafc;
-            border: 1px solid #e5eaf1;
+        .totals-table {
+            width: 42%;
+            margin-left: auto;
         }
 
-        .price-box.total {
-            background: linear-gradient(135deg, #edf4ff 0%, #f7fbff 100%);
-            border-color: #cfe0ff;
-        }
-
-        .price-label {
-            margin: 0 0 8px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .price-value {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-
-        .price-box.total .price-value {
-            color: #1d4ed8;
-        }
-
-        .totals {
-            margin-top: 30px;
-            padding: 24px 26px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, #111c2e 0%, #20314b 100%);
-            color: var(--white);
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            align-items: center;
+        .totals-table td {
+            border: 1px solid #111827;
+            padding: 8px 10px;
         }
 
         .totals-label {
-            margin: 0 0 8px;
-            font-size: 11px;
+            background: #f3f4f6;
             font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.7);
         }
 
-        .totals-copy {
-            margin: 0;
-            color: rgba(255, 255, 255, 0.82);
+        .totals-value {
+            text-align: right;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .totals-table .grand-total td {
             font-size: 14px;
-            line-height: 1.55;
-            max-width: 480px;
+            font-weight: 700;
         }
 
-        .totals-amount {
+        .observations {
+            border: 1px solid #c7ccd3;
+            padding: 10px;
+            min-height: 44px;
+        }
+
+        .observations p {
+            margin: 0;
+        }
+
+        .footer-table {
+            margin-top: 14px;
+            border-top: 1px solid #c7ccd3;
+        }
+
+        .footer-table td {
+            padding-top: 8px;
+            font-size: 10px;
+            color: #4b5563;
+            vertical-align: top;
+        }
+
+        .footer-right {
             text-align: right;
         }
 
-        .totals-amount .price-value {
-            color: #f7c874;
-            font-size: 34px;
-        }
-
-        .notes {
-            margin-top: 22px;
-            padding: 20px 22px;
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            background: #fbfcfe;
-        }
-
-        .notes p {
-            margin: 0;
-            color: #374151;
-            font-size: 14px;
-            line-height: 1.65;
-        }
-
-        .footer {
-            margin-top: 28px;
-            padding-top: 18px;
-            border-top: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .footer strong {
-            color: var(--ink);
-        }
-
-        @media (max-width: 760px) {
-            .screen-actions,
-            .document-shell {
-                margin-left: 12px;
-                margin-right: 12px;
+        @media print {
+            body {
+                background: #ffffff;
             }
 
-            .header,
-            .body {
-                padding-left: 22px;
-                padding-right: 22px;
+            .no-print {
+                display: none !important;
             }
 
-            .header-grid,
-            .meta-grid,
-            .item-pricing,
-            .totals,
-            .footer {
-                grid-template-columns: 1fr;
-                flex-direction: column;
+            .sheet {
+                width: auto;
+                min-height: auto;
+                margin: 0;
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sheet {
+                width: auto;
+                min-height: auto;
+                margin-left: 10px;
+                margin-right: 10px;
+                padding: 16px;
             }
 
-            .header-card,
-            .totals-amount {
+            .no-print {
+                margin-left: 10px;
+                margin-right: 10px;
+                max-width: none;
+            }
+
+            .top-table,
+            .top-table tbody,
+            .top-table tr,
+            .top-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .company-cell {
+                padding-right: 0;
+                margin-bottom: 12px;
+            }
+
+            .items-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .totals-table {
+                width: 100%;
+            }
+
+            .footer-right {
                 text-align: left;
-            }
-
-            .item-head {
-                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-    <div class="screen-actions no-print">
-        <button onclick="window.print()" class="action-button action-primary">Imprimir / Guardar PDF</button>
-        <a href="javascript:window.close()" class="action-button action-secondary">Cerrar</a>
+    <div class="no-print">
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+        <a href="javascript:window.close()">Cerrar</a>
     </div>
 
-    <div class="document-shell">
-        <header class="header">
-            <div class="header-grid">
-                <div>
-                    <p class="eyebrow">Propuesta Comercial</p>
-                    <h1 class="brand">Akuna Aberturas</h1>
-                    <p class="subtitle">Presupuesto técnico y comercial de aberturas de aluminio, confeccionado a medida según la configuración seleccionada.</p>
-                </div>
-                <div class="header-card">
-                    <p class="budget-label">Presupuesto</p>
-                    <p class="budget-number">{{ presupuesto.numero }}</p>
-                    <p class="budget-date">Emitido el {{ presupuesto.created_at|date:"d/m/Y" }}</p>
-                </div>
-            </div>
-        </header>
-
-        <main class="body">
-            <section class="meta-grid">
-                <article class="meta-card">
-                    <p class="meta-title">Cliente</p>
-                    <p class="client-name">{{ presupuesto.cliente.get_nombre_completo }}</p>
-                    {% if presupuesto.cliente.direccion %}<p class="client-detail">{{ presupuesto.cliente.direccion }}</p>{% endif %}
-                    {% if presupuesto.cliente.localidad %}<p class="client-detail">{{ presupuesto.cliente.localidad }}</p>{% endif %}
-                    {% if presupuesto.cliente.telefono %}<p class="client-detail">Tel. {{ presupuesto.cliente.telefono }}</p>{% endif %}
-                    {% if presupuesto.cliente.email %}<p class="client-detail">{{ presupuesto.cliente.email }}</p>{% endif %}
-                </article>
-
-                <article class="meta-card">
-                    <p class="meta-title">Condiciones</p>
-                    <p class="meta-row"><span>Fecha de emisión</span><strong>{{ presupuesto.created_at|date:"d/m/Y" }}</strong></p>
-                    <p class="meta-row"><span>Válido hasta</span><strong>{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</strong></p>
-                    <p class="meta-row"><span>Estado</span><strong>{{ presupuesto.get_estado_display }}</strong></p>
-                    <p class="meta-row"><span>Ítems</span><strong>{{ presupuesto.items.count }}</strong></p>
-                </article>
-            </section>
-
-            <p class="section-label">Detalle de la propuesta</p>
-            <p class="intro">A continuación se detalla la propuesta elaborada para este presupuesto. Cada ítem resume la configuración técnica seleccionada y su valorización correspondiente.</p>
-
-            {% for entry in items_pdf %}
-            <article class="item-card">
-                <div class="item-inner">
-                    <div class="item-head">
-                        <div>
-                            <p class="item-kicker">Ítem {{ forloop.counter|stringformat:"02d" }}</p>
-                            <h2 class="item-title">{{ entry.titulo }}</h2>
-                        </div>
-                        <div class="item-quantity">{{ entry.item.cantidad }} unidad{{ entry.item.cantidad|pluralize:"es" }}</div>
+    <div class="sheet">
+        <table class="top-table">
+            <tr>
+                <td class="company-cell">
+                    <p class="company-name">AKUNA ABERTURAS</p>
+                    <p class="company-copy">Presupuesto comercial de aberturas de aluminio a medida</p>
+                    <p class="company-data">
+                        Elpidio Gonzalez 5326<br>
+                        Ciudad de Buenos Aires - Argentina<br>
+                        Documento emitido para presentación comercial al cliente.
+                    </p>
+                </td>
+                <td class="meta-cell">
+                    <div class="document-box">
+                        <p class="document-title">Presupuesto</p>
+                        <table class="document-meta" width="100%">
+                            <tr>
+                                <td class="meta-label">Número</td>
+                                <td class="meta-value">{{ presupuesto.numero }}</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Fecha de emisión</td>
+                                <td class="meta-value">{{ presupuesto.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Válido hasta</td>
+                                <td class="meta-value">{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="meta-label">Estado</td>
+                                <td class="meta-value">{{ presupuesto.get_estado_display }}</td>
+                            </tr>
+                        </table>
                     </div>
+                </td>
+            </tr>
+        </table>
 
-                    <p class="item-description">{{ entry.descripcion_narrativa }}</p>
-                    {% if entry.resumen_tecnico %}
-                    <p class="item-summary">{{ entry.resumen_tecnico }}</p>
-                    {% endif %}
+        <p class="section-title">Datos del cliente</p>
+        <table class="field-table">
+            <tr>
+                <td class="field-label">Cliente</td>
+                <td class="field-value">{{ presupuesto.cliente.get_nombre_completo }}</td>
+                <td class="field-label">Cantidad de ítems</td>
+                <td class="field-value">{{ presupuesto.items.count }}</td>
+            </tr>
+            <tr>
+                <td class="field-label">Dirección</td>
+                <td class="field-value">{% if presupuesto.cliente.direccion %}{{ presupuesto.cliente.direccion }}{% else %}-{% endif %}</td>
+                <td class="field-label">Localidad</td>
+                <td class="field-value">{% if presupuesto.cliente.localidad %}{{ presupuesto.cliente.localidad }}{% else %}-{% endif %}</td>
+            </tr>
+            <tr>
+                <td class="field-label">Teléfono</td>
+                <td class="field-value">{% if presupuesto.cliente.telefono %}{{ presupuesto.cliente.telefono }}{% else %}-{% endif %}</td>
+                <td class="field-label">Email</td>
+                <td class="field-value">{% if presupuesto.cliente.email %}{{ presupuesto.cliente.email }}{% else %}-{% endif %}</td>
+            </tr>
+        </table>
 
-                    <div class="item-pricing">
-                        <div class="price-box">
-                            <p class="price-label">Precio unitario</p>
-                            <p class="price-value">${{ entry.item.precio_unitario|floatformat:2 }}</p>
-                        </div>
-                        <div class="price-box total">
-                            <p class="price-label">Subtotal del ítem</p>
-                            <p class="price-value">${{ entry.item.precio_total|floatformat:2 }}</p>
-                        </div>
-                    </div>
-                </div>
-            </article>
-            {% endfor %}
+        <p class="section-title">Detalle presupuestado</p>
+        <p class="intro-copy">Cada ítem se describe con la configuración seleccionada al momento de cotizar para que el cliente pueda revisar el producto y su composición principal en formato de documento.</p>
 
-            <section class="totals">
-                <div>
-                    <p class="totals-label">Total del presupuesto</p>
-                    <p class="totals-copy">Valores expresados en pesos argentinos. Este documento resume {{ presupuesto.items.count }} ítem{{ presupuesto.items.count|pluralize:"s" }} cotizado{{ presupuesto.items.count|pluralize:"s" }} para el cliente.</p>
-                </div>
-                <div class="totals-amount">
-                    <p class="totals-label">Importe final</p>
-                    <p class="price-value">${{ presupuesto.total|floatformat:2 }}</p>
-                </div>
-            </section>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="col-item">Item</th>
+                    <th class="col-detail">Descripción</th>
+                    <th class="col-qty">Cant.</th>
+                    <th class="col-unit">P. unitario</th>
+                    <th class="col-total">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in items_pdf %}
+                <tr>
+                    <td class="col-item">{{ forloop.counter }}</td>
+                    <td class="col-detail">
+                        <p class="item-title">{{ entry.titulo }}</p>
+                        <p class="item-text">{{ entry.descripcion_narrativa }}</p>
+                        {% if entry.resumen_tecnico %}
+                        <p class="item-summary">{{ entry.resumen_tecnico }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="col-qty">{{ entry.item.cantidad }}</td>
+                    <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
+                    <td class="col-total">${{ entry.item.precio_total|formato_numero }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No hay ítems cargados en este presupuesto.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
+        <div class="totals-wrap">
+            <table class="totals-table">
+                <tr>
+                    <td class="totals-label">Ítems cotizados</td>
+                    <td class="totals-value">{{ presupuesto.items.count }}</td>
+                </tr>
+                <tr class="grand-total">
+                    <td class="totals-label">Total del presupuesto</td>
+                    <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p class="section-title">Observaciones</p>
+        <div class="observations">
             {% if presupuesto.notas %}
-            <section class="notes">
-                <p class="section-label">Observaciones</p>
-                <p>{{ presupuesto.notas }}</p>
-            </section>
+            <p>{{ presupuesto.notas }}</p>
+            {% else %}
+            <p>Precios expresados en pesos argentinos. La presente propuesta mantiene vigencia hasta la fecha indicada en este documento.</p>
             {% endif %}
+        </div>
 
-            <footer class="footer">
-                <div>
-                    <strong>Akuna Aberturas</strong><br>
+        <table class="footer-table">
+            <tr>
+                <td>
+                    Akuna Aberturas<br>
                     Presupuesto válido hasta el {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}.
-                </div>
-                <div>
+                </td>
+                <td class="footer-right">
                     Documento generado el {{ presupuesto.created_at|date:"d/m/Y" }} para {{ presupuesto.cliente.get_nombre_completo }}.
-                </div>
-            </footer>
-        </main>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>
