@@ -11,10 +11,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from comercial.models import Venta
 from pricing.services.calculator import calcular_precio, PricingError
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
+from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm, PresupuestoVentaForm
 
 
 def _build_logo_data_url():
@@ -95,13 +96,21 @@ def crear(request):
 @login_required
 def detalle(request, pk):
     presupuesto = get_object_or_404(
-        Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items', 'comentarios__autor'),
+        Presupuesto.objects.select_related('cliente', 'created_by', 'venta').prefetch_related('items', 'comentarios__autor', 'venta__pagos'),
         pk=pk,
     )
     comentario_form = ComentarioForm()
+    venta_form = PresupuestoVentaForm(instance=presupuesto, cliente=presupuesto.cliente)
+    puede_descargar_recibo = (
+        presupuesto.estado == 'confirmado'
+        and presupuesto.venta_id is not None
+        and presupuesto.venta.pagos.exists()
+    )
     return render(request, 'presupuestos/detalle.html', {
         'presupuesto': presupuesto,
         'comentario_form': comentario_form,
+        'venta_form': venta_form,
+        'puede_descargar_recibo': puede_descargar_recibo,
     })
 
 
@@ -224,6 +233,22 @@ def cambiar_estado(request, pk):
     presupuesto.estado = nuevo_estado
     presupuesto.save(update_fields=['estado'])
     messages.success(request, f'Estado actualizado a "{presupuesto.get_estado_display()}".')
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+@login_required
+@require_POST
+def asociar_venta(request, pk):
+    presupuesto = get_object_or_404(Presupuesto.objects.select_related('cliente', 'venta'), pk=pk)
+    form = PresupuestoVentaForm(request.POST, instance=presupuesto, cliente=presupuesto.cliente)
+    if form.is_valid():
+        presupuesto = form.save()
+        if presupuesto.venta_id:
+            messages.success(request, 'Venta asociada al presupuesto.')
+        else:
+            messages.success(request, 'Venta asociada removida.')
+    else:
+        messages.error(request, 'No se pudo asociar la venta seleccionada.')
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 

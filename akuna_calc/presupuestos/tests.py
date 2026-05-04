@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta, date
 
-from comercial.models import Cliente
+from comercial.models import Cliente, Venta, PagoVenta
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context
 
@@ -254,3 +254,49 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Ventana cocina en línea Modena de Aluar')
         self.assertContains(res, 'Subtotal del ítem')
+
+    def test_detalle_muestra_boton_recibo_si_presupuesto_confirmado_tiene_venta_asociada_con_pagos(self):
+        self.client.login(username='viewuser', password='testpass')
+        cliente = crear_cliente()
+        venta = Venta.objects.create(
+            numero_pedido='VTA-REC-001',
+            cliente=cliente,
+            valor_total=1000,
+            sena=0,
+            con_factura=True,
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=1000,
+            fecha_pago=date.today(),
+            forma_pago='efectivo',
+            con_factura=True,
+            created_by=self.user,
+        )
+        p = crear_presupuesto(self.user, cliente=cliente)
+        p.estado = 'confirmado'
+        p.venta = venta
+        p.save(update_fields=['estado', 'venta'])
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Recibo')
+
+    def test_asociar_venta_actualiza_presupuesto(self):
+        self.client.login(username='viewuser', password='testpass')
+        cliente = crear_cliente()
+        venta = Venta.objects.create(
+            numero_pedido='VTA-REC-002',
+            cliente=cliente,
+            valor_total=1500,
+            sena=0,
+            con_factura=True,
+        )
+        p = crear_presupuesto(self.user, cliente=cliente)
+
+        res = self.client.post(f'/presupuestos/{p.pk}/venta/', {'venta': venta.pk})
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.venta_id, venta.pk)

@@ -34,6 +34,14 @@ class Presupuesto(models.Model):
         related_name='presupuestos_creados',
         verbose_name='Creado por',
     )
+    venta = models.ForeignKey(
+        'comercial.Venta',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='presupuestos',
+        verbose_name='Venta asociada',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
