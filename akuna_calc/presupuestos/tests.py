@@ -283,6 +283,37 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Recibo')
 
+    def test_detalle_muestra_accion_recibo_para_asociar_venta_si_confirmado_sin_venta(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.estado = 'confirmado'
+        p.save(update_fields=['estado'])
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Recibo: asociar venta')
+
+    def test_detalle_muestra_estado_recibo_sin_pagos_si_hay_venta_asociada(self):
+        self.client.login(username='viewuser', password='testpass')
+        cliente = crear_cliente()
+        venta = Venta.objects.create(
+            numero_pedido='VTA-REC-003',
+            cliente=cliente,
+            valor_total=1200,
+            sena=0,
+            con_factura=True,
+        )
+        p = crear_presupuesto(self.user, cliente=cliente)
+        p.estado = 'confirmado'
+        p.venta = venta
+        p.save(update_fields=['estado', 'venta'])
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Recibo: sin pagos')
+
     def test_asociar_venta_actualiza_presupuesto(self):
         self.client.login(username='viewuser', password='testpass')
         cliente = crear_cliente()

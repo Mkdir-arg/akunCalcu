@@ -101,16 +101,22 @@ def detalle(request, pk):
     )
     comentario_form = ComentarioForm()
     venta_form = PresupuestoVentaForm(instance=presupuesto, cliente=presupuesto.cliente)
-    puede_descargar_recibo = (
-        presupuesto.estado == 'confirmado'
-        and presupuesto.venta_id is not None
-        and presupuesto.venta.pagos.exists()
-    )
+    recibo_estado = None
+    if presupuesto.estado == 'confirmado':
+        if presupuesto.venta_id is None:
+            recibo_estado = 'sin_venta'
+        elif presupuesto.venta.pagos.exists():
+            recibo_estado = 'disponible'
+        else:
+            recibo_estado = 'sin_pagos'
+
+    puede_descargar_recibo = recibo_estado == 'disponible'
     return render(request, 'presupuestos/detalle.html', {
         'presupuesto': presupuesto,
         'comentario_form': comentario_form,
         'venta_form': venta_form,
         'puede_descargar_recibo': puede_descargar_recibo,
+        'recibo_estado': recibo_estado,
     })
 
 
