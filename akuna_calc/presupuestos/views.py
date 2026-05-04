@@ -1,4 +1,8 @@
+import base64
 import json
+from pathlib import Path
+
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,6 +15,21 @@ from pricing.services.calculator import calcular_precio, PricingError
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
+
+
+def _build_logo_data_url():
+    logo_candidates = [
+        Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
+        Path(settings.BASE_DIR) / 'static' / 'AKUN-LOGO.png',
+        Path(settings.STATIC_ROOT) / 'imagenes' / 'AKUN-LOGO.png',
+        Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
+    ]
+    logo_path = next((path for path in logo_candidates if path.exists()), None)
+    if not logo_path:
+        return ''
+
+    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
+    return f'data:image/png;base64,{logo_b64}'
 
 
 @login_required
@@ -216,6 +235,7 @@ def pdf(request, pk):
     )
     items_pdf = [build_pdf_item_context(item) for item in presupuesto.items.all()]
     return render(request, 'presupuestos/pdf.html', {
+        'logo_url': _build_logo_data_url(),
         'presupuesto': presupuesto,
         'items_pdf': items_pdf,
     })
