@@ -165,10 +165,15 @@ def build_technical_summary(snapshot: Dict[str, Any]) -> str:
         unit_label = 'unidad' if int(quantity) == 1 else 'unidades'
         parts.append(f'{int(quantity)} {unit_label}')
 
+    line_label = _clean_text((snapshot.get('linea') or {}).get('nombre'))
     width = _format_mm(snapshot.get('ancho_mm'))
     height = _format_mm(snapshot.get('alto_mm'))
-    if width and height:
+    if line_label and width and height:
+        parts.append(f'{line_label} {width} x {height} mm')
+    elif width and height:
         parts.append(f'{width} x {height} mm')
+    elif line_label:
+        parts.append(line_label)
 
     vidrio_label = _clean_text((snapshot.get('vidrio') or {}).get('descripcion'))
     if vidrio_label:

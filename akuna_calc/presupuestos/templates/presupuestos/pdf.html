@@ -322,9 +322,9 @@
             }
 
             .top-table,
-            .top-table tbody,
-            .top-table tr,
-            .top-table td {
+            .top-table > tbody,
+            .top-table > tbody > tr,
+            .top-table > tbody > tr > td {
                 display: block;
                 width: 100%;
             }
@@ -440,9 +440,8 @@
                     <td class="col-item">{{ forloop.counter }}</td>
                     <td class="col-detail">
                         <p class="item-title">{{ entry.titulo }}</p>
-                        <p class="item-text">{{ entry.descripcion_narrativa }}</p>
                         {% if entry.resumen_tecnico %}
-                        <p class="item-summary">{{ entry.resumen_tecnico }}</p>
+                        <p class="item-text">{{ entry.resumen_tecnico }}</p>
                         {% endif %}
                     </td>
                     <td class="col-qty">{{ entry.item.cantidad }}</td>
