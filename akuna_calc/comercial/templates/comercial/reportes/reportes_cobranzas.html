@@ -103,16 +103,16 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reporte Cobranza</h1>
-        <p class="text-slate-500 font-medium mt-1">Detalle de ingresos por movimiento individual de cobro</p>
-    </div>
-
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 lg:p-7 mb-8 solo-pantalla">
-        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 mb-6 pb-5 border-b border-slate-200">
             <div>
-                <h2 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
-                <p class="text-sm text-slate-500 mt-1">Dejá visibles los principales y abrí los avanzados solo cuando los necesites.</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-teal-600 mb-2">Reporte Cobranza</p>
+                <h1 class="text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight">Detalle de ingresos por movimiento individual de cobro</h1>
+                <p class="text-sm text-slate-500 mt-2">Usá los filtros principales para buscar rápido y abrí los avanzados solo cuando realmente hagan falta.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 min-w-[220px]">
+                <p class="text-sm font-semibold text-slate-800"><i class="fas fa-filter mr-2 text-slate-500"></i>Filtros</p>
+                <p class="text-xs text-slate-500 mt-1">Vista compacta para ahorrar espacio y llegar antes al detalle.</p>
             </div>
         </div>
         <form method="post" id="filtros-cobranzas" class="space-y-5">
