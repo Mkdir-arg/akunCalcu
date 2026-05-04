@@ -173,6 +173,20 @@
                             <td class="px-4 py-3 text-sm font-bold text-slate-800">
                                 {{ venta.numero_pedido }}
                                 <span class="text-xs text-slate-400 font-normal block">{{ venta.created_at|date:"d/m/Y" }}</span>
+                                {% if venta.venta_en_dolares or venta.sena_en_dolares %}
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    {% if venta.venta_en_dolares %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold">
+                                        <i class="fas fa-coins mr-1 text-[10px]"></i>Venta USD
+                                    </span>
+                                    {% endif %}
+                                    {% if venta.sena_en_dolares %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
+                                        <i class="fas fa-dollar-sign mr-1 text-[10px]"></i>Seña USD
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
                             </td>
                             <td class="hidden lg:table-cell px-4 py-3 text-xs text-slate-500">
                                 {% with facturas=venta.get_facturas_relacionadas %}
@@ -357,6 +371,20 @@
                             <span class="text-xs text-slate-400">{{ venta.created_at|date:"d/m" }}</span>
                         </div>
                         <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">{{ venta.cliente }}</a>
+                        {% if venta.venta_en_dolares or venta.sena_en_dolares %}
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            {% if venta.venta_en_dolares %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold">
+                                <i class="fas fa-coins mr-1 text-[10px]"></i>Venta USD
+                            </span>
+                            {% endif %}
+                            {% if venta.sena_en_dolares %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
+                                <i class="fas fa-dollar-sign mr-1 text-[10px]"></i>Seña USD
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         <div class="flex justify-between items-end pt-2 border-t border-gray-100">
                             <div>
                                 <p class="text-xs text-slate-400">Total</p>

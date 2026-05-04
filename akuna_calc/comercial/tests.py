@@ -913,6 +913,26 @@ class VentasListFacturasTest(TestCase):
         self.assertContains(response, 'VTA-FACT-2')
         self.assertNotContains(response, 'VTA-FACT-3')
 
+    def test_ventas_list_muestra_badges_para_ventas_en_dolares(self):
+        Venta.objects.create(
+            numero_pedido='VTA-USD-LIST',
+            cliente=self.cliente,
+            valor_total=Decimal('10000'),
+            venta_en_dolares=True,
+            valor_total_usd=Decimal('10'),
+            cotizacion_usd=Decimal('1000'),
+            sena=Decimal('2000'),
+            sena_en_dolares=True,
+            sena_usd=Decimal('2'),
+            cotizacion_sena_usd=Decimal('1000'),
+        )
+
+        response = self.client_http.get(reverse('comercial:ventas_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Venta USD')
+        self.assertContains(response, 'Seña USD')
+
 
 class ReporteCobranzasTest(TestCase):
     def setUp(self):
