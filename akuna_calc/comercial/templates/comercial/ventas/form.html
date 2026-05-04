@@ -59,7 +59,7 @@
                         <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
                         Valores y Montos
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Valor Total (pesos) <span class="text-red-500">*</span>
@@ -77,22 +77,23 @@
                                 <span class="text-sm font-bold text-slate-800"><i class="fas fa-coins mr-2 text-blue-600"></i>La venta está pactada en dólares</span>
                             </label>
                             <p class="mt-2 text-xs text-blue-700">Si activás esta opción, completá total en USD y cotización. El sistema calcula el total en pesos para saldo y percepciones.</p>
-                        </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div id="valor-total-usd-wrapper" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Valor Total en USD</label>
+                                    {{ form.valor_total_usd }}
+                                    {% if form.valor_total_usd.errors %}
+                                        <p class="mt-1 text-sm text-red-600">{{ form.valor_total_usd.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
 
-                        <div id="valor-total-usd-wrapper" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Valor Total en USD</label>
-                            {{ form.valor_total_usd }}
-                            {% if form.valor_total_usd.errors %}
-                                <p class="mt-1 text-sm text-red-600">{{ form.valor_total_usd.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-
-                        <div id="cotizacion-usd-wrapper" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD utilizada</label>
-                            {{ form.cotizacion_usd }}
-                            {% if form.cotizacion_usd.errors %}
-                                <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_usd.errors.0 }}</p>
-                            {% endif %}
+                                <div id="cotizacion-usd-wrapper" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD utilizada</label>
+                                    {{ form.cotizacion_usd }}
+                                    {% if form.cotizacion_usd.errors %}
+                                        <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_usd.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -110,22 +111,23 @@
                                 <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-2 text-emerald-600"></i>La seña fue pagada en dólares</span>
                             </label>
                             <p class="mt-2 text-xs text-emerald-700">Si la seña fue en USD, cargá monto y cotización para convertirla automáticamente al saldo en pesos.</p>
-                        </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div id="sena-usd-wrapper" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Seña en USD</label>
+                                    {{ form.sena_usd }}
+                                    {% if form.sena_usd.errors %}
+                                        <p class="mt-1 text-sm text-red-600">{{ form.sena_usd.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
 
-                        <div id="sena-usd-wrapper" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Seña en USD</label>
-                            {{ form.sena_usd }}
-                            {% if form.sena_usd.errors %}
-                                <p class="mt-1 text-sm text-red-600">{{ form.sena_usd.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-
-                        <div id="sena-cotizacion-wrapper" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD de la seña</label>
-                            {{ form.cotizacion_sena_usd }}
-                            {% if form.cotizacion_sena_usd.errors %}
-                                <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_sena_usd.errors.0 }}</p>
-                            {% endif %}
+                                <div id="sena-cotizacion-wrapper" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD de la seña</label>
+                                    {{ form.cotizacion_sena_usd }}
+                                    {% if form.cotizacion_sena_usd.errors %}
+                                        <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_sena_usd.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
