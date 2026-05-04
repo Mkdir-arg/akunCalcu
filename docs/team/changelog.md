@@ -14,6 +14,28 @@
 
 ---
 
+## 2026-05-04 — Rediseño del PDF de presupuestos con descripción narrativa por ítem (REQ-016 / FEAT-008)
+
+**User Story:** Como vendedor, quiero que el PDF del presupuesto describa cada ítem con una redacción comercial y técnica armada a partir de la configuración seleccionada, para enviarle al cliente un documento más claro, profesional y fácil de entender.
+
+**Archivos creados:**
+- `akuna_calc/presupuestos/pdf_descriptions.py` — helper para snapshot descriptivo, narrativa, resumen técnico y fallback legacy
+- `docs/features/FEAT-008-rediseno-pdf-presupuestos-descripcion-narrativa.md` — documentación final de la feature
+
+**Archivos modificados:**
+- `akuna_calc/presupuestos/views.py` — persistencia de `snapshot_item` y contexto `items_pdf`
+- `akuna_calc/presupuestos/templates/presupuestos/pdf.html` — nuevo diseño comercial del PDF
+- `akuna_calc/presupuestos/tests.py` — cobertura del helper narrativo y render del PDF
+- `docs/requerimientos/REQ-016-rediseno-pdf-presupuestos-descripcion-narrativa.md` — estado final del requerimiento
+- `docs/requerimientos/_INDEX.md` — índice actualizado
+- `docs/features/_INDEX.md` — índice actualizado
+- `docs/team/current-sprint.md` — cierre documental de la implementación
+- `docs/team/decisions.md` — ADR del snapshot descriptivo
+
+**Descripción:** Se rediseñó el PDF de presupuestos para mostrar cada ítem como un bloque comercial con descripción narrativa, resumen técnico y precios. La metadata necesaria se congela al momento de crear el ítem dentro de `resultado_json.snapshot_item`, evitando migraciones y preservando estabilidad histórica aunque cambien los catálogos legacy.
+
+---
+
 ## 2026-03-30 — Mejora Presupuestos: Paridad con Cotizador + UI (REQ-008 / FEAT-007)
 
 **User Story:** Como vendedor, quiero que el cotizador embebido en presupuestos tenga las mismas funcionalidades que el cotizador principal (opcionales, desglose completo, mano de obra) y una UI mejorada, para poder armar presupuestos completos sin tener que ir al cotizador aparte.

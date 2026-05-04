@@ -72,6 +72,18 @@
 
 ---
 
+## ADR-007: Snapshot descriptivo para PDFs de presupuestos
+**Fecha**: 2026-05-04
+**Estado**: Activo
+
+**Contexto**: El PDF de presupuestos necesita mostrar una descripción comercial construida con labels legibles de modelos legacy (`Marco`, `Producto`, `Línea`, `Extrusora`, `Vidrio`, `Tratamiento`, opcionales). Reconstruir esos textos en cada render hace que los PDFs históricos dependan de catálogos que pueden cambiar y hubiera empujado cambios de modelo innecesarios.
+
+**Decisión**: Guardar un snapshot descriptivo por ítem en `ItemPresupuesto.resultado_json["snapshot_item"]` al momento de crear el ítem. Ese snapshot incluye labels seleccionados, una narrativa ya armada, un resumen técnico y la metadata mínima para recomponer el texto. El PDF consume ese snapshot y solo usa fallback al desglose legacy para presupuestos anteriores.
+
+**Consecuencias**: No se requieren migraciones. Los presupuestos nuevos mantienen estabilidad histórica aunque cambien los nombres del catálogo. Cualquier evolución futura del PDF debe preservar compatibilidad con `snapshot_item` y con el fallback legacy.
+
+---
+
 ## ADR-005: Chart.js para gráficos en detalle de cliente
 **Fecha**: 2026-03-06
 **Estado**: Activo

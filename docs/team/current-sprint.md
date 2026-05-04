@@ -16,6 +16,7 @@ _Se define en el sprint planning._
 | US-004 | Popup para avanzar estado al completar pago de venta | ✅ Completado | Redirect con query param; fetch AJAX; SweetAlert2 |
 | US-006 | Módulo de Presupuestos — Paso 1 de Fábrica | ✅ Completado | App nueva; cotizador embebido; PDF via @media print; FEAT-005 |
 | US-008 | Mejora Presupuestos: Paridad con Cotizador + UI | ✅ Completado | Opcionales, desglose, KPIs, unificación; FEAT-007 |
+| US-009 | Rediseño del PDF de presupuestos con descripción narrativa por ítem | ✅ Completado | Implementado fuera de sprint activo; FEAT-008 |
 
 ## Impedimentos
 

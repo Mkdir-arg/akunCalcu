@@ -35,3 +35,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-013](./REQ-013-reporte-ventas-todos.md) | Reporte de ventas muestra Blanco y Negro | En desarrollo | 2026-04-23 | — |
 | [REQ-014](./REQ-014-premarco-en-opcionales-y-formulas-marcos.md) | Tipo Premarco en opcionales + relaciones con Líneas y Perfiles | En desarrollo | 2026-05-02 | — |
 | [REQ-015](./REQ-015-vista-previa-pdf-ventas.md) | Vista previa de PDF desde ventas | En desarrollo | 2026-05-03 | — |
+| [REQ-016](./REQ-016-rediseno-pdf-presupuestos-descripcion-narrativa.md) | Rediseño del PDF de presupuestos con descripción narrativa por ítem | Implementado | 2026-05-04 | FEAT-008 |

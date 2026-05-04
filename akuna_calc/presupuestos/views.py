@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from pricing.services.calculator import calcular_precio, PricingError
+from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
 
@@ -136,6 +137,7 @@ def agregar_item(request, pk):
 
         try:
             resultado = calcular_precio(config)
+            resultado['snapshot_item'] = build_item_snapshot(config, descripcion, cantidad)
             orden = presupuesto.items.count()
             item = ItemPresupuesto.objects.create(
                 presupuesto=presupuesto,
@@ -212,4 +214,8 @@ def pdf(request, pk):
         Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items'),
         pk=pk,
     )
-    return render(request, 'presupuestos/pdf.html', {'presupuesto': presupuesto})
+    items_pdf = [build_pdf_item_context(item) for item in presupuesto.items.all()]
+    return render(request, 'presupuestos/pdf.html', {
+        'presupuesto': presupuesto,
+        'items_pdf': items_pdf,
+    })
