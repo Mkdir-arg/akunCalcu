@@ -32,15 +32,14 @@
         .payments-reference { width: 26%; }
         .payments-amount { width: 30%; text-align: right; }
         .closing-table { width: 100%; table-layout: fixed; margin-top: 10pt; page-break-inside: avoid; -pdf-keep-in-frame-mode: overflow; }
-        .closing-table td { padding: 6pt 8pt; font-size: 13pt; font-weight: 700; vertical-align: middle; }
-        .closing-spacer { border: 0; }
-        .summary-label { background: #f2f2f2; }
-        .summary-value { text-align: right; font-size: 14pt; }
-        .summary-cell { border: 1px solid #000; }
-        .summary-total td.summary-cell { font-size: 14pt; }
+        .closing-table td { padding: 7pt 9pt; font-size: 12pt; font-weight: 700; vertical-align: middle; }
+        .summary-label-cell { width: 32%; border: 1px solid #000; background: #f2f2f2; }
+        .summary-value-cell { width: 18%; border: 1px solid #000; text-align: right; font-size: 12pt; }
+        .summary-total td.summary-label-cell,
+        .summary-total td.summary-value-cell { font-size: 13pt; }
         .nowrap { white-space: nowrap; }
-        .signature-cell { border: 0; text-align: center; vertical-align: top; }
-        .signature-name { font-size: 18pt; font-weight: 700; margin-bottom: 20pt; }
+        .signature-cell { width: 50%; border: 0; text-align: right; vertical-align: top; padding-top: 8pt; padding-right: 26pt; }
+        .signature-name { font-size: 18pt; font-weight: 700; margin-bottom: 22pt; }
         .signature-label { font-size: 12pt; margin-bottom: 16pt; }
         .small { font-size: 11px; }
     </style>
@@ -132,10 +131,7 @@
 
     <div class="spacer"></div>
 
-    {% if payments_start_new_page %}
-    <pdf:nextpage />
-    {% endif %}
-
+    {% if first_page_payment_rows %}
     <div class="payments-title">Detalle de pagos</div>
 
     <table class="payments-table" repeat="1">
@@ -145,7 +141,7 @@
             <th class="payments-reference">NRO.</th>
             <th class="payments-amount">IMPORTE</th>
         </tr>
-        {% for row in payment_rows %}
+        {% for row in first_page_payment_rows %}
         <tr>
             <td class="payments-date nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
             <td class="payments-bank">{{ row.medio }}</td>
@@ -155,37 +151,99 @@
         {% endfor %}
     </table>
 
-    {% if summary_start_new_page %}
-    <pdf:nextpage />
-    {% endif %}
-
     <table class="closing-table">
         <tr>
-            <td style="width:24%;" class="closing-spacer"></td>
-            <td style="width:26%;" class="summary-label summary-cell">RET. GANANCIAS</td>
-            <td style="width:18%;" class="summary-value summary-cell nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
-            <td style="width:32%;" class="signature-cell" rowspan="4">
-                <div class="signature-name">VERONICA</div>
+            <td class="summary-label-cell">RET. GANANCIAS</td>
+            <td class="summary-value-cell nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+            <td class="signature-cell" rowspan="4">
                 <div class="signature-label">Firma</div>
-                <div class="signature-label">AKUN</div>
                 <div class="signature-label">Aclaración</div>
             </td>
         </tr>
         <tr>
-            <td class="closing-spacer"></td>
-            <td class="summary-label summary-cell">RET. ING. BRUTOS</td>
-            <td class="summary-value summary-cell nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
+            <td class="summary-label-cell">RET. ING. BRUTOS</td>
+            <td class="summary-value-cell nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
         </tr>
         <tr>
-            <td class="closing-spacer"></td>
-            <td class="summary-label summary-cell">RET. IVA</td>
-            <td class="summary-value summary-cell nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
+            <td class="summary-label-cell">RET. IVA</td>
+            <td class="summary-value-cell nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
         </tr>
         <tr class="summary-total">
-            <td class="closing-spacer"></td>
-            <td class="summary-label summary-cell">TOTAL</td>
-            <td class="summary-value summary-cell nowrap">{{ recibo.importe|formato_numero }}</td>
+            <td class="summary-label-cell">TOTAL</td>
+            <td class="summary-value-cell nowrap">{{ recibo.importe|formato_numero }}</td>
         </tr>
     </table>
+    {% endif %}
+
+    {% if payment_only_pages or closing_payment_rows %}
+    <pdf:nextpage />
+
+    {% for page_rows in payment_only_pages %}
+    <div class="payments-title">Detalle de pagos</div>
+
+    <table class="payments-table" repeat="1">
+        <tr>
+            <th class="payments-date">FECHA</th>
+            <th class="payments-bank">BANCO</th>
+            <th class="payments-reference">NRO.</th>
+            <th class="payments-amount">IMPORTE</th>
+        </tr>
+        {% for row in page_rows %}
+        <tr>
+            <td class="payments-date nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
+            <td class="payments-bank">{{ row.medio }}</td>
+            <td class="payments-reference">{{ row.referencia }}</td>
+            <td class="payments-amount nowrap">{{ row.importe|formato_numero }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <pdf:nextpage />
+    {% endfor %}
+
+    {% if closing_payment_rows %}
+    <div class="payments-title">Detalle de pagos</div>
+
+    <table class="payments-table" repeat="1">
+        <tr>
+            <th class="payments-date">FECHA</th>
+            <th class="payments-bank">BANCO</th>
+            <th class="payments-reference">NRO.</th>
+            <th class="payments-amount">IMPORTE</th>
+        </tr>
+        {% for row in closing_payment_rows %}
+        <tr>
+            <td class="payments-date nowrap">{{ row.fecha|date:'d/m/Y' }}</td>
+            <td class="payments-bank">{{ row.medio }}</td>
+            <td class="payments-reference">{{ row.referencia }}</td>
+            <td class="payments-amount nowrap">{{ row.importe|formato_numero }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <table class="closing-table">
+        <tr>
+            <td class="summary-label-cell">RET. GANANCIAS</td>
+            <td class="summary-value-cell nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+            <td class="signature-cell" rowspan="4">
+                <div class="signature-label">Firma</div>
+                <div class="signature-label">Aclaración</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">RET. ING. BRUTOS</td>
+            <td class="summary-value-cell nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">RET. IVA</td>
+            <td class="summary-value-cell nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
+        </tr>
+        <tr class="summary-total">
+            <td class="summary-label-cell">TOTAL</td>
+            <td class="summary-value-cell nowrap">{{ recibo.importe|formato_numero }}</td>
+        </tr>
+    </table>
+    {% endif %}
+    {% endif %}
 </body>
 </html>

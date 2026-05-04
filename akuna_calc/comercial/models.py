@@ -525,12 +525,21 @@ class Recibo(models.Model):
                 'importe': pago.monto,
             })
 
+        payment_count = len(payment_rows)
+        rows_per_payment_page = 8
+        first_page_payment_rows = payment_rows if payment_count <= 1 else []
+        trailing_payment_rows = payment_rows if payment_count > 1 else []
+        payment_pages = [
+            trailing_payment_rows[index:index + rows_per_payment_page]
+            for index in range(0, len(trailing_payment_rows), rows_per_payment_page)
+        ]
+        payment_only_pages = payment_pages[:-1] if payment_pages else []
+        closing_payment_rows = payment_pages[-1] if payment_pages else []
+
         logo_url = ''
         if logo_path:
             logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
             logo_url = f'data:image/png;base64,{logo_b64}'
-
-        payment_count = len(payment_rows)
 
         context = {
             'recibo': self,
@@ -546,9 +555,9 @@ class Recibo(models.Model):
             'ret_iibb': retenciones.get('iibb'),
             'ret_iva': retenciones.get('iva'),
             'numero_comprobante': self.pago.numero_factura or '',
-            'payment_rows': payment_rows,
-            'payments_start_new_page': payment_count >= 3,
-            'summary_start_new_page': payment_count >= 9,
+            'first_page_payment_rows': first_page_payment_rows,
+            'payment_only_pages': payment_only_pages,
+            'closing_payment_rows': closing_payment_rows,
         }
         html = render_to_string('comercial/recibo_pdf.html', context)
 
