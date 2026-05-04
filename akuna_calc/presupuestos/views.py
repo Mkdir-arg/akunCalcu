@@ -234,6 +234,7 @@ def cambiar_estado(request, pk):
 def _build_blank_recibo_context(presupuesto):
     cliente = presupuesto.cliente
     return {
+        'copias': range(2),
         'logo_url': _build_logo_data_url(),
         'cliente_nombre': cliente.get_nombre_completo(),
         'cliente_direccion': cliente.direccion or '',

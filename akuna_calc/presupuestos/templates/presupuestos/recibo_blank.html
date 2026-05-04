@@ -7,7 +7,7 @@
         @page { size: A4 landscape; margin: 8mm; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000; margin: 0; }
         table { border-collapse: collapse; }
-        .header, .field-table, .section-line, .bottom-layout, .payments-table, .summary-table { width: 100%; }
+        .header, .field-table, .section-line, .payments-table, .summary-table { width: 100%; }
         .header td { vertical-align: top; }
         .logo { width: 145px; }
         .company { font-size: 10px; font-weight: 700; line-height: 1.3; padding-top: 8px; }
@@ -20,29 +20,35 @@
         .label { font-weight: 700; white-space: nowrap; }
         .value { background: #efefef; height: 18px; }
         .blank-fill { display: block; min-height: 16px; }
-        .spacer { height: 8px; }
-        .bottom-layout td { vertical-align: top; }
+        .header-gap { height: 22px; }
+        .section-gap { height: 18px; }
+        .table-gap { height: 34px; }
+        .customer-bottom-gap { height: 16px; }
+        .customer-table td { padding-top: 4px; padding-bottom: 4px; }
+        .customer-table .label { font-size: 15px; }
+        .customer-table .value { height: 24px; font-size: 15px; }
+        .customer-table .blank-fill { min-height: 22px; line-height: 22px; }
+        .concept-table .label { font-size: 15px; }
+        .concept-table .value { height: 22px; }
+        .concept-table .blank-fill { min-height: 20px; line-height: 20px; }
         .payments-table { table-layout: fixed; }
         .payments-table th { border: 1px solid #000; padding: 4px 6px; background: #fff; text-align: center; font-size: 12px; font-weight: 700; }
-        .payments-table td { border: 1px solid #000; padding: 0 6px; vertical-align: middle; font-size: 12px; height: 18px; }
+        .payments-table td { border: 1px solid #000; padding: 0 6px; vertical-align: middle; font-size: 12px; height: 22px; }
         .payments-date { width: 16%; }
         .payments-bank { width: 33%; }
         .payments-reference { width: 32%; }
         .payments-amount { width: 19%; text-align: right; }
-        .summary-table { table-layout: fixed; margin-top: 0; }
-        .summary-table td { border: 1px solid #000; padding: 0 6px; font-size: 11px; font-weight: 700; height: 18px; }
-        .summary-spacer { border: 0 !important; }
-        .summary-label-cell { width: 23%; }
-        .summary-value-cell { width: 45%; }
-        .signature-wrap { padding-top: 92px; text-align: center; }
-        .signature-name { font-size: 20px; font-weight: 400; margin-bottom: 18px; }
-        .signature-line { width: 170px; border-top: 2px solid #000; margin: 0 auto 6px auto; }
-        .signature-caption { font-size: 12px; margin-bottom: 2px; }
-        .signature-brand { font-size: 14px; margin-bottom: 2px; }
+        .summary-gap { height: 14px; }
+        .summary-table { width: 34%; table-layout: fixed; margin-top: 0; margin-left: auto; }
+        .summary-table td { border: 1px solid #000; padding: 0 8px; font-size: 12px; font-weight: 700; height: 22px; }
+        .summary-label-cell { width: 38%; text-align: left; }
+        .summary-value-cell { width: 62%; background: #fff; }
+        .copy-gap { height: 18px; }
         .small { font-size: 11px; }
     </style>
 </head>
 <body>
+    {% for _ in copias %}
     <table class="header">
         <tr>
             <td style="width:37%;">
@@ -82,9 +88,11 @@
         </tr>
     </table>
 
+    <div class="header-gap"></div>
+
     <table class="section-line"><tr><td></td></tr></table>
 
-    <table class="field-table">
+    <table class="field-table customer-table">
         <tr>
             <td class="label" style="width:14%;">Señor (es):</td>
             <td class="value" style="width:40%;"><span class="blank-fill">{{ cliente_nombre }}</span></td>
@@ -108,9 +116,11 @@
         </tr>
     </table>
 
+    <div class="customer-bottom-gap"></div>
+
     <table class="section-line"><tr><td></td></tr></table>
 
-    <table class="field-table">
+    <table class="field-table concept-table">
         <tr>
             <td class="label" style="width:32%;">Recibimos la suma de PESOS :</td>
             <td class="value"><span class="blank-fill">&nbsp;</span></td>
@@ -121,56 +131,47 @@
         </tr>
     </table>
 
-    <div class="spacer"></div>
+    <div class="section-gap"></div>
 
-    <table class="bottom-layout">
+    <div class="table-gap"></div>
+
+    <table class="payments-table">
         <tr>
-            <td style="width:64%; padding-right:18px;">
-                <table class="payments-table">
-                    <tr>
-                        <th class="payments-date">FECHA</th>
-                        <th class="payments-bank">BANCO</th>
-                        <th class="payments-reference">NRO.</th>
-                        <th class="payments-amount">IMPORTE</th>
-                    </tr>
-                    {% for _ in filas_vacias %}
-                    <tr>
-                        <td class="payments-date">&nbsp;</td>
-                        <td class="payments-bank">&nbsp;</td>
-                        <td class="payments-reference">&nbsp;</td>
-                        <td class="payments-amount">&nbsp;</td>
-                    </tr>
-                    {% endfor %}
-                </table>
+            <th class="payments-date">FECHA</th>
+            <th class="payments-bank">BANCO</th>
+            <th class="payments-reference">NRO.</th>
+            <th class="payments-amount">IMPORTE</th>
+        </tr>
+        {% for _ in filas_vacias %}
+        <tr>
+            <td class="payments-date">&nbsp;</td>
+            <td class="payments-bank">&nbsp;</td>
+            <td class="payments-reference">&nbsp;</td>
+            <td class="payments-amount">&nbsp;</td>
+        </tr>
+        {% endfor %}
+    </table>
 
-                <table class="summary-table">
-                    <tr>
-                        <td class="summary-spacer" colspan="2"></td>
-                        <td class="summary-label-cell">TOTAL</td>
-                        <td class="summary-value-cell">&nbsp;</td>
-                    </tr>
-                    <tr>
-                        <td class="summary-spacer" colspan="2"></td>
-                        <td class="summary-label-cell">SEÑA</td>
-                        <td class="summary-value-cell">&nbsp;</td>
-                    </tr>
-                    <tr>
-                        <td class="summary-spacer" colspan="2"></td>
-                        <td class="summary-label-cell">SALDO</td>
-                        <td class="summary-value-cell">&nbsp;</td>
-                    </tr>
-                </table>
-            </td>
-            <td style="width:36%;">
-                <div class="signature-wrap">
-                    <div class="signature-name">VERONICA</div>
-                    <div class="signature-line"></div>
-                    <div class="signature-caption">Firma</div>
-                    <div class="signature-brand">AKUN</div>
-                    <div class="signature-line"></div>
-                </div>
-            </td>
+    <div class="summary-gap"></div>
+
+    <table class="summary-table">
+        <tr>
+            <td class="summary-label-cell">TOTAL</td>
+            <td class="summary-value-cell">&nbsp;</td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">SEÑA</td>
+            <td class="summary-value-cell">&nbsp;</td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">SALDO</td>
+            <td class="summary-value-cell">&nbsp;</td>
         </tr>
     </table>
+    {% if not forloop.last %}
+    <div class="copy-gap"></div>
+    <pdf:nextpage />
+    {% endif %}
+    {% endfor %}
 </body>
 </html>

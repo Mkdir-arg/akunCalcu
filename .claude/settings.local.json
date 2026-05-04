@@ -11,7 +11,9 @@
       "Bash(docker-compose up:*)",
       "Bash(docker-compose logs:*)",
       "Bash(docker-compose run:*)",
-      "Bash(ls -la /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/pricing/*.py)"
+      "Bash(ls -la /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/pricing/*.py)",
+      "Bash(xargs grep *)",
+      "Bash(netsh wlan *)"
     ]
   },
   "enableAllProjectMcpServers": true,
