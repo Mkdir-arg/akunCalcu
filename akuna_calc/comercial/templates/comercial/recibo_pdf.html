@@ -31,15 +31,17 @@
         .payments-bank { width: 26%; }
         .payments-reference { width: 26%; }
         .payments-amount { width: 30%; text-align: right; }
-        .summary-table { width: 100%; table-layout: fixed; margin-top: 10pt; page-break-inside: avoid; -pdf-keep-in-frame-mode: overflow; }
-        .summary-table td { border: 1px solid #000; padding: 6pt 8pt; font-size: 13pt; font-weight: 700; }
+        .closing-table { width: 100%; table-layout: fixed; margin-top: 10pt; page-break-inside: avoid; -pdf-keep-in-frame-mode: overflow; }
+        .closing-table td { padding: 6pt 8pt; font-size: 13pt; font-weight: 700; vertical-align: middle; }
+        .closing-spacer { border: 0; }
         .summary-label { background: #f2f2f2; }
         .summary-value { text-align: right; font-size: 14pt; }
-        .summary-total td { font-size: 14pt; }
+        .summary-cell { border: 1px solid #000; }
+        .summary-total td.summary-cell { font-size: 14pt; }
         .nowrap { white-space: nowrap; }
-        .signature-layout { width: 100%; margin-top: 14px; page-break-inside: avoid; }
-        .signature-block { text-align: center; font-size: 13px; }
-        .signature-line { border-top: 2px solid #000; width: 180px; margin: 18px auto 2px auto; }
+        .signature-cell { border: 0; text-align: center; vertical-align: top; }
+        .signature-name { font-size: 18pt; font-weight: 700; margin-bottom: 20pt; }
+        .signature-label { font-size: 12pt; margin-bottom: 16pt; }
         .small { font-size: 11px; }
     </style>
 </head>
@@ -157,43 +159,32 @@
     <pdf:nextpage />
     {% endif %}
 
-    <table class="summary-table">
+    <table class="closing-table">
         <tr>
-            <td style="width:54%; border:0;"></td>
-            <td style="width:26%;" class="summary-label">RET. GANANCIAS</td>
-            <td style="width:20%;" class="summary-value nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+            <td style="width:24%;" class="closing-spacer"></td>
+            <td style="width:26%;" class="summary-label summary-cell">RET. GANANCIAS</td>
+            <td style="width:18%;" class="summary-value summary-cell nowrap">{% if ret_ganancias %}{{ ret_ganancias|formato_numero }}{% endif %}</td>
+            <td style="width:32%;" class="signature-cell" rowspan="4">
+                <div class="signature-name">VERONICA</div>
+                <div class="signature-label">Firma</div>
+                <div class="signature-label">AKUN</div>
+                <div class="signature-label">Aclaración</div>
+            </td>
         </tr>
         <tr>
-            <td style="width:54%; border:0;"></td>
-            <td style="width:26%;" class="summary-label">RET. ING. BRUTOS</td>
-            <td style="width:20%;" class="summary-value nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
+            <td class="closing-spacer"></td>
+            <td class="summary-label summary-cell">RET. ING. BRUTOS</td>
+            <td class="summary-value summary-cell nowrap">{% if ret_iibb %}{{ ret_iibb|formato_numero }}{% endif %}</td>
         </tr>
         <tr>
-            <td style="width:54%; border:0;"></td>
-            <td style="width:26%;" class="summary-label">RET. IVA</td>
-            <td style="width:20%;" class="summary-value nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
+            <td class="closing-spacer"></td>
+            <td class="summary-label summary-cell">RET. IVA</td>
+            <td class="summary-value summary-cell nowrap">{% if ret_iva %}{{ ret_iva|formato_numero }}{% endif %}</td>
         </tr>
         <tr class="summary-total">
-            <td style="width:54%; border:0;"></td>
-            <td style="width:26%;" class="summary-label">TOTAL</td>
-            <td style="width:20%;" class="summary-value nowrap">{{ recibo.importe|formato_numero }}</td>
-        </tr>
-    </table>
-
-    <table class="signature-layout">
-        <tr>
-            <td style="width:68%; border:0;"></td>
-            <td style="width:32%; border:0; vertical-align:bottom;">
-                <div class="signature-block">
-                    <div style="height:36px;"></div>
-                    <div style="font-size:18px; margin-bottom:22px;">VERONICA</div>
-                    <div class="signature-line"></div>
-                    <div>Firma</div>
-                    <div class="signature-line" style="margin-top:16px;"></div>
-                    <div>AKUN</div>
-                    <div>Aclaración</div>
-                </div>
-            </td>
+            <td class="closing-spacer"></td>
+            <td class="summary-label summary-cell">TOTAL</td>
+            <td class="summary-value summary-cell nowrap">{{ recibo.importe|formato_numero }}</td>
         </tr>
     </table>
 </body>

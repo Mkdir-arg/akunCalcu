@@ -489,6 +489,7 @@ class Recibo(models.Model):
 
     def construir_pdf_bytes(self):
         """Renderiza el template y devuelve los bytes del PDF en memoria, sin tocar disco."""
+        import base64
         import io
 
         from django.conf import settings
@@ -524,9 +525,16 @@ class Recibo(models.Model):
                 'importe': pago.monto,
             })
 
+        logo_url = ''
+        if logo_path:
+            logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
+            logo_url = f'data:image/png;base64,{logo_b64}'
+
+        payment_count = len(payment_rows)
+
         context = {
             'recibo': self,
-            'logo_url': str(logo_path.resolve()) if logo_path else '',
+            'logo_url': logo_url,
             'cliente_nombre': cliente.get_nombre_completo(),
             'cliente_direccion': cliente.direccion,
             'cliente_localidad': cliente.localidad,
@@ -539,8 +547,8 @@ class Recibo(models.Model):
             'ret_iva': retenciones.get('iva'),
             'numero_comprobante': self.pago.numero_factura or '',
             'payment_rows': payment_rows,
-            'payments_start_new_page': len(payment_rows) > 5,
-            'summary_start_new_page': 6 <= len(payment_rows) <= 8,
+            'payments_start_new_page': payment_count >= 3,
+            'summary_start_new_page': payment_count >= 9,
         }
         html = render_to_string('comercial/recibo_pdf.html', context)
 
