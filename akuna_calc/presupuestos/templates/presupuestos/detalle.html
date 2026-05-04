@@ -47,12 +47,10 @@
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-file-pdf mr-2"></i>Presupuesto
             </a>
-            {% if presupuesto.estado == 'confirmado' %}
             <a href="{% url 'presupuestos:presupuestos-recibo' presupuesto.pk %}"
                 class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-receipt mr-2"></i>Recibo
             </a>
-            {% endif %}
         </div>
     </div>
 

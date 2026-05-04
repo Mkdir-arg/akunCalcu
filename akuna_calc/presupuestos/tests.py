@@ -255,31 +255,18 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'Ventana cocina en línea Modena de Aluar')
         self.assertContains(res, 'Subtotal del ítem')
 
-    def test_detalle_muestra_boton_recibo_si_presupuesto_confirmado(self):
+    def test_detalle_muestra_boton_recibo(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
-        p.estado = 'confirmado'
-        p.save(update_fields=['estado'])
 
         res = self.client.get(f'/presupuestos/{p.pk}/')
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Recibo')
 
-    def test_detalle_no_muestra_boton_recibo_si_presupuesto_no_confirmado(self):
+    def test_recibo_descarga_pdf(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
-
-        res = self.client.get(f'/presupuestos/{p.pk}/')
-
-        self.assertEqual(res.status_code, 200)
-        self.assertNotContains(res, 'Recibo')
-
-    def test_recibo_descarga_pdf_para_presupuesto_confirmado(self):
-        self.client.login(username='viewuser', password='testpass')
-        p = crear_presupuesto(self.user)
-        p.estado = 'confirmado'
-        p.save(update_fields=['estado'])
 
         res = self.client.get(f'/presupuestos/{p.pk}/recibo/')
 
