@@ -1131,10 +1131,19 @@ def registrar_pago_compra(request, pk):
         con_factura = request.POST.get('con_factura') == 'true'
         numero_factura = request.POST.get('numero_factura', '')
         observaciones = request.POST.get('observaciones', '')
+        pago_en_dolares = request.POST.get('pago_en_dolares') in {'true', 'on', '1'}
+        monto_usd = request.POST.get('monto_usd', '') or None
+        cotizacion_usd = request.POST.get('cotizacion_usd', '') or None
         es_proveedor = compra.es_proveedor
 
         try:
-            monto_decimal = Decimal(monto)
+            monto_decimal, monto_usd_decimal, cotizacion_usd_decimal = _resolver_monto_pago_venta(
+                monto=monto,
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=monto_usd,
+                cotizacion_usd=cotizacion_usd,
+            )
+
             if monto_decimal <= 0:
                 messages.error(request, 'El monto debe ser mayor a 0')
                 return redirect('comercial:compra_detail', pk=pk)
@@ -1150,6 +1159,9 @@ def registrar_pago_compra(request, pk):
                 con_factura=con_factura,
                 numero_factura=numero_factura,
                 observaciones=observaciones,
+                pago_en_dolares=pago_en_dolares,
+                monto_usd=monto_usd_decimal if pago_en_dolares else None,
+                cotizacion_usd=cotizacion_usd_decimal if pago_en_dolares else None,
                 created_by=request.user
             )
             compra.save()
@@ -1192,6 +1204,9 @@ def editar_pago_compra(request, pk):
 
             if monto <= 0:
                 return JsonResponse({'success': False, 'error': 'El monto debe ser mayor a 0'}, status=400)
+            saldo_disponible = pago.compra.saldo + pago.monto
+            if not pago.compra.es_proveedor and monto > saldo_disponible:
+                return JsonResponse({'success': False, 'error': f'El monto no puede exceder el saldo pendiente (${saldo_disponible})'}, status=400)
 
             pago.monto = monto
             pago.fecha_pago = datetime.strptime(fecha_pago_str, '%Y-%m-%d').date()
@@ -1199,13 +1214,23 @@ def editar_pago_compra(request, pk):
             pago.con_factura = con_factura
             pago.numero_factura = numero_factura
             pago.observaciones = observaciones
+            pago.pago_en_dolares = pago_en_dolares
+            pago.monto_usd = monto_usd if pago_en_dolares else None
+            pago.cotizacion_usd = cotizacion_usd if pago_en_dolares else None
             pago.save()
 
             pago.compra.save()
+            if pago.compra.saldo <= 0 and pago.compra.estado == 'pendiente':
+                pago.compra.estado = 'pagado'
+                pago.compra.save(update_fields=['estado', 'updated_at'])
+            elif pago.compra.saldo > 0 and pago.compra.estado == 'pagado':
+                pago.compra.estado = 'pendiente'
+                pago.compra.save(update_fields=['estado', 'updated_at'])
 
             return JsonResponse({
                 'success': True,
-                'saldo': float(pago.compra.saldo)
+                'saldo': float(pago.compra.saldo),
+                'estado': pago.compra.estado,
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)

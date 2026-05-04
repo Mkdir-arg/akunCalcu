@@ -107,6 +107,48 @@ class PagoVentaUSDFieldsTest(TestCase):
         self.assertIn('50000', str(pago))
 
 
+class PagoCompraUSDFieldsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testcomprasusd', password='testpass')
+        self.tipo_proveedor = TipoCuenta.objects.create(tipo='proveedores', descripcion='Proveedores')
+        self.proveedor = Cuenta.objects.create(nombre='Proveedor USD', tipo_cuenta=self.tipo_proveedor)
+        self.compra = Compra.objects.create(
+            numero_pedido='COMP-USD-001',
+            cuenta=self.proveedor,
+            fecha_pago='2026-04-01',
+            valor_total=Decimal('100000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+
+    def test_pago_compra_campos_usd_default(self):
+        pago = PagoCompra.objects.create(
+            compra=self.compra,
+            monto=Decimal('50000'),
+            fecha_pago='2026-04-01',
+            forma_pago='efectivo',
+            created_by=self.user,
+        )
+        self.assertFalse(pago.pago_en_dolares)
+        self.assertIsNone(pago.monto_usd)
+        self.assertIsNone(pago.cotizacion_usd)
+
+    def test_pago_compra_con_dolares(self):
+        pago = PagoCompra.objects.create(
+            compra=self.compra,
+            monto=Decimal('50000'),
+            fecha_pago='2026-04-01',
+            forma_pago='efectivo',
+            created_by=self.user,
+            pago_en_dolares=True,
+            monto_usd=Decimal('37.04'),
+            cotizacion_usd=Decimal('1350'),
+        )
+        self.assertTrue(pago.pago_en_dolares)
+        self.assertEqual(pago.monto_usd, Decimal('37.04'))
+        self.assertEqual(pago.cotizacion_usd, Decimal('1350'))
+
+
 class RegistrarPagoUSDTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
@@ -370,6 +412,109 @@ class ComprasProveedorTest(TestCase):
         self.assertEqual(response.status_code, 302)
         compra = Compra.objects.get(numero_pedido='OC-101')
         self.assertEqual(compra.forma_pago_sena, 'transferencia')
+
+    def test_compra_create_en_dolares_calcula_total_y_sena_en_pesos(self):
+        response = self.client_http.post(reverse('comercial:compra_create'), {
+            'numero_pedido': 'OC-USD-101',
+            'fecha_pago': '2026-04-21',
+            'tipo_cuenta_filter': self.tipo_proveedor.id,
+            'cuenta': self.proveedor.id,
+            'valor_total': '',
+            'compra_en_dolares': 'on',
+            'valor_total_usd': '10',
+            'cotizacion_usd': '1000',
+            'sena': '',
+            'sena_en_dolares': 'on',
+            'sena_usd': '2',
+            'cotizacion_sena_usd': '1000',
+            'forma_pago_sena': 'transferencia',
+            'con_factura': 'on',
+            'descripcion': 'Compra en usd',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        compra = Compra.objects.get(numero_pedido='OC-USD-101')
+        self.assertTrue(compra.compra_en_dolares)
+        self.assertEqual(compra.valor_total, Decimal('10000.00'))
+        self.assertEqual(compra.valor_total_usd, Decimal('10.00'))
+        self.assertEqual(compra.cotizacion_usd, Decimal('1000.00'))
+        self.assertTrue(compra.sena_en_dolares)
+        self.assertEqual(compra.sena, Decimal('2000.00'))
+        self.assertEqual(compra.sena_usd, Decimal('2.00'))
+        self.assertEqual(compra.cotizacion_sena_usd, Decimal('1000.00'))
+
+    def test_registrar_pago_compra_con_dolares_calcula_monto_en_pesos(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-USD-102',
+            cuenta=self.otro,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('2000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:registrar_pago_compra', args=[compra.pk]), {
+            'monto': '',
+            'fecha_pago': '2026-04-21',
+            'forma_pago': 'efectivo',
+            'con_factura': 'true',
+            'pago_en_dolares': 'true',
+            'monto_usd': '1.5',
+            'cotizacion_usd': '1000',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        pago = PagoCompra.objects.get(compra=compra)
+        compra.refresh_from_db()
+        self.assertEqual(pago.monto, Decimal('1500.00'))
+        self.assertTrue(pago.pago_en_dolares)
+        self.assertEqual(pago.monto_usd, Decimal('1.50'))
+        self.assertEqual(pago.cotizacion_usd, Decimal('1000.00'))
+        self.assertEqual(compra.saldo, Decimal('500.00'))
+
+    def test_editar_pago_compra_con_dolares_calcula_monto_en_pesos(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-USD-103',
+            cuenta=self.otro,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('5000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        pago = PagoCompra.objects.create(
+            compra=compra,
+            monto=Decimal('1000.00'),
+            fecha_pago='2026-04-21',
+            forma_pago='efectivo',
+            con_factura=True,
+            created_by=self.user,
+        )
+        compra.save()
+
+        response = self.client_http.post(
+            reverse('comercial:editar_pago_compra', args=[pago.pk]),
+            data=json.dumps({
+                'monto': '',
+                'fecha_pago': '2026-04-22',
+                'forma_pago': 'transferencia',
+                'con_factura': True,
+                'numero_factura': '',
+                'observaciones': '',
+                'pago_en_dolares': True,
+                'monto_usd': '2',
+                'cotizacion_usd': '1200',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        pago.refresh_from_db()
+        compra.refresh_from_db()
+        self.assertEqual(pago.monto, Decimal('2400.00'))
+        self.assertTrue(pago.pago_en_dolares)
+        self.assertEqual(pago.monto_usd, Decimal('2.00'))
+        self.assertEqual(pago.cotizacion_usd, Decimal('1200.00'))
+        self.assertEqual(compra.saldo, Decimal('2600.00'))
 
     def test_pago_compra_permite_saldo_a_favor_para_proveedor(self):
         compra = Compra.objects.create(

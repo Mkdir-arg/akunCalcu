@@ -163,6 +163,16 @@
                     <span class="font-bold text-slate-800">{{ compra.fecha_pago|date:"d/m/Y" }}</span>
                 </div>
                 <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Valor Contable:</span>
+                    <span class="font-bold text-slate-800">${{ compra.valor_total|formato_numero }}</span>
+                </div>
+                {% if compra.compra_en_dolares and compra.valor_total_usd %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Compra Original:</span>
+                    <span class="font-bold text-emerald-700">USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Tipo:</span>
                     <span class="px-3 py-1 {% if compra.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
                         {% if compra.con_factura %}<i class="fas fa-file-invoice mr-1"></i>Blanco{% else %}Negro{% endif %}
@@ -184,6 +194,12 @@
                     <span class="text-slate-600 font-medium">Sena Inicial:</span>
                     <span class="font-bold text-green-700">${{ compra.sena|formato_numero }}</span>
                 </div>
+                {% if compra.sena > 0 and compra.sena_en_dolares and compra.sena_usd %}
+                <div class="flex justify-between">
+                    <span class="text-slate-600 font-medium">Seña Original:</span>
+                    <span class="font-bold text-emerald-700">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</span>
+                </div>
+                {% endif %}
                 {% if compra.sena > 0 and compra.forma_pago_sena %}
                 <div class="flex justify-between">
                     <span class="text-slate-600 font-medium">Pago de la Sena:</span>
@@ -206,48 +222,78 @@
             <form method="post" action="{% url 'comercial:registrar_pago_compra' compra.pk %}">
                 {% csrf_token %}
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
-                        <input type="number" name="monto" step="0.01" {% if not compra.es_proveedor %}max="{{ compra.saldo }}"{% endif %} required
-                               class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <p class="text-xs text-slate-500 mt-1">
-                            {% if compra.es_proveedor %}
-                            Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.
-                            {% else %}
-                            Maximo: ${{ compra.saldo|formato_numero }}
-                            {% endif %}
-                        </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
+                            <input type="number" id="monto-pesos-input" name="monto" step="0.01" {% if not compra.es_proveedor %}max="{{ compra.saldo }}"{% endif %} required
+                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <p id="monto-pesos-help" class="text-xs text-slate-500 mt-1">
+                                {% if compra.es_proveedor %}
+                                Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.
+                                {% else %}
+                                Maximo: ${{ compra.saldo|formato_numero }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
+                            <input type="date" name="fecha_pago" value="{{ today|date:'Y-m-d' }}" required
+                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
-                        <input type="date" name="fecha_pago" value="{{ today|date:'Y-m-d' }}" required
-                               class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                        <div class="flex flex-col gap-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" id="pago_en_dolares_check" name="pago_en_dolares" value="true"
+                                       class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
+                                <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pago en dólares</span>
+                            </label>
+                            <p class="text-xs text-emerald-700">Si completa USD y cotización, el sistema calcula el monto en pesos que impacta en el saldo de la compra.</p>
+                        </div>
+                        <div id="campos-dolares-pago" class="hidden mt-4 pt-4 border-t border-emerald-200">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
+                                    <input type="number" id="monto-usd-input" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                           class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
+                                    <input type="number" id="cotizacion-usd-input" name="cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
+                                           class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
-                        <select name="forma_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="transferencia">Transferencia</option>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="tarjeta">Tarjeta</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Compra <span class="text-red-500">*</span></label>
-                        <select name="con_factura" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="true" {% if compra.con_factura %}selected{% endif %}>Blanco (con factura)</option>
-                            <option value="false" {% if not compra.con_factura %}selected{% endif %}>Negro (sin factura)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Numero de Factura</label>
-                        <input type="text" name="numero_factura" placeholder="Ej: 0001-00001234"
-                               class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
-                        <textarea name="observaciones" rows="2"
-                                  class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
+                            <select name="forma_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="transferencia">Transferencia</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Compra <span class="text-red-500">*</span></label>
+                            <select name="con_factura" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="true" {% if compra.con_factura %}selected{% endif %}>Blanco (con factura)</option>
+                                <option value="false" {% if not compra.con_factura %}selected{% endif %}>Negro (sin factura)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Numero de Factura</label>
+                            <input type="text" name="numero_factura" placeholder="Ej: 0001-00001234"
+                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
+                            <textarea name="observaciones" rows="2"
+                                      class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                        </div>
                     </div>
                     <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
                         <i class="fas fa-check mr-2"></i>Registrar Pago
@@ -286,6 +332,9 @@
                             <p class="font-semibold text-slate-800 text-sm">Compra creada</p>
                             <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y H:i" }}</p>
                             <p class="text-xs text-slate-600 mt-0.5">Total: ${{ compra.valor_total|formato_numero }} — Sena: ${{ compra.sena|formato_numero }}</p>
+                            {% if compra.compra_en_dolares and compra.valor_total_usd %}
+                            <p class="text-xs text-emerald-700 mt-0.5">Compra original: USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -298,6 +347,9 @@
                             <p class="font-semibold text-slate-800 text-sm">Sena inicial registrada</p>
                             <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y" }}{% if compra.forma_pago_sena %} — {{ compra.get_forma_pago_sena_display }}{% endif %}</p>
                             <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ compra.sena|formato_numero }}</p>
+                            {% if compra.sena_en_dolares and compra.sena_usd %}
+                            <p class="text-xs text-emerald-700 mt-0.5">Seña original: USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
@@ -311,6 +363,9 @@
                             <p class="font-semibold text-slate-800 text-sm">Pago registrado</p>
                             <p class="text-xs text-slate-500">{{ pago.fecha_pago|date:"d/m/Y" }} — {{ pago.get_forma_pago_display }}</p>
                             <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ pago.monto|formato_numero }}</p>
+                            {% if pago.pago_en_dolares and pago.monto_usd %}
+                            <p class="text-xs text-emerald-700 mt-0.5">Pago original: USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -394,7 +449,12 @@
                     <!-- Sena inicial -->
                     <tr class="bg-blue-50">
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ compra.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-blue-700">${{ compra.sena|formato_numero }}</td>
+                        <td class="px-6 py-4 text-base font-bold text-blue-700">
+                            ${{ compra.sena|formato_numero }}
+                            {% if compra.sena_en_dolares and compra.sena_usd %}
+                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{% if compra.forma_pago_sena %}{{ compra.get_forma_pago_sena_display }}{% else %}Sena Inicial{% endif %}</span>
                         </td>
@@ -413,7 +473,12 @@
                     {% for pago in pagos %}
                     <tr class="hover:bg-slate-50 transition-colors" id="pago-row-{{ pago.id }}">
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-green-700">${{ pago.monto|formato_numero }}</td>
+                        <td class="px-6 py-4 text-base font-bold text-green-700">
+                            ${{ pago.monto|formato_numero }}
+                            {% if pago.pago_en_dolares and pago.monto_usd %}
+                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">{{ pago.get_forma_pago_display }}</span>
                         </td>
@@ -427,7 +492,7 @@
                         <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }})"
+                                <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }}, {{ pago.pago_en_dolares|lower }}, {{ pago.monto_usd|default:'null' }}, {{ pago.cotizacion_usd|default:'null' }})"
                                         class="text-blue-600 hover:text-blue-800 font-medium text-sm">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -466,12 +531,33 @@
             <input type="hidden" id="edit_pago_id">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
                     <input type="number" id="edit_monto" step="0.01" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
                     <input type="date" id="edit_fecha_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="edit_pago_en_dolares"
+                           class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
+                    <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pago en dólares</span>
+                </label>
+                <div id="edit-campos-dolares" class="hidden mt-4 pt-4 border-t border-emerald-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
+                            <input type="number" id="edit_monto_usd" step="0.01" min="0" placeholder="Ej: 500"
+                                   class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
+                            <input type="number" id="edit_cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
+                                   class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -545,8 +631,59 @@ function guardarNotas() {
     });
 }
 
+function setReadonlyInput(input, isReadonly) {
+    if (!input) {
+        return;
+    }
+    input.readOnly = isReadonly;
+    input.classList.toggle('bg-slate-50', isReadonly);
+}
+
+function actualizarMontoPesosPago() {
+    const checked = document.getElementById('pago_en_dolares_check')?.checked;
+    const montoInput = document.getElementById('monto-pesos-input');
+    if (!checked || !montoInput) {
+        return;
+    }
+    const montoUsd = parseFloat(document.getElementById('monto-usd-input')?.value || 0);
+    const cotizacionUsd = parseFloat(document.getElementById('cotizacion-usd-input')?.value || 0);
+    montoInput.value = (montoUsd * cotizacionUsd).toFixed(2);
+}
+
+function toggleCamposDolaresPago() {
+    const checked = document.getElementById('pago_en_dolares_check')?.checked;
+    document.getElementById('campos-dolares-pago')?.classList.toggle('hidden', !checked);
+    document.getElementById('monto-pesos-help').textContent = checked
+        ? 'El monto en pesos se calcula automáticamente desde USD x cotización.'
+        : '{% if compra.es_proveedor %}Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.{% else %}Maximo: ${{ compra.saldo|formato_numero }}{% endif %}';
+    setReadonlyInput(document.getElementById('monto-pesos-input'), checked);
+    if (checked) {
+        actualizarMontoPesosPago();
+    }
+}
+
+function actualizarMontoPesosEdit() {
+    const checked = document.getElementById('edit_pago_en_dolares')?.checked;
+    const montoInput = document.getElementById('edit_monto');
+    if (!checked || !montoInput) {
+        return;
+    }
+    const montoUsd = parseFloat(document.getElementById('edit_monto_usd')?.value || 0);
+    const cotizacionUsd = parseFloat(document.getElementById('edit_cotizacion_usd')?.value || 0);
+    montoInput.value = (montoUsd * cotizacionUsd).toFixed(2);
+}
+
+function toggleCamposDolaresEdit() {
+    const checked = document.getElementById('edit_pago_en_dolares')?.checked;
+    document.getElementById('edit-campos-dolares')?.classList.toggle('hidden', !checked);
+    setReadonlyInput(document.getElementById('edit_monto'), checked);
+    if (checked) {
+        actualizarMontoPesosEdit();
+    }
+}
+
 // ── Modal Editar Pago ────────────────────────────────────────────
-function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura) {
+function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura, pagoEnDolares, montoUsd, cotizUsd) {
     document.getElementById('edit_pago_id').value = id;
     document.getElementById('edit_fecha_pago').value = fecha;
     document.getElementById('edit_monto').value = monto;
@@ -554,6 +691,10 @@ function editarPago(id, fecha, monto, formaPago, numFactura, obs, conFactura) {
     document.getElementById('edit_numero_factura').value = numFactura;
     document.getElementById('edit_observaciones').value = obs;
     document.getElementById('edit_con_factura').value = conFactura ? 'true' : 'false';
+    document.getElementById('edit_pago_en_dolares').checked = pagoEnDolares || false;
+    document.getElementById('edit_monto_usd').value = montoUsd || '';
+    document.getElementById('edit_cotizacion_usd').value = cotizUsd || '';
+    toggleCamposDolaresEdit();
     document.getElementById('editarPagoModal').classList.remove('hidden');
 }
 
@@ -564,6 +705,7 @@ function cerrarModalEditar() {
 document.getElementById('editarPagoForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('edit_pago_id').value;
+    const pagoEnDolares = document.getElementById('edit_pago_en_dolares').checked;
     const payload = {
         monto: document.getElementById('edit_monto').value,
         fecha_pago: document.getElementById('edit_fecha_pago').value,
@@ -571,6 +713,9 @@ document.getElementById('editarPagoForm').addEventListener('submit', function(e)
         numero_factura: document.getElementById('edit_numero_factura').value,
         observaciones: document.getElementById('edit_observaciones').value,
         con_factura: document.getElementById('edit_con_factura').value === 'true',
+        pago_en_dolares: pagoEnDolares,
+        monto_usd: pagoEnDolares ? document.getElementById('edit_monto_usd').value || null : null,
+        cotizacion_usd: pagoEnDolares ? document.getElementById('edit_cotizacion_usd').value || null : null,
     };
 
     fetch(`/comercial/api/pago-compra/${id}/editar/`, {
@@ -591,6 +736,14 @@ document.getElementById('editarPagoForm').addEventListener('submit', function(e)
         }
     });
 });
+
+document.getElementById('pago_en_dolares_check')?.addEventListener('change', toggleCamposDolaresPago);
+document.getElementById('monto-usd-input')?.addEventListener('input', actualizarMontoPesosPago);
+document.getElementById('cotizacion-usd-input')?.addEventListener('input', actualizarMontoPesosPago);
+document.getElementById('edit_pago_en_dolares')?.addEventListener('change', toggleCamposDolaresEdit);
+document.getElementById('edit_monto_usd')?.addEventListener('input', actualizarMontoPesosEdit);
+document.getElementById('edit_cotizacion_usd')?.addEventListener('input', actualizarMontoPesosEdit);
+toggleCamposDolaresPago();
 
 // ── Eliminar Pago ────────────────────────────────────────────────
 function eliminarPago(id, monto) {

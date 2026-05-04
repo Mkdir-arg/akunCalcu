@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.db.models import Q
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto
@@ -82,6 +84,8 @@ class CompraForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['valor_total'].required = False
+        self.fields['sena'].required = False
         cuenta_actual_id = None
         tipo_gasto_actual_id = None
         tipo_cuenta_actual_id = None
@@ -138,8 +142,14 @@ class CompraForm(forms.ModelForm):
             'cuenta': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_cuenta'}),
             'tipo_gasto': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_gasto'}),
             'fecha_pago': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'}),
+            'compra_en_dolares': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50', 'id': 'id_compra_en_dolares'}),
             'valor_total': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
+            'valor_total_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_valor_total_usd'}),
+            'cotizacion_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_cotizacion_usd'}),
             'sena': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
+            'sena_en_dolares': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50', 'id': 'id_sena_en_dolares'}),
+            'sena_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_sena_usd'}),
+            'cotizacion_sena_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_cotizacion_sena_usd'}),
             'forma_pago_sena': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'id': 'id_forma_pago_sena'}),
             'con_factura': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
             'numero_factura': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
@@ -150,20 +160,64 @@ class CompraForm(forms.ModelForm):
             'con_factura': 'Compra en blanco (con factura)',
             'tipo_gasto': 'Tipo de Gasto',
             'valor_total': 'Valor Total',
+            'compra_en_dolares': 'Compra en dólares',
+            'valor_total_usd': 'Valor total en USD',
+            'cotizacion_usd': 'Cotización USD utilizada',
             'sena': 'Seña',
+            'sena_en_dolares': 'Seña en dólares',
+            'sena_usd': 'Seña en USD',
+            'cotizacion_sena_usd': 'Cotización USD de la seña',
             'forma_pago_sena': 'Forma de Pago de la Seña',
         }
 
     def clean(self):
         cleaned_data = super().clean()
+        compra_en_dolares = cleaned_data.get('compra_en_dolares')
+        valor_total = cleaned_data.get('valor_total')
+        valor_total_usd = cleaned_data.get('valor_total_usd')
+        cotizacion_usd = cleaned_data.get('cotizacion_usd')
+
+        if compra_en_dolares:
+            if not valor_total_usd:
+                self.add_error('valor_total_usd', 'Debe indicar el valor total en USD cuando la compra está en dólares.')
+            if not cotizacion_usd:
+                self.add_error('cotizacion_usd', 'Debe indicar la cotización USD de la compra.')
+            if valor_total_usd and cotizacion_usd:
+                valor_total = (valor_total_usd * cotizacion_usd).quantize(Decimal('0.01'))
+                cleaned_data['valor_total'] = valor_total
+        else:
+            cleaned_data['valor_total_usd'] = None
+            cleaned_data['cotizacion_usd'] = None
+
+        if not valor_total or valor_total <= 0:
+            self.add_error('valor_total', 'Debe indicar un valor total mayor a 0.')
+
+        sena_en_dolares = cleaned_data.get('sena_en_dolares')
         sena = cleaned_data.get('sena') or Decimal('0')
+        sena_usd = cleaned_data.get('sena_usd')
+        cotizacion_sena_usd = cleaned_data.get('cotizacion_sena_usd')
         forma_pago_sena = cleaned_data.get('forma_pago_sena')
+
+        if sena_en_dolares:
+            if not sena_usd:
+                self.add_error('sena_usd', 'Debe indicar el monto de la seña en USD cuando selecciona esa moneda.')
+            if not cotizacion_sena_usd:
+                self.add_error('cotizacion_sena_usd', 'Debe indicar la cotización USD de la seña.')
+            if sena_usd and cotizacion_sena_usd:
+                sena = (sena_usd * cotizacion_sena_usd).quantize(Decimal('0.01'))
+                cleaned_data['sena'] = sena
+        else:
+            cleaned_data['sena_usd'] = None
+            cleaned_data['cotizacion_sena_usd'] = None
+            cleaned_data['sena'] = sena
 
         if sena > 0 and not forma_pago_sena:
             self.add_error('forma_pago_sena', 'Debe indicar la forma de pago cuando registra una seña.')
 
         if sena <= 0:
             cleaned_data['forma_pago_sena'] = ''
+            if not sena_en_dolares:
+                cleaned_data['sena'] = Decimal('0')
 
         return cleaned_data
 

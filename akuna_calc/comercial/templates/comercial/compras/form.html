@@ -94,27 +94,76 @@
                     <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
                     Valores y Montos
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Valor Total <span class="text-red-500">*</span>
+                            Valor Total que impacta en saldo (pesos) <span class="text-red-500">*</span>
                         </label>
                         {{ form.valor_total }}
                         {% if form.valor_total.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.valor_total.errors.0 }}</p>
                         {% endif %}
+                        <p id="valor-total-help" class="mt-1 text-xs text-slate-400">Ingrese el total en pesos o marque compra en dólares para calcularlo automáticamente.</p>
+                    </div>
+
+                    <div class="md:col-span-2 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            {{ form.compra_en_dolares }}
+                            <span class="text-sm font-bold text-slate-800"><i class="fas fa-coins mr-2 text-blue-600"></i>La compra está pactada en dólares</span>
+                        </label>
+                        <p class="mt-2 text-xs text-blue-700">Si activa esta opción, complete el total en USD y la cotización usada. El sistema calculará el total en pesos para saldo y reportes.</p>
+                    </div>
+
+                    <div id="valor-total-usd-wrapper" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor Total en USD</label>
+                        {{ form.valor_total_usd }}
+                        {% if form.valor_total_usd.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.valor_total_usd.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div id="cotizacion-usd-wrapper" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD utilizada</label>
+                        {{ form.cotizacion_usd }}
+                        {% if form.cotizacion_usd.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_usd.errors.0 }}</p>
+                        {% endif %}
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Sena (anticipo)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Seña que impacta en saldo (pesos)</label>
                         {{ form.sena }}
                         {% if form.sena.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-slate-400">Dejar en 0 si no hay anticipo</p>
+                        <p id="sena-help" class="mt-1 text-xs text-slate-400">Dejar en 0 si no hay anticipo. Si la seña fue en USD, se calcula automáticamente en pesos.</p>
                     </div>
 
-                    <div id="forma-pago-sena-wrapper" class="hidden">
+                    <div class="md:col-span-2 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            {{ form.sena_en_dolares }}
+                            <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-2 text-emerald-600"></i>La seña fue pagada en dólares</span>
+                        </label>
+                        <p class="mt-2 text-xs text-emerald-700">Puede registrar la seña en pesos o en dólares. Si fue en USD, complete monto y cotización para convertirla al saldo en pesos.</p>
+                    </div>
+
+                    <div id="sena-usd-wrapper" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Seña en USD</label>
+                        {{ form.sena_usd }}
+                        {% if form.sena_usd.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.sena_usd.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div id="sena-cotizacion-wrapper" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD de la seña</label>
+                        {{ form.cotizacion_sena_usd }}
+                        {% if form.cotizacion_sena_usd.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_sena_usd.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div id="forma-pago-sena-wrapper" class="hidden md:col-span-3">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago de la Seña</label>
                         {{ form.forma_pago_sena }}
                         {% if form.forma_pago_sena.errors %}
@@ -296,9 +345,58 @@
 {% block extra_js %}
 <script>
 // -- Preview de saldo en tiempo real --
+function parseDecimalInput(selector) {
+    return parseFloat(document.querySelector(selector)?.value || 0);
+}
+
+function setReadonlyState(input, isReadonly) {
+    if (!input) {
+        return;
+    }
+    input.readOnly = isReadonly;
+    input.classList.toggle('bg-slate-50', isReadonly);
+}
+
+function calcularPesosDesdeUsd(montoSelector, cotizacionSelector) {
+    return parseDecimalInput(montoSelector) * parseDecimalInput(cotizacionSelector);
+}
+
+function syncMonedaCompra() {
+    const compraEnDolares = document.getElementById('id_compra_en_dolares')?.checked;
+    const totalPesosInput = document.querySelector('[name="valor_total"]');
+    document.getElementById('valor-total-usd-wrapper')?.classList.toggle('hidden', !compraEnDolares);
+    document.getElementById('cotizacion-usd-wrapper')?.classList.toggle('hidden', !compraEnDolares);
+    document.getElementById('valor-total-help').textContent = compraEnDolares
+        ? 'El valor en pesos se calcula automáticamente desde USD x cotización.'
+        : 'Ingrese el total en pesos o marque compra en dólares para calcularlo automáticamente.';
+
+    setReadonlyState(totalPesosInput, compraEnDolares);
+    if (compraEnDolares && totalPesosInput) {
+        totalPesosInput.value = calcularPesosDesdeUsd('#id_valor_total_usd', '#id_cotizacion_usd').toFixed(2);
+    }
+}
+
+function syncMonedaSena() {
+    const senaEnDolares = document.getElementById('id_sena_en_dolares')?.checked;
+    const senaPesosInput = document.querySelector('[name="sena"]');
+    document.getElementById('sena-usd-wrapper')?.classList.toggle('hidden', !senaEnDolares);
+    document.getElementById('sena-cotizacion-wrapper')?.classList.toggle('hidden', !senaEnDolares);
+    document.getElementById('sena-help').textContent = senaEnDolares
+        ? 'La seña en pesos se calcula automáticamente desde USD x cotización.'
+        : 'Dejar en 0 si no hay anticipo. Si la seña fue en USD, se calcula automáticamente en pesos.';
+
+    setReadonlyState(senaPesosInput, senaEnDolares);
+    if (senaEnDolares && senaPesosInput) {
+        senaPesosInput.value = calcularPesosDesdeUsd('#id_sena_usd', '#id_cotizacion_sena_usd').toFixed(2);
+    }
+}
+
 function actualizarPreview() {
-    const total = parseFloat(document.querySelector('[name="valor_total"]')?.value || 0);
-    const sena = parseFloat(document.querySelector('[name="sena"]')?.value || 0);
+    syncMonedaCompra();
+    syncMonedaSena();
+
+    const total = parseDecimalInput('[name="valor_total"]');
+    const sena = parseDecimalInput('[name="sena"]');
     const saldo = Math.max(0, total - sena);
     const pct = total > 0 ? Math.min(100, (sena / total) * 100) : 0;
     const fmt = n => '$' + n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -324,6 +422,12 @@ function actualizarPreview() {
 
 document.querySelector('[name="valor_total"]')?.addEventListener('input', actualizarPreview);
 document.querySelector('[name="sena"]')?.addEventListener('input', actualizarPreview);
+document.getElementById('id_compra_en_dolares')?.addEventListener('change', actualizarPreview);
+document.getElementById('id_valor_total_usd')?.addEventListener('input', actualizarPreview);
+document.getElementById('id_cotizacion_usd')?.addEventListener('input', actualizarPreview);
+document.getElementById('id_sena_en_dolares')?.addEventListener('change', actualizarPreview);
+document.getElementById('id_sena_usd')?.addEventListener('input', actualizarPreview);
+document.getElementById('id_cotizacion_sena_usd')?.addEventListener('input', actualizarPreview);
 actualizarPreview();
 
 // -- Modal Cuenta --
