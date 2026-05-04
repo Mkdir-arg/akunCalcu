@@ -1585,6 +1585,9 @@ def construir_reporte_ventas(
             'razon_social': venta.cliente.razon_social or '-',
             'forma_pago': venta.get_forma_pago_display() if venta.forma_pago else '-',
             'monto': venta.valor_total,
+            'venta_en_dolares': venta.venta_en_dolares,
+            'monto_usd': venta.valor_total_usd if venta.venta_en_dolares else None,
+            'cotizacion_usd': venta.cotizacion_usd if venta.venta_en_dolares else None,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id,
         })
@@ -1635,9 +1638,9 @@ def construir_reporte_cobranzas(
             'monto': venta.sena,
             'tipo': 'Blanco' if venta.con_factura else 'Negro',
             'venta_id': venta.id,
-            'pago_en_dolares': False,
-            'monto_usd': None,
-            'cotizacion_usd': None,
+            'pago_en_dolares': venta.sena_en_dolares,
+            'monto_usd': venta.sena_usd if venta.sena_en_dolares else None,
+            'cotizacion_usd': venta.cotizacion_sena_usd if venta.sena_en_dolares else None,
         })
 
     pagos_query = PagoVenta.objects.filter(venta__deleted_at__isnull=True).select_related('venta', 'venta__cliente')

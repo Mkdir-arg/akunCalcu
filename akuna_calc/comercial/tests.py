@@ -818,6 +818,30 @@ class ReportesVentasTest(TestCase):
         self.assertEqual(reporte_ventas['total'], Decimal('50'))
         self.assertEqual(reporte_ventas['total_blanco'], Decimal('50'))
 
+    def test_reporte_muestra_venta_en_usd_con_monto_original_y_cotizacion(self):
+        Venta.objects.create(
+            numero_pedido='VTA-USD-REPORT',
+            cliente=self.cliente,
+            valor_total=Decimal('10000'),
+            venta_en_dolares=True,
+            valor_total_usd=Decimal('10'),
+            cotizacion_usd=Decimal('1000'),
+            sena=Decimal('0'),
+            fecha_pago='2026-04-15',
+            forma_pago='transferencia',
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes'), {})
+
+        self.assertEqual(response.status_code, 200)
+        reporte_ventas = response.context['reporte_data']['ventas']
+        item = next(item for item in reporte_ventas['lista'] if item['pedido'] == 'VTA-USD-REPORT')
+        self.assertTrue(item['venta_en_dolares'])
+        self.assertEqual(item['monto_usd'], Decimal('10'))
+        self.assertEqual(item['cotizacion_usd'], Decimal('1000'))
+        self.assertContains(response, 'Venta en USD')
+        self.assertContains(response, 'USD 10,00')
+
 
 class VentasListFacturasTest(TestCase):
     def setUp(self):
@@ -1036,3 +1060,28 @@ class ReporteCobranzasTest(TestCase):
         self.assertEqual(reporte_cobranzas['lista'][0]['pedido'], 'VTA-200')
         self.assertContains(response, '0001-00001234')
         self.assertNotContains(response, '0001-00009999')
+
+    def test_reporte_cobranzas_muestra_sena_inicial_en_usd(self):
+        Venta.objects.create(
+            numero_pedido='VTA-SENA-USD',
+            cliente=self.cliente,
+            valor_total=Decimal('1000'),
+            sena=Decimal('100'),
+            sena_en_dolares=True,
+            sena_usd=Decimal('0.10'),
+            cotizacion_sena_usd=Decimal('1000'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes_cobranzas'), {})
+
+        self.assertEqual(response.status_code, 200)
+        reporte_cobranzas = response.context['reporte_data']['cobranzas']
+        item = next(item for item in reporte_cobranzas['lista'] if item['pedido'] == 'VTA-SENA-USD')
+        self.assertEqual(item['concepto'], 'Seña inicial')
+        self.assertTrue(item['pago_en_dolares'])
+        self.assertEqual(item['monto_usd'], Decimal('0.10'))
+        self.assertEqual(item['cotizacion_usd'], Decimal('1000'))
+        self.assertContains(response, 'Cobrado en USD')
+        self.assertContains(response, 'USD 0,10')

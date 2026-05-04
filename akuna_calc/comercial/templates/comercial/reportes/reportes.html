@@ -155,8 +155,23 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ ingreso.cliente }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-600">{{ ingreso.razon_social }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">{{ ingreso.forma_pago }}</td>
-                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">${{ ingreso.monto|formato_numero }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">
+                            <div>{{ ingreso.forma_pago }}</div>
+                            {% if ingreso.venta_en_dolares and ingreso.monto_usd %}
+                            <div class="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
+                                Venta en USD
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">
+                            <div>${{ ingreso.monto|formato_numero }}</div>
+                            {% if ingreso.venta_en_dolares and ingreso.monto_usd %}
+                            <div class="text-xs text-blue-700 font-medium mt-1">
+                                USD {{ ingreso.monto_usd|formato_numero }}
+                                {% if ingreso.cotizacion_usd %}<span class="text-slate-500"> a ${{ ingreso.cotizacion_usd|formato_numero }}</span>{% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if ingreso.tipo == 'Blanco' %}
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
