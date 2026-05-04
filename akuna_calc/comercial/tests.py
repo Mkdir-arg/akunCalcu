@@ -149,6 +149,107 @@ class PagoCompraUSDFieldsTest(TestCase):
         self.assertEqual(pago.cotizacion_usd, Decimal('1350'))
 
 
+class VentaCreateUSDTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='ventausd', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='ventausd', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Vivi', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def test_venta_create_en_dolares_calcula_total_y_sena_en_pesos(self):
+        response = self.client_http.post(reverse('comercial:venta_create'), {
+            'numero_pedido': 'VTA-USD-001',
+            'cliente': self.cliente.id,
+            'venta_en_dolares': 'on',
+            'valor_total': '',
+            'valor_total_usd': '10',
+            'cotizacion_usd': '1000',
+            'sena_en_dolares': 'on',
+            'sena': '',
+            'sena_usd': '2',
+            'cotizacion_sena_usd': '1000',
+            'estado': 'pendiente',
+            'con_factura': 'on',
+            'observaciones': 'Venta en USD',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        venta = Venta.objects.get(numero_pedido='VTA-USD-001')
+        self.assertTrue(venta.venta_en_dolares)
+        self.assertEqual(venta.valor_total, Decimal('10000.00'))
+        self.assertEqual(venta.valor_total_usd, Decimal('10.00'))
+        self.assertEqual(venta.cotizacion_usd, Decimal('1000.00'))
+        self.assertTrue(venta.sena_en_dolares)
+        self.assertEqual(venta.sena, Decimal('2000.00'))
+        self.assertEqual(venta.sena_usd, Decimal('2.00'))
+        self.assertEqual(venta.cotizacion_sena_usd, Decimal('1000.00'))
+        self.assertEqual(venta.saldo, Decimal('8000.00'))
+
+    def test_venta_create_rechaza_cotizacion_usd_no_positiva(self):
+        response = self.client_http.post(reverse('comercial:venta_create'), {
+            'numero_pedido': 'VTA-USD-002',
+            'cliente': self.cliente.id,
+            'venta_en_dolares': 'on',
+            'valor_total': '',
+            'valor_total_usd': '10',
+            'cotizacion_usd': '-1',
+            'sena': '0',
+            'estado': 'pendiente',
+            'con_factura': 'on',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Debe indicar una cotización mayor a 0.')
+
+    def test_venta_detail_muestra_valores_originales_en_usd(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-USD-003',
+            cliente=self.cliente,
+            valor_total=Decimal('10000.00'),
+            venta_en_dolares=True,
+            valor_total_usd=Decimal('10.00'),
+            cotizacion_usd=Decimal('1000.00'),
+            sena=Decimal('2000.00'),
+            sena_en_dolares=True,
+            sena_usd=Decimal('2.00'),
+            cotizacion_sena_usd=Decimal('1000.00'),
+        )
+
+        response = self.client_http.get(reverse('comercial:venta_detail', args=[venta.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'USD 10,00')
+        self.assertContains(response, 'USD 2,00')
+
+    def test_duplicar_venta_copia_campos_usd(self):
+        original = Venta.objects.create(
+            numero_pedido='VTA-USD-004',
+            cliente=self.cliente,
+            valor_total=Decimal('10000.00'),
+            venta_en_dolares=True,
+            valor_total_usd=Decimal('10.00'),
+            cotizacion_usd=Decimal('1000.00'),
+            sena=Decimal('2000.00'),
+            sena_en_dolares=True,
+            sena_usd=Decimal('2.00'),
+            cotizacion_sena_usd=Decimal('1000.00'),
+            con_factura=True,
+            forma_pago='transferencia',
+        )
+
+        response = self.client_http.get(reverse('comercial:duplicar_venta', args=[original.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        nueva = Venta.objects.exclude(pk=original.pk).get(numero_pedido='VTA-USD-004')
+        self.assertTrue(nueva.venta_en_dolares)
+        self.assertEqual(nueva.valor_total_usd, Decimal('10.00'))
+        self.assertTrue(nueva.sena_en_dolares)
+        self.assertEqual(nueva.sena_usd, Decimal('2.00'))
+
+
 class RegistrarPagoUSDTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')

@@ -5,6 +5,35 @@ from django.db.models import Q
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto
 
 
+def _resolver_importe_formulario_usd(form, cleaned_data, *, enabled_field, ars_field, usd_field, rate_field, usd_required_message, rate_required_message):
+    enabled = cleaned_data.get(enabled_field)
+    ars_value = cleaned_data.get(ars_field)
+    usd_value = cleaned_data.get(usd_field)
+    rate_value = cleaned_data.get(rate_field)
+
+    if enabled:
+        if usd_value is None:
+            form.add_error(usd_field, usd_required_message)
+        elif usd_value <= 0:
+            form.add_error(usd_field, 'Debe indicar un monto mayor a 0.')
+
+        if rate_value is None:
+            form.add_error(rate_field, rate_required_message)
+        elif rate_value <= 0:
+            form.add_error(rate_field, 'Debe indicar una cotización mayor a 0.')
+
+        if usd_value is not None and usd_value > 0 and rate_value is not None and rate_value > 0:
+            ars_value = (usd_value * rate_value).quantize(Decimal('0.01'))
+            cleaned_data[ars_field] = ars_value
+    else:
+        cleaned_data[usd_field] = None
+        cleaned_data[rate_field] = None
+        cleaned_data[ars_field] = ars_value or Decimal('0')
+        ars_value = cleaned_data[ars_field]
+
+    return ars_value
+
+
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
@@ -26,6 +55,8 @@ class ClienteForm(forms.ModelForm):
 class VentaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['valor_total'].required = False
+        self.fields['sena'].required = False
         # El input[type=date] necesita YYYY-MM-DD para renderizar el valor inicial.
         self.fields['fecha_pago'].widget.format = '%Y-%m-%d'
         self.fields['fecha_pago'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
@@ -38,10 +69,16 @@ class VentaForm(forms.ModelForm):
         widgets = {
             'numero_pedido': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'placeholder': 'Ej: PVC, 001, etc.'}),
             'cliente': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'venta_en_dolares': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50', 'id': 'id_venta_en_dolares'}),
             'valor_total': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
+            'valor_total_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_valor_total_usd'}),
+            'cotizacion_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_cotizacion_usd'}),
             'tiene_retenciones': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50', 'id': 'id_tiene_retenciones'}),
             'monto_retenciones': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_monto_retenciones'}),
             'sena': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01'}),
+            'sena_en_dolares': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50', 'id': 'id_sena_en_dolares'}),
+            'sena_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_sena_usd'}),
+            'cotizacion_sena_usd': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'step': '0.01', 'id': 'id_cotizacion_sena_usd'}),
             'fecha_pago': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'type': 'date'}),
             'forma_pago': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'con_factura': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50'}),
@@ -53,10 +90,45 @@ class VentaForm(forms.ModelForm):
         }
         labels = {
             'con_factura': 'Venta en blanco (con factura)',
+            'venta_en_dolares': 'Venta en dólares',
+            'valor_total_usd': 'Valor total en USD',
+            'cotizacion_usd': 'Cotización USD utilizada',
             'tiene_retenciones': 'Tiene retenciones',
             'monto_retenciones': 'Monto de retenciones',
             'sena': 'Seña',
+            'sena_en_dolares': 'Seña en dólares',
+            'sena_usd': 'Seña en USD',
+            'cotizacion_sena_usd': 'Cotización USD de la seña',
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        valor_total = _resolver_importe_formulario_usd(
+            self,
+            cleaned_data,
+            enabled_field='venta_en_dolares',
+            ars_field='valor_total',
+            usd_field='valor_total_usd',
+            rate_field='cotizacion_usd',
+            usd_required_message='Debe indicar el valor total en USD cuando la venta está en dólares.',
+            rate_required_message='Debe indicar la cotización USD de la venta.',
+        )
+
+        if valor_total <= 0:
+            self.add_error('valor_total', 'Debe indicar un valor total mayor a 0.')
+
+        _resolver_importe_formulario_usd(
+            self,
+            cleaned_data,
+            enabled_field='sena_en_dolares',
+            ars_field='sena',
+            usd_field='sena_usd',
+            rate_field='cotizacion_sena_usd',
+            usd_required_message='Debe indicar el monto de la seña en USD cuando selecciona esa moneda.',
+            rate_required_message='Debe indicar la cotización USD de la seña.',
+        )
+
+        return cleaned_data
 
 
 class CuentaForm(forms.ModelForm):
@@ -172,44 +244,33 @@ class CompraForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        compra_en_dolares = cleaned_data.get('compra_en_dolares')
-        valor_total = cleaned_data.get('valor_total')
-        valor_total_usd = cleaned_data.get('valor_total_usd')
-        cotizacion_usd = cleaned_data.get('cotizacion_usd')
-
-        if compra_en_dolares:
-            if not valor_total_usd:
-                self.add_error('valor_total_usd', 'Debe indicar el valor total en USD cuando la compra está en dólares.')
-            if not cotizacion_usd:
-                self.add_error('cotizacion_usd', 'Debe indicar la cotización USD de la compra.')
-            if valor_total_usd and cotizacion_usd:
-                valor_total = (valor_total_usd * cotizacion_usd).quantize(Decimal('0.01'))
-                cleaned_data['valor_total'] = valor_total
-        else:
-            cleaned_data['valor_total_usd'] = None
-            cleaned_data['cotizacion_usd'] = None
+        valor_total = _resolver_importe_formulario_usd(
+            self,
+            cleaned_data,
+            enabled_field='compra_en_dolares',
+            ars_field='valor_total',
+            usd_field='valor_total_usd',
+            rate_field='cotizacion_usd',
+            usd_required_message='Debe indicar el valor total en USD cuando la compra está en dólares.',
+            rate_required_message='Debe indicar la cotización USD de la compra.',
+        )
 
         if not valor_total or valor_total <= 0:
             self.add_error('valor_total', 'Debe indicar un valor total mayor a 0.')
 
-        sena_en_dolares = cleaned_data.get('sena_en_dolares')
-        sena = cleaned_data.get('sena') or Decimal('0')
-        sena_usd = cleaned_data.get('sena_usd')
-        cotizacion_sena_usd = cleaned_data.get('cotizacion_sena_usd')
-        forma_pago_sena = cleaned_data.get('forma_pago_sena')
+        sena = _resolver_importe_formulario_usd(
+            self,
+            cleaned_data,
+            enabled_field='sena_en_dolares',
+            ars_field='sena',
+            usd_field='sena_usd',
+            rate_field='cotizacion_sena_usd',
+            usd_required_message='Debe indicar el monto de la seña en USD cuando selecciona esa moneda.',
+            rate_required_message='Debe indicar la cotización USD de la seña.',
+        )
 
-        if sena_en_dolares:
-            if not sena_usd:
-                self.add_error('sena_usd', 'Debe indicar el monto de la seña en USD cuando selecciona esa moneda.')
-            if not cotizacion_sena_usd:
-                self.add_error('cotizacion_sena_usd', 'Debe indicar la cotización USD de la seña.')
-            if sena_usd and cotizacion_sena_usd:
-                sena = (sena_usd * cotizacion_sena_usd).quantize(Decimal('0.01'))
-                cleaned_data['sena'] = sena
-        else:
-            cleaned_data['sena_usd'] = None
-            cleaned_data['cotizacion_sena_usd'] = None
-            cleaned_data['sena'] = sena
+        sena_en_dolares = cleaned_data.get('sena_en_dolares')
+        forma_pago_sena = cleaned_data.get('forma_pago_sena')
 
         if sena > 0 and not forma_pago_sena:
             self.add_error('forma_pago_sena', 'Debe indicar la forma de pago cuando registra una seña.')

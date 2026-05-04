@@ -154,7 +154,7 @@
                 <div>
                     <p class="text-[11px] uppercase tracking-[0.14em] text-blue-100 font-semibold">Valor Total</p>
                     <p class="text-xl font-bold text-white leading-tight">${{ venta.get_total_con_percepciones|formato_numero }}</p>
-                    <p class="text-xs text-blue-100/90" id="total-usd"></p>
+                    <p class="text-xs text-blue-100/90" id="total-usd">{% if venta.venta_en_dolares and venta.valor_total_usd %}USD {{ venta.valor_total_usd|formato_numero }}{% if venta.cotizacion_usd %} a ${{ venta.cotizacion_usd|formato_numero }}{% endif %}{% endif %}</p>
                 </div>
             </div>
         </div>
@@ -204,7 +204,7 @@
                 style="width: {{ porcentaje_cobrado }}%"></div>
         </div>
         <div class="flex justify-between text-xs text-slate-400 mt-1">
-            <span>Seña: ${{ venta.sena|formato_numero }}</span>
+            <span>Seña: ${{ venta.sena|formato_numero }}{% if venta.sena_en_dolares and venta.sena_usd %} · USD {{ venta.sena_usd|formato_numero }}{% if venta.cotizacion_sena_usd %} a ${{ venta.cotizacion_sena_usd|formato_numero }}{% endif %}{% endif %}</span>
             <span>Pagado: ${{ total_pagado|formato_numero }} / ${{ venta.get_total_con_percepciones|formato_numero }}</span>
         </div>
     </div>
@@ -435,7 +435,12 @@
                     <!-- Seña inicial -->
                     <tr class="bg-blue-50">
                         <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha-sena">{{ venta.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-blue-700">${{ venta.sena|formato_numero }}</td>
+                        <td class="px-6 py-4 text-base font-bold text-blue-700">
+                            ${{ venta.sena|formato_numero }}
+                            {% if venta.sena_en_dolares and venta.sena_usd %}
+                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ venta.sena_usd|formato_numero }}{% if venta.cotizacion_sena_usd %} a ${{ venta.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Seña Inicial</span>
                         </td>
