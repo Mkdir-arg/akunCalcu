@@ -166,64 +166,136 @@
     </div>
 
     <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-teal-50 to-sky-50 px-8 py-6 border-b border-slate-200">
-            <div class="flex justify-between items-center gap-4">
+        <div class="bg-gradient-to-r from-teal-50 to-sky-50 px-6 lg:px-8 py-6 border-b border-slate-200">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                 <div>
                     <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Cobranza</h3>
-                    <p class="text-sm text-slate-500 mt-1">Una venta puede aparecer varias veces si tiene más de un cobro registrado.</p>
+                    <p class="text-sm text-slate-500 mt-1">Vista optimizada para leer rápido el movimiento, quién pagó, cómo se cobró y el importe sin abrir tanto la tabla.</p>
                 </div>
-                <span class="text-3xl font-bold text-teal-600">${{ reporte_data.cobranzas.total|formato_numero }}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white text-slate-700 text-xs font-semibold border border-slate-200">
+                        {{ reporte_data.cobranzas.cantidad }} movimientos
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white text-slate-700 text-xs font-semibold border border-slate-200">
+                        {{ reporte_data.cobranzas.cantidad_pagos }} pagos
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white text-slate-700 text-xs font-semibold border border-slate-200">
+                        {{ reporte_data.cobranzas.cantidad_senas }} señas
+                    </span>
+                    {% if reporte_data.cobranzas.cantidad_usd %}
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200">
+                        {{ reporte_data.cobranzas.cantidad_usd }} en USD
+                    </span>
+                    {% endif %}
+                    <span class="text-3xl font-bold text-teal-600 ml-0 xl:ml-2">${{ reporte_data.cobranzas.total|formato_numero }}</span>
+                </div>
             </div>
         </div>
         {% if reporte_data.cobranzas.lista %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="lg:hidden p-4 space-y-3 bg-slate-50/60">
+            {% for item in reporte_data.cobranzas.lista %}
+            <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            {% if item.concepto == 'Seña inicial' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Seña inicial</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold">Pago</span>
+                            {% endif %}
+                            {% if item.tipo == 'Blanco' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Blanco</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">Negro</span>
+                            {% endif %}
+                            {% if item.pago_en_dolares and item.monto_usd %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Cobrado en USD</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="mt-3 inline-block text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
+                        <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }} · Factura {{ item.numero_factura }}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-lg font-bold text-teal-700">${{ item.monto|formato_numero }}</p>
+                        {% if item.pago_en_dolares and item.monto_usd %}
+                        <p class="text-xs text-emerald-700 font-semibold mt-1">USD {{ item.monto_usd|formato_numero }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cliente</p>
+                        <p class="text-slate-800 font-medium">{{ item.cliente }}</p>
+                        <p class="text-slate-500 text-xs">{{ item.razon_social }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Forma de pago</p>
+                            <p class="text-slate-700">{{ item.forma_pago }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cotización</p>
+                            <p class="text-slate-700">{% if item.cotizacion_usd %}${{ item.cotizacion_usd|formato_numero }}{% else %}-{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Factura</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Razón Social</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forma Pago</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Movimiento</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Cliente</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Detalle</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Importe</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-slate-100">
                     {% for item in reporte_data.cobranzas.lista %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.fecha|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                            <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ item.pedido }}</a>
+                    <tr class="hover:bg-slate-50/80 align-top">
+                        <td class="px-5 py-4">
+                            <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
+                            <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }}</p>
+                            <p class="text-xs text-slate-400 mt-1">Factura {{ item.numero_factura }}</p>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.numero_factura }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.cliente }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.razon_social }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ item.concepto }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
-                            <div>{{ item.forma_pago }}</div>
-                            {% if item.pago_en_dolares and item.monto_usd %}
-                            <div class="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">
-                                Cobrado en USD
+                        <td class="px-5 py-4">
+                            <p class="text-sm font-semibold text-slate-800">{{ item.cliente }}</p>
+                            <p class="text-xs text-slate-500 mt-1 max-w-xs">{{ item.razon_social }}</p>
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                {% if item.concepto == 'Seña inicial' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Seña inicial</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold">Pago</span>
+                                {% endif %}
+                                {% if item.tipo == 'Blanco' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Blanco</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">Negro</span>
+                                {% endif %}
+                                {% if item.pago_en_dolares and item.monto_usd %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Cobrado en USD</span>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-teal-600 font-semibold">
-                            <div>${{ item.monto|formato_numero }}</div>
-                            {% if item.pago_en_dolares and item.monto_usd %}
-                            <div class="text-xs text-emerald-700 font-medium mt-1">
-                                USD {{ item.monto_usd|formato_numero }}
-                                {% if item.cotizacion_usd %}<span class="text-slate-500"> a ${{ item.cotizacion_usd|formato_numero }}</span>{% endif %}
+                            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Forma de pago</p>
+                                    <p class="text-slate-700 mt-1">{{ item.forma_pago }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cotización</p>
+                                    <p class="text-slate-700 mt-1">{% if item.cotizacion_usd %}${{ item.cotizacion_usd|formato_numero }}{% else %}-{% endif %}</p>
+                                </div>
                             </div>
-                            {% endif %}
                         </td>
-                        <td class="px-6 py-4">
-                            {% if item.tipo == 'Blanco' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
+                        <td class="px-5 py-4 text-right">
+                            <p class="text-base font-bold text-teal-700">${{ item.monto|formato_numero }}</p>
+                            {% if item.pago_en_dolares and item.monto_usd %}
+                            <p class="text-xs text-emerald-700 font-semibold mt-2">USD {{ item.monto_usd|formato_numero }}</p>
                             {% endif %}
                         </td>
                     </tr>

@@ -1005,6 +1005,9 @@ class ReporteCobranzasTest(TestCase):
         self.assertEqual(reporte_cobranzas['total'], Decimal('300'))
         self.assertEqual(reporte_cobranzas['cantidad_blanco'], 2)
         self.assertEqual(reporte_cobranzas['cantidad_negro'], 1)
+        self.assertEqual(reporte_cobranzas['cantidad_usd'], 1)
+        self.assertEqual(reporte_cobranzas['cantidad_senas'], 1)
+        self.assertEqual(reporte_cobranzas['cantidad_pagos'], 2)
         pago_usd = next(item for item in reporte_cobranzas['lista'] if item['monto'] == Decimal('50'))
         self.assertTrue(pago_usd['pago_en_dolares'])
         self.assertEqual(pago_usd['monto_usd'], Decimal('0.05'))
@@ -1015,6 +1018,7 @@ class ReporteCobranzasTest(TestCase):
 
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,05')
+    self.assertContains(response, '1 en USD')
 
     def test_reporte_cobranzas_filtra_por_numero_factura(self):
         venta_ok = Venta.objects.create(

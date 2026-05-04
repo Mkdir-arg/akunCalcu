@@ -1790,15 +1790,23 @@ def reportes_cobranzas(request):
     total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')
     total_negro = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Negro')
     total = total_blanco + total_negro
+    cantidad_blanco = len([item for item in cobranzas if item['tipo'] == 'Blanco'])
+    cantidad_negro = len([item for item in cobranzas if item['tipo'] == 'Negro'])
+    cantidad_usd = len([item for item in cobranzas if item['pago_en_dolares'] and item['monto_usd']])
+    cantidad_senas = len([item for item in cobranzas if item['concepto'] == 'Seña inicial'])
+    cantidad_pagos = len(cobranzas) - cantidad_senas
 
     reporte_data = {
         'cobranzas': {
             'total_blanco': total_blanco,
             'total_negro': total_negro,
             'total': total,
-            'cantidad_blanco': len([item for item in cobranzas if item['tipo'] == 'Blanco']),
-            'cantidad_negro': len([item for item in cobranzas if item['tipo'] == 'Negro']),
+            'cantidad_blanco': cantidad_blanco,
+            'cantidad_negro': cantidad_negro,
             'cantidad': len(cobranzas),
+            'cantidad_usd': cantidad_usd,
+            'cantidad_senas': cantidad_senas,
+            'cantidad_pagos': cantidad_pagos,
             'lista': cobranzas,
         }
     }
