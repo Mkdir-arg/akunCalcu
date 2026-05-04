@@ -839,7 +839,7 @@ class ReportesVentasTest(TestCase):
         self.assertTrue(item['venta_en_dolares'])
         self.assertEqual(item['monto_usd'], Decimal('10'))
         self.assertEqual(item['cotizacion_usd'], Decimal('1000'))
-        self.assertContains(response, 'Venta en USD')
+        self.assertContains(response, 'Venta USD')
         self.assertContains(response, 'USD 10,00')
 
 

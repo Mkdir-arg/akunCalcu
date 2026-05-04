@@ -2,6 +2,52 @@
 {% load static %}
 {% load custom_filters %}
 
+{% block extra_head %}
+<style>
+    #filtros-cobranzas .select2-container {
+        width: 100% !important;
+    }
+
+    #filtros-cobranzas .select2-container--classic .select2-selection--single,
+    #filtros-cobranzas .select2-container--classic .select2-selection--multiple {
+        min-height: 46px;
+        border: 1px solid rgb(203 213 225);
+        border-radius: 1rem;
+        background: #fff;
+        padding: 0.15rem 0.35rem;
+    }
+
+    #filtros-cobranzas .select2-container--classic .select2-selection--single .select2-selection__rendered {
+        line-height: 42px;
+        color: rgb(15 23 42);
+    }
+
+    #filtros-cobranzas .select2-container--classic .select2-selection--single .select2-selection__arrow {
+        height: 44px;
+    }
+
+    #filtros-cobranzas .select2-container--classic .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.2rem 0.35rem 0.15rem;
+    }
+
+    #filtros-cobranzas .select2-container--classic .select2-selection--multiple .select2-selection__choice {
+        margin: 0;
+        border-radius: 9999px;
+        border: 0;
+        background: rgb(224 242 254);
+        color: rgb(30 64 175);
+        padding: 0.15rem 0.5rem;
+    }
+
+    #filtros-cobranzas details[open] .filtros-chevron {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
 {% block title %}Reporte Cobranza{% endblock %}
 
 {% block content %}
@@ -11,11 +57,16 @@
         <p class="text-slate-500 font-medium mt-1">Detalle de ingresos por movimiento individual de cobro</p>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
-        <form method="post">
+    <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 lg:p-7 mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
+                <p class="text-sm text-slate-500 mt-1">Dejá visibles los principales y abrí los avanzados solo cuando los necesites.</p>
+            </div>
+        </div>
+        <form method="post" id="filtros-cobranzas" class="space-y-5">
             {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
                     {{ form.fecha_desde }}
@@ -25,16 +76,8 @@
                     {{ form.fecha_hasta }}
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
-                    {{ form.cliente }}
-                </div>
-                <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Número de Factura</label>
                     {{ form.numero_factura }}
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Razón Social</label>
-                    {{ form.razon_social }}
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Estado</label>
@@ -45,13 +88,37 @@
                     {{ form.tipo_factura }}
                 </div>
             </div>
-            <div class="flex flex-wrap gap-4">
-                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
+
+            <details class="rounded-2xl border border-slate-200 bg-slate-50/80 overflow-hidden" {% if form.cliente.value or form.razon_social.value %}open{% endif %}>
+                <summary class="list-none cursor-pointer px-4 py-3 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Más filtros</p>
+                        <p class="text-xs text-slate-500">Cliente y razón social</p>
+                    </div>
+                    <i class="fas fa-chevron-down text-slate-400 transition-transform duration-200 filtros-chevron"></i>
+                </summary>
+                <div class="border-t border-slate-200 px-4 py-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                        {{ form.cliente }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Razón Social</label>
+                        {{ form.razon_social }}
+                    </div>
+                </div>
+            </details>
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-1">
+                <p class="text-xs text-slate-500">Los campos con varias opciones admiten búsqueda y selección múltiple.</p>
+                <div class="flex flex-wrap gap-3">
+                <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
                     <i class="fas fa-search mr-2"></i>Generar Reporte
                 </button>
-                <a href="{% url 'comercial:reportes_cobranzas' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
+                <a href="{% url 'comercial:reportes_cobranzas' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
                     <i class="fas fa-redo mr-2"></i>Limpiar
                 </a>
+                </div>
             </div>
         </form>
     </div>
