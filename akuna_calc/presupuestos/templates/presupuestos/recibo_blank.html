@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Plantilla de Recibo</title>
+    <style>
+        @page { size: A4 landscape; margin: 8mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #000; margin: 0; }
+        table { border-collapse: collapse; }
+        .sheet, .header, .field-table, .section-line, .payments-table, .closing-table { width: 100%; }
+        .top-label { width: 100%; text-align: right; font-weight: 700; font-size: 12px; }
+        .top-label span { background: #d9d9d9; padding: 4px 24px; display: inline-block; }
+        .header td { vertical-align: top; }
+        .logo { width: 170px; }
+        .company { font-size: 12px; font-weight: 700; line-height: 1.35; padding-top: 8px; }
+        .mark-x { font-size: 86px; font-weight: 700; text-align: center; vertical-align: middle; }
+        .receipt-meta { font-size: 12px; font-weight: 700; line-height: 1.35; }
+        .date-box { border: 2px solid #000; padding: 4px 14px; display: inline-block; font-size: 12px; min-width: 120px; text-align: center; }
+        .section-line td { border-top: 2px solid #000; }
+        .field-table td { border-bottom: 1px solid #9a9a9a; padding: 4px 6px; }
+        .label { font-weight: 700; white-space: nowrap; }
+        .value { background: #efefef; }
+        .spacer { height: 10px; }
+        .payments-title { font-size: 15pt; font-weight: 700; margin: 10pt 0 6pt 0; }
+        .payments-table { table-layout: fixed; }
+        .payments-table th { border: 1px solid #000; padding: 9pt 10pt; background: #f2f2f2; text-align: center; font-size: 14pt; font-weight: 700; }
+        .payments-table td { border: 1px solid #000; padding: 10pt 10pt; vertical-align: middle; font-size: 14pt; font-weight: 700; line-height: 1.15; height: 34px; }
+        .payments-date { width: 18%; }
+        .payments-bank { width: 26%; }
+        .payments-reference { width: 26%; }
+        .payments-amount { width: 30%; text-align: right; }
+        .closing-table { table-layout: fixed; margin-top: 10pt; }
+        .closing-table td { padding: 7pt 9pt; font-size: 12pt; font-weight: 700; vertical-align: middle; }
+        .summary-label-cell { width: 32%; border: 1px solid #000; background: #f2f2f2; }
+        .summary-value-cell { width: 18%; border: 1px solid #000; text-align: right; font-size: 12pt; }
+        .summary-total td.summary-label-cell,
+        .summary-total td.summary-value-cell { font-size: 13pt; }
+        .signature-cell { width: 50%; border: 0; text-align: right; vertical-align: top; padding-top: 8pt; padding-right: 26pt; }
+        .signature-label { font-size: 12pt; margin-bottom: 16pt; }
+        .placeholder { color: #333; letter-spacing: 0.12em; }
+        .small { font-size: 11px; }
+    </style>
+</head>
+<body>
+    <table class="sheet">
+        <tr>
+            <td class="top-label"><span>PLANTILLA</span></td>
+        </tr>
+    </table>
+
+    <table class="header">
+        <tr>
+            <td style="width:34%;">
+                {% if logo_url %}<img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">{% endif %}
+                <div class="company">
+                    Elpidio Gonzalez 5326<br>
+                    CP.: 1407<br>
+                    Ciudad de Buenos Aires - Argentina<br>
+                    I.V.A.: RI
+                </div>
+            </td>
+            <td style="width:16%;" class="mark-x">X</td>
+            <td style="width:50%;" class="receipt-meta">
+                <table width="100%">
+                    <tr>
+                        <td style="font-size:18px; font-weight:700;">RECIBO N° <span class="placeholder">__________</span></td>
+                    </tr>
+                    <tr>
+                        <td class="small">DOCUMENTO NO VALIDO COMO FACTURA</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top:8px;">
+                            <table width="100%">
+                                <tr>
+                                    <td style="width:45%; font-size:18px; font-weight:700;">FECHA</td>
+                                    <td><span class="date-box">____/____/________</span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr><td style="height:28px;"></td></tr>
+                    <tr><td>Cuit: 23-24203136-9</td></tr>
+                    <tr><td>Ing. Brutos: 1588778-02</td></tr>
+                    <tr><td>Inicio de Actividades: Enero de 2020</td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="section-line"><tr><td></td></tr></table>
+
+    <table class="field-table">
+        <tr>
+            <td class="label" style="width:14%;">Señor (es):</td>
+            <td class="value" style="width:40%;">{{ cliente_nombre }}</td>
+            <td class="label" style="width:8%;">I.V.A:</td>
+            <td class="value" style="width:18%;">{{ cliente_condicion_iva }}</td>
+            <td style="width:20%;"></td>
+        </tr>
+        <tr>
+            <td class="label">Domicilio:</td>
+            <td class="value">{{ cliente_direccion }}</td>
+            <td class="label">Cuit:</td>
+            <td class="value">{{ cliente_cuit }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td class="label">Localidad:</td>
+            <td class="value">{{ cliente_localidad }}</td>
+            <td class="label">Cp.:</td>
+            <td class="value">{{ cliente_cp }}</td>
+            <td></td>
+        </tr>
+    </table>
+
+    <table class="section-line"><tr><td></td></tr></table>
+
+    <table class="field-table">
+        <tr>
+            <td class="label" style="width:32%;">Recibimos la suma de PESOS :</td>
+            <td class="value"><span class="placeholder">__________________________________________________________</span></td>
+        </tr>
+        <tr>
+            <td class="label">Pago en concepto de :</td>
+            <td class="value"><span class="placeholder">__________________________________________________________</span></td>
+        </tr>
+    </table>
+
+    <div class="spacer"></div>
+
+    <div class="payments-title">Detalle de pagos</div>
+
+    <table class="payments-table">
+        <tr>
+            <th class="payments-date">FECHA</th>
+            <th class="payments-bank">BANCO</th>
+            <th class="payments-reference">NRO.</th>
+            <th class="payments-amount">IMPORTE</th>
+        </tr>
+        {% for _ in filas_vacias %}
+        <tr>
+            <td class="payments-date">&nbsp;</td>
+            <td class="payments-bank">&nbsp;</td>
+            <td class="payments-reference">&nbsp;</td>
+            <td class="payments-amount">&nbsp;</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <table class="closing-table">
+        <tr>
+            <td class="summary-label-cell">RET. GANANCIAS</td>
+            <td class="summary-value-cell">&nbsp;</td>
+            <td class="signature-cell" rowspan="4">
+                <div class="signature-label">Firma</div>
+                <div class="signature-label">Aclaración</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">RET. ING. BRUTOS</td>
+            <td class="summary-value-cell">&nbsp;</td>
+        </tr>
+        <tr>
+            <td class="summary-label-cell">RET. IVA</td>
+            <td class="summary-value-cell">&nbsp;</td>
+        </tr>
+        <tr class="summary-total">
+            <td class="summary-label-cell">TOTAL</td>
+            <td class="summary-value-cell">&nbsp;</td>
+        </tr>
+    </table>
+</body>
+</html>

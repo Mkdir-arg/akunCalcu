@@ -2,7 +2,7 @@ from django import forms
 from django.utils import timezone
 from datetime import timedelta
 
-from comercial.models import Cliente, Venta
+from comercial.models import Cliente
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 
 
@@ -53,26 +53,3 @@ class ComentarioForm(forms.ModelForm):
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none',
             }),
         }
-
-
-class PresupuestoVentaForm(forms.ModelForm):
-    class Meta:
-        model = Presupuesto
-        fields = ['venta']
-        widgets = {
-            'venta': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500'}),
-        }
-
-    def __init__(self, *args, cliente=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        queryset = Venta.objects.filter(pk__in=[])
-        if cliente is not None:
-            queryset = Venta.objects.filter(
-                cliente=cliente,
-                deleted_at__isnull=True,
-                con_factura=True,
-            ).order_by('-created_at')
-
-        self.fields['venta'].queryset = queryset
-        self.fields['venta'].required = False
-        self.fields['venta'].empty_label = 'Sin venta asociada'

@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 from pathlib import Path
 
@@ -7,15 +8,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from xhtml2pdf import pisa
 
-from comercial.models import Venta
+from comercial.models import _formatear_cuit
 from pricing.services.calculator import calcular_precio, PricingError
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm, PresupuestoVentaForm
+from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
 
 
 def _build_logo_data_url():
@@ -96,27 +99,13 @@ def crear(request):
 @login_required
 def detalle(request, pk):
     presupuesto = get_object_or_404(
-        Presupuesto.objects.select_related('cliente', 'created_by', 'venta').prefetch_related('items', 'comentarios__autor', 'venta__pagos'),
+        Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items', 'comentarios__autor'),
         pk=pk,
     )
     comentario_form = ComentarioForm()
-    venta_form = PresupuestoVentaForm(instance=presupuesto, cliente=presupuesto.cliente)
-    recibo_estado = None
-    if presupuesto.estado == 'confirmado':
-        if presupuesto.venta_id is None:
-            recibo_estado = 'sin_venta'
-        elif presupuesto.venta.pagos.exists():
-            recibo_estado = 'disponible'
-        else:
-            recibo_estado = 'sin_pagos'
-
-    puede_descargar_recibo = recibo_estado == 'disponible'
     return render(request, 'presupuestos/detalle.html', {
         'presupuesto': presupuesto,
         'comentario_form': comentario_form,
-        'venta_form': venta_form,
-        'puede_descargar_recibo': puede_descargar_recibo,
-        'recibo_estado': recibo_estado,
     })
 
 
@@ -242,20 +231,46 @@ def cambiar_estado(request, pk):
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
+def _build_blank_recibo_context(presupuesto):
+    cliente = presupuesto.cliente
+    return {
+        'logo_url': _build_logo_data_url(),
+        'cliente_nombre': cliente.get_nombre_completo(),
+        'cliente_direccion': cliente.direccion or '',
+        'cliente_localidad': cliente.localidad or '',
+        'cliente_cp': '',
+        'cliente_cuit': _formatear_cuit(cliente.cuit),
+        'cliente_condicion_iva': cliente.get_condicion_iva_display(),
+        'filas_vacias': range(4),
+    }
+
+
 @login_required
-@require_POST
-def asociar_venta(request, pk):
-    presupuesto = get_object_or_404(Presupuesto.objects.select_related('cliente', 'venta'), pk=pk)
-    form = PresupuestoVentaForm(request.POST, instance=presupuesto, cliente=presupuesto.cliente)
-    if form.is_valid():
-        presupuesto = form.save()
-        if presupuesto.venta_id:
-            messages.success(request, 'Venta asociada al presupuesto.')
-        else:
-            messages.success(request, 'Venta asociada removida.')
-    else:
-        messages.error(request, 'No se pudo asociar la venta seleccionada.')
-    return redirect('presupuestos:presupuestos-detalle', pk=pk)
+def recibo(request, pk):
+    presupuesto = get_object_or_404(
+        Presupuesto.objects.select_related('cliente'),
+        pk=pk,
+    )
+    html = render_to_string(
+        'presupuestos/recibo_blank.html',
+        _build_blank_recibo_context(presupuesto),
+    )
+
+    result = io.BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=result)
+    if pisa_status.err:
+        return HttpResponse(
+            'No se pudo generar la plantilla del recibo.',
+            content_type='text/plain; charset=utf-8',
+            status=500,
+        )
+
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="recibo_plantilla_{presupuesto.numero}.pdf"'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 
 @login_required

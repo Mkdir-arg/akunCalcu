@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta, date
 
-from comercial.models import Cliente, Venta, PagoVenta
+from comercial.models import Cliente
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context
 
@@ -255,35 +255,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'Ventana cocina en línea Modena de Aluar')
         self.assertContains(res, 'Subtotal del ítem')
 
-    def test_detalle_muestra_boton_recibo_si_presupuesto_confirmado_tiene_venta_asociada_con_pagos(self):
-        self.client.login(username='viewuser', password='testpass')
-        cliente = crear_cliente()
-        venta = Venta.objects.create(
-            numero_pedido='VTA-REC-001',
-            cliente=cliente,
-            valor_total=1000,
-            sena=0,
-            con_factura=True,
-        )
-        PagoVenta.objects.create(
-            venta=venta,
-            monto=1000,
-            fecha_pago=date.today(),
-            forma_pago='efectivo',
-            con_factura=True,
-            created_by=self.user,
-        )
-        p = crear_presupuesto(self.user, cliente=cliente)
-        p.estado = 'confirmado'
-        p.venta = venta
-        p.save(update_fields=['estado', 'venta'])
-
-        res = self.client.get(f'/presupuestos/{p.pk}/')
-
-        self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Recibo')
-
-    def test_detalle_muestra_accion_recibo_para_asociar_venta_si_confirmado_sin_venta(self):
+    def test_detalle_muestra_boton_recibo_si_presupuesto_confirmado(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
         p.estado = 'confirmado'
@@ -292,42 +264,25 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Recibo: asociar venta')
+        self.assertContains(res, 'Recibo')
 
-    def test_detalle_muestra_estado_recibo_sin_pagos_si_hay_venta_asociada(self):
+    def test_detalle_no_muestra_boton_recibo_si_presupuesto_no_confirmado(self):
         self.client.login(username='viewuser', password='testpass')
-        cliente = crear_cliente()
-        venta = Venta.objects.create(
-            numero_pedido='VTA-REC-003',
-            cliente=cliente,
-            valor_total=1200,
-            sena=0,
-            con_factura=True,
-        )
-        p = crear_presupuesto(self.user, cliente=cliente)
-        p.estado = 'confirmado'
-        p.venta = venta
-        p.save(update_fields=['estado', 'venta'])
+        p = crear_presupuesto(self.user)
 
         res = self.client.get(f'/presupuestos/{p.pk}/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Recibo: sin pagos')
+        self.assertNotContains(res, 'Recibo')
 
-    def test_asociar_venta_actualiza_presupuesto(self):
+    def test_recibo_descarga_pdf_para_presupuesto_confirmado(self):
         self.client.login(username='viewuser', password='testpass')
-        cliente = crear_cliente()
-        venta = Venta.objects.create(
-            numero_pedido='VTA-REC-002',
-            cliente=cliente,
-            valor_total=1500,
-            sena=0,
-            con_factura=True,
-        )
-        p = crear_presupuesto(self.user, cliente=cliente)
+        p = crear_presupuesto(self.user)
+        p.estado = 'confirmado'
+        p.save(update_fields=['estado'])
 
-        res = self.client.post(f'/presupuestos/{p.pk}/venta/', {'venta': venta.pk})
+        res = self.client.get(f'/presupuestos/{p.pk}/recibo/')
 
-        self.assertEqual(res.status_code, 302)
-        p.refresh_from_db()
-        self.assertEqual(p.venta_id, venta.pk)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+        self.assertIn('attachment; filename="recibo_plantilla_', res['Content-Disposition'])

@@ -47,22 +47,11 @@
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-file-pdf mr-2"></i>Presupuesto
             </a>
-            {% if recibo_estado == 'disponible' %}
-            <a href="{% url 'comercial:descargar_pdf_recibo_venta' presupuesto.venta.pk %}" target="_blank"
+            {% if presupuesto.estado == 'confirmado' %}
+            <a href="{% url 'presupuestos:presupuestos-recibo' presupuesto.pk %}"
                 class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-receipt mr-2"></i>Recibo
             </a>
-            {% elif recibo_estado == 'sin_venta' %}
-            <a href="#venta-asociada-card"
-                class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-receipt mr-2"></i>Recibo: asociar venta
-            </a>
-            {% elif recibo_estado == 'sin_pagos' %}
-            <span
-                class="bg-slate-300 text-slate-500 px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center cursor-not-allowed"
-                title="La venta asociada todavía no tiene pagos registrados">
-                <i class="fas fa-receipt mr-2"></i>Recibo: sin pagos
-            </span>
             {% endif %}
         </div>
     </div>
@@ -251,24 +240,6 @@
                 </div>
             </div>
 
-            <div id="venta-asociada-card" class="bg-white rounded-2xl shadow-lg p-5 scroll-mt-24">
-                <h3 class="font-bold text-slate-800 mb-3">Venta asociada</h3>
-                <form method="post" action="{% url 'presupuestos:presupuestos-venta' presupuesto.pk %}">
-                    {% csrf_token %}
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Venta en blanco del cliente</label>
-                    {{ venta_form.venta }}
-                    <p class="text-xs text-slate-400 mt-2">Solo se listan ventas en blanco del cliente. Cuando el presupuesto está confirmado, la acción de recibo se habilita apenas la venta asociada tenga pagos.</p>
-                    {% if recibo_estado == 'sin_venta' %}
-                    <p class="text-xs text-amber-600 mt-2 font-medium">Para ver el recibo desde este presupuesto, primero asociá una venta del cliente.</p>
-                    {% endif %}
-                    {% if presupuesto.venta and not puede_descargar_recibo %}
-                    <p class="text-xs text-amber-600 mt-2 font-medium">La venta asociada todavía no tiene pagos registrados para emitir recibo.</p>
-                    {% endif %}
-                    <button type="submit" class="w-full mt-3 bg-slate-700 hover:bg-slate-800 text-white py-2 rounded-xl font-semibold text-sm transition-colors">
-                        Guardar venta asociada
-                    </button>
-                </form>
-            </div>
         </div>
     </div>
 </div>
