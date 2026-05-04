@@ -288,6 +288,13 @@ class ReporteForm(forms.Form):
         ('blanco', 'Blanco'),
         ('negro', 'Negro'),
     ]
+    ORDEN_CHOICES = [
+        ('fecha_desc', 'Fecha: más recientes'),
+        ('fecha_asc', 'Fecha: más antiguas'),
+        ('monto_desc', 'Monto: mayor a menor'),
+        ('monto_asc', 'Monto: menor a mayor'),
+        ('cliente_asc', 'Cliente: A a Z'),
+    ]
     
     fecha_desde = forms.DateField(
         required=False,
@@ -309,6 +316,15 @@ class ReporteForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
             'placeholder': 'Ej: 0001-00001234'
+        })
+    )
+    orden = forms.ChoiceField(
+        required=False,
+        initial='fecha_desc',
+        choices=ORDEN_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'no-select2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'id': 'id_orden'
         })
     )
     

@@ -1019,6 +1019,7 @@ class ReporteCobranzasTest(TestCase):
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,05')
     self.assertContains(response, '1 en USD')
+    self.assertContains(response, 'Imprimir compacto')
 
     def test_reporte_cobranzas_filtra_por_numero_factura(self):
         venta_ok = Venta.objects.create(
@@ -1089,3 +1090,30 @@ class ReporteCobranzasTest(TestCase):
         self.assertEqual(item['cotizacion_usd'], Decimal('1000'))
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,10')
+
+    def test_reporte_cobranzas_ordena_por_monto_desc(self):
+        Venta.objects.create(
+            numero_pedido='VTA-ORDER-LOW',
+            cliente=self.cliente,
+            valor_total=Decimal('1000'),
+            sena=Decimal('50'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+        Venta.objects.create(
+            numero_pedido='VTA-ORDER-HIGH',
+            cliente=self.cliente,
+            valor_total=Decimal('1000'),
+            sena=Decimal('250'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes_cobranzas'), {
+            'orden': 'monto_desc',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reporte_cobranzas = response.context['reporte_data']['cobranzas']
+        self.assertEqual(reporte_cobranzas['lista'][0]['pedido'], 'VTA-ORDER-HIGH')
+        self.assertEqual(reporte_cobranzas['lista'][0]['monto'], Decimal('250'))

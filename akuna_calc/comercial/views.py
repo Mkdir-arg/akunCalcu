@@ -1687,6 +1687,18 @@ def construir_reporte_cobranzas(
     return cobranzas
 
 
+def ordenar_reporte_cobranzas(cobranzas, orden='fecha_desc'):
+    if orden == 'fecha_asc':
+        return sorted(cobranzas, key=lambda item: (item['fecha'], item['pedido'], item['monto']))
+    if orden == 'monto_desc':
+        return sorted(cobranzas, key=lambda item: (item['monto'], item['fecha'], item['pedido']), reverse=True)
+    if orden == 'monto_asc':
+        return sorted(cobranzas, key=lambda item: (item['monto'], item['fecha'], item['pedido']))
+    if orden == 'cliente_asc':
+        return sorted(cobranzas, key=lambda item: (str(item['cliente']).lower(), item['fecha'], item['pedido']))
+    return sorted(cobranzas, key=lambda item: (item['fecha'], item['pedido'], item['monto']), reverse=True)
+
+
 @login_required
 def reportes(request):
     form = ReporteForm()
@@ -1765,6 +1777,7 @@ def reportes_cobranzas(request):
     estado_venta_filtro = None
     tipo_factura_filtro = None
     numero_factura_filtro = None
+    orden_cobranzas = 'fecha_desc'
 
     if request.method == 'POST':
         form = ReporteForm(request.POST)
@@ -1776,6 +1789,7 @@ def reportes_cobranzas(request):
             estado_venta_filtro = form.cleaned_data.get('estado_venta')
             tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
             numero_factura_filtro = form.cleaned_data.get('numero_factura')
+            orden_cobranzas = form.cleaned_data.get('orden') or 'fecha_desc'
 
     cobranzas = construir_reporte_cobranzas(
         fecha_desde=fecha_desde,
@@ -1786,6 +1800,7 @@ def reportes_cobranzas(request):
         tipo_factura_filtro=tipo_factura_filtro,
         numero_factura_filtro=numero_factura_filtro,
     )
+    cobranzas = ordenar_reporte_cobranzas(cobranzas, orden_cobranzas)
 
     total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')
     total_negro = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Negro')
