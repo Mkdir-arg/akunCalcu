@@ -1,6 +1,17 @@
+from decimal import Decimal, InvalidOperation
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+
+
+def _decimal_or_zero(value):
+    if value in (None, ''):
+        return Decimal('0')
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal('0')
 
 
 class Presupuesto(models.Model):
@@ -10,6 +21,10 @@ class Presupuesto(models.Model):
         ('confirmado', 'Confirmado'),
         ('vencido', 'Vencido'),
         ('cancelado', 'Cancelado'),
+    ]
+    TIPO_OBRA_CHOICES = [
+        ('obra_nueva', 'Obra nueva'),
+        ('renovacion', 'Renovación'),
     ]
 
     numero = models.CharField(max_length=20, unique=True, verbose_name='Número')
@@ -27,6 +42,25 @@ class Presupuesto(models.Model):
         verbose_name='Estado',
     )
     notas = models.TextField(blank=True, verbose_name='Notas')
+    tipo_obra = models.CharField(
+        max_length=20,
+        choices=TIPO_OBRA_CHOICES,
+        blank=True,
+        default='',
+        verbose_name='Tipo de obra',
+    )
+    recargo_obra_nueva = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Recargo obra nueva',
+    )
+    recargo_renovacion_unitario = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Recargo renovación por unidad',
+    )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total')
     created_by = models.ForeignKey(
         User,
@@ -56,8 +90,26 @@ class Presupuesto(models.Model):
     def esta_bloqueado(self):
         return self.estado in ('confirmado', 'cancelado')
 
+    def get_total_items(self):
+        return sum((item.precio_total for item in self.items.all()), Decimal('0'))
+
+    def get_recargo_obra_nueva_aplicado(self):
+        if self.tipo_obra != 'obra_nueva':
+            return Decimal('0')
+        return _decimal_or_zero(self.recargo_obra_nueva)
+
+    def get_recargo_total_renovacion(self):
+        if self.tipo_obra != 'renovacion':
+            return Decimal('0')
+        return sum((item.get_recargo_renovacion_total() for item in self.items.all()), Decimal('0'))
+
+    def actualizar_items_por_configuracion(self):
+        recargo_unitario = self.recargo_renovacion_unitario if self.tipo_obra == 'renovacion' else Decimal('0')
+        for item in self.items.all():
+            item.aplicar_recargo_renovacion(recargo_unitario)
+
     def recalcular_total(self):
-        total = sum(item.precio_total for item in self.items.all())
+        total = self.get_total_items() + self.get_recargo_obra_nueva_aplicado()
         self.total = total
         self.save(update_fields=['total'])
 
@@ -112,6 +164,34 @@ class ItemPresupuesto(models.Model):
 
     def __str__(self):
         return f'{self.descripcion} ({self.presupuesto.numero})'
+
+    def get_precio_unitario_base(self):
+        resultado = self.resultado_json or {}
+        if 'precio_unitario_base' not in resultado:
+            return _decimal_or_zero(self.precio_unitario)
+        return _decimal_or_zero(resultado.get('precio_unitario_base'))
+
+    def get_recargo_renovacion_unitario(self):
+        resultado = self.resultado_json or {}
+        if 'recargo_renovacion_unitario_aplicado' in resultado:
+            return _decimal_or_zero(resultado.get('recargo_renovacion_unitario_aplicado'))
+        base = self.get_precio_unitario_base()
+        recargo = _decimal_or_zero(self.precio_unitario) - base
+        return recargo if recargo > 0 else Decimal('0')
+
+    def get_recargo_renovacion_total(self):
+        return self.get_recargo_renovacion_unitario() * self.cantidad
+
+    def aplicar_recargo_renovacion(self, recargo_unitario):
+        recargo_unitario = _decimal_or_zero(recargo_unitario)
+        base = self.get_precio_unitario_base()
+        resultado = dict(self.resultado_json or {})
+        resultado['precio_unitario_base'] = float(base)
+        resultado['recargo_renovacion_unitario_aplicado'] = float(recargo_unitario)
+        resultado['recargo_renovacion_total_aplicado'] = float(recargo_unitario * self.cantidad)
+        self.resultado_json = resultado
+        self.precio_unitario = base + recargo_unitario
+        self.save(update_fields=['precio_unitario', 'precio_total', 'resultado_json'])
 
     def save(self, *args, **kwargs):
         self.precio_total = self.precio_unitario * self.cantidad

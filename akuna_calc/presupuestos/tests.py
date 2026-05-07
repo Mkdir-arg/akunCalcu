@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import patch
+from decimal import Decimal
 
 from django.test import TestCase, Client
 from django.test import SimpleTestCase
@@ -64,6 +65,21 @@ class PresupuestoModelTest(TestCase):
         p.recalcular_total()
         self.assertEqual(p.total, 2000)
 
+    def test_recalcular_total_incluye_recargo_obra_nueva(self):
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'obra_nueva'
+        p.recargo_obra_nueva = Decimal('350')
+        p.save(update_fields=['tipo_obra', 'recargo_obra_nueva'])
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Test', cantidad=2,
+            ancho_mm=1200, alto_mm=1500, margen_porcentaje=30,
+            precio_unitario=1000, resultado_json={},
+        )
+
+        p.recalcular_total()
+
+        self.assertEqual(p.total, Decimal('2350'))
+
 
 class ItemPresupuestoModelTest(TestCase):
     def setUp(self):
@@ -86,6 +102,21 @@ class ItemPresupuestoModelTest(TestCase):
             precio_unitario=2000, resultado_json={},
         )
         self.assertIn('Puerta', str(item))
+
+    def test_aplicar_recargo_renovacion_actualiza_precio_y_json(self):
+        p = crear_presupuesto(self.user)
+        item = ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana', cantidad=2,
+            ancho_mm=1000, alto_mm=1200, margen_porcentaje=25,
+            precio_unitario=500, resultado_json={'precio_unitario_base': 500},
+        )
+
+        item.aplicar_recargo_renovacion(Decimal('75'))
+        item.refresh_from_db()
+
+        self.assertEqual(item.precio_unitario, Decimal('575'))
+        self.assertEqual(item.precio_total, Decimal('1150'))
+        self.assertEqual(item.get_recargo_renovacion_total(), Decimal('150'))
 
 
 class PdfDescriptionsHelpersTest(SimpleTestCase):
@@ -223,6 +254,26 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/')
         self.assertEqual(res.status_code, 200)
 
+    def test_detalle_serializa_resultado_para_desglose(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        ItemPresupuesto.objects.create(
+            presupuesto=p,
+            descripcion='Ventana cocina',
+            cantidad=1,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=350000,
+            resultado_json={'desglose': {'perfiles': []}},
+        )
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'resultado-item-')
+        self.assertContains(res, 'application/json')
+
     def test_pdf_autenticado(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
@@ -255,6 +306,30 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'Ventana cocina en línea Modena de Aluar')
         self.assertContains(res, 'Subtotal del ítem')
 
+    def test_pdf_no_muestra_detalle_recargo_obra_nueva(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'obra_nueva'
+        p.recargo_obra_nueva = Decimal('50000')
+        p.save(update_fields=['tipo_obra', 'recargo_obra_nueva'])
+        ItemPresupuesto.objects.create(
+            presupuesto=p,
+            descripcion='Ventana cocina',
+            cantidad=1,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=350000,
+            resultado_json={},
+        )
+        p.recalcular_total()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, '$400.000,00')
+        self.assertNotContains(res, 'Recargo obra nueva')
+
     def test_detalle_muestra_boton_recibo(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
@@ -273,3 +348,59 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res['Content-Type'], 'application/pdf')
         self.assertIn('attachment; filename="recibo_plantilla_', res['Content-Disposition'])
+
+    def test_agregar_item_sin_tipo_obra_rechaza(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/item/agregar/',
+            {
+                'marco_id': '1',
+                'ancho_mm': '1200',
+                'alto_mm': '1500',
+                'margen_porcentaje': '30',
+                'descripcion': 'Ventana cocina',
+                'cantidad': '1',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(p.items.count(), 0)
+
+    def test_actualizar_configuracion_obra_requiere_login(self):
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {'tipo_obra': 'obra_nueva', 'recargo_obra_nueva': '1000'},
+        )
+
+        self.assertEqual(res.status_code, 302)
+
+    def test_actualizar_configuracion_obra_aplica_recargo_renovacion_existente(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        item = ItemPresupuesto.objects.create(
+            presupuesto=p,
+            descripcion='Ventana cocina',
+            cantidad=2,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=350000,
+            resultado_json={'precio_unitario_base': 350000},
+        )
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {'tipo_obra': 'renovacion', 'recargo_renovacion_unitario': '5000'},
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(p.tipo_obra, 'renovacion')
+        self.assertEqual(item.precio_unitario, Decimal('355000'))
+        self.assertEqual(item.precio_total, Decimal('710000'))
+        self.assertEqual(p.total, Decimal('710000'))

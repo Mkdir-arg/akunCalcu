@@ -27,6 +27,46 @@ class PresupuestoForm(forms.ModelForm):
             self.fields['fecha_expiracion'].initial = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%d')
 
 
+class PresupuestoConfiguracionObraForm(forms.ModelForm):
+    class Meta:
+        model = Presupuesto
+        fields = ['tipo_obra', 'recargo_obra_nueva', 'recargo_renovacion_unitario']
+        widgets = {
+            'tipo_obra': forms.Select(attrs={'class': 'no-select2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'recargo_obra_nueva': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'recargo_renovacion_unitario': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_obra'].required = True
+        self.fields['tipo_obra'].empty_label = None
+        self.fields['tipo_obra'].widget.choices = [('', 'Seleccionar...'), *Presupuesto.TIPO_OBRA_CHOICES]
+        self.fields['recargo_obra_nueva'].required = False
+        self.fields['recargo_renovacion_unitario'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_obra = cleaned_data.get('tipo_obra')
+        recargo_obra_nueva = cleaned_data.get('recargo_obra_nueva')
+        recargo_renovacion_unitario = cleaned_data.get('recargo_renovacion_unitario')
+
+        if not tipo_obra:
+            raise forms.ValidationError('Debes seleccionar obra nueva o renovación antes de agregar ítems.')
+
+        if tipo_obra == 'obra_nueva':
+            if recargo_obra_nueva is None:
+                self.add_error('recargo_obra_nueva', 'Ingresa el valor adicional de obra nueva.')
+            cleaned_data['recargo_renovacion_unitario'] = 0
+
+        if tipo_obra == 'renovacion':
+            if recargo_renovacion_unitario is None:
+                self.add_error('recargo_renovacion_unitario', 'Ingresa el valor fijo por unidad para renovación.')
+            cleaned_data['recargo_obra_nueva'] = 0
+
+        return cleaned_data
+
+
 class ItemPresupuestoForm(forms.ModelForm):
     class Meta:
         model = ItemPresupuesto

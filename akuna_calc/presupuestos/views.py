@@ -18,7 +18,7 @@ from comercial.models import _formatear_cuit
 from pricing.services.calculator import calcular_precio, PricingError
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .forms import PresupuestoForm, ItemPresupuestoForm, ComentarioForm
+from .forms import PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm
 
 
 def _build_logo_data_url():
@@ -34,6 +34,18 @@ def _build_logo_data_url():
 
     logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
     return f'data:image/png;base64,{logo_b64}'
+
+
+def _get_detalle_queryset():
+    return Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items', 'comentarios__autor')
+
+
+def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form=None):
+    return {
+        'presupuesto': presupuesto,
+        'comentario_form': comentario_form or ComentarioForm(),
+        'configuracion_form': configuracion_form or PresupuestoConfiguracionObraForm(instance=presupuesto),
+    }
 
 
 @login_required
@@ -98,15 +110,8 @@ def crear(request):
 
 @login_required
 def detalle(request, pk):
-    presupuesto = get_object_or_404(
-        Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items', 'comentarios__autor'),
-        pk=pk,
-    )
-    comentario_form = ComentarioForm()
-    return render(request, 'presupuestos/detalle.html', {
-        'presupuesto': presupuesto,
-        'comentario_form': comentario_form,
-    })
+    presupuesto = get_object_or_404(_get_detalle_queryset(), pk=pk)
+    return render(request, 'presupuestos/detalle.html', _build_detalle_context(presupuesto))
 
 
 @login_required
@@ -132,6 +137,10 @@ def agregar_item(request, pk):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se pueden agregar ítems a un presupuesto confirmado o cancelado.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    if not presupuesto.tipo_obra:
+        messages.error(request, 'Debes definir si el presupuesto es obra nueva o renovación antes de agregar ítems.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if request.method == 'POST':
@@ -160,6 +169,18 @@ def agregar_item(request, pk):
 
         try:
             resultado = calcular_precio(config)
+            precio_unitario_base = resultado['precio_total']
+            resultado['precio_unitario_base'] = precio_unitario_base
+            resultado['recargo_renovacion_unitario_aplicado'] = 0
+            resultado['recargo_renovacion_total_aplicado'] = 0
+            precio_unitario = precio_unitario_base
+
+            if presupuesto.tipo_obra == 'renovacion':
+                recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
+                resultado['recargo_renovacion_unitario_aplicado'] = recargo_unitario
+                resultado['recargo_renovacion_total_aplicado'] = recargo_unitario * cantidad
+                precio_unitario = precio_unitario_base + recargo_unitario
+
             resultado['snapshot_item'] = build_item_snapshot(config, descripcion, cantidad)
             orden = presupuesto.items.count()
             item = ItemPresupuesto.objects.create(
@@ -169,7 +190,7 @@ def agregar_item(request, pk):
                 ancho_mm=config['ancho_mm'],
                 alto_mm=config['alto_mm'],
                 margen_porcentaje=config['margen_porcentaje'],
-                precio_unitario=resultado['precio_total'],
+                precio_unitario=precio_unitario,
                 resultado_json=resultado,
                 orden=orden,
             )
@@ -180,6 +201,29 @@ def agregar_item(request, pk):
             messages.error(request, f'Error al calcular: {e}')
 
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+@login_required
+@require_POST
+def actualizar_configuracion_obra(request, pk):
+    presupuesto = get_object_or_404(_get_detalle_queryset(), pk=pk)
+    if presupuesto.esta_bloqueado():
+        messages.error(request, 'No se puede modificar un presupuesto confirmado o cancelado.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    configuracion_form = PresupuestoConfiguracionObraForm(request.POST, instance=presupuesto)
+    if configuracion_form.is_valid():
+        presupuesto = configuracion_form.save()
+        presupuesto.actualizar_items_por_configuracion()
+        presupuesto.recalcular_total()
+        messages.success(request, 'Configuración de obra actualizada.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    return render(
+        request,
+        'presupuestos/detalle.html',
+        _build_detalle_context(presupuesto, configuracion_form=configuracion_form),
+    )
 
 
 @login_required

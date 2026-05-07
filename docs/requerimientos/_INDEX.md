@@ -37,3 +37,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-015](./REQ-015-vista-previa-pdf-ventas.md) | Vista previa de PDF desde ventas | En desarrollo | 2026-05-03 | — |
 | [REQ-016](./REQ-016-rediseno-pdf-presupuestos-descripcion-narrativa.md) | Rediseño del PDF de presupuestos con descripción narrativa por ítem | Implementado | 2026-05-04 | FEAT-008 |
 | [REQ-017](./REQ-017-compras-y-pagos-de-compra-en-dolares.md) | Compras y pagos de compra en dólares | En desarrollo | 2026-05-04 | — |
+| [REQ-018](./REQ-018-recargos-obra-nueva-renovacion-y-fix-desglose-presupuesto.md) | Recargos por obra nueva o renovación + fix de desglose en presupuestos | En desarrollo | 2026-05-07 | — |
