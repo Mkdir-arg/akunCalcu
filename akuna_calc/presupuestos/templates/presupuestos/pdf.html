@@ -440,9 +440,13 @@
                     <td class="col-item">{{ forloop.counter }}</td>
                     <td class="col-detail">
                         <p class="item-title">{{ entry.titulo }}</p>
-                        {% if entry.resumen_tecnico %}
-                        <p class="item-text">{{ entry.resumen_tecnico }}</p>
+                        {% if entry.descripcion_narrativa %}
+                        <p class="item-text">{{ entry.descripcion_narrativa }}</p>
                         {% endif %}
+                        {% if entry.resumen_tecnico %}
+                        <p class="item-summary">{{ entry.resumen_tecnico }}</p>
+                        {% endif %}
+                        <p class="item-summary">Subtotal del ítem: ${{ entry.item.precio_total|formato_numero }}</p>
                     </td>
                     <td class="col-qty">{{ entry.item.cantidad }}</td>
                     <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
