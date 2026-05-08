@@ -375,6 +375,7 @@ def hoja_create(request):
         'form': form,
         'titulo': 'Nueva Hoja',
         'cancel_url': 'config-hojas',
+        'es_edicion': False,
         'perfiles_json': perfiles_json,
         'accesorios_hoja_json': '[]',
     })
@@ -386,7 +387,7 @@ def hoja_edit(request, pk):
     obj = get_object_or_404(Hoja, pk=pk)
     form = HojaForm(request.POST or None, instance=obj)
 
-    from .models import DespiecePerfilesHoja, DespieceAccesoriosHoja, Vidrio
+    from .models import DespiecePerfilesHoja, DespieceAccesoriosHoja, Vidrio, VidrioHoja
     import json
 
     formulas = []
@@ -397,7 +398,14 @@ def hoja_edit(request, pk):
     except:
         pass
 
-    vidrio = Vidrio.objects.filter(hoja_id=obj.id).first()
+    relacion_vidrio = (
+        VidrioHoja.objects
+        .filter(hoja_id=obj.id)
+        .select_related('vidrio')
+        .order_by('vidrio_id')
+        .first()
+    )
+    vidrio = relacion_vidrio.vidrio if relacion_vidrio else Vidrio.objects.filter(hoja_id=obj.id).first()
 
     perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
@@ -549,6 +557,7 @@ def hoja_edit(request, pk):
         'form': form,
         'titulo': 'Editar Hoja',
         'cancel_url': 'config-hojas',
+        'es_edicion': True,
         'object': obj,
         'hoja': obj,
         'formulas': formulas,
