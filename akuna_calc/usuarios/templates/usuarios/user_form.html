@@ -70,18 +70,31 @@
                     {% endif %}
                 </div>
             </div>
+
+            <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div class="flex items-center gap-3">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="text-sm font-semibold text-slate-700">Usuario activo</label>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div id="fullAccessMessage" class="bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 {% if not form.selected_role_has_full_access %}hidden{% endif %}">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white text-emerald-600 flex items-center justify-center shadow-sm shrink-0">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800">Permisos por módulo</h2>
-                    <p class="text-slate-500 text-sm mt-1">Marca únicamente las opciones a las que el usuario puede entrar y ver en el menú lateral.</p>
+                    <h2 class="text-lg font-bold text-emerald-900">Acceso total habilitado</h2>
+                    <p class="text-sm text-emerald-800 mt-1">Este rol ya incluye todos los módulos y opciones. No hace falta configurar permisos manuales.</p>
                 </div>
-                <div class="flex items-center">
-                    {{ form.is_active }}
-                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 text-sm font-semibold text-slate-700">Usuario activo</label>
-                </div>
+            </div>
+        </div>
+
+        <div id="permissionsCard" data-selected-role-has-full-access="{{ form.selected_role_has_full_access|yesno:'true,false' }}" class="bg-white rounded-2xl shadow-lg p-6 {% if form.selected_role_has_full_access %}hidden{% endif %}">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Permisos por módulo</h2>
+                <p class="text-slate-500 text-sm mt-1">Marca únicamente las opciones a las que el usuario puede entrar y ver en el menú lateral.</p>
             </div>
 
             {% if form.access_codes.errors %}
@@ -90,20 +103,45 @@
             </div>
             {% endif %}
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div class="border-b border-slate-200 pb-4">
+                <div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Permisos por módulo">
                 {% for group in form.permission_groups %}
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <div class="flex items-center gap-3 mb-4">
+                    <button
+                        type="button"
+                        class="permission-tab shrink-0 rounded-2xl border px-4 py-3 text-left transition-colors {% if forloop.first %}border-blue-200 bg-blue-50 text-blue-700{% else %}border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-200 hover:text-blue-700{% endif %}"
+                        data-tab-target="permission-panel-{{ forloop.counter0 }}"
+                        data-selected-count="{{ group.selected_count }}"
+                        aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                <i class="{{ group.icon }}"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">{{ group.label }}</p>
+                                <p class="text-xs opacity-80">{{ group.selected_count }} seleccionadas</p>
+                            </div>
+                        </div>
+                    </button>
+                {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+                {% for group in form.permission_groups %}
+                <div id="permission-panel-{{ forloop.counter0 }}" class="permission-panel {% if not forloop.first %}hidden{% endif %}">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                        <div class="flex items-center gap-3 mb-4">
                         <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow-sm">
                             <i class="{{ group.icon }}"></i>
                         </div>
                         <div>
                             <h3 class="font-semibold text-slate-800">{{ group.label }}</h3>
-                            <p class="text-xs text-slate-500">{{ group.selected_count }} seleccionadas</p>
+                            <p class="text-xs text-slate-500">Elegí las opciones visibles y habilitadas dentro de este módulo.</p>
                         </div>
                     </div>
 
-                    <div class="space-y-3">
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
                         {% for item in group.items %}
                         <label class="flex items-start gap-3 rounded-xl bg-white px-4 py-3 border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer">
                             <input type="checkbox" name="access_codes" value="{{ item.code }}" {% if item.selected %}checked{% endif %} class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
@@ -114,6 +152,7 @@
                         </label>
                         {% endfor %}
                     </div>
+                </div>
                 </div>
                 {% endfor %}
             </div>
@@ -127,4 +166,62 @@
         </div>
     </form>
 </div>
+
+{{ form.full_access_role_ids|json_script:"full-access-role-ids" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const roleSelect = document.getElementById('{{ form.rol_sistema.id_for_label }}');
+    const permissionsCard = document.getElementById('permissionsCard');
+    const fullAccessMessage = document.getElementById('fullAccessMessage');
+    const fullAccessRoleIds = JSON.parse(document.getElementById('full-access-role-ids').textContent);
+    const tabs = Array.from(document.querySelectorAll('.permission-tab'));
+    const panels = Array.from(document.querySelectorAll('.permission-panel'));
+
+    function setPermissionsVisibility() {
+        if (!roleSelect || !permissionsCard || !fullAccessMessage) {
+            return;
+        }
+
+        const hasFullAccess = fullAccessRoleIds.includes(roleSelect.value);
+        permissionsCard.classList.toggle('hidden', hasFullAccess);
+        fullAccessMessage.classList.toggle('hidden', !hasFullAccess);
+    }
+
+    function activateTab(tab) {
+        const targetId = tab.dataset.tabTarget;
+
+        tabs.forEach((currentTab) => {
+            const isActive = currentTab === tab;
+            currentTab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            currentTab.classList.toggle('border-blue-200', isActive);
+            currentTab.classList.toggle('bg-blue-50', isActive);
+            currentTab.classList.toggle('text-blue-700', isActive);
+            currentTab.classList.toggle('border-slate-200', !isActive);
+            currentTab.classList.toggle('bg-slate-50', !isActive);
+            currentTab.classList.toggle('text-slate-600', !isActive);
+        });
+
+        panels.forEach((panel) => {
+            panel.classList.toggle('hidden', panel.id !== targetId);
+        });
+    }
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', function () {
+            activateTab(tab);
+        });
+    });
+
+    const initialTab = tabs.find((tab) => Number(tab.dataset.selectedCount || '0') > 0) || tabs[0];
+    if (initialTab) {
+        activateTab(initialTab);
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', setPermissionsVisibility);
+        setPermissionsVisibility();
+    }
+});
+</script>
 {% endblock %}

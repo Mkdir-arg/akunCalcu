@@ -44,6 +44,13 @@ class UserAccessFlowTest(TestCase):
 				'activo': True,
 			},
 		)
+		self.supervisor_role = RolSistema.objects.create(
+			nombre='Supervisor',
+			codigo='supervisor',
+			descripcion='Acceso parcial para pruebas.',
+			acceso_total=False,
+			activo=True,
+		)
 
 	def assign_access(self, user, access_codes=None, role=None):
 		normalized_codes = access_codes or []
@@ -98,6 +105,33 @@ class UserAccessFlowTest(TestCase):
 		self.assertEqual(profile.rol, self.admin_role)
 		self.assertEqual(profile.permisos, [])
 		self.assertTrue(updated_user.is_staff)
+
+	def test_user_form_detects_when_selected_role_has_full_access(self):
+		admin_form = UserCreateForm(data={
+			'username': 'full_access_user',
+			'email': 'full@example.com',
+			'first_name': 'Full',
+			'last_name': 'Access',
+			'password': 'ClaveSegura123',
+			'is_active': 'on',
+			'rol_sistema': str(self.admin_role.pk),
+			'access_codes': ['comercial.ventas'],
+		})
+
+		partial_form = UserCreateForm(data={
+			'username': 'partial_user',
+			'email': 'partial@example.com',
+			'first_name': 'Partial',
+			'last_name': 'Access',
+			'password': 'ClaveSegura123',
+			'is_active': 'on',
+			'rol_sistema': str(self.supervisor_role.pk),
+			'access_codes': ['comercial.ventas'],
+		})
+
+		self.assertIn(str(self.admin_role.pk), admin_form.full_access_role_ids)
+		self.assertTrue(admin_form.selected_role_has_full_access)
+		self.assertFalse(partial_form.selected_role_has_full_access)
 
 	def test_sidebar_modules_hide_unassigned_sections(self):
 		user = User.objects.create_user(username='ventas_only', password='ClaveSegura123', is_active=True)

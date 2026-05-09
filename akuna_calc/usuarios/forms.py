@@ -50,9 +50,14 @@ class BaseUserAccessForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['rol_sistema'].queryset = RolSistema.objects.filter(activo=True).order_by('nombre')
+        role_queryset = RolSistema.objects.filter(activo=True).order_by('nombre')
+        self.fields['rol_sistema'].queryset = role_queryset
         self.fields['access_codes'].choices = [
             (code, metadata['label']) for code, metadata in ACCESS_CODE_METADATA.items()
+        ]
+        self.full_access_role_ids = [
+            str(role_id)
+            for role_id in role_queryset.filter(acceso_total=True).values_list('id', flat=True)
         ]
 
         profile = get_access_profile(self.instance) if self.instance and self.instance.pk else None
@@ -70,6 +75,13 @@ class BaseUserAccessForm(forms.ModelForm):
                 selected_codes = raw_codes if isinstance(raw_codes, list) else [raw_codes]
         else:
             selected_codes = initial_codes
+
+        if self.is_bound:
+            selected_role_id = (self.data.get(self.add_prefix('rol_sistema')) or '').strip()
+        else:
+            selected_role_id = str(profile.rol_id) if profile and profile.rol_id else ''
+
+        self.selected_role_has_full_access = selected_role_id in self.full_access_role_ids
         self.permission_groups = build_permission_groups(selected_codes)
 
     def clean_access_codes(self):

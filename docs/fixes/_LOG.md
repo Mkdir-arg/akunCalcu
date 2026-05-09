@@ -22,4 +22,13 @@
 
 ## Fixes registrados
 
-_Aún no hay fixes registrados. Se completarán a medida que se corrijan bugs._
+### FIX-001 — Formulario de usuarios: ocultar permisos para Admin y reducir scroll con solapas
+**Fecha**: 2026-05-09
+**Reportado por**: Usuario
+**Severidad**: Media
+**Feature afectada**: FEAT-009
+
+**Síntoma**: Al elegir un rol con acceso total como `Admin`, la pantalla seguía mostrando el bloque "Permisos por módulo" aunque no aplicara. Además, la lista completa de módulos y opciones hacía el formulario demasiado largo y obligaba a scrollear de más.
+**Causa raíz**: El template no conocía si el rol seleccionado tenía `acceso_total`, por lo que siempre renderizaba la sección de permisos. También todos los grupos se apilaban en una sola vista sin paginación ni navegación por secciones.
+**Solución**: Se agregó al formulario un estado explícito para detectar roles con acceso total y se usó en la UI para ocultar la configuración manual cuando corresponde. La grilla de permisos se reorganizó en solapas por módulo para mostrar un solo grupo a la vez y reducir la altura total de la página.
+**Archivos modificados**: `akuna_calc/usuarios/forms.py`, `akuna_calc/usuarios/templates/usuarios/user_form.html`, `akuna_calc/usuarios/tests.py`
