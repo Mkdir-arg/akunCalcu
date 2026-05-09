@@ -16,6 +16,7 @@
     </div>
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        {% include 'core/includes/table_filters.html' with table_filter_id='lineas-table' show_status_filter=True table_filter_placeholder='Buscar por linea o extrusora...' %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
@@ -28,7 +29,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for linea in lineas %}
-                    <tr class="hover:bg-slate-50 transition-colors">
+                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="lineas-table" data-status="{% if linea.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ linea.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ linea.extrusora.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4">
@@ -59,6 +60,12 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr data-filter-empty="lineas-table" class="hidden">
+                        <td colspan="4" class="px-6 py-8 text-center">
+                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay líneas que coincidan con los filtros</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>

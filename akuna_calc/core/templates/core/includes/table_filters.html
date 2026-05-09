@@ -1,0 +1,121 @@
+<div class="border-b border-slate-200 bg-slate-50 px-6 py-5" data-table-filters="{{ table_filter_id }}">
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Filtros</h2>
+            <p class="text-sm text-slate-500 mt-1">Filtra rapidamente sobre los registros cargados en esta tabla.</p>
+        </div>
+        <p class="text-sm text-slate-500 font-medium" data-filter-results></p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-{% if show_status_filter %}3{% else %}2{% endif %} gap-3 mt-4">
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Buscar</label>
+            <div class="relative">
+                <input
+                    type="text"
+                    data-filter-search
+                    placeholder="{{ table_filter_placeholder|default:'Buscar en la tabla...' }}"
+                    class="w-full rounded-xl border border-gray-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            </div>
+        </div>
+
+        {% if show_status_filter %}
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Estado</label>
+            <select data-filter-status class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
+                <option value="">Todos</option>
+                <option value="activo">Activos</option>
+                <option value="inactivo">Inactivos</option>
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="flex items-end">
+            <button type="button" data-filter-reset class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-xl font-semibold transition-colors">
+                <i class="fas fa-eraser mr-2"></i>Limpiar filtros
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-table-filters]').forEach(function (filtersRoot) {
+        if (filtersRoot.dataset.initialized === 'true') {
+            return;
+        }
+        filtersRoot.dataset.initialized = 'true';
+
+        const filterId = filtersRoot.dataset.tableFilters;
+        const rows = Array.from(document.querySelectorAll(`[data-filter-row="${filterId}"]`));
+        const emptyStateRow = document.querySelector(`[data-filter-empty="${filterId}"]`);
+        const searchInput = filtersRoot.querySelector('[data-filter-search]');
+        const statusSelect = filtersRoot.querySelector('[data-filter-status]');
+        const resetButton = filtersRoot.querySelector('[data-filter-reset]');
+        const resultsLabel = filtersRoot.querySelector('[data-filter-results]');
+
+        function normalizeText(value) {
+            return (value || '')
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function updateResults(visibleCount, totalCount) {
+            if (!resultsLabel) {
+                return;
+            }
+
+            resultsLabel.textContent = `Mostrando ${visibleCount} de ${totalCount} registros`;
+        }
+
+        function applyFilters() {
+            const searchTerm = normalizeText(searchInput ? searchInput.value : '');
+            const selectedStatus = statusSelect ? statusSelect.value : '';
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                const rowText = normalizeText(row.textContent);
+                const rowStatus = row.dataset.status || '';
+                const matchesSearch = !searchTerm || rowText.includes(searchTerm);
+                const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+                const isVisible = matchesSearch && matchesStatus;
+
+                row.classList.toggle('hidden', !isVisible);
+                if (isVisible) {
+                    visibleCount += 1;
+                }
+            });
+
+            if (emptyStateRow) {
+                emptyStateRow.classList.toggle('hidden', visibleCount > 0);
+            }
+
+            updateResults(visibleCount, rows.length);
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', applyFilters);
+        }
+        if (resetButton) {
+            resetButton.addEventListener('click', function () {
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                if (statusSelect) {
+                    statusSelect.value = '';
+                }
+                applyFilters();
+            });
+        }
+
+        applyFilters();
+    });
+});
+</script>

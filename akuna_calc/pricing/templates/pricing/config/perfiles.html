@@ -16,6 +16,7 @@
     </div>
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        {% include 'core/includes/table_filters.html' with table_filter_id='perfiles-table' show_status_filter=True table_filter_placeholder='Buscar por codigo, linea, descripcion o tipo...' %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
@@ -31,7 +32,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for perfil in perfiles %}
-                    <tr class="hover:bg-slate-50 transition-colors">
+                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="perfiles-table" data-status="{% if perfil.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ perfil.codigo }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.linea.nombre|default:"-" }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.descripcion }}</td>
@@ -73,6 +74,12 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr data-filter-empty="perfiles-table" class="hidden">
+                        <td colspan="7" class="px-6 py-8 text-center">
+                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay perfiles que coincidan con los filtros</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>

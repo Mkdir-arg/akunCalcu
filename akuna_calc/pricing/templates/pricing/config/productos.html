@@ -16,6 +16,7 @@
     </div>
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        {% include 'core/includes/table_filters.html' with table_filter_id='productos-fabrica-table' show_status_filter=True table_filter_placeholder='Buscar por producto, linea o extrusora...' %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
@@ -29,7 +30,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for producto in productos %}
-                    <tr class="hover:bg-slate-50 transition-colors">
+                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="productos-fabrica-table" data-status="{% if producto.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ producto.descripcion }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.extrusora.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.linea.nombre }}</td>
@@ -61,6 +62,12 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr data-filter-empty="productos-fabrica-table" class="hidden">
+                        <td colspan="5" class="px-6 py-8 text-center">
+                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay productos que coincidan con los filtros</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
