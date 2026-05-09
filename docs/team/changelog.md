@@ -14,6 +14,40 @@
 
 ---
 
+## 2026-05-09 — Roles y permisos por módulo y opción (REQ-019 / FEAT-009)
+
+**User Story:** Como administrador, quiero definir al crear o editar un usuario qué módulos del sistema y qué opciones o subsecciones internas de cada módulo puede ver y usar, para controlar el acceso operativo según el rol de cada persona sin mostrar menús no autorizados.
+
+**Archivos creados:**
+- `akuna_calc/usuarios/access_control.py` — catálogo central de permisos y mapeo de rutas
+- `akuna_calc/usuarios/context_processors.py` — menú lateral basado en permisos
+- `akuna_calc/usuarios/middleware.py` — bloqueo por URL según permisos efectivos
+- `akuna_calc/usuarios/migrations/0001_initial.py` — nuevos modelos de rol y perfil de acceso
+- `akuna_calc/usuarios/migrations/0002_seed_admin_role.py` — siembra del rol Admin y perfiles iniciales
+- `akuna_calc/usuarios/tests.py` — cobertura del flujo de permisos
+- `docs/features/FEAT-009-roles-permisos-por-modulo-y-opcion.md` — documentación final de la feature
+
+**Archivos modificados:**
+- `akuna_calc/usuarios/models.py` — modelos `RolSistema` y `PerfilAccesoUsuario`
+- `akuna_calc/usuarios/forms.py` — alta/edición con rol y permisos por módulo
+- `akuna_calc/usuarios/views.py` — listados con resumen de acceso y toggle protegido por POST
+- `akuna_calc/usuarios/templates/usuarios/user_form.html` — UI de permisos granulares
+- `akuna_calc/usuarios/templates/usuarios/user_list.html` — resumen de rol/accesos y activación segura
+- `akuna_calc/core/views.py` — login con redirección según primer módulo habilitado
+- `akuna_calc/core/urls.py` — login personalizado
+- `akuna_calc/core/templates/core/base.html` — sidebar filtrado por permisos
+- `akuna_calc/core/templates/core/login.html` — mensajes de acceso y redirección
+- `akuna_calc/akuna_calc/settings.py` — middleware y context processor de permisos
+- `akuna_calc/security/views.py` — endurecimiento con `@login_required` en backups
+- `akuna_calc/pricing/tests.py` — ajuste de redirect esperado al login actual
+- `docs/requerimientos/REQ-019-roles-permisos-por-modulo-y-opcion.md` — requerimiento marcado como implementado
+- `docs/requerimientos/_INDEX.md` — índice actualizado
+- `docs/features/_INDEX.md` — índice actualizado
+- `docs/team/current-sprint.md` — cierre documental fuera de sprint activo
+- `docs/team/decisions.md` — ADR del registro central por nombre de ruta
+
+**Descripción:** Se implementó un sistema de autorización transversal que separa rol y permisos operativos del `auth_user`, filtra el menú lateral según acceso efectivo, bloquea navegación manual por URL y crea un rol `Admin` con acceso total. La solución centraliza la autorización en un registro por `namespace:url_name`, manteniendo compatibilidad temporal con vistas legacy que todavía dependen de `is_staff`.
+
 ## 2026-05-04 — Rediseño del PDF de presupuestos con descripción narrativa por ítem (REQ-016 / FEAT-008)
 
 **User Story:** Como vendedor, quiero que el PDF del presupuesto describa cada ítem con una redacción comercial y técnica armada a partir de la configuración seleccionada, para enviarle al cliente un documento más claro, profesional y fácil de entender.

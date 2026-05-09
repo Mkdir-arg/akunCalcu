@@ -345,6 +345,8 @@ class VidrioHoja(models.Model):
         related_name='vidrio_hojas',
         db_constraint=False,
     )
+    rebaje_ancho = models.TextField(db_column='rebaje_ancho', null=True, blank=True)
+    rebaje_alto = models.TextField(db_column='rebaje_alto', null=True, blank=True)
 
     class Meta:
         db_table = 'vidrio_hojas'

@@ -2,6 +2,9 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
 from django.contrib import messages
+from django.views.decorators.http import require_POST
+
+from .access_control import get_user_access_summary, get_user_role_label
 from .forms import UserCreateForm, UserUpdateForm
 
 User = get_user_model()
@@ -12,7 +15,10 @@ def is_staff(user):
 @login_required
 @user_passes_test(is_staff)
 def user_list(request):
-    users = User.objects.filter(is_active=True).order_by('username')
+    users = User.objects.all().select_related('perfil_acceso__rol').order_by('username')
+    for managed_user in users:
+        managed_user.role_label = get_user_role_label(managed_user)
+        managed_user.access_summary = get_user_access_summary(managed_user)
     return render(request, 'usuarios/user_list.html', {'users': users})
 
 @login_required
@@ -44,6 +50,7 @@ def user_update(request, pk):
 
 @login_required
 @user_passes_test(is_staff)
+@require_POST
 def user_toggle(request, pk):
     user = get_object_or_404(User, pk=pk)
     user.is_active = not user.is_active

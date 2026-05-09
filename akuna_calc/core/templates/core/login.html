@@ -52,6 +52,17 @@
 
         <!-- Login Card -->
         <div class="bg-white/80 backdrop-blur-sm shadow-2xl rounded-3xl p-6 sm:p-8 border border-white/20">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="mb-4 rounded-2xl border px-4 py-3 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700{% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
+                    <div class="flex items-start gap-2">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mt-0.5"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+
             {% if form.errors %}
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4">
                     <div class="flex items-center">

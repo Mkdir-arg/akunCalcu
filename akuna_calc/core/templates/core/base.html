@@ -77,156 +77,36 @@
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto p-4">
                 <div class="space-y-2">
-                    <a href="{% url 'home' %}" class="w-full flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-home w-5 mr-3"></i>
-                        <span class="sidebar-text">Dashboard</span>
-                    </a>
-                    
-                    <!-- Presupuestos -->
-                    <a href="{% url 'presupuestos:presupuestos-lista' %}" class="w-full flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-file-invoice-dollar w-5 mr-3"></i>
-                        <span class="sidebar-text">Presupuestos</span>
-                    </a>
-
-                    <!-- Comercial -->
-                    <div>
-                        <button onclick="toggleMenu('comercial')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-chart-line w-5 mr-3"></i>
-                                <span class="sidebar-text">Comercial</span>
+                    {% for module in sidebar_modules %}
+                        {% if module.dropdown %}
+                        <div>
+                            <button onclick="toggleMenu('{{ module.key }}')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors {% if module.active %}bg-blue-50 text-blue-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                                <div class="flex items-center">
+                                    <i class="{{ module.icon }} w-5 mr-3"></i>
+                                    <span class="sidebar-text">{{ module.label }}</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text {% if module.active %}rotate-180{% endif %}" id="{{ module.key }}-icon"></i>
+                            </button>
+                            <div id="{{ module.key }}-menu" class="ml-8 mt-1 space-y-1 sidebar-submenu {% if not module.active %}hidden{% endif %}">
+                                {% for item in module.items %}
+                                <a href="{{ item.url }}" class="block px-3 py-2 text-sm rounded-lg sidebar-text transition-colors {% if item.active %}bg-blue-100 text-blue-700 font-semibold{% else %}text-gray-600 hover:bg-gray-100{% endif %}">{{ item.label }}</a>
+                                {% endfor %}
                             </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="comercial-icon"></i>
-                        </button>
-                        <div id="comercial-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'comercial:dashboard' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Dashboard</a>
-                            <a href="{% url 'comercial:clientes_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Clientes</a>
-                            <a href="{% url 'comercial:ventas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Ventas</a>
-                            <a href="{% url 'comercial:compras_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Gastos</a>
-                            <a href="{% url 'comercial:cuentas_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Cuentas</a>
+                        </div>
+                        {% else %}
+                        <a href="{{ module.items.0.url }}" class="w-full flex items-center px-3 py-2 rounded-lg transition-colors {% if module.items.0.active %}bg-blue-50 text-blue-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="{{ module.icon }} w-5 mr-3"></i>
+                            <span class="sidebar-text">{{ module.label }}</span>
+                        </a>
+                        {% endif %}
+                    {% empty %}
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-triangle-exclamation mt-0.5"></i>
+                            <span class="sidebar-text">Tu usuario no tiene módulos visibles asignados.</span>
                         </div>
                     </div>
-                    
-                    <!-- Reportes -->
-                    <div>
-                        <button onclick="toggleMenu('reportes')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-chart-bar w-5 mr-3"></i>
-                                <span class="sidebar-text">Reportes</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="reportes-icon"></i>
-                        </button>
-                        <div id="reportes-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'comercial:reporte_general' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte General</a>
-                            <a href="{% url 'comercial:reportes' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Ventas</a>
-                            <a href="{% url 'comercial:reportes_cobranzas' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Cobranza</a>
-                            <a href="{% url 'comercial:reportes_gastos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reporte Gastos</a>
-                            <a href="{% url 'comercial:reportes_proveedores' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Reportes Proveedores</a>
-                        </div>
-                    </div>
-                    
-                    <!-- Productos -->
-                    <div>
-                        <button onclick="toggleMenu('productos')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-box w-5 mr-3"></i>
-                                <span class="sidebar-text">Productos</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="productos-icon"></i>
-                        </button>
-                        <div id="productos-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'productos:calculadora' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Calculadora</a>
-                        </div>
-                    </div>
-                    
-                    <!-- Plantillas de Despiece -->
-                    <div>
-                        <button onclick="toggleMenu('plantillas')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-drafting-compass w-5 mr-3"></i>
-                                <span class="sidebar-text">Despiece</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="plantillas-icon"></i>
-                        </button>
-                        <div id="plantillas-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'plantillas:pedido_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Pedidos de Fábrica</a>
-                            <a href="{% url 'plantillas:calcular_index' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Calcular</a>
-                            {% if request.user.is_staff %}
-                            <a href="{% url 'plantillas:plantilla_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Configurar Plantillas</a>
-                            <a href="{% url 'plantillas:historial_calculos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Historial</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Cotizador -->
-                    <a href="{% url 'pricing-cotizador' %}" class="w-full flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-calculator w-5 mr-3"></i>
-                        <span class="sidebar-text">Cotizador</span>
-                    </a>
-                    
-                    {% if request.user.is_staff %}
-                    <!-- Fábrica Config -->
-                    <div>
-                        <button onclick="toggleMenu('fabrica')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-industry w-5 mr-3"></i>
-                                <span class="sidebar-text">Fábrica</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="fabrica-icon"></i>
-                        </button>
-                        <div id="fabrica-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'plantillas:opcional_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Opcionales</a>
-                            <a href="{% url 'config-extrusoras' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Extrusoras</a>
-                            <a href="{% url 'config-lineas' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Líneas</a>
-                            <a href="{% url 'config-productos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Productos</a>
-                            <a href="{% url 'config-marcos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Marcos</a>
-                            <a href="{% url 'config-perfiles' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Perfiles</a>
-                            <a href="{% url 'config-hojas' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Hojas</a>
-                            <a href="{% url 'productos:productos_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Interior</a>
-                            <a href="{% url 'config-accesorios' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Accesorios</a>
-                            <a href="{% url 'config-vidrios' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Vidrios</a>
-                            <a href="{% url 'config-tratamientos' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Tratamientos</a>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Facturación -->
-                    <div>
-                        <button onclick="toggleMenu('facturacion')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-file-invoice-dollar w-5 mr-3"></i>
-                                <span class="sidebar-text">Facturación</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="facturacion-icon"></i>
-                        </button>
-                        <div id="facturacion-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'facturacion:lista_facturas' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Facturas</a>
-                            <a href="{% url 'facturacion:puntos_venta_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Puntos de Venta</a>
-                        </div>
-                    </div>
-                    
-                    <!-- Seguridad -->
-                    <a href="{% url 'security:backup_login' %}" class="w-full flex items-center px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-shield-alt w-5 mr-3"></i>
-                        <span class="sidebar-text">Seguridad</span>
-                    </a>
-                    
-                    {% if request.user.is_staff %}
-                    <!-- Configuración -->
-                    <div>
-                        <button onclick="toggleMenu('configuracion')" class="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-cog w-5 mr-3"></i>
-                                <span class="sidebar-text">Configuración</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text" id="configuracion-icon"></i>
-                        </button>
-                        <div id="configuracion-menu" class="ml-8 mt-1 space-y-1 hidden sidebar-submenu">
-                            <a href="{% url 'user_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Usuarios</a>
-                            <a href="{% url 'comercial:tipos_cuenta_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Tipos de Cuenta</a>
-                            <a href="{% url 'comercial:tipos_gasto_list' %}" class="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg sidebar-text">Tipos de Gasto</a>
-                        </div>
-                    </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
             </nav>
 
@@ -238,7 +118,8 @@
                     </div>
                     <div class="flex-1 min-w-0 sidebar-text">
                         <p class="text-sm font-semibold text-gray-900 truncate">{{ user.username }}</p>
-                        <p class="text-xs text-gray-600">Usuario activo</p>
+                        <p class="text-xs text-gray-600 truncate">{{ user_role_label }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ user_access_summary }}</p>
                     </div>
                 </div>
             </div>

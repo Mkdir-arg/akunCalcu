@@ -40,6 +40,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'usuarios.middleware.RouteAccessMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'security.middleware.SecurityMiddleware',  # Seguridad personalizada
     'security.middleware.AuditMiddleware',  # Auditoría
@@ -59,6 +60,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'usuarios.context_processors.sidebar_access',
             ],
         },
     },

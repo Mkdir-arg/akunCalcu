@@ -34,6 +34,7 @@ from ..models import (
     Producto,
     Tratamiento,
     Vidrio,
+    VidrioHoja,
     VidrioRepartido,
 )
 
@@ -204,22 +205,10 @@ class PriceCalculator:
         vidrio_detalle = None
         precio_vidrio = 0.0
         vidrio_codigo = cleaned.get("vidrio_codigo")
-        vidrio_obj = None
-        if vidrio_codigo:
-            try:
-                vidrio_obj = self._get_vidrio(vidrio_codigo)
-            except PricingError:
-                logger.warning(f"Vidrio seleccionado no encontrado: {vidrio_codigo}")
-        elif hoja_id:
-            try:
-                from .models import VidrioHoja
-                rel = VidrioHoja.objects.filter(hoja_id=hoja_id).first()
-                if rel:
-                    vidrio_obj = Vidrio.objects.filter(codigo=rel.vidrio_id).first()
-            except Exception:
-                pass
-            if not vidrio_obj:
-                vidrio_obj = Vidrio.objects.filter(hoja_id=hoja_id).first()
+        vidrio_obj, rebaje_ancho_formula, rebaje_alto_formula = self._get_vidrio_formula_context(
+            hoja_id,
+            vidrio_codigo,
+        )
 
         if vidrio_obj:
             vidrio = vidrio_obj
@@ -228,10 +217,10 @@ class PriceCalculator:
             ancho_vidrio = cleaned["ancho_mm"]
             alto_vidrio = cleaned["alto_mm"]
 
-            if vidrio.rebaje_ancho:
-                ancho_vidrio = self._eval_formula(vidrio.rebaje_ancho, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
-            if vidrio.rebaje_alto:
-                alto_vidrio = self._eval_formula(vidrio.rebaje_alto, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            if rebaje_ancho_formula:
+                ancho_vidrio = self._eval_formula(rebaje_ancho_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+            if rebaje_alto_formula:
+                alto_vidrio = self._eval_formula(rebaje_alto_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
 
             if ancho_vidrio > 0 and alto_vidrio > 0:
                 area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
@@ -399,6 +388,54 @@ class PriceCalculator:
             return Vidrio.objects.get(pk=codigo)
         except Vidrio.DoesNotExist as exc:
             raise PricingError("Vidrio inexistente.") from exc
+
+    def _get_vidrio_formula_context(self, hoja_id: Optional[int], vidrio_codigo: Optional[str]) -> Tuple[Optional[Vidrio], str, str]:
+        vidrio_obj = None
+        relacion_vidrio = None
+
+        if vidrio_codigo:
+            try:
+                vidrio_obj = self._get_vidrio(vidrio_codigo)
+            except PricingError:
+                logger.warning(f"Vidrio seleccionado no encontrado: {vidrio_codigo}")
+
+            if hoja_id:
+                relacion_vidrio = (
+                    VidrioHoja.objects
+                    .filter(hoja_id=hoja_id, vidrio_id=vidrio_codigo)
+                    .select_related('vidrio')
+                    .first()
+                )
+        elif hoja_id:
+            relacion_vidrio = (
+                VidrioHoja.objects
+                .filter(hoja_id=hoja_id)
+                .select_related('vidrio')
+                .first()
+            )
+            if relacion_vidrio:
+                vidrio_obj = relacion_vidrio.vidrio
+            if not vidrio_obj:
+                vidrio_obj = Vidrio.objects.filter(hoja_id=hoja_id).first()
+
+        if vidrio_obj and not relacion_vidrio and hoja_id:
+            relacion_vidrio = (
+                VidrioHoja.objects
+                .filter(hoja_id=hoja_id, vidrio_id=vidrio_obj.codigo)
+                .select_related('vidrio')
+                .first()
+            )
+
+        rebaje_ancho = ''
+        rebaje_alto = ''
+        if relacion_vidrio:
+            rebaje_ancho = relacion_vidrio.rebaje_ancho or ''
+            rebaje_alto = relacion_vidrio.rebaje_alto or ''
+        if vidrio_obj:
+            rebaje_ancho = rebaje_ancho or vidrio_obj.rebaje_ancho or ''
+            rebaje_alto = rebaje_alto or vidrio_obj.rebaje_alto or ''
+
+        return vidrio_obj, rebaje_ancho, rebaje_alto
 
     def _get_tratamiento(self, tratamiento_id: int) -> Tratamiento:
         try:

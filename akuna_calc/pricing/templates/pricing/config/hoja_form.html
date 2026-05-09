@@ -85,37 +85,44 @@
             <div class="mt-8 border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">Fórmula de Vidrio</h2>
+                        <h2 class="text-xl font-bold text-slate-800">Fórmulas de Vidrio</h2>
                         <p class="text-sm text-slate-500 mt-1">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
                     </div>
-                    {% if vidrio %}
+                    {% if vidrios_relacionados %}
                     <button type="button" onclick="guardarVidrioFormula()" id="btnGuardarVidrio" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
                         <i class="fas fa-save mr-2"></i>Guardar Vidrio
                     </button>
                     {% endif %}
                 </div>
-                {% if vidrio %}
+                {% if vidrios_relacionados %}
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse">
                         <thead>
                             <tr class="bg-slate-100">
-                                <th class="border px-4 py-2 text-left text-sm font-semibold w-40">Dimensión</th>
-                                <th class="border px-4 py-2 text-left text-sm font-semibold">Fórmula</th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Vidrio</th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Ancho Vidrio</th>
+                                <th class="border px-4 py-2 text-left text-sm font-semibold">Alto Vidrio</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td class="border px-4 py-2 font-medium">Ancho Vidrio</td>
+                        <tbody id="vidriosFormulaBody">
+                            {% for vidrio_rel in vidrios_relacionados %}
+                            <tr class="vidrio-formula-row">
+                                <td class="border px-4 py-2 align-top">
+                                    <input type="hidden" name="relacion_id" value="{{ vidrio_rel.relacion_id }}">
+                                    <input type="hidden" name="vidrio_codigo" value="{{ vidrio_rel.vidrio_codigo }}">
+                                    <div class="font-medium text-slate-800">{{ vidrio_rel.vidrio_codigo }}</div>
+                                    {% if vidrio_rel.vidrio_descripcion %}
+                                    <div class="text-xs text-slate-500 mt-1">{{ vidrio_rel.vidrio_descripcion }}</div>
+                                    {% endif %}
+                                </td>
                                 <td class="border px-4 py-2">
-                                    <input type="text" id="vidrio_rebaje_ancho" value="{{ vidrio.rebaje_ancho|default:'' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: (Ancho-149)/2">
+                                    <input type="text" name="rebaje_ancho" value="{{ vidrio_rel.rebaje_ancho|default:'' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: (Ancho-149)/2">
+                                </td>
+                                <td class="border px-4 py-2">
+                                    <input type="text" name="rebaje_alto" value="{{ vidrio_rel.rebaje_alto|default:'' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Alto-50">
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="border px-4 py-2 font-medium">Alto Vidrio</td>
-                                <td class="border px-4 py-2">
-                                    <input type="text" id="vidrio_rebaje_alto" value="{{ vidrio.rebaje_alto|default:'' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Alto-50">
-                                </td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -419,8 +426,12 @@ function guardarVidrioFormula() {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     formData.append('save_vidrio_formula', '1');
-    formData.append('rebaje_ancho', document.getElementById('vidrio_rebaje_ancho').value);
-    formData.append('rebaje_alto', document.getElementById('vidrio_rebaje_alto').value);
+    document.querySelectorAll('.vidrio-formula-row').forEach((row, index) => {
+        formData.append(`relacion_id_${index}`, row.querySelector('[name="relacion_id"]').value);
+        formData.append(`vidrio_codigo_${index}`, row.querySelector('[name="vidrio_codigo"]').value);
+        formData.append(`rebaje_ancho_${index}`, row.querySelector('[name="rebaje_ancho"]').value);
+        formData.append(`rebaje_alto_${index}`, row.querySelector('[name="rebaje_alto"]').value);
+    });
 
     fetch(window.location.href, {
         method: 'POST',
@@ -437,7 +448,7 @@ function guardarVidrioFormula() {
     .then(() => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Vidrio';
-        Swal.fire({ icon: 'success', title: 'Fórmula guardada', confirmButtonColor: '#3b82f6', timer: 2000, timerProgressBar: true });
+        Swal.fire({ icon: 'success', title: 'Fórmulas guardadas', confirmButtonColor: '#3b82f6', timer: 2000, timerProgressBar: true });
     })
     .catch(err => {
         btn.disabled = false;

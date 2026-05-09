@@ -1,10 +1,11 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import TestCase, Client
+from django.test import Client, SimpleTestCase, TestCase
 from django.contrib.auth import get_user_model
 
 from plantillas.models import FormulaOpcional, OpcionalFabrica
+from pricing.services.calculator import PriceCalculator
 
 User = get_user_model()
 
@@ -22,7 +23,7 @@ class MarcoViewsTest(TestCase):
     def test_marco_create_redirige_sin_login(self):
         response = self.client.get('/pricing/config/marcos/nuevo/')
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/accounts/login/', response['Location'])
+        self.assertIn('/login/', response['Location'])
 
     def test_marco_create_accesible_para_staff(self):
         self.client.login(username='staff_test', password='pass123')
@@ -78,3 +79,35 @@ class OpcionalesListViewTest(TestCase):
         self.assertIn(premarco_ok.id, ids)
         self.assertIn(generico.id, ids)
         self.assertNotIn(premarco_otra_linea.id, ids)
+
+
+class PriceCalculatorVidrioFormulaContextTest(SimpleTestCase):
+    @patch.object(PriceCalculator, '_get_vidrio')
+    @patch('pricing.services.calculator.VidrioHoja.objects.filter')
+    def test_relation_formula_overrides_shared_vidrio_formula(self, mock_filter, mock_get_vidrio):
+        vidrio = SimpleNamespace(codigo='dvh-1', rebaje_ancho='Ancho-10', rebaje_alto='Alto-10')
+        relacion = SimpleNamespace(vidrio=vidrio, rebaje_ancho='Ancho-25', rebaje_alto='Alto-35')
+
+        mock_get_vidrio.return_value = vidrio
+        mock_filter.return_value.select_related.return_value.first.return_value = relacion
+
+        vidrio_obj, rebaje_ancho, rebaje_alto = PriceCalculator()._get_vidrio_formula_context(1, 'dvh-1')
+
+        self.assertIs(vidrio_obj, vidrio)
+        self.assertEqual(rebaje_ancho, 'Ancho-25')
+        self.assertEqual(rebaje_alto, 'Alto-35')
+
+    @patch.object(PriceCalculator, '_get_vidrio')
+    @patch('pricing.services.calculator.VidrioHoja.objects.filter')
+    def test_relation_formula_falls_back_to_vidrio_when_relation_is_empty(self, mock_filter, mock_get_vidrio):
+        vidrio = SimpleNamespace(codigo='dvh-2', rebaje_ancho='Ancho-12', rebaje_alto='Alto-14')
+        relacion = SimpleNamespace(vidrio=vidrio, rebaje_ancho='', rebaje_alto='')
+
+        mock_get_vidrio.return_value = vidrio
+        mock_filter.return_value.select_related.return_value.first.return_value = relacion
+
+        vidrio_obj, rebaje_ancho, rebaje_alto = PriceCalculator()._get_vidrio_formula_context(2, 'dvh-2')
+
+        self.assertIs(vidrio_obj, vidrio)
+        self.assertEqual(rebaje_ancho, 'Ancho-12')
+        self.assertEqual(rebaje_alto, 'Alto-14')

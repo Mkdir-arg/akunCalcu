@@ -1,51 +1,51 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">{{ title }}</h1>
+<div class="max-w-7xl mx-auto px-4">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
+            <p class="text-slate-500 font-medium mt-1">Define rol, módulos visibles y subsecciones permitidas para este usuario.</p>
+        </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-        <form method="post">
+    <form method="post" class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
             {% csrf_token %}
-            
-            {% if form.username %}
-            <div class="mb-4">
-                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-user mr-1"></i>{{ form.username.label }}
-                </label>
-                {{ form.username }}
-                {% if form.username.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
-                {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="mb-4">
-                <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-envelope mr-1"></i>{{ form.email.label }}
-                </label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
-                {% endif %}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Usuario</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 <div>
-                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user mr-1"></i>{{ form.first_name.label }}
-                    </label>
+                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Nombre</label>
                     {{ form.first_name }}
                     {% if form.first_name.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
                     {% endif %}
                 </div>
                 <div>
-                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user mr-1"></i>{{ form.last_name.label }}
-                    </label>
+                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Apellido</label>
                     {{ form.last_name }}
                     {% if form.last_name.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
@@ -53,48 +53,78 @@
                 </div>
             </div>
 
-            <div class="mb-4">
-                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-lock mr-1"></i>{{ form.password.label }}
-                </label>
-                {{ form.password }}
-                {% if form.password.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
-                {% endif %}
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="flex items-center">
-                    {{ form.is_staff }}
-                    <label for="{{ form.is_staff.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
-                        <i class="fas fa-user-shield mr-1"></i>{{ form.is_staff.label }}
-                    </label>
-                    {% if form.is_staff.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.is_staff.errors.0 }}</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
                     {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.rol_sistema.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">{{ form.rol_sistema.label }}</label>
+                    {{ form.rol_sistema }}
+                    <p class="mt-2 text-xs text-slate-500">El rol Admin otorga acceso total. Si eliges ese rol, los checks de abajo se ignoran.</p>
+                    {% if form.rol_sistema.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.rol_sistema.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Permisos por módulo</h2>
+                    <p class="text-slate-500 text-sm mt-1">Marca únicamente las opciones a las que el usuario puede entrar y ver en el menú lateral.</p>
                 </div>
                 <div class="flex items-center">
                     {{ form.is_active }}
-                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
-                        <i class="fas fa-toggle-on mr-1"></i>{{ form.is_active.label }}
-                    </label>
-                    {% if form.is_active.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
-                    {% endif %}
+                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 text-sm font-semibold text-slate-700">Usuario activo</label>
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-3">
-                <a href="{% url 'user_list' %}" 
-                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors">
-                    <i class="fas fa-times mr-1"></i>Cancelar
-                </a>
-                <button type="submit" 
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
-                    <i class="fas fa-save mr-1"></i>Guardar
-                </button>
+            {% if form.access_codes.errors %}
+            <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ form.access_codes.errors.0 }}
             </div>
-        </form>
-    </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                {% for group in form.permission_groups %}
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow-sm">
+                            <i class="{{ group.icon }}"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-800">{{ group.label }}</h3>
+                            <p class="text-xs text-slate-500">{{ group.selected_count }} seleccionadas</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        {% for item in group.items %}
+                        <label class="flex items-start gap-3 rounded-xl bg-white px-4 py-3 border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer">
+                            <input type="checkbox" name="access_codes" value="{{ item.code }}" {% if item.selected %}checked{% endif %} class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700">{{ item.label }}</p>
+                                <p class="text-xs text-slate-500">Código: {{ item.code }}</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <a href="{% url 'user_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
+            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                <i class="fas fa-save mr-2"></i>Guardar
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}

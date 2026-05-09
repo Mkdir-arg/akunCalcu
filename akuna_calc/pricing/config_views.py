@@ -398,14 +398,35 @@ def hoja_edit(request, pk):
     except:
         pass
 
-    relacion_vidrio = (
+    relaciones_vidrio = list(
         VidrioHoja.objects
         .filter(hoja_id=obj.id)
         .select_related('vidrio')
         .order_by('vidrio_id')
-        .first()
     )
-    vidrio = relacion_vidrio.vidrio if relacion_vidrio else Vidrio.objects.filter(hoja_id=obj.id).first()
+    vidrios_relacionados = []
+    vidrios_relacionados_ids = set()
+
+    for relacion in relaciones_vidrio:
+        vidrios_relacionados.append({
+            'relacion_id': relacion.id,
+            'vidrio_codigo': relacion.vidrio_id,
+            'vidrio_descripcion': relacion.vidrio.descripcion or '',
+            'rebaje_ancho': relacion.rebaje_ancho or relacion.vidrio.rebaje_ancho or '',
+            'rebaje_alto': relacion.rebaje_alto or relacion.vidrio.rebaje_alto or '',
+        })
+        vidrios_relacionados_ids.add(relacion.vidrio_id)
+
+    for vidrio in Vidrio.objects.filter(hoja_id=obj.id).order_by('codigo'):
+        if vidrio.codigo in vidrios_relacionados_ids:
+            continue
+        vidrios_relacionados.append({
+            'relacion_id': '',
+            'vidrio_codigo': vidrio.codigo,
+            'vidrio_descripcion': vidrio.descripcion or '',
+            'rebaje_ancho': vidrio.rebaje_ancho or '',
+            'rebaje_alto': vidrio.rebaje_alto or '',
+        })
 
     perfiles = Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')
     perfiles_json = json.dumps(list(perfiles))
@@ -419,13 +440,43 @@ def hoja_edit(request, pk):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'HTTP_X_REQUESTED_WITH' in request.META:
             # Guardar fórmula de vidrio
             if 'save_vidrio_formula' in request.POST:
-                if not vidrio:
+                if not vidrios_relacionados:
                     return JsonResponse({'error': 'No hay vidrio asociado a esta hoja'}, status=400)
                 try:
-                    vidrio.rebaje_ancho = request.POST.get('rebaje_ancho', '')
-                    vidrio.rebaje_alto = request.POST.get('rebaje_alto', '')
-                    vidrio.save()
-                    return JsonResponse({'ok': True})
+                    relaciones_existentes = {
+                        str(relacion.id): relacion
+                        for relacion in VidrioHoja.objects.filter(hoja_id=obj.id)
+                    }
+                    guardadas = 0
+                    index = 0
+
+                    while f'vidrio_codigo_{index}' in request.POST:
+                        vidrio_codigo = (request.POST.get(f'vidrio_codigo_{index}') or '').strip()
+                        relacion_id = (request.POST.get(f'relacion_id_{index}') or '').strip()
+                        rebaje_ancho = (request.POST.get(f'rebaje_ancho_{index}') or '').strip()
+                        rebaje_alto = (request.POST.get(f'rebaje_alto_{index}') or '').strip()
+
+                        if not vidrio_codigo:
+                            index += 1
+                            continue
+
+                        if relacion_id:
+                            relacion = relaciones_existentes.get(relacion_id)
+                            if not relacion:
+                                return JsonResponse({'error': f'No se encontró la relación de vidrio {vidrio_codigo}.'}, status=400)
+                        else:
+                            relacion, _ = VidrioHoja.objects.get_or_create(
+                                hoja=obj,
+                                vidrio_id=vidrio_codigo,
+                            )
+
+                        relacion.rebaje_ancho = rebaje_ancho
+                        relacion.rebaje_alto = rebaje_alto
+                        relacion.save(update_fields=['rebaje_ancho', 'rebaje_alto'])
+                        guardadas += 1
+                        index += 1
+
+                    return JsonResponse({'ok': True, 'guardadas': guardadas})
                 except Exception as e:
                     return JsonResponse({'error': str(e)}, status=500)
 
@@ -565,7 +616,7 @@ def hoja_edit(request, pk):
         'perfiles': perfiles,
         'perfiles_json': perfiles_json,
         'accesorios_hoja_json': accesorios_hoja_json,
-        'vidrio': vidrio,
+        'vidrios_relacionados': vidrios_relacionados,
     })
 
 
@@ -747,15 +798,32 @@ def vidrio_edit(request, pk):
         # AJAX: guardar relaciones de hojas
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             try:
-                VidrioHoja.objects.filter(vidrio=obj).delete()
+                hoja_ids = []
+                hoja_ids_vistos = set()
                 index = 0
-                guardadas = 0
                 while f'hoja_{index}' in request.POST:
-                    hoja_id = request.POST.get(f'hoja_{index}')
-                    if hoja_id:
-                        VidrioHoja.objects.create(vidrio=obj, hoja_id=int(hoja_id))
-                        guardadas += 1
+                    hoja_id_raw = (request.POST.get(f'hoja_{index}') or '').strip()
+                    if hoja_id_raw:
+                        try:
+                            hoja_id = int(hoja_id_raw)
+                        except ValueError:
+                            return JsonResponse({'error': f'Hoja inválida: {hoja_id_raw}'}, status=400)
+
+                        if hoja_id not in hoja_ids_vistos:
+                            hoja_ids.append(hoja_id)
+                            hoja_ids_vistos.add(hoja_id)
                     index += 1
+
+                hojas_validas = set(Hoja.objects.filter(id__in=hoja_ids).values_list('id', flat=True))
+                hojas_invalidas = [hoja_id for hoja_id in hoja_ids if hoja_id not in hojas_validas]
+                if hojas_invalidas:
+                    return JsonResponse({'error': f'Hay hojas inválidas en la selección: {", ".join(str(h) for h in hojas_invalidas)}'}, status=400)
+
+                VidrioHoja.objects.filter(vidrio=obj).delete()
+                guardadas = 0
+                for hoja_id in hoja_ids:
+                    VidrioHoja.objects.create(vidrio=obj, hoja_id=hoja_id)
+                    guardadas += 1
                 return JsonResponse({'ok': True, 'guardadas': guardadas})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)

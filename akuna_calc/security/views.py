@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.management import call_command
@@ -10,6 +11,7 @@ import os
 BACKUP_PASSWORD = "Modeoffputin.1167252190@!"
 
 
+@login_required
 def backup_login(request):
     """Vista de login para acceder al módulo de backups"""
     if request.method == 'POST':
@@ -25,6 +27,7 @@ def backup_login(request):
     return render(request, 'security/backup_login.html')
 
 
+@login_required
 def backup_logout(request):
     """Cerrar sesión del módulo de backups"""
     if 'backup_authenticated' in request.session:
@@ -43,6 +46,7 @@ def backup_required(view_func):
     return wrapper
 
 
+@login_required
 @backup_required
 def backup_list(request):
     """Lista de backups disponibles"""
@@ -67,6 +71,7 @@ def backup_list(request):
     return render(request, 'security/backup_list.html', context)
 
 
+@login_required
 @backup_required
 @require_http_methods(["POST"])
 def backup_create(request):
@@ -84,6 +89,7 @@ def backup_create(request):
     return redirect('security:backup_list')
 
 
+@login_required
 @backup_required
 def backup_download(request, pk):
     """Descargar archivo de backup"""
@@ -109,6 +115,7 @@ def backup_download(request, pk):
         return redirect('security:backup_list')
 
 
+@login_required
 @backup_required
 @require_http_methods(["POST"])
 def backup_delete(request, pk):
@@ -131,6 +138,7 @@ def backup_delete(request, pk):
     return redirect('security:backup_list')
 
 
+@login_required
 @backup_required
 def backup_settings(request):
     """Configuración de backups"""

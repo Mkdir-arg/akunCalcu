@@ -84,6 +84,18 @@
 
 ---
 
+## ADR-008: Registro central de permisos por nombre de ruta
+**Fecha**: 2026-05-09
+**Estado**: Activo
+
+**Contexto**: Los módulos visibles en el sidebar y las rutas reales del sistema no coinciden uno a uno con las apps Django. Hay subsecciones repartidas entre `comercial`, `pricing`, `plantillas`, `productos`, `security` y `configuracion`, además de endpoints compartidos entre `Cotizador` y `Presupuestos`.
+
+**Decisión**: Centralizar la autorización en `usuarios/access_control.py` con un catálogo de módulos/opciones y un mapa por `namespace:url_name`. El sidebar, la redirección inicial luego del login y el middleware de bloqueo por URL consumen esa misma fuente de verdad. El `auth_user` no se modifica; la asignación se guarda en `PerfilAccesoUsuario` y el rol `Admin` se materializa en `RolSistema`.
+
+**Consecuencias**: El menú lateral y el acceso real quedan alineados. Cada nueva ruta que deba quedar protegida debe registrarse en el catálogo central. Se mantiene `is_staff` como compatibilidad transitoria para vistas legacy que todavía no migraron a un chequeo explícito por permiso.
+
+---
+
 ## ADR-005: Chart.js para gráficos en detalle de cliente
 **Fecha**: 2026-03-06
 **Estado**: Activo
