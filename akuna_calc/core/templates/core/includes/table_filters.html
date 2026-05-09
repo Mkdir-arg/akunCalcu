@@ -69,6 +69,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            if (totalCount === 0) {
+                resultsLabel.textContent = 'Sin registros cargados';
+                return;
+            }
+
             resultsLabel.textContent = `Mostrando ${visibleCount} de ${totalCount} registros`;
         }
 
@@ -91,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (emptyStateRow) {
-                emptyStateRow.classList.toggle('hidden', visibleCount > 0);
+                emptyStateRow.classList.toggle('hidden', rows.length === 0 || visibleCount > 0);
             }
 
             updateResults(visibleCount, rows.length);
