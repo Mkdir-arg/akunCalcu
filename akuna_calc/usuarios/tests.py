@@ -133,6 +133,22 @@ class UserAccessFlowTest(TestCase):
 		self.assertTrue(admin_form.selected_role_has_full_access)
 		self.assertFalse(partial_form.selected_role_has_full_access)
 
+	def test_user_form_lists_admin_and_administrativo_roles(self):
+		administrativo_role = RolSistema.objects.create(
+			nombre='Administrativo',
+			codigo='administrativo',
+			descripcion='Rol configurable para pruebas.',
+			acceso_total=False,
+			activo=True,
+		)
+
+		form = UserCreateForm()
+		role_labels = [choice[1] for choice in form.fields['rol_sistema'].choices if choice[0]]
+
+		self.assertIn('Admin', role_labels)
+		self.assertIn('Administrativo', role_labels)
+		self.assertFalse(administrativo_role.acceso_total)
+
 	def test_sidebar_modules_hide_unassigned_sections(self):
 		user = User.objects.create_user(username='ventas_only', password='ClaveSegura123', is_active=True)
 		self.assign_access(user, ['comercial.ventas'])
