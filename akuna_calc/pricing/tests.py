@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 
 from plantillas.models import FormulaOpcional, OpcionalFabrica
 from pricing import config_views
+from pricing.models import Accesorio
 from pricing.forms import AccesorioEditForm
 from pricing.services.calculator import PriceCalculator
 
@@ -124,6 +125,25 @@ class AccesorioEditFormTest(SimpleTestCase):
             ['codigo', 'descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio'],
         )
 
+    def test_bound_form_actualiza_la_instancia_con_el_codigo_posteado(self):
+        instance = Accesorio(codigo='B-52', descripcion='Original')
+        form = AccesorioEditForm(
+            data={
+                'codigo': 'B52',
+                'descripcion': 'Actualizado',
+                'cant': 1,
+                'tipo': 'marco',
+                'tipo_calculo': 'unidad',
+                'formula_calculo': '',
+                'precio': 10,
+            },
+            instance=instance,
+        )
+
+        with patch.object(AccesorioEditForm, 'validate_unique', autospec=True):
+            self.assertTrue(form.is_valid())
+        self.assertEqual(instance.codigo, 'B52')
+
 
 class AccesorioEditHelpersTest(SimpleTestCase):
     def test_rename_helper_actualiza_todos_los_modelos_relacionados(self):
@@ -171,7 +191,7 @@ class AccesorioEditHelpersTest(SimpleTestCase):
         mock_filter.return_value.update.return_value = 1
 
         config_views._save_accesorio_edit(
-            SimpleNamespace(codigo='B-68'),
+            'B-68',
             {
                 'codigo': 'B-69',
                 'descripcion': 'Accesorio actualizado',

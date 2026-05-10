@@ -70,8 +70,7 @@ def _rename_accesorio_codigo_references(old_codigo, new_codigo):
         model.objects.filter(accesorio=old_codigo).update(accesorio=new_codigo)
 
 
-def _save_accesorio_edit(obj, cleaned_data):
-    old_codigo = obj.codigo
+def _save_accesorio_edit(old_codigo, cleaned_data):
     update_data = {
         'codigo': cleaned_data['codigo'],
         'descripcion': cleaned_data['descripcion'],
@@ -816,9 +815,10 @@ def accesorio_create(request):
 @user_passes_test(is_staff)
 def accesorio_edit(request, pk):
     obj = get_object_or_404(Accesorio, pk=pk)
+    original_codigo = obj.pk
     form = AccesorioEditForm(request.POST or None, instance=obj)
     if request.method == 'POST' and form.is_valid():
-        _save_accesorio_edit(obj, form.cleaned_data)
+        _save_accesorio_edit(original_codigo, form.cleaned_data)
         messages.success(request, 'Accesorio actualizado correctamente.')
         return redirect('config-accesorios')
     return render(request, 'pricing/config/accesorio_form.html', {'form': form, 'titulo': 'Editar Accesorio', 'cancel_url': 'config-accesorios', 'object': obj})
