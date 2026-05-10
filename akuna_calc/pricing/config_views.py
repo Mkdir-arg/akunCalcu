@@ -5,9 +5,31 @@ import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
 from django.db.models import Max
 from django.http import JsonResponse
-from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento
+from plantillas.models import AccesorioOpcional
+
+from .models import (
+    Extrusora,
+    Linea,
+    Producto,
+    Marco,
+    Hoja,
+    Interior,
+    Perfil,
+    Accesorio,
+    Vidrio,
+    Tratamiento,
+    DespieceAccesoriosMarco,
+    DespieceAccesoriosHoja,
+    DespieceAccesoriosInterior,
+    DespieceAccesoriosMosquitero,
+    DespieceAccesoriosContravidrio,
+    DespieceAccesoriosContravidrioExterior,
+    DespieceAccesoriosCruces,
+    DespieceAccesoriosVidrioRepartido,
+)
 from .forms import (
     ExtrusoraForm, LineaForm, ProductoForm, MarcoForm, HojaForm, InteriorForm,
     PerfilCreateForm, PerfilEditForm,
@@ -18,6 +40,18 @@ from .forms import (
 
 logger = logging.getLogger(__name__)
 
+_ACCESORIO_REFERENCE_MODELS = (
+    DespieceAccesoriosMarco,
+    DespieceAccesoriosHoja,
+    DespieceAccesoriosInterior,
+    DespieceAccesoriosMosquitero,
+    DespieceAccesoriosContravidrio,
+    DespieceAccesoriosContravidrioExterior,
+    DespieceAccesoriosCruces,
+    DespieceAccesoriosVidrioRepartido,
+    AccesorioOpcional,
+)
+
 
 def is_staff(user):
     return user.is_staff
@@ -26,6 +60,33 @@ def is_staff(user):
 def _next_id(model):
     max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
     return max_id + 1
+
+
+def _rename_accesorio_codigo_references(old_codigo, new_codigo):
+    if not old_codigo or old_codigo == new_codigo:
+        return
+
+    for model in _ACCESORIO_REFERENCE_MODELS:
+        model.objects.filter(accesorio=old_codigo).update(accesorio=new_codigo)
+
+
+def _save_accesorio_edit(obj, cleaned_data):
+    old_codigo = obj.codigo
+    update_data = {
+        'codigo': cleaned_data['codigo'],
+        'descripcion': cleaned_data['descripcion'],
+        'cant': cleaned_data['cant'],
+        'tipo': cleaned_data['tipo'],
+        'tipo_calculo': cleaned_data['tipo_calculo'],
+        'formula_calculo': cleaned_data['formula_calculo'],
+        'precio': cleaned_data['precio'],
+    }
+
+    with transaction.atomic():
+        updated_rows = Accesorio.objects.filter(pk=old_codigo).update(**update_data)
+        if not updated_rows:
+            raise Accesorio.DoesNotExist(old_codigo)
+        _rename_accesorio_codigo_references(old_codigo, update_data['codigo'])
 
 
 # ─── EXTRUSORAS ───────────────────────────────────────────────────────────────
@@ -757,7 +818,7 @@ def accesorio_edit(request, pk):
     obj = get_object_or_404(Accesorio, pk=pk)
     form = AccesorioEditForm(request.POST or None, instance=obj)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        _save_accesorio_edit(obj, form.cleaned_data)
         messages.success(request, 'Accesorio actualizado correctamente.')
         return redirect('config-accesorios')
     return render(request, 'pricing/config/accesorio_form.html', {'form': form, 'titulo': 'Editar Accesorio', 'cancel_url': 'config-accesorios', 'object': obj})

@@ -5,6 +5,8 @@ from django.test import Client, SimpleTestCase, TestCase
 from django.contrib.auth import get_user_model
 
 from plantillas.models import FormulaOpcional, OpcionalFabrica
+from pricing import config_views
+from pricing.forms import AccesorioEditForm
 from pricing.services.calculator import PriceCalculator
 
 User = get_user_model()
@@ -111,3 +113,84 @@ class PriceCalculatorVidrioFormulaContextTest(SimpleTestCase):
         self.assertIs(vidrio_obj, vidrio)
         self.assertEqual(rebaje_ancho, 'Ancho-12')
         self.assertEqual(rebaje_alto, 'Alto-14')
+
+
+class AccesorioEditFormTest(SimpleTestCase):
+    def test_edit_form_expone_codigo(self):
+        form = AccesorioEditForm()
+
+        self.assertEqual(
+            list(form.fields.keys()),
+            ['codigo', 'descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio'],
+        )
+
+
+class AccesorioEditHelpersTest(SimpleTestCase):
+    def test_rename_helper_actualiza_todos_los_modelos_relacionados(self):
+        calls = []
+
+        class FakeManager:
+            def __init__(self, label):
+                self.label = label
+
+            def filter(self, **kwargs):
+                calls.append(('filter', self.label, kwargs))
+                return self
+
+            def update(self, **kwargs):
+                calls.append(('update', self.label, kwargs))
+                return 1
+
+        fake_models = (
+            SimpleNamespace(objects=FakeManager('pricing_1')),
+            SimpleNamespace(objects=FakeManager('pricing_2')),
+            SimpleNamespace(objects=FakeManager('plantillas')),
+        )
+
+        with patch.object(config_views, '_ACCESORIO_REFERENCE_MODELS', fake_models):
+            config_views._rename_accesorio_codigo_references('B-68', 'B-69')
+
+        self.assertEqual(
+            calls,
+            [
+                ('filter', 'pricing_1', {'accesorio': 'B-68'}),
+                ('update', 'pricing_1', {'accesorio': 'B-69'}),
+                ('filter', 'pricing_2', {'accesorio': 'B-68'}),
+                ('update', 'pricing_2', {'accesorio': 'B-69'}),
+                ('filter', 'plantillas', {'accesorio': 'B-68'}),
+                ('update', 'plantillas', {'accesorio': 'B-69'}),
+            ],
+        )
+
+    @patch('pricing.config_views._rename_accesorio_codigo_references')
+    @patch('pricing.config_views.Accesorio.objects.filter')
+    @patch('pricing.config_views.transaction.atomic')
+    def test_save_helper_actualiza_fila_y_referencias(self, mock_atomic, mock_filter, mock_rename):
+        mock_atomic.return_value.__enter__.return_value = None
+        mock_atomic.return_value.__exit__.return_value = False
+        mock_filter.return_value.update.return_value = 1
+
+        config_views._save_accesorio_edit(
+            SimpleNamespace(codigo='B-68'),
+            {
+                'codigo': 'B-69',
+                'descripcion': 'Accesorio actualizado',
+                'cant': 2,
+                'tipo': 'marco',
+                'tipo_calculo': 'formula',
+                'formula_calculo': '(Ancho * 2) + (Alto * 2)',
+                'precio': 123.45,
+            },
+        )
+
+        mock_filter.assert_called_once_with(pk='B-68')
+        mock_filter.return_value.update.assert_called_once_with(
+            codigo='B-69',
+            descripcion='Accesorio actualizado',
+            cant=2,
+            tipo='marco',
+            tipo_calculo='formula',
+            formula_calculo='(Ancho * 2) + (Alto * 2)',
+            precio=123.45,
+        )
+        mock_rename.assert_called_once_with('B-68', 'B-69')

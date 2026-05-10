@@ -352,12 +352,13 @@ class AccesorioEditForm(forms.ModelForm):
     
     class Meta:
         model = Accesorio
-        fields = ['descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio']
+        fields = ['codigo', 'descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio']
         labels = {
             'cant': 'Cantidad',
             'formula_calculo': 'Fórmula de Cálculo',
         }
         widgets = {
+            'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cant': forms.NumberInput(attrs={'class': _input_class}),
             'formula_calculo': forms.TextInput(attrs={'class': _input_class, 'placeholder': 'Ej: (Ancho * 2) + (Alto * 2)'}),
