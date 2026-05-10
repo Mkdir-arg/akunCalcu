@@ -47,11 +47,11 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-accesorio-edit' accesorio.codigo %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <a href="{% url 'config-accesorio-edit' accesorio.codigo accesorio.tipo %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {% if accesorio.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-accesorio-delete' accesorio.codigo %}', '{{ accesorio.codigo }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <button onclick="confirmarDesactivar('{% url 'config-accesorio-delete' accesorio.codigo accesorio.tipo %}', '{{ accesorio.codigo }} ({{ accesorio.tipo }})' )" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-trash"></i>
                                 </button>
                                 {% endif %}

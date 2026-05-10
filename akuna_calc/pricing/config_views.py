@@ -86,41 +86,41 @@ def _rename_accesorio_codigo_references(old_codigo, new_codigo):
         model.objects.filter(accesorio=old_codigo).update(accesorio=new_codigo)
 
 
-def _save_accesorio_edit(old_codigo, cleaned_data):
+def _save_accesorio_edit(old_codigo, old_tipo, cleaned_data):
     new_codigo = cleaned_data['codigo']
+    new_tipo = cleaned_data['tipo']
     
     with transaction.atomic():
-        # Si el código cambió, necesitamos eliminar y recrear
-        if old_codigo != new_codigo:
+        # Si cambió el código o el tipo, necesitamos eliminar y recrear
+        if old_codigo != new_codigo or old_tipo != new_tipo:
             # Primero actualizar todas las referencias
             _rename_accesorio_codigo_references(old_codigo, new_codigo)
             
             # Eliminar el registro viejo
-            Accesorio.objects.filter(pk=old_codigo).delete()
+            Accesorio.objects.filter(codigo=old_codigo, tipo=old_tipo).delete()
             
-            # Crear el nuevo registro con el nuevo código
+            # Crear el nuevo registro con el nuevo código y tipo
             Accesorio.objects.create(
                 codigo=new_codigo,
+                tipo=new_tipo,
                 descripcion=cleaned_data['descripcion'],
                 cant=cleaned_data['cant'],
-                tipo=cleaned_data['tipo'],
                 tipo_calculo=cleaned_data['tipo_calculo'],
                 formula_calculo=cleaned_data['formula_calculo'],
                 precio=cleaned_data['precio'],
             )
         else:
-            # Si el código no cambió, solo actualizar los demás campos
+            # Si no cambió la clave, solo actualizar los demás campos
             update_data = {
                 'descripcion': cleaned_data['descripcion'],
                 'cant': cleaned_data['cant'],
-                'tipo': cleaned_data['tipo'],
                 'tipo_calculo': cleaned_data['tipo_calculo'],
                 'formula_calculo': cleaned_data['formula_calculo'],
                 'precio': cleaned_data['precio'],
             }
-            updated_rows = Accesorio.objects.filter(pk=old_codigo).update(**update_data)
+            updated_rows = Accesorio.objects.filter(codigo=old_codigo, tipo=old_tipo).update(**update_data)
             if not updated_rows:
-                raise Accesorio.DoesNotExist(old_codigo)
+                raise Accesorio.DoesNotExist(f"{old_codigo} ({old_tipo})")
 
 
 # ─── EXTRUSORAS ───────────────────────────────────────────────────────────────
@@ -848,12 +848,13 @@ def accesorio_create(request):
 
 @login_required
 @user_passes_test(is_staff)
-def accesorio_edit(request, pk):
-    obj = get_object_or_404(Accesorio, pk=pk)
-    original_codigo = obj.pk
+def accesorio_edit(request, codigo, tipo):
+    obj = get_object_or_404(Accesorio, codigo=codigo, tipo=tipo)
+    original_codigo = obj.codigo
+    original_tipo = obj.tipo
     form = AccesorioEditForm(request.POST or None, instance=obj)
     if request.method == 'POST' and form.is_valid():
-        _save_accesorio_edit(original_codigo, form.cleaned_data)
+        _save_accesorio_edit(original_codigo, original_tipo, form.cleaned_data)
         messages.success(request, 'Accesorio actualizado correctamente.')
         return redirect('config-accesorios')
     return render(request, 'pricing/config/accesorio_form.html', {'form': form, 'titulo': 'Editar Accesorio', 'cancel_url': 'config-accesorios', 'object': obj})
@@ -861,8 +862,8 @@ def accesorio_edit(request, pk):
 
 @login_required
 @user_passes_test(is_staff)
-def accesorio_delete(request, pk):
-    obj = get_object_or_404(Accesorio, pk=pk)
+def accesorio_delete(request, codigo, tipo):
+    obj = get_object_or_404(Accesorio, codigo=codigo, tipo=tipo)
     if request.method == 'POST':
         obj.bloqueado = 'Si'
         obj.save()

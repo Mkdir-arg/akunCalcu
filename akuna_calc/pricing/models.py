@@ -264,7 +264,7 @@ class Perfil(models.Model):
 
 
 class Accesorio(models.Model):
-    codigo = models.TextField(db_column="COD_PARTE", primary_key=True)
+    codigo = models.TextField(db_column="COD_PARTE")
     color_id = models.IntegerField(db_column="Idcolor", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
     precio = models.FloatField(db_column="PRECIO", null=True, blank=True)
@@ -280,9 +280,11 @@ class Accesorio(models.Model):
     class Meta:
         managed = False
         db_table = "accesorios"
+        unique_together = [['codigo', 'tipo']]
 
     def __str__(self):
-        return f"{self.codigo} - {self.descripcion}" if self.descripcion else self.codigo
+        tipo_str = f" ({self.tipo})" if self.tipo else ""
+        return f"{self.codigo}{tipo_str} - {self.descripcion}" if self.descripcion else f"{self.codigo}{tipo_str}"
 
 
 class Vidrio(models.Model):
