@@ -1,11 +1,12 @@
 """Vistas de configuración para ABMs de pricing."""
 
 import logging
+from functools import lru_cache
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Max
 from django.http import JsonResponse
 from plantillas.models import AccesorioOpcional
@@ -62,11 +63,26 @@ def _next_id(model):
     return max_id + 1
 
 
+@lru_cache(maxsize=1)
+def _get_existing_table_names():
+    return frozenset(connection.introspection.table_names())
+
+
 def _rename_accesorio_codigo_references(old_codigo, new_codigo):
     if not old_codigo or old_codigo == new_codigo:
         return
 
+    existing_tables = _get_existing_table_names()
+
     for model in _ACCESORIO_REFERENCE_MODELS:
+        table_name = model._meta.db_table
+        if table_name not in existing_tables:
+            logger.warning(
+                "Se omite actualización de referencias para accesorio %s: tabla legacy ausente %s",
+                old_codigo,
+                table_name,
+            )
+            continue
         model.objects.filter(accesorio=old_codigo).update(accesorio=new_codigo)
 
 

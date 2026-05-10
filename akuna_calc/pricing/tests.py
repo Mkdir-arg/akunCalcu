@@ -146,7 +146,7 @@ class AccesorioEditFormTest(SimpleTestCase):
 
 
 class AccesorioEditHelpersTest(SimpleTestCase):
-    def test_rename_helper_actualiza_todos_los_modelos_relacionados(self):
+    def test_rename_helper_actualiza_solo_tablas_presentes(self):
         calls = []
 
         class FakeManager:
@@ -162,21 +162,24 @@ class AccesorioEditHelpersTest(SimpleTestCase):
                 return 1
 
         fake_models = (
-            SimpleNamespace(objects=FakeManager('pricing_1')),
-            SimpleNamespace(objects=FakeManager('pricing_2')),
-            SimpleNamespace(objects=FakeManager('plantillas')),
+            SimpleNamespace(objects=FakeManager('pricing_1'), _meta=SimpleNamespace(db_table='despiece_accesorios_marco')),
+            SimpleNamespace(objects=FakeManager('pricing_2'), _meta=SimpleNamespace(db_table='despiece_accesorios_interior')),
+            SimpleNamespace(objects=FakeManager('plantillas'), _meta=SimpleNamespace(db_table='plantillas_accesorioopcional')),
         )
 
         with patch.object(config_views, '_ACCESORIO_REFERENCE_MODELS', fake_models):
-            config_views._rename_accesorio_codigo_references('B-68', 'B-69')
+            with patch.object(
+                config_views,
+                '_get_existing_table_names',
+                return_value={'despiece_accesorios_marco', 'plantillas_accesorioopcional'},
+            ):
+                config_views._rename_accesorio_codigo_references('B-68', 'B-69')
 
         self.assertEqual(
             calls,
             [
                 ('filter', 'pricing_1', {'accesorio': 'B-68'}),
                 ('update', 'pricing_1', {'accesorio': 'B-69'}),
-                ('filter', 'pricing_2', {'accesorio': 'B-68'}),
-                ('update', 'pricing_2', {'accesorio': 'B-69'}),
                 ('filter', 'plantillas', {'accesorio': 'B-68'}),
                 ('update', 'plantillas', {'accesorio': 'B-69'}),
             ],
