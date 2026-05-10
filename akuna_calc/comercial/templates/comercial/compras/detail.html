@@ -38,11 +38,12 @@
 
             <!-- Acciones -->
             <div class="flex flex-wrap gap-2">
-                <a href="{% url 'comercial:compra_edit' compra.pk %}"
+                {% url 'comercial:compra_edit' compra.pk as compra_edit_url %}
+                <a href="{% with_return_to compra_edit_url request.get_full_path %}"
                    class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
                     <i class="fas fa-edit mr-2"></i>Editar
                 </a>
-                <a href="{% url 'comercial:compras_list' %}"
+                <a href="{{ return_url }}"
                    class="inline-flex items-center bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
                     <i class="fas fa-arrow-left mr-2"></i>Volver
                 </a>

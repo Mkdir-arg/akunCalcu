@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count, Q
@@ -14,11 +15,20 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from xhtml2pdf import pisa
 
+from core.navigation import append_return_to, resolve_return_url
 from comercial.models import _formatear_cuit
 from pricing.services.calculator import calcular_precio, PricingError
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm
+
+
+def _presupuestos_list_url():
+    return reverse('presupuestos:presupuestos-lista')
+
+
+def _presupuestos_return_url(request):
+    return resolve_return_url(request, _presupuestos_list_url())
 
 
 def _build_logo_data_url():
@@ -94,6 +104,7 @@ def lista(request):
 
 @login_required
 def crear(request):
+    return_url = _presupuestos_return_url(request)
     if request.method == 'POST':
         form = PresupuestoForm(request.POST)
         if form.is_valid():
@@ -102,34 +113,37 @@ def crear(request):
             presupuesto.created_by = request.user
             presupuesto.save()
             messages.success(request, f'Presupuesto {presupuesto.numero} creado.')
-            return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+            return redirect(append_return_to(reverse('presupuestos:presupuestos-detalle', kwargs={'pk': presupuesto.pk}), return_url))
     else:
         form = PresupuestoForm()
-    return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Nuevo Presupuesto'})
+    return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Nuevo Presupuesto', 'return_url': return_url})
 
 
 @login_required
 def detalle(request, pk):
     presupuesto = get_object_or_404(_get_detalle_queryset(), pk=pk)
-    return render(request, 'presupuestos/detalle.html', _build_detalle_context(presupuesto))
+    context = _build_detalle_context(presupuesto)
+    context['return_url'] = _presupuestos_return_url(request)
+    return render(request, 'presupuestos/detalle.html', context)
 
 
 @login_required
 def editar(request, pk):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    return_url = _presupuestos_return_url(request)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede editar un presupuesto confirmado o cancelado.')
-        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+        return redirect(append_return_to(reverse('presupuestos:presupuestos-detalle', kwargs={'pk': pk}), return_url))
 
     if request.method == 'POST':
         form = PresupuestoForm(request.POST, instance=presupuesto)
         if form.is_valid():
             form.save()
             messages.success(request, 'Presupuesto actualizado.')
-            return redirect('presupuestos:presupuestos-detalle', pk=pk)
+            return redirect(append_return_to(reverse('presupuestos:presupuestos-detalle', kwargs={'pk': pk}), return_url))
     else:
         form = PresupuestoForm(instance=presupuesto)
-    return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Editar Presupuesto', 'presupuesto': presupuesto})
+    return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Editar Presupuesto', 'presupuesto': presupuesto, 'return_url': return_url})
 
 
 @login_required

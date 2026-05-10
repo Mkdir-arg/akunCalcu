@@ -24,6 +24,7 @@ from unittest.mock import patch
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
+from core.navigation import RETURN_TO_PARAM, append_return_to
 from .models import Cliente, Venta, PagoVenta, TipoCuenta, Cuenta, Compra, PagoCompra, Recibo
 
 
@@ -248,6 +249,58 @@ class VentaCreateUSDTest(TestCase):
         self.assertEqual(nueva.valor_total_usd, Decimal('10.00'))
         self.assertTrue(nueva.sena_en_dolares)
         self.assertEqual(nueva.sena_usd, Decimal('2.00'))
+
+
+class VentaNavigationStateTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='ventasnav', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='ventasnav', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Julia',
+            apellido='Suarez',
+            condicion_iva='CF',
+            direccion='Calle 123',
+            localidad='CABA',
+        )
+        self.venta = Venta.objects.create(
+            numero_pedido='NAV-001',
+            cliente=self.cliente,
+            valor_total=Decimal('1000.00'),
+            sena=Decimal('0.00'),
+        )
+
+    def test_venta_detail_usa_el_ultimo_filtro_recordado(self):
+        list_url = f"{reverse('comercial:ventas_list')}?estado=pendiente&q=NAV-001&page=2"
+
+        self.client_http.get(list_url)
+        response = self.client_http.get(reverse('comercial:venta_detail', args=[self.venta.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['return_url'], list_url)
+        self.assertEqual(
+            response.context['venta_edit_url'],
+            append_return_to(reverse('comercial:venta_edit', args=[self.venta.pk]), list_url),
+        )
+
+    def test_venta_edit_prioriza_return_url_explicito(self):
+        return_url = f"{reverse('comercial:ventas_list')}?estado=colocado"
+
+        response = self.client_http.get(
+            reverse('comercial:venta_edit', args=[self.venta.pk]),
+            {RETURN_TO_PARAM: return_url},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['return_url'], return_url)
+
+    def test_venta_delete_redirige_al_filtro_recordado(self):
+        list_url = f"{reverse('comercial:ventas_list')}?estado=pendiente&q=NAV-001"
+
+        self.client_http.get(list_url)
+        response = self.client_http.post(reverse('comercial:venta_delete', args=[self.venta.pk]))
+
+        self.assertRedirects(response, list_url, fetch_redirect_response=False)
 
 
 class RegistrarPagoUSDTest(TestCase):
@@ -752,6 +805,23 @@ class ReportesVentasTest(TestCase):
             condicion_iva='CF', direccion='Dir 1', localidad='CABA',
         )
 
+    def test_reporte_get_inicial_no_materializa_ventas(self):
+        Venta.objects.create(
+            numero_pedido='VTA-GET-001',
+            cliente=self.cliente,
+            valor_total=Decimal('100'),
+            sena=Decimal('0'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+
+        response = self.client_http.get(reverse('comercial:reportes'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['reporte_data'])
+        self.assertContains(response, 'Usá los filtros para generar el reporte')
+        self.assertNotContains(response, 'VTA-GET-001')
+
     def test_reporte_muestra_solo_ventas_y_no_pagos(self):
         venta_1 = Venta.objects.create(
             numero_pedido='VTA-001',
@@ -968,6 +1038,30 @@ class ReporteCobranzasTest(TestCase):
             condicion_iva='CF', direccion='Dir 1', localidad='CABA',
         )
 
+    def test_reporte_cobranzas_get_inicial_no_materializa_movimientos(self):
+        venta = Venta.objects.create(
+            numero_pedido='VTA-GET-COB',
+            cliente=self.cliente,
+            valor_total=Decimal('300'),
+            sena=Decimal('100'),
+            fecha_pago='2026-04-10',
+            forma_pago='efectivo',
+        )
+        PagoVenta.objects.create(
+            venta=venta,
+            monto=Decimal('50'),
+            fecha_pago='2026-04-11',
+            forma_pago='transferencia',
+            created_by=self.user,
+        )
+
+        response = self.client_http.get(reverse('comercial:reportes_cobranzas'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['reporte_data'])
+        self.assertContains(response, 'Usá los filtros para generar el reporte')
+        self.assertNotContains(response, 'VTA-GET-COB')
+
     def test_reporte_cobranzas_muestra_movimientos_individuales(self):
         venta = Venta.objects.create(
             numero_pedido='VTA-100',
@@ -1018,8 +1112,8 @@ class ReporteCobranzasTest(TestCase):
 
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,05')
-    self.assertContains(response, '1 en USD')
-    self.assertContains(response, 'Imprimir compacto')
+        self.assertContains(response, '1 en USD')
+        self.assertContains(response, 'Imprimir compacto')
 
     def test_reporte_cobranzas_filtra_por_numero_factura(self):
         venta_ok = Venta.objects.create(
@@ -1117,3 +1211,29 @@ class ReporteCobranzasTest(TestCase):
         reporte_cobranzas = response.context['reporte_data']['cobranzas']
         self.assertEqual(reporte_cobranzas['lista'][0]['pedido'], 'VTA-ORDER-HIGH')
         self.assertEqual(reporte_cobranzas['lista'][0]['monto'], Decimal('250'))
+
+
+class ReportesGastosTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='gastos', password='testpass')
+        self.client_http = Client()
+        self.client_http.login(username='gastos', password='testpass')
+        self.tipo_cuenta = TipoCuenta.objects.create(tipo='varios', descripcion='Varios')
+        self.cuenta = Cuenta.objects.create(nombre='Proveedor Test', tipo_cuenta=self.tipo_cuenta)
+
+    def test_reporte_gastos_get_inicial_no_materializa_compras(self):
+        Compra.objects.create(
+            numero_pedido='COMP-GET-001',
+            cuenta=self.cuenta,
+            fecha_pago='2026-04-18',
+            valor_total=Decimal('450'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+
+        response = self.client_http.get(reverse('comercial:reportes_gastos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['reporte_data'])
+        self.assertContains(response, 'Usá los filtros para generar el reporte')
+        self.assertNotContains(response, 'COMP-GET-001')

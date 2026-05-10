@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Cuentas{% endblock %}
 
@@ -11,7 +12,8 @@
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Cuentas</h1>
             <p class="text-slate-500 font-medium mt-1">Proveedores y colaboradores</p>
         </div>
-        <a href="{% url 'comercial:cuenta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
+        {% url 'comercial:cuenta_create' as cuenta_create_url %}
+        <a href="{% with_return_to cuenta_create_url request.get_full_path %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
             <i class="fas fa-plus mr-2"></i>Nueva Cuenta
         </a>
     </div>
@@ -97,7 +99,8 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'comercial:cuenta_edit' cuenta.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                {% url 'comercial:cuenta_edit' cuenta.pk as cuenta_edit_url %}
+                                <a href="{% with_return_to cuenta_edit_url request.get_full_path %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button onclick="confirmarEliminacion('{% url 'comercial:cuenta_delete' cuenta.pk %}', '{{ cuenta.nombre }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">

@@ -8,11 +8,52 @@ from django.db.models import Sum, Q
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from datetime import datetime
 from decimal import Decimal
-from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra, Recibo
+from core.navigation import append_return_to, resolve_return_url
+from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra, Percepcion, Recibo
 from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
 
 
 logger = logging.getLogger(__name__)
+
+
+def _ventas_list_url():
+    return reverse('comercial:ventas_list')
+
+
+def _ventas_return_url(request):
+    return resolve_return_url(request, _ventas_list_url())
+
+
+def _clientes_list_url():
+    return reverse('comercial:clientes_list')
+
+
+def _clientes_return_url(request):
+    return resolve_return_url(request, _clientes_list_url())
+
+
+def _compras_list_url():
+    return reverse('comercial:compras_list')
+
+
+def _compras_return_url(request):
+    return resolve_return_url(request, _compras_list_url())
+
+
+def _cuentas_list_url():
+    return reverse('comercial:cuentas_list')
+
+
+def _cuentas_return_url(request):
+    return resolve_return_url(request, _cuentas_list_url())
+
+
+def _reportes_proveedores_url():
+    return reverse('comercial:reportes_proveedores')
+
+
+def _reportes_proveedores_return_url(request):
+    return resolve_return_url(request, _reportes_proveedores_url())
 
 
 def _respuesta_pdf_recibo(recibo, *, inline=True):
@@ -222,9 +263,12 @@ def construir_cuenta_corriente_proveedor(proveedor):
 @login_required
 def ventas_list(request):
     from django.core.paginator import Paginator
-    from django.db.models import Case, When, Value, IntegerField, Sum, Count
+    from django.db.models import Case, When, Value, IntegerField, Sum, Count, Exists, OuterRef
 
-    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('pagos', 'percepciones').all()
+    ventas = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente', 'factura_electronica').prefetch_related('pagos', 'percepciones').annotate(
+        tiene_pagos=Exists(PagoVenta.objects.filter(venta_id=OuterRef('pk'))),
+        tiene_percepciones=Exists(Percepcion.objects.filter(venta_id=OuterRef('pk'))),
+    )
 
     # Filtros
     estado = request.GET.get('estado', '')
@@ -332,6 +376,7 @@ def ventas_list(request):
 
 @login_required
 def venta_create(request):
+    return_url = _ventas_return_url(request)
     if request.method == 'POST':
         form = VentaForm(request.POST)
         if form.is_valid():
@@ -348,19 +393,20 @@ def venta_create(request):
                 
                 if venta_existente:
                     messages.error(request, f'No se puede cargar esta factura. La factura {numero_factura} tipo {tipo_factura} ya se encuentra cargada en el sistema.')
-                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Nueva Venta'})
+                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Nueva Venta', 'return_url': return_url})
             
             form.save()
             messages.success(request, 'Venta creada exitosamente.')
-            return redirect('comercial:ventas_list')
+            return redirect(return_url)
     else:
         form = VentaForm()
-    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Nueva Venta'})
+    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Nueva Venta', 'return_url': return_url})
 
 
 @login_required
 def venta_edit(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
+    return_url = _ventas_return_url(request)
     if request.method == 'POST':
         form = VentaForm(request.POST, instance=venta)
         if form.is_valid():
@@ -377,24 +423,25 @@ def venta_edit(request, pk):
                 
                 if venta_existente:
                     messages.error(request, f'No se puede actualizar con esta factura. La factura {numero_factura} tipo {tipo_factura} ya se encuentra cargada en el sistema.')
-                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
+                    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta', 'return_url': return_url})
             
             form.save()
             messages.success(request, 'Venta actualizada exitosamente.')
-            return redirect('comercial:venta_detail', pk=pk)
+            return redirect(append_return_to(reverse('comercial:venta_detail', kwargs={'pk': pk}), return_url))
     else:
         form = VentaForm(instance=venta)
-    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta'})
+    return render(request, 'comercial/ventas/form.html', {'form': form, 'title': 'Editar Venta', 'return_url': return_url})
 
 
 @login_required
 def venta_delete(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
+    return_url = _ventas_return_url(request)
     if request.method == 'POST':
         venta.delete()  # Eliminado l�gico
         messages.success(request, 'Venta eliminada exitosamente.')
-        return redirect('comercial:ventas_list')
-    return redirect('comercial:ventas_list')
+        return redirect(return_url)
+    return redirect(return_url)
 
 
 @login_required
@@ -406,6 +453,7 @@ def venta_detail(request, pk):
     total = venta.get_total_con_percepciones()
     porcentaje_cobrado = int((total_pagado / total * 100)) if total > 0 else 0
     dias_abierta = (timezone.now().date() - venta.created_at.date()).days
+    return_url = _ventas_return_url(request)
 
     context = {
         'venta': venta,
@@ -416,6 +464,9 @@ def venta_detail(request, pk):
         'today': timezone.now().date(),
         'forzar_colocado': request.GET.get('forzar_colocado') == '1',
         'puede_generar_recibo': pagos.exists(),
+        'return_url': return_url,
+        'venta_edit_url': append_return_to(reverse('comercial:venta_edit', kwargs={'pk': pk}), return_url),
+        'venta_duplicate_url': append_return_to(reverse('comercial:duplicar_venta', kwargs={'pk': pk}), return_url),
     }
     return render(request, 'comercial/ventas/detail.html', context)
 
@@ -439,7 +490,7 @@ def duplicar_venta(request, pk):
         observaciones=original.observaciones,
     )
     messages.success(request, f'Venta duplicada exitosamente. Nueva Venta #{nueva.pk}')
-    return redirect('comercial:venta_edit', pk=nueva.pk)
+    return redirect(append_return_to(reverse('comercial:venta_edit', kwargs={'pk': nueva.pk}), _ventas_return_url(request)))
 
 
 @login_required
@@ -761,6 +812,7 @@ def clientes_list(request):
 
 @login_required
 def cliente_create(request):
+    return_url = _clientes_return_url(request)
     if request.method == 'POST':
         form = ClienteForm(request.POST)
         if form.is_valid():
@@ -777,7 +829,7 @@ def cliente_create(request):
                 })
             
             messages.success(request, 'Cliente creado exitosamente.')
-            return redirect('comercial:clientes_list')
+            return redirect(return_url)
         else:
             # Si es AJAX y hay errores
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -787,26 +839,28 @@ def cliente_create(request):
                 }, status=400)
     else:
         form = ClienteForm()
-    return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Nuevo Cliente'})
+    return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Nuevo Cliente', 'return_url': return_url})
 
 
 @login_required
 def cliente_edit(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
+    return_url = _clientes_return_url(request)
     if request.method == 'POST':
         form = ClienteForm(request.POST, instance=cliente)
         if form.is_valid():
             form.save()
             messages.success(request, 'Cliente actualizado exitosamente.')
-            return redirect('comercial:clientes_list')
+            return redirect(return_url)
     else:
         form = ClienteForm(instance=cliente)
-    return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Editar Cliente'})
+    return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Editar Cliente', 'return_url': return_url})
 
 
 @login_required
 def cliente_delete(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
+    return_url = _clientes_return_url(request)
     if request.method == 'POST':
         # Contar ventas relacionadas
         ventas_relacionadas = Venta.objects.filter(cliente=cliente, deleted_at__isnull=True).count()
@@ -819,8 +873,8 @@ def cliente_delete(request, pk):
         else:
             messages.success(request, 'Cliente eliminado exitosamente.')
         
-        return redirect('comercial:clientes_list')
-    return redirect('comercial:clientes_list')
+        return redirect(return_url)
+    return redirect(return_url)
 
 
 @login_required
@@ -980,6 +1034,7 @@ def cliente_detail(request, pk):
     estados_qs = ventas.order_by().values('estado').annotate(cantidad=Count('id'))
     estados_labels = [ESTADO_DISPLAY.get(e['estado'], e['estado']) for e in estados_qs]
     estados_data = [e['cantidad'] for e in estados_qs]
+    return_url = _clientes_return_url(request)
 
     context = {
         'cliente': cliente,
@@ -995,6 +1050,7 @@ def cliente_detail(request, pk):
         'meses_data': json.dumps(meses_data, cls=DjangoJSONEncoder),
         'estados_labels': json.dumps(estados_labels, cls=DjangoJSONEncoder),
         'estados_data': json.dumps(estados_data, cls=DjangoJSONEncoder),
+        'return_url': return_url,
     }
     return render(request, 'comercial/clientes/detail.html', context)
 
@@ -1048,6 +1104,7 @@ def compras_list(request):
 
 @login_required
 def compra_create(request):
+    return_url = _compras_return_url(request)
     if request.method == 'POST':
         form = CompraForm(request.POST)
         if form.is_valid():
@@ -1055,7 +1112,7 @@ def compra_create(request):
             compra.created_by = request.user
             compra.save()
             messages.success(request, 'Gasto registrado exitosamente.')
-            return redirect('comercial:compra_detail', pk=compra.pk)
+            return redirect(append_return_to(reverse('comercial:compra_detail', kwargs={'pk': compra.pk}), return_url))
     else:
         form = CompraForm()
     
@@ -1063,7 +1120,8 @@ def compra_create(request):
     context = {
         'form': form,
         'title': 'Nuevo Gasto',
-        'tipos_cuenta': TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True)
+        'tipos_cuenta': TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True),
+        'return_url': return_url,
     }
     return render(request, 'comercial/compras/form.html', context)
 
@@ -1071,12 +1129,13 @@ def compra_create(request):
 @login_required
 def compra_edit(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
+    return_url = _compras_return_url(request)
     if request.method == 'POST':
         form = CompraForm(request.POST, instance=compra)
         if form.is_valid():
             form.save()
             messages.success(request, 'Gasto actualizado exitosamente.')
-            return redirect('comercial:compra_detail', pk=pk)
+            return redirect(append_return_to(reverse('comercial:compra_detail', kwargs={'pk': pk}), return_url))
         # Si hay errores, pre-seleccionar el tipo de cuenta del POST
         tipo_cuenta_id = request.POST.get('tipo_cuenta_filter')
         if tipo_cuenta_id:
@@ -1091,7 +1150,8 @@ def compra_edit(request, pk):
         'form': form,
         'title': 'Editar Gasto',
         'tipos_cuenta': TipoCuenta.objects.filter(activo=True, deleted_at__isnull=True),
-        'compra': compra
+        'compra': compra,
+        'return_url': return_url,
     }
     return render(request, 'comercial/compras/form.html', context)
 
@@ -1099,11 +1159,12 @@ def compra_edit(request, pk):
 @login_required
 def compra_delete(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
+    return_url = _compras_return_url(request)
     if request.method == 'POST':
         compra.delete()
         messages.success(request, 'Gasto eliminado exitosamente.')
-        return redirect('comercial:compras_list')
-    return redirect('comercial:compras_list')
+        return redirect(return_url)
+    return redirect(return_url)
 
 
 @login_required
@@ -1114,6 +1175,7 @@ def compra_detail(request, pk):
     total_pagado = compra.sena + sum(p.monto for p in pagos)
     porcentaje_pagado = int((total_pagado / compra.valor_total * 100)) if compra.valor_total > 0 else 0
     dias_abierta = (timezone.now().date() - compra.created_at.date()).days
+    return_url = _compras_return_url(request)
 
     context = {
         'compra': compra,
@@ -1123,6 +1185,7 @@ def compra_detail(request, pk):
         'dias_abierta': dias_abierta,
         'today': timezone.now().date(),
         'permite_pago_adicional': compra.estado == 'pendiente',
+        'return_url': return_url,
     }
     return render(request, 'comercial/compras/detail.html', context)
 
@@ -1306,6 +1369,7 @@ def cuentas_list(request):
 
 @login_required
 def cuenta_create(request):
+    return_url = _cuentas_return_url(request)
     if request.method == 'POST':
         form = CuentaForm(request.POST)
         if form.is_valid():
@@ -1322,7 +1386,7 @@ def cuenta_create(request):
                 })
             
             messages.success(request, 'Cuenta creada exitosamente.')
-            return redirect('comercial:cuentas_list')
+            return redirect(return_url)
         else:
             # Si es AJAX y hay errores
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1332,26 +1396,28 @@ def cuenta_create(request):
                 }, status=400)
     else:
         form = CuentaForm()
-    return render(request, 'comercial/cuentas/form.html', {'form': form, 'title': 'Nueva Cuenta'})
+    return render(request, 'comercial/cuentas/form.html', {'form': form, 'title': 'Nueva Cuenta', 'return_url': return_url})
 
 
 @login_required
 def cuenta_edit(request, pk):
     cuenta = get_object_or_404(Cuenta, pk=pk)
+    return_url = _cuentas_return_url(request)
     if request.method == 'POST':
         form = CuentaForm(request.POST, instance=cuenta)
         if form.is_valid():
             form.save()
             messages.success(request, 'Cuenta actualizada exitosamente.')
-            return redirect('comercial:cuentas_list')
+            return redirect(return_url)
     else:
         form = CuentaForm(instance=cuenta)
-    return render(request, 'comercial/cuentas/form.html', {'form': form, 'title': 'Editar Cuenta'})
+    return render(request, 'comercial/cuentas/form.html', {'form': form, 'title': 'Editar Cuenta', 'return_url': return_url})
 
 
 @login_required
 def cuenta_delete(request, pk):
     cuenta = get_object_or_404(Cuenta, pk=pk)
+    return_url = _cuentas_return_url(request)
     if request.method == 'POST':
         # Contar compras relacionadas
         compras_relacionadas = Compra.objects.filter(cuenta=cuenta, deleted_at__isnull=True).count()
@@ -1364,8 +1430,8 @@ def cuenta_delete(request, pk):
         else:
             messages.success(request, 'Cuenta eliminada exitosamente.')
         
-        return redirect('comercial:cuentas_list')
-    return redirect('comercial:cuentas_list')
+        return redirect(return_url)
+    return redirect(return_url)
 
 
 # TIPOS DE CUENTA
@@ -1702,6 +1768,7 @@ def ordenar_reporte_cobranzas(cobranzas, orden='fecha_desc'):
 @login_required
 def reportes(request):
     form = ReporteForm()
+    reporte_data = None
     
     # Obtener filtros
     fecha_desde = None
@@ -1729,35 +1796,36 @@ def reportes(request):
                 'estado_venta': list(estado_venta_filtro) if estado_venta_filtro else None,
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
-    
-    ventas_reporte = construir_reporte_ventas(
-        fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta,
-        cliente_filtro=cliente_filtro,
-        razon_social_filtro=razon_social_filtro,
-        estado_venta_filtro=estado_venta_filtro,
-        tipo_factura_filtro=tipo_factura_filtro,
-    )
-    
-    # Calcular totales
-    total_blanco = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Blanco')
-    total_negro = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Negro')
-    total = total_blanco + total_negro
-    
-    cantidad_blanco = len([i for i in ventas_reporte if i['tipo'] == 'Blanco'])
-    cantidad_negro = len([i for i in ventas_reporte if i['tipo'] == 'Negro'])
-    
-    reporte_data = {
-        'ventas': {
-            'total_blanco': total_blanco,
-            'total_negro': total_negro,
-            'total': total,
-            'cantidad_blanco': cantidad_blanco,
-            'cantidad_negro': cantidad_negro,
-            'cantidad': len(ventas_reporte),
-            'lista': ventas_reporte
-        }
-    }
+            ventas_reporte = construir_reporte_ventas(
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                cliente_filtro=cliente_filtro,
+                razon_social_filtro=razon_social_filtro,
+                estado_venta_filtro=estado_venta_filtro,
+                tipo_factura_filtro=tipo_factura_filtro,
+            )
+
+            # Calcular totales
+            total_blanco = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Blanco')
+            total_negro = sum(i['monto'] for i in ventas_reporte if i['tipo'] == 'Negro')
+            total = total_blanco + total_negro
+
+            cantidad_blanco = len([i for i in ventas_reporte if i['tipo'] == 'Blanco'])
+            cantidad_negro = len([i for i in ventas_reporte if i['tipo'] == 'Negro'])
+
+            reporte_data = {
+                'ventas': {
+                    'total_blanco': total_blanco,
+                    'total_negro': total_negro,
+                    'total': total,
+                    'cantidad_blanco': cantidad_blanco,
+                    'cantidad_negro': cantidad_negro,
+                    'cantidad': len(ventas_reporte),
+                    'lista': ventas_reporte
+                }
+            }
+    else:
+        request.session.pop('reporte_filtros', None)
     
     context = {
         'form': form,
@@ -1769,6 +1837,7 @@ def reportes(request):
 @login_required
 def reportes_cobranzas(request):
     form = ReporteForm()
+    reporte_data = None
 
     fecha_desde = None
     fecha_hasta = None
@@ -1791,40 +1860,40 @@ def reportes_cobranzas(request):
             numero_factura_filtro = form.cleaned_data.get('numero_factura')
             orden_cobranzas = form.cleaned_data.get('orden') or 'fecha_desc'
 
-    cobranzas = construir_reporte_cobranzas(
-        fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta,
-        cliente_filtro=cliente_filtro,
-        razon_social_filtro=razon_social_filtro,
-        estado_venta_filtro=estado_venta_filtro,
-        tipo_factura_filtro=tipo_factura_filtro,
-        numero_factura_filtro=numero_factura_filtro,
-    )
-    cobranzas = ordenar_reporte_cobranzas(cobranzas, orden_cobranzas)
+            cobranzas = construir_reporte_cobranzas(
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                cliente_filtro=cliente_filtro,
+                razon_social_filtro=razon_social_filtro,
+                estado_venta_filtro=estado_venta_filtro,
+                tipo_factura_filtro=tipo_factura_filtro,
+                numero_factura_filtro=numero_factura_filtro,
+            )
+            cobranzas = ordenar_reporte_cobranzas(cobranzas, orden_cobranzas)
 
-    total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')
-    total_negro = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Negro')
-    total = total_blanco + total_negro
-    cantidad_blanco = len([item for item in cobranzas if item['tipo'] == 'Blanco'])
-    cantidad_negro = len([item for item in cobranzas if item['tipo'] == 'Negro'])
-    cantidad_usd = len([item for item in cobranzas if item['pago_en_dolares'] and item['monto_usd']])
-    cantidad_senas = len([item for item in cobranzas if item['concepto'] == 'Seña inicial'])
-    cantidad_pagos = len(cobranzas) - cantidad_senas
+            total_blanco = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Blanco')
+            total_negro = sum(item['monto'] for item in cobranzas if item['tipo'] == 'Negro')
+            total = total_blanco + total_negro
+            cantidad_blanco = len([item for item in cobranzas if item['tipo'] == 'Blanco'])
+            cantidad_negro = len([item for item in cobranzas if item['tipo'] == 'Negro'])
+            cantidad_usd = len([item for item in cobranzas if item['pago_en_dolares'] and item['monto_usd']])
+            cantidad_senas = len([item for item in cobranzas if item['concepto'] == 'Seña inicial'])
+            cantidad_pagos = len(cobranzas) - cantidad_senas
 
-    reporte_data = {
-        'cobranzas': {
-            'total_blanco': total_blanco,
-            'total_negro': total_negro,
-            'total': total,
-            'cantidad_blanco': cantidad_blanco,
-            'cantidad_negro': cantidad_negro,
-            'cantidad': len(cobranzas),
-            'cantidad_usd': cantidad_usd,
-            'cantidad_senas': cantidad_senas,
-            'cantidad_pagos': cantidad_pagos,
-            'lista': cobranzas,
-        }
-    }
+            reporte_data = {
+                'cobranzas': {
+                    'total_blanco': total_blanco,
+                    'total_negro': total_negro,
+                    'total': total,
+                    'cantidad_blanco': cantidad_blanco,
+                    'cantidad_negro': cantidad_negro,
+                    'cantidad': len(cobranzas),
+                    'cantidad_usd': cantidad_usd,
+                    'cantidad_senas': cantidad_senas,
+                    'cantidad_pagos': cantidad_pagos,
+                    'lista': cobranzas,
+                }
+            }
 
     return render(request, 'comercial/reportes/reportes_cobranzas.html', {
         'form': form,
@@ -2029,6 +2098,7 @@ def reportes_gastos(request):
     from .forms import ReporteGastosForm
     
     form = ReporteGastosForm()
+    reporte_data = None
     
     fecha_desde = None
     fecha_hasta = None
@@ -2052,55 +2122,56 @@ def reportes_gastos(request):
                 'tipo_cuenta_id': [t.id for t in tipo_cuenta_filtro] if tipo_cuenta_filtro else None,
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
-    
-    gastos = []
-    compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta')
-    
-    if fecha_desde:
-        compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
-    if fecha_hasta:
-        compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
-    if cuenta_filtro:
-        compras_query = compras_query.filter(cuenta__in=cuenta_filtro)
-    if tipo_cuenta_filtro:
-        compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta_filtro)
-    if tipo_factura_filtro:
-        if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
-            compras_query = compras_query.filter(con_factura=True)
-        elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
-            compras_query = compras_query.filter(con_factura=False)
-    
-    for compra in compras_query:
-        gastos.append({
-            'fecha': compra.fecha_pago,
-            'numero_pedido': compra.numero_pedido or '-',
-            'numero_factura': compra.numero_factura or '-',
-            'cuenta': str(compra.cuenta),
-            'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
-            'monto': compra.valor_total,
-            'tipo': 'Blanco' if compra.con_factura else 'Negro'
-        })
-    
-    gastos.sort(key=lambda x: x['fecha'], reverse=True)
-    
-    total_blanco = sum(g['monto'] for g in gastos if g['tipo'] == 'Blanco')
-    total_negro = sum(g['monto'] for g in gastos if g['tipo'] == 'Negro')
-    total = total_blanco + total_negro
-    
-    cantidad_blanco = len([g for g in gastos if g['tipo'] == 'Blanco'])
-    cantidad_negro = len([g for g in gastos if g['tipo'] == 'Negro'])
-    
-    reporte_data = {
-        'gastos': {
-            'total_blanco': total_blanco,
-            'total_negro': total_negro,
-            'total': total,
-            'cantidad_blanco': cantidad_blanco,
-            'cantidad_negro': cantidad_negro,
-            'cantidad': len(gastos),
-            'lista': gastos
-        }
-    }
+            gastos = []
+            compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta')
+
+            if fecha_desde:
+                compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
+            if fecha_hasta:
+                compras_query = compras_query.filter(fecha_pago__lte=fecha_hasta)
+            if cuenta_filtro:
+                compras_query = compras_query.filter(cuenta__in=cuenta_filtro)
+            if tipo_cuenta_filtro:
+                compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta_filtro)
+            if tipo_factura_filtro:
+                if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
+                    compras_query = compras_query.filter(con_factura=True)
+                elif 'negro' in tipo_factura_filtro and 'blanco' not in tipo_factura_filtro:
+                    compras_query = compras_query.filter(con_factura=False)
+
+            for compra in compras_query:
+                gastos.append({
+                    'fecha': compra.fecha_pago,
+                    'numero_pedido': compra.numero_pedido or '-',
+                    'numero_factura': compra.numero_factura or '-',
+                    'cuenta': str(compra.cuenta),
+                    'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
+                    'monto': compra.valor_total,
+                    'tipo': 'Blanco' if compra.con_factura else 'Negro'
+                })
+
+            gastos.sort(key=lambda x: x['fecha'], reverse=True)
+
+            total_blanco = sum(g['monto'] for g in gastos if g['tipo'] == 'Blanco')
+            total_negro = sum(g['monto'] for g in gastos if g['tipo'] == 'Negro')
+            total = total_blanco + total_negro
+
+            cantidad_blanco = len([g for g in gastos if g['tipo'] == 'Blanco'])
+            cantidad_negro = len([g for g in gastos if g['tipo'] == 'Negro'])
+
+            reporte_data = {
+                'gastos': {
+                    'total_blanco': total_blanco,
+                    'total_negro': total_negro,
+                    'total': total,
+                    'cantidad_blanco': cantidad_blanco,
+                    'cantidad_negro': cantidad_negro,
+                    'cantidad': len(gastos),
+                    'lista': gastos
+                }
+            }
+    else:
+        request.session.pop('reporte_gastos_filtros', None)
     
     context = {
         'form': form,
@@ -2150,6 +2221,7 @@ def reporte_proveedor_detalle(request, pk):
 
     context = {
         'cuenta_corriente': cuenta_corriente,
+        'return_url': _reportes_proveedores_return_url(request),
     }
     return render(request, 'comercial/reportes/reporte_proveedor_detalle.html', context)
 

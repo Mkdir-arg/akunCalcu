@@ -258,7 +258,8 @@
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Cobrado en USD</span>
                             {% endif %}
                         </div>
-                        <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="mt-3 inline-block text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
+                        {% url 'comercial:venta_detail' item.venta_id as cobranza_venta_url %}
+                        <a href="{% with_return_to cobranza_venta_url request.get_full_path %}" class="mt-3 inline-block text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
                         <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }} · Factura {{ item.numero_factura }}</p>
                     </div>
                     <div class="text-right shrink-0">
@@ -315,7 +316,8 @@
                     {% for item in reporte_data.cobranzas.lista %}
                     <tr class="hover:bg-slate-50/80 align-top">
                         <td class="px-5 py-4">
-                            <a href="{% url 'comercial:venta_detail' item.venta_id %}" class="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
+                            {% url 'comercial:venta_detail' item.venta_id as cobranza_venta_desktop_url %}
+                            <a href="{% with_return_to cobranza_venta_desktop_url request.get_full_path %}" class="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
                             <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }}</p>
                             <p class="text-xs text-slate-400 mt-1">Factura {{ item.numero_factura }}</p>
                         </td>
@@ -372,12 +374,9 @@
     </div>
     {% else %}
     <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
-        <i class="fas fa-hand-holding-usd text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-2xl font-bold text-gray-700 mb-2">No hay cobranzas registradas</h3>
-        <p class="text-gray-500 mb-6">Comenzá registrando cobros en tus ventas para ver este reporte</p>
-        <a href="{% url 'comercial:ventas_list' %}" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-list mr-2"></i>Ver Ventas
-        </a>
+        <i class="fas fa-filter-circle-dollar text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-2xl font-bold text-gray-700 mb-2">Usá los filtros para generar el reporte</h3>
+        <p class="text-gray-500 mb-6">La vista inicial ya no procesa todos los movimientos de cobranza hasta que confirmás la búsqueda.</p>
     </div>
     {% endif %}
 </div>

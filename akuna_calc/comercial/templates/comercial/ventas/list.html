@@ -50,7 +50,8 @@
             </a>
 
             <!-- Acción principal -->
-            <a href="{% url 'comercial:venta_create' %}" class="btn-primary inline-flex items-center text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md">
+            {% url 'comercial:venta_create' as venta_create_url %}
+            <a href="{% with_return_to venta_create_url request.get_full_path %}" class="btn-primary inline-flex items-center text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md">
                 <i class="fas fa-plus mr-2"></i>Nueva Venta
             </a>
         </div>
@@ -216,12 +217,13 @@
                                 {% if venta.fecha_pago %}<span class="bg-green-50 px-2 py-1 rounded">{{ venta.fecha_pago|date:"d/m/Y" }}</span>{% else %}<span class="text-slate-300">-</span>{% endif %}
                             </td>
                             <td class="px-4 py-3">
-                                <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors block">{{ venta.cliente }}</a>
+                                {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
+                                <a href="{% with_return_to cliente_detail_url request.get_full_path %}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors block">{{ venta.cliente }}</a>
                                 {% if venta.cliente.razon_social %}<span class="text-xs text-slate-400">{{ venta.cliente.razon_social }}</span>{% endif %}
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <span class="text-sm font-semibold text-slate-800">${{ venta.get_total_con_percepciones|formato_numero }}</span>
-                                {% if venta.percepciones.exists %}<span class="text-xs text-blue-500 block">+percepciones</span>{% endif %}
+                                {% if venta.tiene_percepciones %}<span class="text-xs text-blue-500 block">+percepciones</span>{% endif %}
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <span class="text-sm font-bold {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}">${{ venta.saldo|formato_numero }}</span>
@@ -244,10 +246,11 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                                    <a href="{% url 'comercial:venta_detail' venta.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Ver">
+                                    {% url 'comercial:venta_detail' venta.pk as venta_detail_url %}
+                                    <a href="{% with_return_to venta_detail_url request.get_full_path %}" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Ver">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    {% if venta.pagos.exists %}
+                                    {% if venta.tiene_pagos %}
                                     <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer" class="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Vista previa del recibo PDF">
                                         <i class="fas fa-file-pdf"></i>
                                     </a>
@@ -256,7 +259,8 @@
                                         <i class="fas fa-file-pdf"></i>
                                     </span>
                                     {% endif %}
-                                    <a href="{% url 'comercial:venta_edit' venta.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Editar">
+                                    {% url 'comercial:venta_edit' venta.pk as venta_edit_url %}
+                                    <a href="{% with_return_to venta_edit_url request.get_full_path %}" class="bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg text-xs transition-all" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <button onclick="confirmarEliminacion('{% url 'comercial:venta_delete' venta.pk %}', '{{ venta.numero_pedido }}')" class="bg-slate-400 hover:bg-slate-600 text-white p-1.5 rounded-lg text-xs transition-all" title="Eliminar">
@@ -370,7 +374,8 @@
                             <span class="font-bold text-slate-800 text-sm">#{{ venta.numero_pedido }}</span>
                             <span class="text-xs text-slate-400">{{ venta.created_at|date:"d/m" }}</span>
                         </div>
-                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">{{ venta.cliente }}</a>
+                        {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_mobile_url %}
+                        <a href="{% with_return_to cliente_detail_mobile_url request.get_full_path %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">{{ venta.cliente }}</a>
                         {% if venta.venta_en_dolares or venta.sena_en_dolares %}
                         <div class="flex flex-wrap gap-1 mb-2">
                             {% if venta.venta_en_dolares %}
@@ -396,10 +401,11 @@
                             </div>
                         </div>
                         <div class="flex gap-1 mt-2 pt-2 border-t border-gray-100">
-                            <a href="{% url 'comercial:venta_detail' venta.pk %}" class="flex-1 text-center bg-slate-800 hover:bg-slate-900 text-white py-1 rounded-md text-xs font-semibold transition-all">
+                            {% url 'comercial:venta_detail' venta.pk as venta_detail_mobile_url %}
+                            <a href="{% with_return_to venta_detail_mobile_url request.get_full_path %}" class="flex-1 text-center bg-slate-800 hover:bg-slate-900 text-white py-1 rounded-md text-xs font-semibold transition-all">
                                 <i class="fas fa-eye mr-1"></i>Ver
                             </a>
-                            {% if venta.pagos.exists %}
+                            {% if venta.tiene_pagos %}
                             <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md text-xs font-semibold transition-all" title="Vista previa del recibo PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </a>

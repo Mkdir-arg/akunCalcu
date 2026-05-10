@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
 {% block title %}{{ presupuesto.numero }}{% endblock %}
 
 {% block extra_head %}
@@ -14,7 +15,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
             <div class="flex items-center gap-3 mb-1">
-                <a href="{% url 'presupuestos:presupuestos-lista' %}" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <a href="{{ return_url }}" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">{{ presupuesto.numero }}</h1>
@@ -34,7 +35,8 @@
         </div>
         <div class="flex gap-2 flex-wrap">
             {% if not presupuesto.esta_bloqueado %}
-            <a href="{% url 'presupuestos:presupuestos-editar' presupuesto.pk %}"
+            {% url 'presupuestos:presupuestos-editar' presupuesto.pk as presupuesto_edit_url %}
+            <a href="{% with_return_to presupuesto_edit_url request.get_full_path %}"
                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-edit mr-2"></i>Editar
             </a>

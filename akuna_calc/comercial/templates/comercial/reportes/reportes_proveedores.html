@@ -81,7 +81,8 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <a href="{% url 'comercial:reporte_proveedor_detalle' item.proveedor.id %}" class="inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">
+                            {% url 'comercial:reporte_proveedor_detalle' item.proveedor.id as proveedor_detalle_url %}
+                            <a href="{% with_return_to proveedor_detalle_url request.get_full_path %}" class="inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">
                                 <i class="fas fa-arrow-right mr-2"></i>Abrir panel
                             </a>
                         </td>

@@ -39,18 +39,19 @@
                             {% elif dias_abierta == 1 %}Hace 1 día
                             {% else %}Hace {{ dias_abierta }} días{% endif %}
                         </span>
-                        <a href="{% url 'comercial:cliente_detail' venta.cliente.pk %}" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100 hover:bg-white/20 transition-all">
+                        {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
+                        <a href="{% with_return_to cliente_detail_url request.get_full_path %}" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100 hover:bg-white/20 transition-all">
                             <i class="fas fa-user mr-2"></i>Ver cliente
                         </a>
                     </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 xl:min-w-[260px] xl:justify-end">
-                    <a href="{% url 'comercial:venta_edit' venta.pk %}"
+                    <a href="{{ venta_edit_url }}"
                        class="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-blue-900/20">
                         <i class="fas fa-edit mr-2"></i>Editar venta
                     </a>
-                    <a href="{% url 'comercial:ventas_list' %}"
+                    <a href="{{ return_url }}"
                        class="inline-flex items-center justify-center bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all border border-white/15">
                         <i class="fas fa-arrow-left mr-2"></i>Volver
                     </a>
@@ -104,7 +105,7 @@
                             <i class="fas fa-file-pdf mr-2"></i>Sin pagos
                         </span>
                         {% endif %}
-                        <a href="{% url 'comercial:duplicar_venta' venta.pk %}"
+                                <a href="{{ venta_duplicate_url }}"
                            onclick="return confirm('¿Duplicar esta venta?')"
                            class="inline-flex items-center bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all">
                             <i class="fas fa-copy mr-2"></i>Duplicar

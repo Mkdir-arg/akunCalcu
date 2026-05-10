@@ -1,6 +1,8 @@
 from django import template
 from decimal import Decimal
 
+from core.navigation import append_return_to
+
 register = template.Library()
 
 @register.filter(name='formato_numero')
@@ -41,3 +43,8 @@ def formato_numero(value):
     
     except (ValueError, TypeError, ArithmeticError):
         return '0,00'
+
+
+@register.simple_tag(name='with_return_to')
+def with_return_to(url, return_to=''):
+    return append_return_to(url, return_to)
