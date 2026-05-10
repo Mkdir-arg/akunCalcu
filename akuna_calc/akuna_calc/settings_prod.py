@@ -1,8 +1,4 @@
 from .settings import *
-import pymysql
-
-# Use PyMySQL instead of mysqlclient
-pymysql.install_as_MySQLdb()
 
 # Production settings
 DEBUG = False

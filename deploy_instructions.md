@@ -10,10 +10,6 @@
 ```python
 import os
 import sys
-import pymysql
-
-# Use PyMySQL instead of mysqlclient
-pymysql.install_as_MySQLdb()
 
 # Add your project directory to sys.path
 path = '/home/YOURUSERNAME/akunCalcu/akuna_calc'
@@ -34,15 +30,17 @@ application = get_wsgi_application()
 ### 4. Web App Configuration:
 - **Source code:** `/home/YOURUSERNAME/akunCalcu/akuna_calc`
 - **Static files:** `/static/` → `/home/YOURUSERNAME/akunCalcu/akuna_calc/staticfiles`
-- **Virtualenv:** (dejar vacío)
+- **Virtualenv:** `/home/YOURUSERNAME/akunCalcu/.venv`
 
 ### 5. Comandos de despliegue:
 ```bash
-cd akunCalcu/akuna_calc
-python3.10 manage.py migrate --settings=akuna_calc.settings_prod
-python3.10 manage.py collectstatic --noinput --settings=akuna_calc.settings_prod
-python3.10 manage.py createsuperuser --settings=akuna_calc.settings_prod
-python3.10 manage.py seed_productos --settings=akuna_calc.settings_prod
+cd /home/YOURUSERNAME/akunCalcu
+source .venv/bin/activate
+cd akuna_calc
+python manage.py migrate --settings=akuna_calc.settings_prod
+python manage.py collectstatic --noinput --settings=akuna_calc.settings_prod
+python manage.py createsuperuser --settings=akuna_calc.settings_prod
+python manage.py seed_productos --settings=akuna_calc.settings_prod
 ```
 
 ### 6. Después de cada cambio:

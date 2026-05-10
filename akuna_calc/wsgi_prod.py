@@ -1,12 +1,8 @@
 import os
 import sys
-import pymysql
-
-# Use PyMySQL instead of mysqlclient
-pymysql.install_as_MySQLdb()
 
 # Add your project directory to sys.path
-path = '/home/YOURUSERNAME/akunCalcu/akuna_calc'
+path = '/home/AKUN/akunCalcu/akuna_calc'
 if path not in sys.path:
     sys.path.insert(0, path)
 

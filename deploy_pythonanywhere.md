@@ -5,7 +5,11 @@
 
 ## 2. Instalar dependencias
 ```bash
-pip3.10 install --user -r requirements_prod.txt
+cd /home/yourusername/akunCalcu
+python3.10 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip setuptools wheel
+pip install -r requirements_prod.txt
 ```
 
 ## 3. Configurar base de datos
@@ -15,28 +19,29 @@ pip3.10 install --user -r requirements_prod.txt
 ## 4. Ejecutar migraciones
 ```bash
 cd /home/yourusername/akunCalcu/akuna_calc
-python3.10 manage.py migrate --settings=akuna_calc.settings_prod
+python manage.py migrate --settings=akuna_calc.settings_prod
 ```
 
 ## 5. Recolectar archivos estáticos
 ```bash
-python3.10 manage.py collectstatic --noinput --settings=akuna_calc.settings_prod
+python manage.py collectstatic --noinput --settings=akuna_calc.settings_prod
 ```
 
 ## 6. Crear superusuario
 ```bash
-python3.10 manage.py createsuperuser --settings=akuna_calc.settings_prod
+python manage.py createsuperuser --settings=akuna_calc.settings_prod
 ```
 
 ## 7. Cargar productos
 ```bash
-python3.10 manage.py seed_productos --settings=akuna_calc.settings_prod
+python manage.py seed_productos --settings=akuna_calc.settings_prod
 ```
 
 ## 8. Configurar Web App
 - Source code: `/home/yourusername/akunCalcu/akuna_calc`
 - WSGI file: `/home/yourusername/akunCalcu/akuna_calc/wsgi_prod.py`
 - Static files: URL `/static/` → Directory `/home/yourusername/akunCalcu/akuna_calc/staticfiles`
+- Virtualenv: `/home/yourusername/akunCalcu/.venv`
 
 ## 9. Reemplazar en archivos:
 - `yourusername` → tu usuario de PythonAnywhere
