@@ -79,7 +79,7 @@ def lista(request):
         'monto_confirmado': monto_confirmado,
     }
 
-    qs = Presupuesto.objects.select_related('cliente', 'created_by')
+    qs = Presupuesto.objects.select_related('cliente', 'created_by').annotate(item_count=Count('items'))
 
     estado = request.GET.get('estado', '')
     cliente_q = request.GET.get('cliente', '')

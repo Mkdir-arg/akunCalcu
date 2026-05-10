@@ -239,6 +239,37 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
         self.assertEqual(res.status_code, 200)
 
+    def test_lista_anota_cantidad_de_items_por_presupuesto(self):
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        ItemPresupuesto.objects.create(
+            presupuesto=presupuesto,
+            descripcion='Ventana',
+            cantidad=1,
+            ancho_mm=1000,
+            alto_mm=1200,
+            margen_porcentaje=25,
+            precio_unitario=500,
+            resultado_json={},
+        )
+        ItemPresupuesto.objects.create(
+            presupuesto=presupuesto,
+            descripcion='Puerta',
+            cantidad=2,
+            ancho_mm=900,
+            alto_mm=2100,
+            margen_porcentaje=30,
+            precio_unitario=800,
+            resultado_json={},
+        )
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        presupuestos = list(res.context['presupuestos'])
+        self.assertEqual(presupuestos[0].item_count, 2)
+        self.assertContains(res, '>2<', html=True)
+
     def test_crear_requiere_login(self):
         res = self.client.get('/presupuestos/nuevo/')
         self.assertEqual(res.status_code, 302)

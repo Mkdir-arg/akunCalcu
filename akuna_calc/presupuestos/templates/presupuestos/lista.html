@@ -112,7 +112,7 @@
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ p.numero }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ p.cliente.get_nombre_completo }}</td>
-                        <td class="px-6 py-4 text-center text-sm text-slate-600">{{ p.items.count }}</td>
+                        <td class="px-6 py-4 text-center text-sm text-slate-600">{{ p.item_count }}</td>
                         <td class="px-6 py-4 text-center">
                             {% if p.estado == 'borrador' %}
                                 <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Borrador</span>

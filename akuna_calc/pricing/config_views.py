@@ -170,7 +170,7 @@ def producto_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def marcos_config(request):
-    marcos = Marco.objects.select_related('producto').exclude(bloqueado='Si')
+    marcos = Marco.objects.select_related('producto', 'producto__extrusora', 'producto__linea').exclude(bloqueado='Si')
     productos = Producto.objects.exclude(bloqueado='Si')
     return render(request, 'pricing/config/marcos.html', {'marcos': marcos, 'productos': productos})
 
@@ -353,7 +353,12 @@ def marco_formulas_guardar(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def hojas_config(request):
-    hojas = Hoja.objects.select_related('marco').exclude(bloqueado='Si')
+    hojas = Hoja.objects.select_related(
+        'marco',
+        'marco__producto',
+        'marco__producto__extrusora',
+        'marco__producto__linea',
+    ).exclude(bloqueado='Si')
     marcos = Marco.objects.exclude(bloqueado='Si')
     return render(request, 'pricing/config/hojas.html', {'hojas': hojas, 'marcos': marcos})
 
@@ -636,7 +641,13 @@ def hoja_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def interiores_config(request):
-    interiores = Interior.objects.select_related('hoja').exclude(bloqueado='Si')
+    interiores = Interior.objects.select_related(
+        'hoja',
+        'hoja__marco',
+        'hoja__marco__producto',
+        'hoja__marco__producto__extrusora',
+        'hoja__marco__producto__linea',
+    ).exclude(bloqueado='Si')
     hojas = Hoja.objects.exclude(bloqueado='Si')
     return render(request, 'pricing/config/interiores.html', {'interiores': interiores, 'hojas': hojas})
 
@@ -682,7 +693,7 @@ def interior_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def perfiles_config(request):
-    perfiles = Perfil.objects.exclude(bloqueado='Si')[:200]
+    perfiles = Perfil.objects.select_related('linea').exclude(bloqueado='Si')[:200]
     return render(request, 'pricing/config/perfiles.html', {'perfiles': perfiles})
 
 
