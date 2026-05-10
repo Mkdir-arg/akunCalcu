@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Auditoría{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Auditoría</h1>
+            <p class="text-slate-500 font-medium mt-1">Trazabilidad de acciones de usuarios en el sistema</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-3 mb-6">
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'security:backup_list' %}" class="bg-gray-100 hover:bg-gray-200 text-slate-700 px-5 py-2 rounded-xl font-semibold">Backups</a>
+            <a href="{% url 'security:audit_list' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2 rounded-xl font-semibold">Auditoría</a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+        <form method="get">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Usuario</label>
+                    <input type="text" name="username" value="{{ filters.username }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Acción</label>
+                    <select name="action" class="w-full px-4 py-2 border border-gray-300 rounded-lg no-select2">
+                        <option value="">Todas</option>
+                        {% for value, label in action_choices %}
+                        <option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Módulo</label>
+                    <select name="module" class="w-full px-4 py-2 border border-gray-300 rounded-lg no-select2">
+                        <option value="">Todos</option>
+                        {% for value, label in module_options %}
+                        <option value="{{ value }}" {% if filters.module == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Desde</label>
+                    <input type="date" name="date_from" value="{{ filters.date_from }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Hasta</label>
+                    <input type="date" name="date_to" value="{{ filters.date_to }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t">
+                <a href="{% url 'security:audit_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Limpiar</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Usuario</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Acción</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Módulo</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Referencia</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for log in logs %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ log.username|default:"-" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold {% if log.level == 'ERROR' %}bg-red-100 text-red-800{% elif log.action == 'DELETE' %}bg-gray-200 text-gray-800{% elif log.action == 'UPDATE' %}bg-blue-100 text-blue-800{% elif log.action == 'LOGIN_FAILED' %}bg-yellow-100 text-yellow-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ log.get_action_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ log.module_label }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ log.object_reference|default:'-' }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ log.description }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay eventos de auditoría</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-between items-center mt-6 bg-white rounded-2xl shadow-lg p-4">
+        <p class="text-sm text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</p>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&username={{ filters.username }}&action={{ filters.action }}&module={{ filters.module }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold">Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&username={{ filters.username }}&action={{ filters.action }}&module={{ filters.module }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold">Siguiente</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -87,21 +87,40 @@ def _rename_accesorio_codigo_references(old_codigo, new_codigo):
 
 
 def _save_accesorio_edit(old_codigo, cleaned_data):
-    update_data = {
-        'codigo': cleaned_data['codigo'],
-        'descripcion': cleaned_data['descripcion'],
-        'cant': cleaned_data['cant'],
-        'tipo': cleaned_data['tipo'],
-        'tipo_calculo': cleaned_data['tipo_calculo'],
-        'formula_calculo': cleaned_data['formula_calculo'],
-        'precio': cleaned_data['precio'],
-    }
-
+    new_codigo = cleaned_data['codigo']
+    
     with transaction.atomic():
-        updated_rows = Accesorio.objects.filter(pk=old_codigo).update(**update_data)
-        if not updated_rows:
-            raise Accesorio.DoesNotExist(old_codigo)
-        _rename_accesorio_codigo_references(old_codigo, update_data['codigo'])
+        # Si el código cambió, necesitamos eliminar y recrear
+        if old_codigo != new_codigo:
+            # Primero actualizar todas las referencias
+            _rename_accesorio_codigo_references(old_codigo, new_codigo)
+            
+            # Eliminar el registro viejo
+            Accesorio.objects.filter(pk=old_codigo).delete()
+            
+            # Crear el nuevo registro con el nuevo código
+            Accesorio.objects.create(
+                codigo=new_codigo,
+                descripcion=cleaned_data['descripcion'],
+                cant=cleaned_data['cant'],
+                tipo=cleaned_data['tipo'],
+                tipo_calculo=cleaned_data['tipo_calculo'],
+                formula_calculo=cleaned_data['formula_calculo'],
+                precio=cleaned_data['precio'],
+            )
+        else:
+            # Si el código no cambió, solo actualizar los demás campos
+            update_data = {
+                'descripcion': cleaned_data['descripcion'],
+                'cant': cleaned_data['cant'],
+                'tipo': cleaned_data['tipo'],
+                'tipo_calculo': cleaned_data['tipo_calculo'],
+                'formula_calculo': cleaned_data['formula_calculo'],
+                'precio': cleaned_data['precio'],
+            }
+            updated_rows = Accesorio.objects.filter(pk=old_codigo).update(**update_data)
+            if not updated_rows:
+                raise Accesorio.DoesNotExist(old_codigo)
 
 
 # ─── EXTRUSORAS ───────────────────────────────────────────────────────────────

@@ -12,4 +12,5 @@ urlpatterns = [
     path('backups/<int:pk>/download/', views.backup_download, name='backup_download'),
     path('backups/<int:pk>/delete/', views.backup_delete, name='backup_delete'),
     path('backups/settings/', views.backup_settings, name='backup_settings'),
+    path('audit/', views.audit_list, name='audit_list'),
 ]

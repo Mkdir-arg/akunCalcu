@@ -111,9 +111,10 @@ ACCESS_MODULES = [
         'key': 'seguridad',
         'label': 'Seguridad',
         'icon': 'fas fa-shield-alt',
-        'dropdown': False,
+        'dropdown': True,
         'items': [
-            {'code': 'seguridad.backups', 'label': 'Seguridad', 'route_name': 'security:backup_login'},
+            {'code': 'seguridad.backups', 'label': 'Backups', 'route_name': 'security:backup_login'},
+            {'code': 'seguridad.auditoria', 'label': 'Auditoría', 'route_name': 'security:audit_list'},
         ],
     },
     {
@@ -214,6 +215,7 @@ _register_route('facturacion.facturas', 'facturacion:crear_factura', 'facturacio
 _register_route('facturacion.puntos_venta', 'facturacion:punto_venta_create', 'facturacion:punto_venta_edit')
 
 _register_route('seguridad.backups', 'security:backup_logout', 'security:backup_list', 'security:backup_create', 'security:backup_download', 'security:backup_delete', 'security:backup_settings')
+_register_route('seguridad.auditoria', 'security:audit_list')
 
 _register_route('configuracion.usuarios', 'user_create', 'user_update', 'user_toggle')
 _register_route('configuracion.general', 'configuracion-hora-hombre')

@@ -1,14 +1,31 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.management import call_command
-from .models import Backup, SecuritySettings
+from django.core.paginator import Paginator
+
+from .models import AuditLog, Backup, SecuritySettings
 import os
 
 
 BACKUP_PASSWORD = "Modeoffputin.1167252190@!"
+
+
+AUDIT_MODULE_OPTIONS = [
+    ('security', 'Seguridad'),
+    ('comercial', 'Comercial'),
+    ('reportes', 'Reportes'),
+    ('productos', 'Productos'),
+    ('despiece', 'Despiece'),
+    ('fabrica', 'Fábrica'),
+    ('facturacion', 'Facturación'),
+    ('presupuestos', 'Presupuestos'),
+    ('configuracion', 'Configuración'),
+    ('otros', 'Otros'),
+]
 
 
 @login_required
@@ -44,6 +61,117 @@ def backup_required(view_func):
             return redirect('security:backup_login')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def _get_audit_module(path):
+    if not path:
+        return 'otros'
+
+    normalized_path = path.lower()
+    module_prefix_map = [
+        ('/security/', 'security'),
+        ('/comercial/reportes/', 'reportes'),
+        ('/comercial/', 'comercial'),
+        ('/productos/', 'productos'),
+        ('/plantillas/', 'despiece'),
+        ('/pricing/', 'fabrica'),
+        ('/facturacion/', 'facturacion'),
+        ('/presupuestos/', 'presupuestos'),
+        ('/configuracion/', 'configuracion'),
+        ('/admin-usuarios/', 'configuracion'),
+        ('/login/', 'security'),
+        ('/logout/', 'security'),
+    ]
+
+    for prefix, module_key in module_prefix_map:
+        if normalized_path.startswith(prefix):
+            return module_key
+
+    return 'otros'
+
+
+def _get_audit_module_label(path):
+    module_key = _get_audit_module(path)
+    options_map = dict(AUDIT_MODULE_OPTIONS)
+    return options_map.get(module_key, 'Otros')
+
+
+def _build_module_query(module_key):
+    if module_key == 'otros':
+        return ~Q(path__startswith='/security/') & ~Q(path__startswith='/comercial/') & ~Q(path__startswith='/productos/') & ~Q(path__startswith='/plantillas/') & ~Q(path__startswith='/pricing/') & ~Q(path__startswith='/facturacion/') & ~Q(path__startswith='/presupuestos/') & ~Q(path__startswith='/configuracion/') & ~Q(path__startswith='/admin-usuarios/') & ~Q(path__startswith='/login/') & ~Q(path__startswith='/logout/')
+
+    if module_key == 'security':
+        return Q(path__startswith='/security/') | Q(path__startswith='/login/') | Q(path__startswith='/logout/')
+
+    if module_key == 'reportes':
+        return Q(path__startswith='/comercial/reportes/')
+
+    if module_key == 'comercial':
+        return Q(path__startswith='/comercial/') & ~Q(path__startswith='/comercial/reportes/')
+
+    module_prefix_map = {
+        'productos': ['/productos/'],
+        'despiece': ['/plantillas/'],
+        'fabrica': ['/pricing/'],
+        'facturacion': ['/facturacion/'],
+        'presupuestos': ['/presupuestos/'],
+        'configuracion': ['/configuracion/', '/admin-usuarios/'],
+    }
+
+    prefixes = module_prefix_map.get(module_key, [])
+
+    query = Q()
+    for prefix in prefixes:
+        query |= Q(path__startswith=prefix)
+    return query
+
+
+@login_required
+def audit_list(request):
+    logs = AuditLog.objects.select_related('user').all().order_by('-timestamp')
+
+    username = request.GET.get('username', '').strip()
+    action = request.GET.get('action', '').strip()
+    module = request.GET.get('module', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+
+    if username:
+        logs = logs.filter(username__icontains=username)
+
+    if action:
+        logs = logs.filter(action=action)
+
+    if date_from:
+        logs = logs.filter(timestamp__date__gte=date_from)
+
+    if date_to:
+        logs = logs.filter(timestamp__date__lte=date_to)
+
+    if module:
+        logs = logs.filter(_build_module_query(module))
+
+    paginator = Paginator(logs, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    for log in page_obj:
+        log.module_label = _get_audit_module_label(log.path)
+        log.object_reference = log.object_repr or log.object_id or log.path
+
+    context = {
+        'logs': page_obj,
+        'page_obj': page_obj,
+        'action_choices': AuditLog.ACTION_CHOICES,
+        'module_options': AUDIT_MODULE_OPTIONS,
+        'filters': {
+            'username': username,
+            'action': action,
+            'module': module,
+            'date_from': date_from,
+            'date_to': date_to,
+        },
+    }
+    return render(request, 'security/audit_list.html', context)
 
 
 @login_required

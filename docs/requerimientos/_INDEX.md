@@ -39,3 +39,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-017](./REQ-017-compras-y-pagos-de-compra-en-dolares.md) | Compras y pagos de compra en dólares | En desarrollo | 2026-05-04 | — |
 | [REQ-018](./REQ-018-recargos-obra-nueva-renovacion-y-fix-desglose-presupuesto.md) | Recargos por obra nueva o renovación + fix de desglose en presupuestos | En desarrollo | 2026-05-07 | — |
 | [REQ-019](./REQ-019-roles-permisos-por-modulo-y-opcion.md) | Roles y permisos por módulo y opción | Implementado | 2026-05-09 | FEAT-009 |
+| [REQ-020](./REQ-020-auditoria-actividad-usuarios.md) | Auditoría de actividad de usuarios | En desarrollo | 2026-05-10 | — |

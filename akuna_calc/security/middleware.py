@@ -33,51 +33,99 @@ class AuditMiddleware(MiddlewareMixin):
         if not settings.log_all_actions:
             return response
         
-        # Solo auditar acciones importantes (POST, PUT, DELETE)
-        if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+        if self._should_audit(request):
             self._create_audit_log(request, response)
         
         return response
     
     def _create_audit_log(self, request, response):
         try:
-            # Determinar acción
             action = self._get_action(request)
-            
-            # Obtener datos del request
+            if request.path == '/login/' and response.status_code != 302:
+                action = 'LOGIN_FAILED'
             user = request.user if request.user.is_authenticated else None
-            username = user.username if user else 'Anonymous'
-            
-            # Obtener IP
+            username = user.username if user else request.POST.get('username', 'Anonymous')
             ip_address = self._get_client_ip(request)
-            
-            # Crear log
+            status_level = 'ERROR' if response.status_code >= 400 else 'INFO'
+            if action == 'LOGIN_FAILED':
+                status_level = 'WARNING'
+
+            resolver_match = getattr(request, 'resolver_match', None)
+            route_name = resolver_match.view_name if resolver_match else ''
+            object_id = ''
+            if resolver_match:
+                object_id = str(resolver_match.kwargs.get('pk') or resolver_match.kwargs.get('id') or '')
+
             AuditLog.objects.create(
                 user=user,
                 username=username,
                 action=action,
-                level='INFO',
+                level=status_level,
+                model_name=route_name[:100],
+                object_id=object_id,
+                object_repr=request.POST.get('nombre', '')[:200] if request.method == 'POST' else '',
                 path=request.path,
                 method=request.method,
                 ip_address=ip_address,
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
-                description=f"{request.method} {request.path}",
+                description=f"{request.method} {request.path} ({response.status_code})",
             )
         except Exception as e:
             # No fallar si hay error en auditoría
             print(f"Error en auditoría: {e}")
+
+    def _should_audit(self, request):
+        if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+            return True
+        return request.path in ['/login/', '/logout/']
     
     def _get_action(self, request):
-        """Determinar tipo de acción según método HTTP"""
+        """Determinar tipo de acción según método HTTP y ruta."""
+        path = request.path.lower()
+        route_name = ''
+        if getattr(request, 'resolver_match', None):
+            route_name = (request.resolver_match.view_name or '').lower()
+
+        if path == '/login/':
+            return 'LOGIN'
+
+        if path == '/logout/':
+            return 'LOGOUT'
+
         if request.method == 'POST':
-            if 'delete' in request.path.lower():
+            if any(token in path or token in route_name for token in ['delete', 'eliminar']):
                 return 'DELETE'
+            if any(token in path or token in route_name for token in ['edit', 'editar', 'update']):
+                return 'UPDATE'
+            if any(token in path or token in route_name for token in ['login']):
+                return 'LOGIN'
             return 'CREATE'
         elif request.method in ['PUT', 'PATCH']:
             return 'UPDATE'
         elif request.method == 'DELETE':
             return 'DELETE'
         return 'VIEW'
+
+    def process_exception(self, request, exception):
+        if not self._should_audit(request):
+            return None
+
+        try:
+            user = request.user if request.user.is_authenticated else None
+            AuditLog.objects.create(
+                user=user,
+                username=user.username if user else request.POST.get('username', 'Anonymous'),
+                action='LOGIN_FAILED' if request.path == '/login/' else self._get_action(request),
+                level='ERROR',
+                path=request.path,
+                method=request.method,
+                ip_address=self._get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+                description=f"{request.method} {request.path} - error: {exception}",
+            )
+        except Exception:
+            pass
+        return None
     
     def _get_client_ip(self, request):
         """Obtener IP real del cliente"""
