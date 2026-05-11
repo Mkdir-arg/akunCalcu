@@ -865,8 +865,7 @@ def accesorio_edit(request, codigo, tipo):
 def accesorio_delete(request, codigo, tipo):
     obj = get_object_or_404(Accesorio, codigo=codigo, tipo=tipo)
     if request.method == 'POST':
-        obj.bloqueado = 'Si'
-        obj.save()
+        Accesorio.objects.filter(codigo=obj.codigo, tipo=obj.tipo).update(bloqueado='Si')
         messages.success(request, 'Accesorio desactivado.')
     return redirect('config-accesorios')
 

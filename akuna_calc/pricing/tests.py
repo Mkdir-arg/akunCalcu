@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from plantillas.models import FormulaOpcional, OpcionalFabrica
 from pricing import config_views
 from pricing.models import Accesorio
-from pricing.forms import AccesorioEditForm
+from pricing.forms import AccesorioCreateForm, AccesorioEditForm
 from pricing.services.calculator import PriceCalculator
 
 User = get_user_model()
@@ -134,6 +134,33 @@ class PriceCalculatorAccesorioLookupTest(SimpleTestCase):
         qs.filter.assert_called_once_with(tipo='hoja')
 
 
+class AccesorioModelContractTest(SimpleTestCase):
+    def test_codigo_is_the_configured_primary_key(self):
+        self.assertEqual(Accesorio._meta.pk.name, 'codigo')
+
+
+class AccesorioCreateFormTest(SimpleTestCase):
+    @patch('pricing.forms.Accesorio.objects.filter')
+    def test_create_form_rechaza_codigo_y_tipo_duplicados(self, mock_filter):
+        mock_filter.return_value.exists.return_value = True
+
+        form = AccesorioCreateForm(
+            data={
+                'codigo': 'T93',
+                'descripcion': 'Cierre',
+                'cant': 1,
+                'tipo': 'hoja',
+                'tipo_calculo': 'unidad',
+                'formula_calculo': '',
+                'precio': 10,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('codigo', form.errors)
+        mock_filter.assert_called_once_with(codigo='T93', tipo='hoja')
+
+
 class AccesorioEditFormTest(SimpleTestCase):
     def test_edit_form_expone_codigo(self):
         form = AccesorioEditForm()
@@ -143,7 +170,9 @@ class AccesorioEditFormTest(SimpleTestCase):
             ['codigo', 'descripcion', 'cant', 'tipo', 'tipo_calculo', 'formula_calculo', 'precio'],
         )
 
-    def test_bound_form_actualiza_la_instancia_con_el_codigo_posteado(self):
+    @patch('pricing.forms.Accesorio.objects.filter')
+    def test_bound_form_actualiza_la_instancia_con_el_codigo_posteado(self, mock_filter):
+        mock_filter.return_value.exists.return_value = False
         instance = Accesorio(codigo='B-52', descripcion='Original')
         form = AccesorioEditForm(
             data={
@@ -158,9 +187,9 @@ class AccesorioEditFormTest(SimpleTestCase):
             instance=instance,
         )
 
-        with patch.object(AccesorioEditForm, 'validate_unique', autospec=True):
-            self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid())
         self.assertEqual(instance.codigo, 'B52')
+        mock_filter.assert_called_once_with(codigo='B52', tipo='marco')
 
 
 class AccesorioEditHelpersTest(SimpleTestCase):
@@ -204,15 +233,17 @@ class AccesorioEditHelpersTest(SimpleTestCase):
         )
 
     @patch('pricing.config_views._rename_accesorio_codigo_references')
+    @patch('pricing.config_views.Accesorio.objects.create')
     @patch('pricing.config_views.Accesorio.objects.filter')
     @patch('pricing.config_views.transaction.atomic')
-    def test_save_helper_actualiza_fila_y_referencias(self, mock_atomic, mock_filter, mock_rename):
+    def test_save_helper_recrea_fila_y_referencias_si_cambia_la_clave(self, mock_atomic, mock_filter, mock_create, mock_rename):
         mock_atomic.return_value.__enter__.return_value = None
         mock_atomic.return_value.__exit__.return_value = False
-        mock_filter.return_value.update.return_value = 1
+        mock_filter.return_value.delete.return_value = (1, {'pricing.Accesorio': 1})
 
         config_views._save_accesorio_edit(
             'B-68',
+            'hoja',
             {
                 'codigo': 'B-69',
                 'descripcion': 'Accesorio actualizado',
@@ -224,8 +255,9 @@ class AccesorioEditHelpersTest(SimpleTestCase):
             },
         )
 
-        mock_filter.assert_called_once_with(pk='B-68')
-        mock_filter.return_value.update.assert_called_once_with(
+        mock_filter.assert_called_once_with(codigo='B-68', tipo='hoja')
+        mock_filter.return_value.delete.assert_called_once_with()
+        mock_create.assert_called_once_with(
             codigo='B-69',
             descripcion='Accesorio actualizado',
             cant=2,

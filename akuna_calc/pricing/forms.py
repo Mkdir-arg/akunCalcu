@@ -283,7 +283,33 @@ class PerfilEditForm(forms.ModelForm):
         }
 
 
-class AccesorioCreateForm(forms.ModelForm):
+class BaseAccesorioForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_codigo = getattr(self.instance, 'codigo', None)
+        self._original_tipo = getattr(self.instance, 'tipo', None)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        codigo = cleaned_data.get('codigo')
+        tipo = cleaned_data.get('tipo')
+
+        if not codigo:
+            return cleaned_data
+
+        if codigo == self._original_codigo and tipo == self._original_tipo:
+            return cleaned_data
+
+        if Accesorio.objects.filter(codigo=codigo, tipo=tipo).exists():
+            self.add_error('codigo', 'Ya existe un accesorio con ese codigo y tipo.')
+
+        return cleaned_data
+
+    def validate_unique(self):
+        return
+
+
+class AccesorioCreateForm(BaseAccesorioForm):
     TIPO_CHOICES = [
         ('', '---------'),
         ('hoja', 'Hoja'),
@@ -325,7 +351,7 @@ class AccesorioCreateForm(forms.ModelForm):
         }
 
 
-class AccesorioEditForm(forms.ModelForm):
+class AccesorioEditForm(BaseAccesorioForm):
     TIPO_CHOICES = [
         ('', '---------'),
         ('hoja', 'Hoja'),

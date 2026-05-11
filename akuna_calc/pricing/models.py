@@ -264,7 +264,7 @@ class Perfil(models.Model):
 
 
 class Accesorio(models.Model):
-    codigo = models.TextField(db_column="COD_PARTE")
+    codigo = models.TextField(db_column="COD_PARTE", primary_key=True)
     color_id = models.IntegerField(db_column="Idcolor", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
     precio = models.FloatField(db_column="PRECIO", null=True, blank=True)
