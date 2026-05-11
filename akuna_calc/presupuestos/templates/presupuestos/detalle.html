@@ -61,6 +61,10 @@
                 class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-receipt mr-2"></i>Recibo
             </a>
+            <button onclick="confirmarEliminarPresupuesto()"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
+                <i class="fas fa-trash mr-2"></i>Eliminar
+            </button>
         </div>
     </div>
 
@@ -190,6 +194,12 @@
                         <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_total_renovacion|floatformat:2 }}</span>
                     </div>
                     {% endif %}
+                    {% if presupuesto.aplicar_iva %}
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-500">IVA (21%)</span>
+                        <span class="font-semibold text-slate-700">${{ presupuesto.get_iva|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
                     <div class="pt-2 border-t flex justify-between items-center">
                         <span class="font-bold text-slate-600">Total presupuesto</span>
                         <span class="text-2xl font-bold text-blue-600">${{ presupuesto.total|floatformat:2 }}</span>
@@ -281,6 +291,14 @@
                             <p class="text-xs text-slate-400 mt-1">Este valor se suma a cada unidad agregada al presupuesto.</p>
                             {% if configuracion_form.recargo_renovacion_unitario.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_renovacion_unitario.errors.0 }}</p>{% endif %}
                         </div>
+                        <div class="border-t pt-3">
+                            <label class="flex items-center cursor-pointer">
+                                {{ configuracion_form.aplicar_iva }}
+                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.aplicar_iva.label }}</span>
+                            </label>
+                            <p class="text-xs text-slate-400 mt-1 ml-6">Se agregará el 21% de IVA al total del presupuesto.</p>
+                            {% if configuracion_form.aplicar_iva.errors %}<p class="text-red-600 text-xs mt-1 ml-6">{{ configuracion_form.aplicar_iva.errors.0 }}</p>{% endif %}
+                        </div>
                     </div>
                     <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-semibold text-sm transition-colors">
                         Guardar configuración
@@ -361,6 +379,12 @@
                         <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_total_renovacion|floatformat:2 }}</span>
                     </div>
                     {% endif %}
+                    {% if presupuesto.aplicar_iva %}
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">IVA (21%)</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_iva|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
                     <div class="border-t pt-2 mt-2 flex justify-between">
                         <span class="font-bold text-slate-700">Total</span>
                         <span class="font-bold text-blue-600 text-lg">${{ presupuesto.total|floatformat:2 }}</span>
@@ -371,6 +395,11 @@
         </div>
     </div>
 </div>
+
+<!-- Formulario oculto para eliminar presupuesto -->
+<form id="form-eliminar-presupuesto" method="post" action="{% url 'presupuestos:presupuestos-eliminar' presupuesto.pk %}" style="display:none">
+    {% csrf_token %}
+</form>
 
 <!-- ===== MODAL AGREGAR ITEM ===== -->
 {% if not presupuesto.esta_bloqueado %}
@@ -427,6 +456,23 @@
 {% block extra_js %}
 <script>
 // -- Modales y acciones --
+function confirmarEliminarPresupuesto() {
+    Swal.fire({
+        title: '¿Eliminar presupuesto?',
+        html: '<p>¿Estás seguro de eliminar el presupuesto <strong>{{ presupuesto.numero }}</strong>?</p><p class="text-sm text-red-600 mt-2">Esta acción no se puede deshacer. Se eliminarán todos los ítems y comentarios asociados.</p>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form-eliminar-presupuesto').submit();
+        }
+    });
+}
+
 function confirmarEliminarItem(form, nombre) {
     Swal.fire({
         title: 'Eliminar item?',

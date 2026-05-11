@@ -30,11 +30,12 @@ class PresupuestoForm(forms.ModelForm):
 class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['tipo_obra', 'recargo_obra_nueva', 'recargo_renovacion_unitario']
+        fields = ['tipo_obra', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva']
         widgets = {
             'tipo_obra': forms.Select(attrs={'class': 'no-select2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_obra_nueva': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_renovacion_unitario': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'aplicar_iva': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
         }
 
     def __init__(self, *args, **kwargs):

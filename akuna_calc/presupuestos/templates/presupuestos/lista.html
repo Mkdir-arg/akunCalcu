@@ -141,6 +141,10 @@
                                     class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-file-pdf mr-1"></i>PDF
                                 </a>
+                                <button onclick="confirmarEliminar('{% url 'presupuestos:presupuestos-eliminar' p.pk %}', '{{ p.numero }}', {{ p.item_count }})"
+                                    class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -158,4 +162,37 @@
         </div>
     </div>
 </div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarEliminar(url, numero, itemCount) {
+    const itemsText = itemCount > 0 ? `<p class="text-sm text-gray-600 mt-2">Este presupuesto tiene <strong>${itemCount}</strong> ítem${itemCount > 1 ? 's' : ''}.</p>` : '';
+    
+    Swal.fire({
+        title: '¿Eliminar presupuesto?',
+        html: `<p>¿Estás seguro de eliminar el presupuesto <strong>${numero}</strong>?</p>${itemsText}<p class="text-sm text-red-600 mt-2">Esta acción no se puede deshacer.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
 {% endblock %}

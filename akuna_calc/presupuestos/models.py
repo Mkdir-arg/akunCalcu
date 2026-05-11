@@ -61,6 +61,10 @@ class Presupuesto(models.Model):
         default=0,
         verbose_name='Recargo renovación por unidad',
     )
+    aplicar_iva = models.BooleanField(
+        default=False,
+        verbose_name='Aplicar IVA 21%',
+    )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total')
     created_by = models.ForeignKey(
         User,
@@ -76,6 +80,19 @@ class Presupuesto(models.Model):
         related_name='presupuestos',
         verbose_name='Venta asociada',
     )
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha de eliminación',
+    )
+    deleted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='presupuestos_eliminados',
+        verbose_name='Eliminado por',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -89,6 +106,9 @@ class Presupuesto(models.Model):
 
     def esta_bloqueado(self):
         return self.estado in ('confirmado', 'cancelado')
+
+    def esta_eliminado(self):
+        return self.deleted_at is not None
 
     def get_total_items(self):
         return sum((item.precio_total for item in self.items.all()), Decimal('0'))
@@ -108,9 +128,18 @@ class Presupuesto(models.Model):
         for item in self.items.all():
             item.aplicar_recargo_renovacion(recargo_unitario)
 
+    def get_subtotal_sin_iva(self):
+        return self.get_total_items() + self.get_recargo_obra_nueva_aplicado()
+
+    def get_iva(self):
+        if not self.aplicar_iva:
+            return Decimal('0')
+        return self.get_subtotal_sin_iva() * Decimal('0.21')
+
     def recalcular_total(self):
-        total = self.get_total_items() + self.get_recargo_obra_nueva_aplicado()
-        self.total = total
+        subtotal = self.get_subtotal_sin_iva()
+        iva = self.get_iva()
+        self.total = subtotal + iva
         self.save(update_fields=['total'])
 
     @classmethod

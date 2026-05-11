@@ -60,7 +60,7 @@ def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form
 
 @login_required
 def lista(request):
-    all_qs = Presupuesto.objects.all()
+    all_qs = Presupuesto.objects.filter(deleted_at__isnull=True)
     
     # Calcular KPIs manualmente para evitar problemas con Sum en versiones antiguas
     total_count = all_qs.count()
@@ -79,7 +79,7 @@ def lista(request):
         'monto_confirmado': monto_confirmado,
     }
 
-    qs = Presupuesto.objects.select_related('cliente', 'created_by').annotate(item_count=Count('items'))
+    qs = Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente', 'created_by').annotate(item_count=Count('items'))
 
     estado = request.GET.get('estado', '')
     cliente_q = request.GET.get('cliente', '')
@@ -121,7 +121,7 @@ def crear(request):
 
 @login_required
 def detalle(request, pk):
-    presupuesto = get_object_or_404(_get_detalle_queryset(), pk=pk)
+    presupuesto = get_object_or_404(_get_detalle_queryset().filter(deleted_at__isnull=True), pk=pk)
     context = _build_detalle_context(presupuesto)
     context['return_url'] = _presupuestos_return_url(request)
     return render(request, 'presupuestos/detalle.html', context)
@@ -129,7 +129,7 @@ def detalle(request, pk):
 
 @login_required
 def editar(request, pk):
-    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     return_url = _presupuestos_return_url(request)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede editar un presupuesto confirmado o cancelado.')
@@ -148,7 +148,7 @@ def editar(request, pk):
 
 @login_required
 def agregar_item(request, pk):
-    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se pueden agregar ítems a un presupuesto confirmado o cancelado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
@@ -220,7 +220,7 @@ def agregar_item(request, pk):
 @login_required
 @require_POST
 def actualizar_configuracion_obra(request, pk):
-    presupuesto = get_object_or_404(_get_detalle_queryset(), pk=pk)
+    presupuesto = get_object_or_404(_get_detalle_queryset().filter(deleted_at__isnull=True), pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede modificar un presupuesto confirmado o cancelado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
@@ -243,7 +243,7 @@ def actualizar_configuracion_obra(request, pk):
 @login_required
 @require_POST
 def eliminar_item(request, pk, ipk):
-    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede modificar un presupuesto confirmado o cancelado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
@@ -258,7 +258,7 @@ def eliminar_item(request, pk, ipk):
 @login_required
 @require_POST
 def comentar(request, pk):
-    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     form = ComentarioForm(request.POST)
     if form.is_valid():
         comentario = form.save(commit=False)
@@ -271,7 +271,7 @@ def comentar(request, pk):
 @login_required
 @require_POST
 def cambiar_estado(request, pk):
-    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     nuevo_estado = request.POST.get('estado')
     estados_validos = [e[0] for e in Presupuesto.ESTADO_CHOICES]
 
@@ -287,6 +287,18 @@ def cambiar_estado(request, pk):
     presupuesto.save(update_fields=['estado'])
     messages.success(request, f'Estado actualizado a "{presupuesto.get_estado_display()}".')
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+@login_required
+@require_POST
+def eliminar(request, pk):
+    presupuesto = get_object_or_404(Presupuesto, pk=pk, deleted_at__isnull=True)
+    numero = presupuesto.numero
+    presupuesto.deleted_at = timezone.now()
+    presupuesto.deleted_by = request.user
+    presupuesto.save(update_fields=['deleted_at', 'deleted_by'])
+    messages.success(request, f'Presupuesto {numero} eliminado correctamente.')
+    return redirect('presupuestos:presupuestos-lista')
 
 
 def _build_blank_recibo_context(presupuesto):
@@ -307,7 +319,7 @@ def _build_blank_recibo_context(presupuesto):
 @login_required
 def recibo(request, pk):
     presupuesto = get_object_or_404(
-        Presupuesto.objects.select_related('cliente'),
+        Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente'),
         pk=pk,
     )
     html = render_to_string(
@@ -335,7 +347,7 @@ def recibo(request, pk):
 @login_required
 def pdf(request, pk):
     presupuesto = get_object_or_404(
-        Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items'),
+        Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente', 'created_by').prefetch_related('items'),
         pk=pk,
     )
     items_pdf = [build_pdf_item_context(item) for item in presupuesto.items.all()]
