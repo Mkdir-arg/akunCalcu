@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import Client, SimpleTestCase, TestCase
 from django.contrib.auth import get_user_model
@@ -114,6 +114,24 @@ class PriceCalculatorVidrioFormulaContextTest(SimpleTestCase):
         self.assertIs(vidrio_obj, vidrio)
         self.assertEqual(rebaje_ancho, 'Ancho-12')
         self.assertEqual(rebaje_alto, 'Alto-14')
+
+
+class PriceCalculatorAccesorioLookupTest(SimpleTestCase):
+    @patch('pricing.services.calculator.Accesorio.objects.filter')
+    def test_lookup_uses_codigo_and_tipo_when_context_is_available(self, mock_filter):
+        qs = MagicMock()
+        typed_qs = MagicMock()
+        accesorio = SimpleNamespace(codigo='t93', tipo='hoja', descripcion='Cierre')
+
+        mock_filter.return_value = qs
+        qs.filter.return_value = typed_qs
+        typed_qs.first.return_value = accesorio
+
+        result = PriceCalculator()._get_accesorio('t93', 'hoja')
+
+        self.assertIs(result, accesorio)
+        mock_filter.assert_called_once_with(codigo='t93')
+        qs.filter.assert_called_once_with(tipo='hoja')
 
 
 class AccesorioEditFormTest(SimpleTestCase):

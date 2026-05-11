@@ -151,6 +151,7 @@ class PriceCalculator:
             DespieceAccesoriosMarco.objects.filter(marco_id=marco.id),
             variables,
             accesorios_items,
+            accesorio_tipo="marco",
         )
         if hoja_id:
             # Calcular dimensiones reales de la hoja desde sus perfiles
@@ -159,6 +160,7 @@ class PriceCalculator:
                 DespieceAccesoriosHoja.objects.filter(hoja_id=hoja_id),
                 hoja_variables,
                 accesorios_items,
+                accesorio_tipo="hoja",
             )
         if interior_id:
             self._calcular_accesorios(
@@ -460,12 +462,38 @@ class PriceCalculator:
             raise PricingError(f"Perfil inexistente: {codigo}")
         return perfil
 
-    def _get_accesorio(self, codigo: str) -> Accesorio:
-        try:
-            return Accesorio.objects.get(pk=codigo)
-        except Accesorio.DoesNotExist:
-            logger.warning(f"Accesorio no encontrado: {codigo}")
-            return None
+    def _get_accesorio(self, codigo: str, tipo: Optional[str] = None) -> Optional[Accesorio]:
+        qs = Accesorio.objects.filter(codigo=codigo)
+
+        if tipo:
+            accesorio = qs.filter(tipo=tipo).first()
+            if accesorio:
+                return accesorio
+
+            accesorio = qs.filter(tipo='').first()
+            if accesorio:
+                logger.warning(
+                    "Accesorio %s no encontrado para tipo %s; usando registro sin tipo.",
+                    codigo,
+                    tipo,
+                )
+                return accesorio
+
+            accesorio = qs.filter(tipo__isnull=True).first()
+            if accesorio:
+                logger.warning(
+                    "Accesorio %s no encontrado para tipo %s; usando registro sin tipo.",
+                    codigo,
+                    tipo,
+                )
+                return accesorio
+
+        accesorio = qs.first()
+        if accesorio:
+            return accesorio
+
+        logger.warning("Accesorio no encontrado: %s", codigo)
+        return None
 
     def _calcular_perfiles_simple(
         self,
@@ -678,6 +706,7 @@ class PriceCalculator:
         despieces: Any,
         variables: Dict[str, Any],
         items: List[Dict[str, Any]],
+        accesorio_tipo: Optional[str] = None,
     ) -> None:
         for despiece in despieces:
             if not despiece.accesorio:
@@ -685,7 +714,7 @@ class PriceCalculator:
             cantidad_formula = self._eval_formula(despiece.formula_cantidad, variables)
             if cantidad_formula <= 0:
                 continue
-            accesorio = self._get_accesorio(despiece.accesorio)
+            accesorio = self._get_accesorio(despiece.accesorio, accesorio_tipo)
             if not accesorio:
                 continue
             
