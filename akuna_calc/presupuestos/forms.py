@@ -86,11 +86,14 @@ class ItemPresupuestoForm(forms.ModelForm):
 class ComentarioForm(forms.ModelForm):
     class Meta:
         model = ComentarioPresupuesto
-        fields = ['texto']
+        fields = ['texto', 'prioridad']
         widgets = {
             'texto': forms.Textarea(attrs={
                 'rows': 2,
                 'placeholder': 'Escribir comentario...',
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none',
+            }),
+            'prioridad': forms.RadioSelect(attrs={
+                'class': 'prioridad-radio',
             }),
         }

@@ -228,6 +228,11 @@ class ItemPresupuesto(models.Model):
 
 
 class ComentarioPresupuesto(models.Model):
+    PRIORIDAD_CHOICES = [
+        ('normal', 'Normal'),
+        ('importante', 'Importante'),
+    ]
+
     presupuesto = models.ForeignKey(
         Presupuesto,
         on_delete=models.CASCADE,
@@ -240,6 +245,13 @@ class ComentarioPresupuesto(models.Model):
         verbose_name='Autor',
     )
     texto = models.TextField(verbose_name='Comentario')
+    prioridad = models.CharField(
+        max_length=20,
+        choices=PRIORIDAD_CHOICES,
+        default='normal',
+        blank=True,
+        verbose_name='Prioridad',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
