@@ -470,12 +470,10 @@
                     <td class="totals-label">Total del presupuesto</td>
                     <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
                 </tr>
-                {% if presupuesto.aplicar_iva %}
                 <tr>
-                    <td class="totals-label">IVA incluido (21%)</td>
-                    <td class="totals-value">${{ presupuesto.get_iva|formato_numero }}</td>
+                    <td class="totals-label">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
+                    <td class="totals-value">${{ presupuesto.get_iva_desglosado|formato_numero }}</td>
                 </tr>
-                {% endif %}
             </table>
         </div>
 

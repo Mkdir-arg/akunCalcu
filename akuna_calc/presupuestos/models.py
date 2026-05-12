@@ -131,10 +131,13 @@ class Presupuesto(models.Model):
     def get_subtotal_sin_iva(self):
         return self.get_total_items() + self.get_recargo_obra_nueva_aplicado()
 
+    def get_iva_desglosado(self):
+        return self.get_subtotal_sin_iva() * Decimal('0.21')
+
     def get_iva(self):
         if not self.aplicar_iva:
             return Decimal('0')
-        return self.get_subtotal_sin_iva() * Decimal('0.21')
+        return self.get_iva_desglosado()
 
     def recalcular_total(self):
         subtotal = self.get_subtotal_sin_iva()
