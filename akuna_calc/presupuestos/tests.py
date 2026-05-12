@@ -361,6 +361,30 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, '$400.000,00')
         self.assertNotContains(res, 'Recargo obra nueva')
 
+    def test_pdf_muestra_iva_cuando_aplica(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.aplicar_iva = True
+        p.save(update_fields=['aplicar_iva'])
+        ItemPresupuesto.objects.create(
+            presupuesto=p,
+            descripcion='Ventana cocina',
+            cantidad=1,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=100000,
+            resultado_json={},
+        )
+        p.recalcular_total()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'IVA incluido (21%)')
+        self.assertContains(res, '$21.000,00')
+        self.assertContains(res, '$121.000,00')
+
     def test_detalle_muestra_boton_recibo(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
