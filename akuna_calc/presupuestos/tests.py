@@ -9,6 +9,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 
 from comercial.models import Cliente
+from usuarios.models import PerfilAccesoUsuario, RolSistema
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context
 
@@ -228,6 +229,16 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
 class PresupuestosViewsTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('viewuser', password='testpass')
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={
+                'nombre': 'Admin',
+                'descripcion': 'Acceso total para pruebas.',
+                'acceso_total': True,
+                'activo': True,
+            },
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
         self.client = Client()
 
     def test_lista_requiere_login(self):
@@ -359,6 +370,8 @@ class PresupuestosViewsTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, '$400.000,00')
+        self.assertContains(res, '$350.000,00')
+        self.assertContains(res, '$73.500,00')
         self.assertNotContains(res, 'Recargo obra nueva')
 
     def test_pdf_muestra_iva_cuando_aplica(self):
@@ -403,9 +416,20 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
 
         self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        subtotal_index = html.find('Subtotal')
+        iva_index = html.find('IVA no incluido (21%)')
+        total_index = html.find('Total')
+
+        self.assertNotEqual(subtotal_index, -1)
+        self.assertNotEqual(iva_index, -1)
+        self.assertNotEqual(total_index, -1)
+        self.assertLess(subtotal_index, iva_index)
+        self.assertLess(iva_index, total_index)
+
+        self.assertContains(res, '$100.000,00')
         self.assertContains(res, 'IVA no incluido (21%)')
         self.assertContains(res, '$21.000,00')
-        self.assertContains(res, '$100.000,00')
 
     def test_detalle_muestra_boton_recibo(self):
         self.client.login(username='viewuser', password='testpass')

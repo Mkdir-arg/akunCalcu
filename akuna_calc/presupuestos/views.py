@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import base64
 import io
 import json
@@ -351,8 +353,12 @@ def pdf(request, pk):
         pk=pk,
     )
     items_pdf = [build_pdf_item_context(item) for item in presupuesto.items.all()]
+    pdf_subtotal = presupuesto.get_total_items()
+    pdf_iva = pdf_subtotal * Decimal('0.21')
     return render(request, 'presupuestos/pdf.html', {
         'logo_url': _build_logo_data_url(),
         'presupuesto': presupuesto,
         'items_pdf': items_pdf,
+        'pdf_subtotal': pdf_subtotal,
+        'pdf_iva': pdf_iva,
     })

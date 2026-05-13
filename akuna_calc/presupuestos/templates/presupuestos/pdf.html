@@ -463,16 +463,16 @@
         <div class="totals-wrap">
             <table class="totals-table">
                 <tr>
-                    <td class="totals-label">Ítems cotizados</td>
-                    <td class="totals-value">{{ presupuesto.items.count }}</td>
-                </tr>
-                <tr class="grand-total">
-                    <td class="totals-label">Total del presupuesto</td>
+                        <td class="totals-label">Subtotal</td>
+                    <td class="totals-value">${{ pdf_subtotal|formato_numero }}</td>
+                    </tr>
+                    <tr>
+                        <td class="totals-label">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
+                    <td class="totals-value">${{ pdf_iva|formato_numero }}</td>
+                    </tr>
+                    <tr class="grand-total">
+                        <td class="totals-label">Total</td>
                     <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
-                </tr>
-                <tr>
-                    <td class="totals-label">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
-                    <td class="totals-value">${{ presupuesto.get_iva_desglosado|formato_numero }}</td>
                 </tr>
             </table>
         </div>
