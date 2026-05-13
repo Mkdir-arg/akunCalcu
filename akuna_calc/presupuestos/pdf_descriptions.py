@@ -166,14 +166,17 @@ def build_technical_summary(snapshot: Dict[str, Any]) -> str:
         parts.append(f'{int(quantity)} {unit_label}')
 
     line_label = _clean_text((snapshot.get('linea') or {}).get('nombre'))
+    product_label = _clean_text((snapshot.get('producto') or {}).get('descripcion'))
     width = _format_mm(snapshot.get('ancho_mm'))
     height = _format_mm(snapshot.get('alto_mm'))
-    if line_label and width and height:
-        parts.append(f'{line_label} {width} x {height} mm')
-    elif width and height:
-        parts.append(f'{width} x {height} mm')
-    elif line_label:
+    if line_label:
         parts.append(line_label)
+
+    if product_label:
+        parts.append(product_label)
+
+    if width and height:
+        parts.append(f'{width} x {height} mm')
 
     vidrio_label = _clean_text((snapshot.get('vidrio') or {}).get('descripcion'))
     if vidrio_label:
@@ -188,6 +191,22 @@ def build_technical_summary(snapshot: Dict[str, Any]) -> str:
         parts.append(f'Opcionales: {_humanize_list(option_labels)}')
 
     return ' · '.join(parts)
+
+
+def _should_refresh_technical_summary(snapshot: Dict[str, Any], summary: Any) -> bool:
+    summary_text = _clean_text(summary)
+    if not summary_text:
+        return True
+
+    for label in (
+        _clean_text((snapshot.get('linea') or {}).get('nombre')),
+        _clean_text((snapshot.get('producto') or {}).get('descripcion')),
+        _clean_text((snapshot.get('vidrio') or {}).get('descripcion')),
+    ):
+        if label and not _contains_text(summary_text, label):
+            return True
+
+    return False
 
 
 def _serialize_options(options_data: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -324,7 +343,10 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
         snapshot.setdefault('opcionales', [])
         snapshot.setdefault('titulo_item', _build_title(snapshot))
         snapshot.setdefault('descripcion_narrativa', build_narrative_from_snapshot(snapshot))
-        snapshot.setdefault('resumen_tecnico', build_technical_summary(snapshot))
+        if _should_refresh_technical_summary(snapshot, snapshot.get('resumen_tecnico')):
+            snapshot['resumen_tecnico'] = build_technical_summary(snapshot)
+        else:
+            snapshot.setdefault('resumen_tecnico', build_technical_summary(snapshot))
 
     return {
         'item': item,

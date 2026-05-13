@@ -224,6 +224,8 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
         self.assertEqual(snapshot['hoja']['descripcion'], 'BANDEROLA DVH')
         self.assertEqual(snapshot['vidrio']['descripcion'], '4+9+4')
         self.assertIn('Ventana cocina en línea Modena de Aluar', snapshot['descripcion_narrativa'])
+        self.assertIn('Modena', snapshot['resumen_tecnico'])
+        self.assertIn('BANDEROLA', snapshot['resumen_tecnico'])
         self.assertIn('Vidrio 4+9+4', snapshot['resumen_tecnico'])
 
 
@@ -326,7 +328,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'Datos de la empresa')
         self.assertContains(res, 'Concepto')
 
-    def test_pdf_autenticado_muestra_solo_resumen_tecnico(self):
+    def test_pdf_autenticado_muestra_descripcion_y_resumen_tecnico(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
         ItemPresupuesto.objects.create(
@@ -340,6 +342,10 @@ class PresupuestosViewsTest(TestCase):
             resultado_json={
                 'snapshot_item': {
                     'titulo_item': 'Ventana cocina',
+                    'linea': {'nombre': 'MODENA'},
+                    'producto': {'descripcion': 'BANDEROLA'},
+                    'vidrio': {'descripcion': '4+9+4'},
+                    'tratamiento': {'descripcion': 'BLANCO'},
                     'descripcion_narrativa': 'Ventana cocina en línea Modena de Aluar, modelo BANDEROLA, con marco BANDEROLA, hoja BANDEROLA DVH, vidrio 4+9+4, terminación blanco y medidas 1200 x 1500 mm.',
                     'resumen_tecnico': '1 unidad · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO',
                 }
@@ -349,9 +355,9 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, '1 unidad · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO.')
+        self.assertContains(res, 'Ventana cocina')
+        self.assertContains(res, '1 unidad · MODENA · BANDEROLA · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO.')
         self.assertNotContains(res, 'Ventana cocina en línea Modena de Aluar')
-        self.assertNotContains(res, 'Ventana cocina')
         self.assertNotContains(res, 'Subtotal del ítem')
         self.assertNotContains(res, 'Cada ítem se describe con la configuración seleccionada')
         self.assertNotContains(res, 'Observaciones')

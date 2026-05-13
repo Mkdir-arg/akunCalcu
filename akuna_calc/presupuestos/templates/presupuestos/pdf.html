@@ -244,6 +244,13 @@
             line-height: 1.45;
         }
 
+        .concept-title {
+            margin: 0 0 4px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #111827;
+        }
+
         .empty-row td {
             text-align: center;
             color: #52606d;
@@ -458,10 +465,11 @@
                     {% for entry in items_pdf %}
                     <tr>
                         <td class="col-concept">
+                            {% if entry.titulo %}
+                            <p class="concept-title">{{ entry.titulo }}</p>
+                            {% endif %}
                             {% if entry.resumen_tecnico %}
                             <p class="concept-text">{{ entry.resumen_tecnico }}.</p>
-                            {% else %}
-                            <p class="concept-text">{{ entry.titulo }}</p>
                             {% endif %}
                         </td>
                         <td class="col-qty">{{ entry.item.cantidad }}</td>
