@@ -220,12 +220,6 @@
             font-weight: 700;
         }
 
-        .item-text {
-            margin: 0;
-            font-size: 11px;
-            line-height: 1.55;
-        }
-
         .item-summary {
             margin: 6px 0 0;
             font-size: 10px;
@@ -260,16 +254,6 @@
         .totals-table .grand-total td {
             font-size: 14px;
             font-weight: 700;
-        }
-
-        .observations {
-            border: 1px solid #c7ccd3;
-            padding: 10px;
-            min-height: 44px;
-        }
-
-        .observations p {
-            margin: 0;
         }
 
         .footer-table {
@@ -422,7 +406,6 @@
         </table>
 
         <p class="section-title">Detalle presupuestado</p>
-        <p class="intro-copy">Cada ítem se describe con la configuración seleccionada al momento de cotizar para que el cliente pueda revisar el producto y su composición principal en formato de documento.</p>
 
         <table class="items-table">
             <thead>
@@ -440,13 +423,9 @@
                     <td class="col-item">{{ forloop.counter }}</td>
                     <td class="col-detail">
                         <p class="item-title">{{ entry.titulo }}</p>
-                        {% if entry.descripcion_narrativa %}
-                        <p class="item-text">{{ entry.descripcion_narrativa }}</p>
-                        {% endif %}
                         {% if entry.resumen_tecnico %}
-                        <p class="item-summary">{{ entry.resumen_tecnico }}</p>
+                        <p class="item-summary">{{ entry.resumen_tecnico }}.</p>
                         {% endif %}
-                        <p class="item-summary">Subtotal del ítem: ${{ entry.item.precio_total|formato_numero }}</p>
                     </td>
                     <td class="col-qty">{{ entry.item.cantidad }}</td>
                     <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
@@ -475,15 +454,6 @@
                     <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
                 </tr>
             </table>
-        </div>
-
-        <p class="section-title">Observaciones</p>
-        <div class="observations">
-            {% if presupuesto.notas %}
-            <p>{{ presupuesto.notas }}</p>
-            {% else %}
-            <p>Precios expresados en pesos argentinos. La presente propuesta mantiene vigencia hasta la fecha indicada en este documento.</p>
-            {% endif %}
         </div>
 
         <table class="footer-table">

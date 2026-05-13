@@ -322,7 +322,7 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
         self.assertEqual(res.status_code, 200)
 
-    def test_pdf_autenticado_muestra_descripcion_narrativa(self):
+    def test_pdf_autenticado_muestra_solo_resumen_tecnico(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
         ItemPresupuesto.objects.create(
@@ -345,8 +345,11 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Ventana cocina en línea Modena de Aluar')
-        self.assertContains(res, 'Subtotal del ítem')
+        self.assertContains(res, '1 unidad · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO.')
+        self.assertNotContains(res, 'Ventana cocina en línea Modena de Aluar')
+        self.assertNotContains(res, 'Subtotal del ítem')
+        self.assertNotContains(res, 'Cada ítem se describe con la configuración seleccionada')
+        self.assertNotContains(res, 'Observaciones')
 
     def test_pdf_no_muestra_detalle_recargo_obra_nueva(self):
         self.client.login(username='viewuser', password='testpass')
