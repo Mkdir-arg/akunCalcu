@@ -8,7 +8,7 @@
     <style>
         @page {
             size: A4;
-            margin: 12mm;
+            margin: 0;
         }
 
         * {
@@ -18,10 +18,10 @@
         body {
             margin: 0;
             background: #e9edf2;
-            color: #111827;
-            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2933;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
             font-size: 12px;
-            line-height: 1.45;
+            line-height: 1.35;
         }
 
         .no-print {
@@ -36,7 +36,7 @@
         .no-print a,
         .no-print button {
             border: 0;
-            background: #1f2937;
+            background: #0a3f78;
             color: #ffffff;
             text-decoration: none;
             padding: 10px 16px;
@@ -46,230 +46,255 @@
         }
 
         .no-print a {
-            background: #6b7280;
+            background: #486581;
         }
 
         .sheet {
+            position: relative;
             width: 210mm;
             min-height: 297mm;
             margin: 16px auto 24px;
             background: #ffffff;
-            padding: 10mm 12mm 12mm;
+            overflow: hidden;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
         }
 
-        .top-table,
-        .field-table,
+        .page-art {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .page-art svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .page-art-top {
+            top: 0;
+            height: 32mm;
+        }
+
+        .page-art-bottom {
+            bottom: 0;
+            height: 34mm;
+        }
+
+        .page-pattern {
+            position: absolute;
+            top: 28mm;
+            left: 50%;
+            width: 110mm;
+            height: 160mm;
+            margin-left: -55mm;
+            opacity: 0.14;
+            z-index: 1;
+            background-image:
+                radial-gradient(circle at center, rgba(20, 87, 173, 0.18) 0, rgba(20, 87, 173, 0.18) 0.8px, transparent 0.8px);
+            background-size: 8px 8px;
+        }
+
+        .page-content {
+            position: relative;
+            z-index: 2;
+            padding: 24mm 20mm 24mm;
+        }
+
+        .brand-block {
+            text-align: center;
+            margin: 6mm 0 16mm;
+        }
+
+        .brand-logo {
+            max-width: 155px;
+            max-height: 70px;
+            display: inline-block;
+        }
+
+        .brand-fallback {
+            display: inline-block;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            color: #0a0f18;
+            text-transform: uppercase;
+        }
+
+        .contact-grid,
+        .summary-grid,
         .items-table,
-        .totals-table,
-        .footer-table {
+        .bottom-grid,
+        .totals-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .company-cell,
-        .meta-cell {
+        .contact-cell,
+        .summary-cell,
+        .bottom-copy,
+        .bottom-totals {
             vertical-align: top;
         }
 
-        .company-cell {
-            width: 58%;
-            padding-right: 12px;
+        .contact-cell {
+            width: 50%;
+            padding-right: 16px;
         }
 
-        .meta-cell {
-            width: 42%;
+        .contact-cell.right {
+            padding-right: 0;
+            padding-left: 16px;
         }
 
-        .company-name {
-            margin: 0 0 8px;
-        }
-
-        .company-name img {
-            max-width: 240px;
-            max-height: 76px;
-            display: block;
-        }
-
-        .company-copy {
-            margin: 4px 0 12px;
-            font-size: 12px;
-            color: #4b5563;
-        }
-
-        .company-data {
-            margin: 0;
-            font-size: 11px;
-            line-height: 1.55;
-        }
-
-        .document-box {
-            border: 2px solid #111827;
-        }
-
-        .document-title {
-            margin: 0;
-            padding: 10px 12px;
-            background: #f3f4f6;
-            border-bottom: 2px solid #111827;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-align: center;
+        .contact-title {
+            margin: 0 0 6px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
             text-transform: uppercase;
+            color: #111827;
         }
 
-        .document-meta td {
-            border-bottom: 1px solid #d1d5db;
-            padding: 7px 9px;
-            font-size: 11px;
+        .contact-line {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #3f4854;
         }
 
-        .document-meta tr:last-child td {
-            border-bottom: 0;
-        }
-
-        .meta-label {
-            width: 42%;
+        .contact-strong {
+            margin: 0 0 2px;
+            font-size: 12px;
             font-weight: 700;
-            background: #f9fafb;
-            white-space: nowrap;
+            color: #111827;
         }
 
-        .meta-value {
-            font-weight: 700;
+        .divider-line {
+            height: 4px;
+            margin: 14px 0 18px;
+            background: #0a3f78;
+        }
+
+        .summary-grid {
+            margin-bottom: 8px;
+        }
+
+        .summary-grid td {
+            padding: 3px 2px;
+            font-size: 12px;
+            color: #111827;
+        }
+
+        .summary-cell.right {
             text-align: right;
         }
 
-        .section-title {
-            margin: 16px 0 8px;
-            padding: 6px 0;
-            border-top: 1.5px solid #111827;
-            border-bottom: 1px solid #111827;
-            font-size: 10px;
+        .summary-label {
             font-weight: 700;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-        }
-
-        .field-table td {
-            border: 1px solid #c7ccd3;
-            padding: 7px 8px;
-            vertical-align: top;
-        }
-
-        .field-label {
-            width: 16%;
-            font-weight: 700;
-            white-space: nowrap;
-            background: #f3f4f6;
-        }
-
-        .field-value {
-            background: #ffffff;
-        }
-
-        .intro-copy {
-            margin: 0 0 10px;
-            font-size: 11px;
-            color: #374151;
+            color: #111827;
         }
 
         .items-table th,
         .items-table td {
-            border: 1px solid #9ca3af;
-            padding: 8px;
+            padding: 8px 10px;
             vertical-align: top;
         }
 
         .items-table th {
-            background: #f3f4f6;
-            font-size: 10px;
+            background: #0a3f78;
+            border-right: 4px solid #ffffff;
+            color: #ffffff;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .col-item {
-            width: 7%;
             text-align: center;
-            font-weight: 700;
         }
 
-        .col-detail {
-            width: 53%;
+        .items-table th:last-child {
+            border-right: 0;
+        }
+
+        .items-table td {
+            border-bottom: 1px solid #9aa5b1;
+            color: #2d3748;
+        }
+
+        .col-concept {
+            width: 52%;
+            text-align: left;
         }
 
         .col-qty {
-            width: 10%;
+            width: 12%;
             text-align: center;
-            font-weight: 700;
+            white-space: nowrap;
         }
 
         .col-unit,
         .col-total {
-            width: 15%;
+            width: 18%;
             text-align: right;
             white-space: nowrap;
-            font-weight: 700;
         }
 
-        .item-title {
-            margin: 0 0 4px;
-            font-size: 13px;
-            font-weight: 700;
+        .concept-text {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.45;
         }
 
-        .item-summary {
-            margin: 6px 0 0;
-            font-size: 10px;
-            color: #4b5563;
+        .empty-row td {
+            text-align: center;
+            color: #52606d;
         }
 
-        .totals-wrap {
+        .bottom-grid {
             margin-top: 10px;
         }
 
-        .totals-table {
+        .bottom-copy {
+            width: 58%;
+            padding-right: 16px;
+        }
+
+        .bottom-totals {
             width: 42%;
-            margin-left: auto;
+        }
+
+        .bottom-note {
+            margin: 0 0 6px;
+            font-size: 12px;
+            color: #3f4854;
+        }
+
+        .bottom-note strong {
+            color: #111827;
         }
 
         .totals-table td {
-            border: 1px solid #111827;
-            padding: 8px 10px;
+            padding: 2px 0;
+            font-size: 12px;
+            white-space: nowrap;
         }
 
         .totals-label {
-            background: #f3f4f6;
-            font-weight: 700;
+            color: #374151;
         }
 
         .totals-value {
             text-align: right;
-            font-weight: 700;
-            white-space: nowrap;
+            color: #111827;
         }
 
         .totals-table .grand-total td {
-            font-size: 14px;
+            padding-top: 8px;
+            font-size: 18px;
             font-weight: 700;
         }
 
-        .footer-table {
-            margin-top: 14px;
-            border-top: 1px solid #c7ccd3;
-        }
-
-        .footer-table td {
-            padding-top: 8px;
-            font-size: 10px;
-            color: #4b5563;
-            vertical-align: top;
-        }
-
-        .footer-right {
-            text-align: right;
+        .page-end-spacer {
+            height: 28mm;
         }
 
         @media print {
@@ -283,10 +308,8 @@
 
             .sheet {
                 width: auto;
-                min-height: auto;
                 margin: 0;
                 box-shadow: none;
-                padding: 0;
             }
         }
 
@@ -296,7 +319,6 @@
                 min-height: auto;
                 margin-left: 10px;
                 margin-right: 10px;
-                padding: 16px;
             }
 
             .no-print {
@@ -305,17 +327,35 @@
                 max-width: none;
             }
 
-            .top-table,
-            .top-table > tbody,
-            .top-table > tbody > tr,
-            .top-table > tbody > tr > td {
+            .page-content {
+                padding: 22mm 16px 24mm;
+            }
+
+            .contact-grid,
+            .contact-grid > tbody,
+            .contact-grid > tbody > tr,
+            .contact-grid > tbody > tr > td,
+            .summary-grid,
+            .summary-grid > tbody,
+            .summary-grid > tbody > tr,
+            .summary-grid > tbody > tr > td,
+            .bottom-grid,
+            .bottom-grid > tbody,
+            .bottom-grid > tbody > tr,
+            .bottom-grid > tbody > tr > td {
                 display: block;
                 width: 100%;
             }
 
-            .company-cell {
-                padding-right: 0;
-                margin-bottom: 12px;
+            .contact-cell,
+            .contact-cell.right,
+            .bottom-copy,
+            .bottom-totals {
+                padding: 0;
+            }
+
+            .contact-cell {
+                margin-bottom: 14px;
             }
 
             .items-table {
@@ -323,12 +363,13 @@
                 overflow-x: auto;
             }
 
-            .totals-table {
-                width: 100%;
+            .summary-cell.right {
+                text-align: left;
             }
 
-            .footer-right {
-                text-align: left;
+            .bottom-totals,
+            .totals-table {
+                width: 100%;
             }
         }
     </style>
@@ -340,133 +381,131 @@
     </div>
 
     <div class="sheet">
-        <table class="top-table">
-            <tr>
-                <td class="company-cell">
-                    <div class="company-name">
-                        {% if logo_url %}
-                        <img src="{{ logo_url }}" alt="Akuna Aberturas">
-                        {% else %}
-                        <strong>AKUNA ABERTURAS</strong>
-                        {% endif %}
-                    </div>
-                    <p class="company-copy">Presupuesto comercial de aberturas de aluminio a medida</p>
-                    <p class="company-data">
-                        Elpidio Gonzalez 5326<br>
-                        Ciudad de Buenos Aires - Argentina<br>
-                        Documento emitido para presentación comercial al cliente.
-                    </p>
-                </td>
-                <td class="meta-cell">
-                    <div class="document-box">
-                        <p class="document-title">Presupuesto</p>
-                        <table class="document-meta" width="100%">
-                            <tr>
-                                <td class="meta-label">Número</td>
-                                <td class="meta-value">{{ presupuesto.numero }}</td>
-                            </tr>
-                            <tr>
-                                <td class="meta-label">Fecha de emisión</td>
-                                <td class="meta-value">{{ presupuesto.created_at|date:"d/m/Y" }}</td>
-                            </tr>
-                            <tr>
-                                <td class="meta-label">Válido hasta</td>
-                                <td class="meta-value">{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</td>
-                            </tr>
-                            <tr>
-                                <td class="meta-label">Estado</td>
-                                <td class="meta-value">{{ presupuesto.get_estado_display }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <p class="section-title">Datos del cliente</p>
-        <table class="field-table">
-            <tr>
-                <td class="field-label">Cliente</td>
-                <td class="field-value">{{ presupuesto.cliente.get_nombre_completo }}</td>
-                <td class="field-label">Cantidad de ítems</td>
-                <td class="field-value">{{ presupuesto.items.count }}</td>
-            </tr>
-            <tr>
-                <td class="field-label">Dirección</td>
-                <td class="field-value">{% if presupuesto.cliente.direccion %}{{ presupuesto.cliente.direccion }}{% else %}-{% endif %}</td>
-                <td class="field-label">Localidad</td>
-                <td class="field-value">{% if presupuesto.cliente.localidad %}{{ presupuesto.cliente.localidad }}{% else %}-{% endif %}</td>
-            </tr>
-            <tr>
-                <td class="field-label">Teléfono</td>
-                <td class="field-value">{% if presupuesto.cliente.telefono %}{{ presupuesto.cliente.telefono }}{% else %}-{% endif %}</td>
-                <td class="field-label">Email</td>
-                <td class="field-value">{% if presupuesto.cliente.email %}{{ presupuesto.cliente.email }}{% else %}-{% endif %}</td>
-            </tr>
-        </table>
-
-        <p class="section-title">Detalle presupuestado</p>
-
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th class="col-item">Item</th>
-                    <th class="col-detail">Descripción</th>
-                    <th class="col-qty">Cant.</th>
-                    <th class="col-unit">P. unitario</th>
-                    <th class="col-total">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in items_pdf %}
-                <tr>
-                    <td class="col-item">{{ forloop.counter }}</td>
-                    <td class="col-detail">
-                        <p class="item-title">{{ entry.titulo }}</p>
-                        {% if entry.resumen_tecnico %}
-                        <p class="item-summary">{{ entry.resumen_tecnico }}.</p>
-                        {% endif %}
-                    </td>
-                    <td class="col-qty">{{ entry.item.cantidad }}</td>
-                    <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
-                    <td class="col-total">${{ entry.item.precio_total|formato_numero }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">No hay ítems cargados en este presupuesto.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="totals-wrap">
-            <table class="totals-table">
-                <tr>
-                        <td class="totals-label">Subtotal</td>
-                    <td class="totals-value">${{ pdf_subtotal|formato_numero }}</td>
-                    </tr>
-                    <tr>
-                        <td class="totals-label">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
-                    <td class="totals-value">${{ pdf_iva|formato_numero }}</td>
-                    </tr>
-                    <tr class="grand-total">
-                        <td class="totals-label">Total</td>
-                    <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
-                </tr>
-            </table>
+        <div class="page-art page-art-top" aria-hidden="true">
+            <svg viewBox="0 0 1000 180" preserveAspectRatio="none">
+                <path d="M0,0 H1000 V62 C835,120 630,112 430,88 C240,64 94,60 0,76 Z" fill="#175ab5"></path>
+                <path d="M0,0 H1000 V82 C848,144 648,138 444,112 C254,88 102,86 0,38 Z" fill="#0a3f78"></path>
+            </svg>
         </div>
 
-        <table class="footer-table">
-            <tr>
-                <td>
-                    Akuna Aberturas<br>
-                    Presupuesto válido hasta el {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}.
-                </td>
-                <td class="footer-right">
-                    Documento generado el {{ presupuesto.created_at|date:"d/m/Y" }} para {{ presupuesto.cliente.get_nombre_completo }}.
-                </td>
-            </tr>
-        </table>
+        <div class="page-art page-art-bottom" aria-hidden="true">
+            <svg viewBox="0 0 1000 220" preserveAspectRatio="none">
+                <path d="M0,150 C176,100 350,154 520,186 C698,218 860,208 1000,164 V220 H0 Z" fill="#175ab5"></path>
+                <path d="M0,172 C204,126 384,182 570,204 C758,226 896,206 1000,150 V220 H0 Z" fill="#0a3f78"></path>
+            </svg>
+        </div>
+
+        <div class="page-pattern" aria-hidden="true"></div>
+
+        <div class="page-content">
+            <div class="brand-block">
+                {% if logo_url %}
+                <img class="brand-logo" src="{{ logo_url }}" alt="Akun Aberturas">
+                {% else %}
+                <div class="brand-fallback">AKUN</div>
+                {% endif %}
+            </div>
+
+            <table class="contact-grid">
+                <tr>
+                    <td class="contact-cell">
+                        <p class="contact-title">Datos del cliente</p>
+                        <p class="contact-line"><span class="summary-label">Nombre:</span> {{ presupuesto.cliente.get_nombre_completo }}</p>
+                        <p class="contact-line"><span class="summary-label">Dirección:</span> {% if presupuesto.cliente.direccion %}{{ presupuesto.cliente.direccion }}{% else %}-{% endif %}</p>
+                        <p class="contact-line"><span class="summary-label">Localidad:</span> {% if presupuesto.cliente.localidad %}{{ presupuesto.cliente.localidad }}{% else %}-{% endif %}</p>
+                        <p class="contact-line"><span class="summary-label">Mail:</span> {% if presupuesto.cliente.email %}{{ presupuesto.cliente.email }}{% else %}-{% endif %}</p>
+                        <p class="contact-line"><span class="summary-label">Teléfono:</span> {% if presupuesto.cliente.telefono %}{{ presupuesto.cliente.telefono }}{% else %}-{% endif %}</p>
+                    </td>
+                    <td class="contact-cell right">
+                        <p class="contact-title">Datos de la empresa</p>
+                        <p class="contact-strong">Akun Aberturas</p>
+                        <p class="contact-line">Dirección: Elpidio Gonzalez 5326</p>
+                        <p class="contact-line">11 4448-2992</p>
+                        <p class="contact-line">akunaberturas@gmail.com</p>
+                        <p class="contact-line">www.akunaberturas.com</p>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="divider-line"></div>
+
+            <table class="summary-grid">
+                <tr>
+                    <td class="summary-cell"><span class="summary-label">Presupuesto Nro:</span> {{ presupuesto.numero }}</td>
+                    <td class="summary-cell right"><span class="summary-label">Fecha:</span> {{ presupuesto.created_at|date:"d/m/Y" }}</td>
+                </tr>
+                <tr>
+                    <td class="summary-cell"><span class="summary-label">Condición IVA:</span> {{ presupuesto.cliente.get_condicion_iva_display }}</td>
+                    <td class="summary-cell right"><span class="summary-label">Válido hasta:</span> {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</td>
+                </tr>
+                {% if presupuesto.notas %}
+                <tr>
+                    <td class="summary-cell" colspan="2"><span class="summary-label">Observaciones:</span> {{ presupuesto.notas }}</td>
+                </tr>
+                {% endif %}
+            </table>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="col-concept">Concepto</th>
+                        <th class="col-qty">Cantidad</th>
+                        <th class="col-unit">Precio U.</th>
+                        <th class="col-total">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in items_pdf %}
+                    <tr>
+                        <td class="col-concept">
+                            {% if entry.resumen_tecnico %}
+                            <p class="concept-text">{{ entry.resumen_tecnico }}.</p>
+                            {% else %}
+                            <p class="concept-text">{{ entry.titulo }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="col-qty">{{ entry.item.cantidad }}</td>
+                        <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
+                        <td class="col-total">${{ entry.item.precio_total|formato_numero }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="4">No hay ítems cargados en este presupuesto.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table class="bottom-grid">
+                <tr>
+                    <td class="bottom-copy">
+                        {% if presupuesto.venta and presupuesto.venta.forma_pago %}
+                        <p class="bottom-note"><strong>Forma de pago:</strong> {{ presupuesto.venta.get_forma_pago_display }}</p>
+                        {% endif %}
+                        <p class="bottom-note"><strong>Estado:</strong> {{ presupuesto.get_estado_display }}</p>
+                        <p class="bottom-note"><strong>Validez:</strong> hasta el {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
+                    </td>
+                    <td class="bottom-totals">
+                        <table class="totals-table">
+                            <tr>
+                                <td class="totals-label totals-subtotal">Subtotal</td>
+                                <td class="totals-value">${{ pdf_subtotal|formato_numero }}</td>
+                            </tr>
+                            <tr>
+                                <td class="totals-label totals-iva">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
+                                <td class="totals-value">${{ pdf_iva|formato_numero }}</td>
+                            </tr>
+                            <tr class="grand-total">
+                                <td class="totals-label totals-total">Total</td>
+                                <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="page-end-spacer" aria-hidden="true"></div>
+        </div>
     </div>
 </body>
 </html>

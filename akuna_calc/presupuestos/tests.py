@@ -18,6 +18,7 @@ def crear_cliente():
     return Cliente.objects.create(
         nombre='Juan', apellido='Pérez',
         direccion='Av. Test 123', localidad='Buenos Aires',
+        telefono='11-5555-5555', email='juan@test.com',
     )
 
 
@@ -321,6 +322,9 @@ class PresupuestosViewsTest(TestCase):
         p = crear_presupuesto(self.user)
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
         self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Datos del cliente')
+        self.assertContains(res, 'Datos de la empresa')
+        self.assertContains(res, 'Concepto')
 
     def test_pdf_autenticado_muestra_solo_resumen_tecnico(self):
         self.client.login(username='viewuser', password='testpass')
@@ -347,6 +351,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, '1 unidad · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO.')
         self.assertNotContains(res, 'Ventana cocina en línea Modena de Aluar')
+        self.assertNotContains(res, 'Ventana cocina')
         self.assertNotContains(res, 'Subtotal del ítem')
         self.assertNotContains(res, 'Cada ítem se describe con la configuración seleccionada')
         self.assertNotContains(res, 'Observaciones')
@@ -420,9 +425,9 @@ class PresupuestosViewsTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         html = res.content.decode('utf-8')
-        subtotal_index = html.find('Subtotal')
-        iva_index = html.find('IVA no incluido (21%)')
-        total_index = html.find('Total')
+        subtotal_index = html.find('totals-subtotal')
+        iva_index = html.find('totals-iva')
+        total_index = html.find('totals-total')
 
         self.assertNotEqual(subtotal_index, -1)
         self.assertNotEqual(iva_index, -1)
