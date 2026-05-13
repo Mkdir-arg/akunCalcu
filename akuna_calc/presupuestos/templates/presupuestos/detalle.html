@@ -136,16 +136,20 @@
                     </div>
                 </div>
 
-                {% if presupuesto.items.all %}
+                {% if items_detalle %}
                 <div class="divide-y divide-gray-100">
-                    {% for item in presupuesto.items.all %}
+                    {% for item in items_detalle %}
                     <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
                         <div class="flex justify-between items-center gap-4">
                             <div class="flex-1 min-w-0">
                                 <p class="font-semibold text-slate-800 truncate">{{ item.descripcion }}</p>
                                 <p class="text-xs text-slate-500 mt-0.5">
+                                    {% if item.resumen_compacto %}
+                                    {{ item.resumen_compacto }}
+                                    {% else %}
                                     {{ item.ancho_mm }}mm x {{ item.alto_mm }}mm · Margen {{ item.margen_porcentaje }}%
                                     {% if item.cantidad > 1 %} · <span class="text-blue-600">x{{ item.cantidad }} unidades</span>{% endif %}
+                                    {% endif %}
                                 </p>
                             </div>
                             <div class="text-right shrink-0">

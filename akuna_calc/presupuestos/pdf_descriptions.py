@@ -193,6 +193,38 @@ def build_technical_summary(snapshot: Dict[str, Any]) -> str:
     return ' · '.join(parts)
 
 
+def build_compact_technical_summary(snapshot: Dict[str, Any]) -> str:
+    parts: List[str] = []
+
+    quantity = snapshot.get('cantidad') or 0
+    if quantity:
+        unit_label = 'unidad' if int(quantity) == 1 else 'unidades'
+        parts.append(f'{int(quantity)} {unit_label}')
+
+    line_label = _clean_text((snapshot.get('linea') or {}).get('nombre'))
+    if line_label:
+        parts.append(line_label)
+
+    product_label = _clean_text((snapshot.get('producto') or {}).get('descripcion'))
+    if product_label:
+        parts.append(product_label)
+
+    width = _format_mm(snapshot.get('ancho_mm'))
+    height = _format_mm(snapshot.get('alto_mm'))
+    if width and height:
+        parts.append(f'{width} x {height} mm')
+
+    vidrio_label = _clean_text((snapshot.get('vidrio') or {}).get('descripcion'))
+    if vidrio_label:
+        parts.append(f'Vidrio {vidrio_label}')
+
+    tratamiento_label = _clean_text((snapshot.get('tratamiento') or {}).get('descripcion'))
+    if tratamiento_label:
+        parts.append(f'Terminación {tratamiento_label}')
+
+    return ' · '.join(parts)
+
+
 def _should_refresh_technical_summary(snapshot: Dict[str, Any], summary: Any) -> bool:
     summary_text = _clean_text(summary)
     if not summary_text:
@@ -352,5 +384,6 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
         'item': item,
         'titulo': snapshot.get('titulo_item') or _build_title(snapshot),
         'descripcion_narrativa': snapshot.get('descripcion_narrativa') or build_narrative_from_snapshot(snapshot),
+        'resumen_compacto': build_compact_technical_summary(snapshot),
         'resumen_tecnico': snapshot.get('resumen_tecnico') or build_technical_summary(snapshot),
     }

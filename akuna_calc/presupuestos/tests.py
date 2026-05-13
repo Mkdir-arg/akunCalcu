@@ -319,6 +319,36 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'resultado-item-')
         self.assertContains(res, 'application/json')
 
+    def test_detalle_muestra_resumen_compacto_del_item(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        ItemPresupuesto.objects.create(
+            presupuesto=p,
+            descripcion='V1',
+            cantidad=1,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=350000,
+            resultado_json={
+                'snapshot_item': {
+                    'titulo_item': 'V1',
+                    'linea': {'nombre': 'MODENA'},
+                    'producto': {'descripcion': 'BANDEROLA'},
+                    'vidrio': {'descripcion': '4+9+4'},
+                    'tratamiento': {'descripcion': 'BLANCO'},
+                    'resumen_tecnico': '1 unidad · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO',
+                }
+            },
+        )
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'V1')
+        self.assertContains(res, '1 unidad · MODENA · BANDEROLA · 1200 x 1500 mm · Vidrio 4+9+4 · Terminación BLANCO')
+        self.assertNotContains(res, 'Margen 30')
+
     def test_pdf_autenticado(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)

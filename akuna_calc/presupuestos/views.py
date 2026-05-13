@@ -53,8 +53,15 @@ def _get_detalle_queryset():
 
 
 def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form=None):
+    items_detalle = []
+    for item in presupuesto.items.all():
+        item_context = build_pdf_item_context(item)
+        item.resumen_compacto = item_context.get('resumen_compacto', '')
+        items_detalle.append(item)
+
     return {
         'presupuesto': presupuesto,
+        'items_detalle': items_detalle,
         'comentario_form': comentario_form or ComentarioForm(),
         'configuracion_form': configuracion_form or PresupuestoConfiguracionObraForm(instance=presupuesto),
     }
