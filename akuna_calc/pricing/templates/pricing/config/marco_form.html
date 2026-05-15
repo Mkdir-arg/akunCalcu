@@ -26,9 +26,7 @@
                     <h3 class="text-lg font-semibold text-slate-800">Fórmulas de Perfiles</h3>
                     <div class="flex gap-2">
                         {% if object %}
-                        <button type="button" onclick="guardarFormulas()" id="btnGuardarFormulas" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-save mr-2"></i>Guardar Fórmulas
-                        </button>
+                        <span id="estadoFormulas" class="text-sm text-slate-500 self-center">Guardado</span>
                         {% endif %}
                         <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
                             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
@@ -59,9 +57,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-slate-800">Accesorios</h3>
                     <div class="flex gap-2">
-                        <button type="button" onclick="guardarAccesorios()" id="btnGuardarAccesorios" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-save mr-2"></i>Guardar Accesorios
-                        </button>
+                        <span id="estadoAccesorios" class="text-sm text-slate-500 self-center">Guardado</span>
                         <button type="button" onclick="agregarAccesorio()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
                             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
                         </button>
@@ -190,6 +186,9 @@ function _agregarFila(datos) {
 function agregarFormula() {
     document.getElementById('noFormulas').style.display = 'none';
     _agregarFila({});
+    {% if object %}
+    scheduleFormulasSave();
+    {% endif %}
 }
 
 function eliminarFormula(btn) {
@@ -197,9 +196,48 @@ function eliminarFormula(btn) {
     if (document.querySelectorAll('#formulasTable tr').length === 0) {
         document.getElementById('noFormulas').style.display = 'block';
     }
+    {% if object %}
+    scheduleFormulasSave();
+    {% endif %}
 }
 
 {% if object %}
+const autosaveTimers = {
+    formulas: null,
+    accesorios: null,
+};
+
+function setSaveStatus(elementId, state) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+    if (state === 'saving') {
+        element.textContent = 'Guardando...';
+        element.className = 'text-sm text-amber-600 self-center';
+        return;
+    }
+    if (state === 'saved') {
+        element.textContent = 'Guardado';
+        element.className = 'text-sm text-emerald-600 self-center';
+        return;
+    }
+    element.textContent = 'Error al guardar';
+    element.className = 'text-sm text-red-600 self-center';
+}
+
+function scheduleFormulasSave() {
+    clearTimeout(autosaveTimers.formulas);
+    setSaveStatus('estadoFormulas', 'saving');
+    autosaveTimers.formulas = setTimeout(() => guardarFormulas(), 900);
+}
+
+function scheduleAccesoriosSave() {
+    clearTimeout(autosaveTimers.accesorios);
+    setSaveStatus('estadoAccesorios', 'saving');
+    autosaveTimers.accesorios = setTimeout(() => guardarAccesorios(), 900);
+}
+
 function guardarFormulas() {
     // Re-numerar antes de recolectar
     document.querySelectorAll('#formulasTable tr').forEach((row, idx) => {
@@ -207,10 +245,6 @@ function guardarFormulas() {
             input.name = input.name.replace(/_\d+$/, '_' + idx);
         });
     });
-
-    const btn = document.getElementById('btnGuardarFormulas');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -226,25 +260,14 @@ function guardarFormulas() {
     })
     .then(r => r.json())
     .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
         if (data.ok) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Fórmulas guardadas',
-                text: `Se guardaron ${data.guardadas} fórmula(s) correctamente.`,
-                confirmButtonColor: '#3b82f6',
-                timer: 2500,
-                timerProgressBar: true,
-            });
+            setSaveStatus('estadoFormulas', 'saved');
         } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudieron guardar las fórmulas.', confirmButtonColor: '#3b82f6' });
+            setSaveStatus('estadoFormulas', 'error');
         }
     })
     .catch(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
-        Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.', confirmButtonColor: '#3b82f6' });
+        setSaveStatus('estadoFormulas', 'error');
     });
 }
 {% endif %}
@@ -388,7 +411,7 @@ function _agregarFilaAccesorio(datos) {
             <input type="checkbox" name="obligatorio_${accesorioIndex}" class="w-4 h-4" ${datos.obligatorio === 'Si' ? 'checked' : ''}>
         </td>
         <td class="px-4 py-2">
-            <button type="button" onclick="this.closest('tr').remove()" class="text-red-600 hover:text-red-800">
+            <button type="button" onclick="eliminarAccesorio(this)" class="text-red-600 hover:text-red-800">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -409,6 +432,16 @@ fetch('/pricing/api/pricing/accesorios/?tipo=marco')
 
 function agregarAccesorio() {
     _agregarFilaAccesorio({});
+    {% if object %}
+    scheduleAccesoriosSave();
+    {% endif %}
+}
+
+function eliminarAccesorio(btn) {
+    btn.closest('tr').remove();
+    {% if object %}
+    scheduleAccesoriosSave();
+    {% endif %}
 }
 
 function guardarAccesorios() {
@@ -418,10 +451,6 @@ function guardarAccesorios() {
             input.name = `${baseName}_${idx}`;
         });
     });
-
-    const btn = document.getElementById('btnGuardarAccesorios');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -444,16 +473,37 @@ function guardarAccesorios() {
         if (!r.ok || !data.ok) throw new Error(data.error || `Error HTTP ${r.status}`);
         return data;
     })
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        Swal.fire({ icon: 'success', title: 'Accesorios guardados', text: `Se guardaron ${data.guardadas} accesorio(s).`, confirmButtonColor: '#3b82f6', timer: 2500, timerProgressBar: true });
+    .then(() => {
+        setSaveStatus('estadoAccesorios', 'saved');
     })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.', confirmButtonColor: '#3b82f6' });
+    .catch(() => {
+        setSaveStatus('estadoAccesorios', 'error');
     });
 }
+
+{% if object %}
+document.addEventListener('DOMContentLoaded', function() {
+    const formulasTable = document.getElementById('formulasTable');
+    const accesoriosTable = document.getElementById('accesoriosTable');
+
+    if (formulasTable) {
+        formulasTable.addEventListener('input', function() {
+            scheduleFormulasSave();
+        });
+        formulasTable.addEventListener('change', function() {
+            scheduleFormulasSave();
+        });
+    }
+
+    if (accesoriosTable) {
+        accesoriosTable.addEventListener('input', function() {
+            scheduleAccesoriosSave();
+        });
+        accesoriosTable.addEventListener('change', function() {
+            scheduleAccesoriosSave();
+        });
+    }
+});
+{% endif %}
 </script>
 {% endblock %}

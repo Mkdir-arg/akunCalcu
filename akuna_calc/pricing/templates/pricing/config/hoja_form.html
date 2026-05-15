@@ -30,9 +30,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-slate-800">Fórmulas de Perfiles</h2>
                     <div class="flex gap-2">
-                        <button type="button" onclick="guardarFormulas()" id="btnGuardarFormulas" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-save mr-2"></i>Guardar Fórmulas
-                        </button>
+                        <span id="estadoFormulas" class="text-sm text-slate-500 self-center">Guardado</span>
                         <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
                         </button>
@@ -58,9 +56,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-slate-800">Accesorios</h2>
                     <div class="flex gap-2">
-                        <button type="button" onclick="guardarAccesorios()" id="btnGuardarAccesorios" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-save mr-2"></i>Guardar Accesorios
-                        </button>
+                        <span id="estadoAccesorios" class="text-sm text-slate-500 self-center">Guardado</span>
                         <button type="button" onclick="agregarAccesorio()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
                         </button>
@@ -89,9 +85,7 @@
                         <p class="text-sm text-slate-500 mt-1">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
                     </div>
                     {% if vidrios_relacionados %}
-                    <button type="button" onclick="guardarVidrioFormula()" id="btnGuardarVidrio" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-save mr-2"></i>Guardar Vidrio
-                    </button>
+                    <span id="estadoVidrio" class="text-sm text-slate-500 self-center">Guardado</span>
                     {% endif %}
                 </div>
                 {% if vidrios_relacionados %}
@@ -241,6 +235,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const perfiles = {{ perfiles_json|safe }};
 let formulaIndex = 0;
+const autosaveTimers = {
+    formulas: null,
+    accesorios: null,
+    vidrio: null,
+};
+
+function setSaveStatus(elementId, state) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+    if (state === 'saving') {
+        element.textContent = 'Guardando...';
+        element.className = 'text-sm text-amber-600 self-center';
+        return;
+    }
+    if (state === 'saved') {
+        element.textContent = 'Guardado';
+        element.className = 'text-sm text-emerald-600 self-center';
+        return;
+    }
+    element.textContent = 'Error al guardar';
+    element.className = 'text-sm text-red-600 self-center';
+}
+
+function scheduleFormulasSave() {
+    clearTimeout(autosaveTimers.formulas);
+    setSaveStatus('estadoFormulas', 'saving');
+    autosaveTimers.formulas = setTimeout(() => guardarFormulas(), 900);
+}
+
+function scheduleAccesoriosSave() {
+    clearTimeout(autosaveTimers.accesorios);
+    setSaveStatus('estadoAccesorios', 'saving');
+    autosaveTimers.accesorios = setTimeout(() => guardarAccesorios(), 900);
+}
+
+function scheduleVidrioSave() {
+    clearTimeout(autosaveTimers.vidrio);
+    setSaveStatus('estadoVidrio', 'saving');
+    autosaveTimers.vidrio = setTimeout(() => guardarVidrioFormula(), 900);
+}
 
 // Cargar fórmulas existentes
 const formulasIniciales = [
@@ -299,10 +335,12 @@ function _agregarFila(datos) {
 
 function agregarFormula() {
     _agregarFila({});
+    scheduleFormulasSave();
 }
 
 function eliminarFormula(btn) {
     btn.closest('tr').remove();
+    scheduleFormulasSave();
 }
 
 // Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
@@ -328,10 +366,6 @@ function guardarFormulas() {
         });
     });
 
-    const btn = document.getElementById('btnGuardarFormulas');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
@@ -349,25 +383,14 @@ function guardarFormulas() {
     })
     .then(r => r.json())
     .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
         if (data.ok) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Fórmulas guardadas',
-                text: `Se guardaron ${data.guardadas} fórmula(s) correctamente.`,
-                confirmButtonColor: '#3b82f6',
-                timer: 2500,
-                timerProgressBar: true,
-            });
+            setSaveStatus('estadoFormulas', 'saved');
         } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudieron guardar las fórmulas.', confirmButtonColor: '#3b82f6' });
+            setSaveStatus('estadoFormulas', 'error');
         }
     })
     .catch(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Fórmulas';
-        Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.', confirmButtonColor: '#3b82f6' });
+        setSaveStatus('estadoFormulas', 'error');
     });
 }
 
@@ -395,7 +418,7 @@ function _agregarFilaAccesorio(datos) {
             <input type="checkbox" name="obligatorio_${accesorioIndex}" class="w-4 h-4" ${datos.obligatorio === 'Si' ? 'checked' : ''}>
         </td>
         <td class="px-4 py-2">
-            <button type="button" onclick="this.closest('tr').remove()" class="text-red-600 hover:text-red-800">
+            <button type="button" onclick="eliminarAccesorio(this)" class="text-red-600 hover:text-red-800">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -416,13 +439,15 @@ fetch('/pricing/api/pricing/accesorios/?tipo=hoja')
 
 function agregarAccesorio() {
     _agregarFilaAccesorio({});
+    scheduleAccesoriosSave();
+}
+
+function eliminarAccesorio(btn) {
+    btn.closest('tr').remove();
+    scheduleAccesoriosSave();
 }
 
 function guardarVidrioFormula() {
-    const btn = document.getElementById('btnGuardarVidrio');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     formData.append('save_vidrio_formula', '1');
@@ -446,14 +471,10 @@ function guardarVidrioFormula() {
         return data;
     })
     .then(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Vidrio';
-        Swal.fire({ icon: 'success', title: 'Fórmulas guardadas', confirmButtonColor: '#3b82f6', timer: 2000, timerProgressBar: true });
+        setSaveStatus('estadoVidrio', 'saved');
     })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Vidrio';
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.', confirmButtonColor: '#3b82f6' });
+    .catch(() => {
+        setSaveStatus('estadoVidrio', 'error');
     });
 }
 
@@ -465,10 +486,6 @@ function guardarAccesorios() {
             input.name = `${baseName}_${idx}`;
         });
     });
-
-    const btn = document.getElementById('btnGuardarAccesorios');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -504,22 +521,44 @@ function guardarAccesorios() {
         return data;
     })
     .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        Swal.fire({
-            icon: 'success',
-            title: 'Accesorios guardados',
-            text: `Se guardaron ${data.guardadas} accesorio(s) correctamente.`,
-            confirmButtonColor: '#3b82f6',
-            timer: 2500,
-            timerProgressBar: true,
-        });
+        setSaveStatus('estadoAccesorios', 'saved');
     })
-    .catch((err) => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Accesorios';
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.', confirmButtonColor: '#3b82f6' });
+    .catch(() => {
+        setSaveStatus('estadoAccesorios', 'error');
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formulasBody = document.getElementById('formulasBody');
+    const accesoriosBody = document.getElementById('accesoriosBody');
+    const vidriosFormulaBody = document.getElementById('vidriosFormulaBody');
+
+    if (formulasBody) {
+        formulasBody.addEventListener('input', function() {
+            scheduleFormulasSave();
+        });
+        formulasBody.addEventListener('change', function() {
+            scheduleFormulasSave();
+        });
+    }
+
+    if (accesoriosBody) {
+        accesoriosBody.addEventListener('input', function() {
+            scheduleAccesoriosSave();
+        });
+        accesoriosBody.addEventListener('change', function() {
+            scheduleAccesoriosSave();
+        });
+    }
+
+    if (vidriosFormulaBody) {
+        vidriosFormulaBody.addEventListener('input', function() {
+            scheduleVidrioSave();
+        });
+        vidriosFormulaBody.addEventListener('change', function() {
+            scheduleVidrioSave();
+        });
+    }
+});
 </script>
 {% endblock %}

@@ -109,9 +109,7 @@
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Fórmulas</h2>
-            <button onclick="guardarFormulasMosq()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-save mr-2"></i>Guardar Fórmulas
-            </button>
+            <span id="estadoFormulasOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
 
         <div id="formulas-mosq-container" class="space-y-3">
@@ -154,7 +152,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="this.closest('.formula-mosq-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarFormulaMosq(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -173,9 +171,7 @@
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Fórmulas de Cálculo</h2>
-            <button onclick="guardarFormulas()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-save mr-2"></i>Guardar Fórmulas
-            </button>
+            <span id="estadoFormulasOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
         <div id="formulas-container" class="space-y-3">
             {% for formula in formulas %}
@@ -199,7 +195,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="this.closest('.formula-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarFormulaOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -216,9 +212,7 @@
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Accesorios</h2>
-            <button onclick="guardarAccesorios()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-save mr-2"></i>Guardar Accesorios
-            </button>
+            <span id="estadoAccesoriosOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
         <div id="accesorios-container" class="space-y-3">
             {% for acc in accesorios %}
@@ -238,7 +232,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="this.closest('.accesorio-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarAccesorioOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -258,7 +252,37 @@
 <script>
 {% if opcional and opcional.pk %}
 
+const autosaveTimers = {
+    formulas: null,
+    accesorios: null,
+};
+
+function setSaveStatus(elementId, state) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+    if (state === 'saving') {
+        element.textContent = 'Guardando...';
+        element.className = 'text-sm text-amber-600';
+        return;
+    }
+    if (state === 'saved') {
+        element.textContent = 'Guardado';
+        element.className = 'text-sm text-emerald-600';
+        return;
+    }
+    element.textContent = 'Error al guardar';
+    element.className = 'text-sm text-red-600';
+}
+
 {% if opcional.tipo == 'mosquitero' %}
+function scheduleFormulasSave() {
+    clearTimeout(autosaveTimers.formulas);
+    setSaveStatus('estadoFormulasOpcional', 'saving');
+    autosaveTimers.formulas = setTimeout(() => guardarFormulasMosq(), 900);
+}
+
 function filtrarLineas(selectExtrusora) {
     const row = selectExtrusora.closest('.formula-mosq-row');
     const extrusoraId = selectExtrusora.value;
@@ -326,13 +350,19 @@ function agregarFormulaMosq() {
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="button" onclick="this.closest('.formula-mosq-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                <button type="button" onclick="eliminarFormulaMosq(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
     `;
     container.appendChild(div);
+    scheduleFormulasSave();
+}
+
+function eliminarFormulaMosq(btn) {
+    btn.closest('.formula-mosq-row').remove();
+    scheduleFormulasSave();
 }
 
 function guardarFormulasMosq() {
@@ -347,15 +377,30 @@ function guardarFormulasMosq() {
     fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
-        if (data.ok) { alert(`✓ ${data.guardadas} fórmulas guardadas`); location.reload(); }
-        else alert('Error: ' + (data.error || 'Error desconocido'));
+        if (data.ok) {
+            setSaveStatus('estadoFormulasOpcional', 'saved');
+            return;
+        }
+        setSaveStatus('estadoFormulasOpcional', 'error');
     })
-    .catch(e => alert('Error: ' + e));
+    .catch(() => {
+        setSaveStatus('estadoFormulasOpcional', 'error');
+    });
 }
 
 // Inicializar filtros en filas existentes
 const productosMap = {{ productos_map_json|safe }};
 document.addEventListener('DOMContentLoaded', function() {
+    const formulasMosqContainer = document.getElementById('formulas-mosq-container');
+    if (formulasMosqContainer) {
+        formulasMosqContainer.addEventListener('input', function() {
+            scheduleFormulasSave();
+        });
+        formulasMosqContainer.addEventListener('change', function() {
+            scheduleFormulasSave();
+        });
+    }
+
     document.querySelectorAll('.formula-mosq-row').forEach(row => {
         const prod = row.querySelector('.producto-select');
         if (prod && prod.value) {
@@ -381,6 +426,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 {% else %}
+function scheduleFormulasSave() {
+    clearTimeout(autosaveTimers.formulas);
+    setSaveStatus('estadoFormulasOpcional', 'saving');
+    autosaveTimers.formulas = setTimeout(() => guardarFormulas(), 900);
+}
+
+function scheduleAccesoriosSave() {
+    clearTimeout(autosaveTimers.accesorios);
+    setSaveStatus('estadoAccesoriosOpcional', 'saving');
+    autosaveTimers.accesorios = setTimeout(() => guardarAccesorios(), 900);
+}
+
 function filtrarPerfilesPorLinea() {
     const tipo = document.getElementById('id_tipo');
     const linea = document.getElementById('id_linea_id');
@@ -427,7 +484,7 @@ function agregarFormula() {
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="button" onclick="this.closest('.formula-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                <button type="button" onclick="eliminarFormulaOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -435,6 +492,12 @@ function agregarFormula() {
     `;
     container.appendChild(div);
     filtrarPerfilesPorLinea();
+    scheduleFormulasSave();
+}
+
+function eliminarFormulaOpcional(btn) {
+    btn.closest('.formula-row').remove();
+    scheduleFormulasSave();
 }
 
 function guardarFormulas() {
@@ -449,13 +512,41 @@ function guardarFormulas() {
     fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
-        if (data.ok) { alert(`✓ ${data.guardadas} fórmulas guardadas`); location.reload(); }
-        else alert('Error: ' + (data.error || 'Error desconocido'));
+        if (data.ok) {
+            setSaveStatus('estadoFormulasOpcional', 'saved');
+            return;
+        }
+        setSaveStatus('estadoFormulasOpcional', 'error');
     })
-    .catch(e => alert('Error: ' + e));
+    .catch(() => {
+        setSaveStatus('estadoFormulasOpcional', 'error');
+    });
 }
 
-document.addEventListener('DOMContentLoaded', filtrarPerfilesPorLinea);
+document.addEventListener('DOMContentLoaded', function() {
+    filtrarPerfilesPorLinea();
+
+    const formulasContainer = document.getElementById('formulas-container');
+    const accesoriosContainer = document.getElementById('accesorios-container');
+
+    if (formulasContainer) {
+        formulasContainer.addEventListener('input', function() {
+            scheduleFormulasSave();
+        });
+        formulasContainer.addEventListener('change', function() {
+            scheduleFormulasSave();
+        });
+    }
+
+    if (accesoriosContainer) {
+        accesoriosContainer.addEventListener('input', function() {
+            scheduleAccesoriosSave();
+        });
+        accesoriosContainer.addEventListener('change', function() {
+            scheduleAccesoriosSave();
+        });
+    }
+});
 
 function agregarAccesorio() {
     const container = document.getElementById('accesorios-container');
@@ -477,13 +568,19 @@ function agregarAccesorio() {
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="button" onclick="this.closest('.accesorio-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                <button type="button" onclick="eliminarAccesorioOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
     `;
     container.appendChild(div);
+    scheduleAccesoriosSave();
+}
+
+function eliminarAccesorioOpcional(btn) {
+    btn.closest('.accesorio-row').remove();
+    scheduleAccesoriosSave();
 }
 
 function guardarAccesorios() {
@@ -497,10 +594,15 @@ function guardarAccesorios() {
     fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
-        if (data.ok) { alert(`✓ ${data.guardadas} accesorios guardados`); location.reload(); }
-        else alert('Error: ' + (data.error || 'Error desconocido'));
+        if (data.ok) {
+            setSaveStatus('estadoAccesoriosOpcional', 'saved');
+            return;
+        }
+        setSaveStatus('estadoAccesoriosOpcional', 'error');
     })
-    .catch(e => alert('Error: ' + e));
+    .catch(() => {
+        setSaveStatus('estadoAccesoriosOpcional', 'error');
+    });
 }
 {% endif %}
 

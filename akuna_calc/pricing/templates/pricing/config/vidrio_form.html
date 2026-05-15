@@ -49,9 +49,7 @@
     <div class="bg-white rounded-2xl shadow-lg p-6 mt-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-slate-800">Relacionar a Hoja</h2>
-            <button onclick="guardarHojas()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-save mr-2"></i>Guardar Relaciones
-            </button>
+            <span id="estadoRelacionesVidrio" class="text-sm text-slate-500">Guardado</span>
         </div>
 
         <div id="hojas-container" class="space-y-3">
@@ -68,7 +66,7 @@
                         </select>
                     </div>
                     <div>
-                        <button type="button" onclick="this.closest('.hoja-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarHoja(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -83,6 +81,35 @@
     </div>
 
     <script>
+    const autosaveRelaciones = {
+        timer: null,
+    };
+
+    function setSaveStatus(state) {
+        const element = document.getElementById('estadoRelacionesVidrio');
+        if (!element) {
+            return;
+        }
+        if (state === 'saving') {
+            element.textContent = 'Guardando...';
+            element.className = 'text-sm text-amber-600';
+            return;
+        }
+        if (state === 'saved') {
+            element.textContent = 'Guardado';
+            element.className = 'text-sm text-emerald-600';
+            return;
+        }
+        element.textContent = 'Error al guardar';
+        element.className = 'text-sm text-red-600';
+    }
+
+    function scheduleRelacionesSave() {
+        clearTimeout(autosaveRelaciones.timer);
+        setSaveStatus('saving');
+        autosaveRelaciones.timer = setTimeout(() => guardarHojas(), 900);
+    }
+
     function agregarHoja() {
         const container = document.getElementById('hojas-container');
         const div = document.createElement('div');
@@ -99,13 +126,19 @@
                     </select>
                 </div>
                 <div>
-                    <button type="button" onclick="this.closest('.hoja-row').remove()" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                    <button type="button" onclick="eliminarHoja(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
         `;
         container.appendChild(div);
+        scheduleRelacionesSave();
+    }
+
+    function eliminarHoja(btn) {
+        btn.closest('.hoja-row').remove();
+        scheduleRelacionesSave();
     }
 
     function guardarHojas() {
@@ -122,11 +155,28 @@
         })
         .then(r => r.json())
         .then(data => {
-            if (data.ok) { alert(`✓ ${data.guardadas} relaciones guardadas`); location.reload(); }
-            else alert('Error: ' + (data.error || 'Error desconocido'));
+            if (data.ok) {
+                setSaveStatus('saved');
+                return;
+            }
+            setSaveStatus('error');
         })
-        .catch(e => alert('Error: ' + e));
+        .catch(() => {
+            setSaveStatus('error');
+        });
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('hojas-container');
+        if (!container) {
+            return;
+        }
+        container.addEventListener('change', function(event) {
+            if (event.target && event.target.name === 'hoja') {
+                scheduleRelacionesSave();
+            }
+        });
+    });
     </script>
     {% endif %}
 </div>
