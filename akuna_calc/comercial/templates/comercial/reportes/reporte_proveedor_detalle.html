@@ -25,9 +25,10 @@
         <div class="border-b border-slate-200 bg-slate-50 px-6 py-6">
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_0.9fr] xl:items-start">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Cuenta Corriente</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Cuenta activa</p>
                     <h2 class="mt-2 text-2xl font-bold text-slate-800 leading-tight">{{ cuenta_corriente.proveedor.nombre }}</h2>
                     <div class="mt-3 space-y-1 text-sm text-slate-600">
+                        <p><span class="font-semibold text-slate-700">Vista:</span> Cuenta corriente en formato libro mayor</p>
                         <p><span class="font-semibold text-slate-700">Razón social:</span> {{ cuenta_corriente.proveedor.razon_social|default:'Proveedor sin razón social' }}</p>
                         <p><span class="font-semibold text-slate-700">Formato:</span> Libro mayor de movimientos con debe, haber y saldo acumulado</p>
                     </div>
