@@ -17,32 +17,61 @@
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
         <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-            <form method="get" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-3 xl:items-end">
-                <input type="hidden" name="sort" value="{{ sort }}">
-                <input type="hidden" name="dir" value="{{ dir }}">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-3">
                 <div>
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Filtrar por línea</label>
-                        <p class="text-xs text-slate-500">Ideal para seleccionar y actualizar una línea completa.</p>
+                    <h2 class="text-lg font-bold text-slate-800">Filtros</h2>
+                    <p class="text-sm text-slate-500">Misma funcionalidad, en una barra más compacta.</p>
+                </div>
+                <p class="text-sm text-slate-500 font-medium" data-filter-results-external>Mostrando {{ perfiles|length }} de {{ perfiles|length }} registros</p>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-[minmax(240px,1.1fr)_minmax(280px,1.2fr)_180px_auto] gap-3 items-end">
+                <form method="get" class="contents">
+                    <input type="hidden" name="sort" value="{{ sort }}">
+                    <input type="hidden" name="dir" value="{{ dir }}">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Línea</label>
+                        <select name="linea" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
+                            <option value="">Todas las líneas</option>
+                            {% for linea in lineas %}
+                            <option value="{{ linea.id }}" {% if selected_linea_id == linea.id|stringformat:'s' %}selected{% endif %}>{{ linea.nombre|default:"Sin nombre" }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <select name="linea" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
-                        <option value="">Todas las líneas</option>
-                        {% for linea in lineas %}
-                        <option value="{{ linea.id }}" {% if selected_linea_id == linea.id|stringformat:'s' %}selected{% endif %}>{{ linea.nombre|default:"Sin nombre" }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-2 xl:justify-end">
-                    <button type="submit" class="inline-flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
-                        <i class="fas fa-filter mr-2"></i>Aplicar filtro
-                    </button>
-                    <a href="?sort={{ sort }}&dir={{ dir }}" class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
-                        <i class="fas fa-broom mr-2"></i>Quitar filtro
-                    </a>
-                </div>
-            </form>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Buscar</label>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                data-filter-search
+                                placeholder="Buscar por codigo, linea, descripcion o tipo..."
+                                class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Estado</label>
+                        <select data-filter-status class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
+                            <option value="">Todos</option>
+                            <option value="activo">Activos</option>
+                            <option value="inactivo">Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col sm:flex-row xl:justify-end gap-2">
+                        <button type="submit" class="inline-flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
+                            <i class="fas fa-filter mr-2"></i>Aplicar
+                        </button>
+                        <a href="?sort={{ sort }}&dir={{ dir }}" class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
+                            <i class="fas fa-broom mr-2"></i>Quitar
+                        </a>
+                        <button type="button" data-filter-reset class="inline-flex items-center justify-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
+                            <i class="fas fa-eraser mr-2"></i>Limpiar
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        {% include 'core/includes/table_filters.html' with table_filter_id='perfiles-table' show_status_filter=True table_filter_placeholder='Buscar por codigo, linea, descripcion o tipo...' compact_filters=True compact_filter_title='Filtros rápidos' compact_filter_description='Buscar y estado sobre los registros visibles.' %}
         <form method="post" action="{{ request.get_full_path }}" id="bulk-perfiles-form">
             {% csrf_token %}
             <div class="border-b border-slate-200 bg-white px-6 py-5">
@@ -169,8 +198,75 @@ function confirmarDesactivar(url, nombre) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    const perfilesRows = Array.from(document.querySelectorAll('[data-filter-row="perfiles-table"]'));
+    const perfilesEmptyStateRow = document.querySelector('[data-filter-empty="perfiles-table"]');
+    const filtersSearchInput = document.querySelector('[data-filter-search]');
+    const filtersStatusSelect = document.querySelector('[data-filter-status]');
+    const filtersResetButton = document.querySelector('[data-filter-reset]');
+    const externalResultsLabel = document.querySelector('[data-filter-results-external]');
+
+    function normalizeFilterText(value) {
+        return (value || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function applyPerfilesTableFilters() {
+        const searchTerm = normalizeFilterText(filtersSearchInput ? filtersSearchInput.value : '');
+        const selectedStatus = filtersStatusSelect ? filtersStatusSelect.value : '';
+        let visibleCount = 0;
+
+        perfilesRows.forEach(function (row) {
+            const rowText = normalizeFilterText(row.textContent);
+            const rowStatus = row.dataset.status || '';
+            const matchesSearch = !searchTerm || rowText.includes(searchTerm);
+            const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+            const isVisible = matchesSearch && matchesStatus;
+
+            row.classList.toggle('hidden', !isVisible);
+            if (isVisible) {
+                visibleCount += 1;
+            }
+        });
+
+        if (perfilesEmptyStateRow) {
+            perfilesEmptyStateRow.classList.toggle('hidden', perfilesRows.length === 0 || visibleCount > 0);
+        }
+
+        if (externalResultsLabel) {
+            if (perfilesRows.length === 0) {
+                externalResultsLabel.textContent = 'Sin registros cargados';
+            } else {
+                externalResultsLabel.textContent = `Mostrando ${visibleCount} de ${perfilesRows.length} registros`;
+            }
+        }
+    }
+
+    if (filtersSearchInput) {
+        filtersSearchInput.addEventListener('input', applyPerfilesTableFilters);
+    }
+
+    if (filtersStatusSelect) {
+        filtersStatusSelect.addEventListener('change', applyPerfilesTableFilters);
+    }
+
+    if (filtersResetButton) {
+        filtersResetButton.addEventListener('click', function () {
+            if (filtersSearchInput) {
+                filtersSearchInput.value = '';
+            }
+            if (filtersStatusSelect) {
+                filtersStatusSelect.value = '';
+            }
+            applyPerfilesTableFilters();
+        });
+    }
+
     const bulkForm = document.getElementById('bulk-perfiles-form');
     if (!bulkForm) {
+        applyPerfilesTableFilters();
         return;
     }
 
@@ -178,7 +274,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectedCount = document.getElementById('perfiles-seleccionados-cantidad');
     const submitButton = document.getElementById('aplicar-precio-masivo');
     const priceInput = document.getElementById('id_precio_kg');
-    const filtersRoot = document.querySelector('[data-table-filters="perfiles-table"]');
 
     function getAllSelectors() {
         return Array.from(document.querySelectorAll('.perfil-selector'));
@@ -228,23 +323,18 @@ document.addEventListener('DOMContentLoaded', function () {
         checkbox.addEventListener('change', updateBulkSelectionState);
     });
 
-    if (filtersRoot) {
-        const searchInput = filtersRoot.querySelector('[data-filter-search]');
-        const statusSelect = filtersRoot.querySelector('[data-filter-status]');
-        const resetButton = filtersRoot.querySelector('[data-filter-reset]');
-        const scheduleUpdate = function () {
-            window.setTimeout(updateBulkSelectionState, 0);
-        };
+    const scheduleUpdate = function () {
+        window.setTimeout(updateBulkSelectionState, 0);
+    };
 
-        if (searchInput) {
-            searchInput.addEventListener('input', scheduleUpdate);
-        }
-        if (statusSelect) {
-            statusSelect.addEventListener('change', scheduleUpdate);
-        }
-        if (resetButton) {
-            resetButton.addEventListener('click', scheduleUpdate);
-        }
+    if (filtersSearchInput) {
+        filtersSearchInput.addEventListener('input', scheduleUpdate);
+    }
+    if (filtersStatusSelect) {
+        filtersStatusSelect.addEventListener('change', scheduleUpdate);
+    }
+    if (filtersResetButton) {
+        filtersResetButton.addEventListener('click', scheduleUpdate);
     }
 
     bulkForm.addEventListener('submit', function (event) {
@@ -289,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    applyPerfilesTableFilters();
     updateBulkSelectionState();
 });
 </script>
