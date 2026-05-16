@@ -1122,6 +1122,75 @@ class ReporteCobranzasTest(TestCase):
         self.assertContains(response, 'Cobrado en USD')
         self.assertContains(response, 'USD 0,05')
         self.assertContains(response, 'en USD')
+        self.assertContains(response, 'Cobranzas USD')
+
+    def test_reporte_cobranzas_filtra_solo_movimientos_usd(self):
+        from datetime import datetime
+        from django.utils import timezone
+
+        venta_ars = Venta.objects.create(
+            numero_pedido='VTA-ARS-FILTER',
+            cliente=self.cliente,
+            valor_total=Decimal('500'),
+            sena=Decimal('80'),
+            fecha_pago='2026-04-09',
+            forma_pago='efectivo',
+        )
+        Venta.objects.filter(pk=venta_ars.pk).update(
+            created_at=timezone.make_aware(datetime(2026, 4, 9, 9, 0, 0))
+        )
+
+        venta_usd = Venta.objects.create(
+            numero_pedido='VTA-USD-FILTER',
+            cliente=self.cliente,
+            valor_total=Decimal('900'),
+            sena=Decimal('120'),
+            sena_en_dolares=True,
+            sena_usd=Decimal('0.12'),
+            cotizacion_sena_usd=Decimal('1000'),
+            fecha_pago='2026-04-10',
+            forma_pago='transferencia',
+        )
+        Venta.objects.filter(pk=venta_usd.pk).update(
+            created_at=timezone.make_aware(datetime(2026, 4, 10, 10, 0, 0))
+        )
+
+        PagoVenta.objects.create(
+            venta=venta_ars,
+            monto=Decimal('60'),
+            fecha_pago='2026-04-11',
+            forma_pago='efectivo',
+            con_factura=False,
+            created_by=self.user,
+        )
+        PagoVenta.objects.create(
+            venta=venta_usd,
+            monto=Decimal('70'),
+            fecha_pago='2026-04-12',
+            forma_pago='transferencia',
+            con_factura=True,
+            pago_en_dolares=True,
+            monto_usd=Decimal('0.07'),
+            cotizacion_usd=Decimal('1000'),
+            created_by=self.user,
+        )
+
+        response = self.client_http.post(reverse('comercial:reportes_cobranzas'), {
+            'moneda_cobranza': 'usd',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        reporte_cobranzas = response.context['reporte_data']['cobranzas']
+        self.assertEqual(reporte_cobranzas['cantidad'], 2)
+        self.assertEqual(reporte_cobranzas['cantidad_usd'], 2)
+        self.assertEqual(reporte_cobranzas['total'], Decimal('190'))
+        self.assertTrue(all(item['pago_en_dolares'] for item in reporte_cobranzas['lista']))
+        self.assertEqual({item['pedido'] for item in reporte_cobranzas['lista']}, {'VTA-USD-FILTER'})
+
+        self.assertContains(response, 'Cobranzas USD')
+        self.assertContains(response, 'USD 0,12')
+        self.assertContains(response, 'USD 0,07')
+        self.assertNotContains(response, 'VTA-ARS-FILTER')
 
     def test_reporte_cobranzas_filtra_por_numero_factura(self):
         venta_ok = Venta.objects.create(
