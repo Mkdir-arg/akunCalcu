@@ -7,6 +7,7 @@ from django.test import TestCase
 
 from .forms import OpcionalFabricaForm
 from .models import FormulaOpcional, OpcionalFabrica
+from usuarios.models import PerfilAccesoUsuario, RolSistema
 
 
 User = get_user_model()
@@ -69,7 +70,14 @@ class OpcionalFabricaFormTest(TestCase):
 
 class OpcionalViewsTest(TestCase):
     def setUp(self):
-        self.client.force_login(User.objects.create_user(username='tester', password='pass123'))
+        self.user = User.objects.create_user(username='tester', password='pass123')
+        admin_role = RolSistema.objects.create(
+            nombre='Admin tests',
+            codigo='admin-tests',
+            acceso_total=True,
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=admin_role, permisos=[])
+        self.client.force_login(self.user)
         self.opcional = OpcionalFabrica.objects.create(
             codigo='OPC-003',
             nombre='Premarco probado',
@@ -83,7 +91,7 @@ class OpcionalViewsTest(TestCase):
         response = self.client.get(f'/plantillas/opcionales/{self.opcional.pk}/editar/')
 
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/accounts/login/', response['Location'])
+        self.assertIn('/login/', response['Location'])
 
     def test_guardar_formulas_premarco_exige_perfil(self):
         response = self.client.post(

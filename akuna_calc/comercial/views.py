@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from core.navigation import append_return_to, resolve_return_url
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto, PagoVenta, PagoCompra, Percepcion, Recibo
-from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteProveedorForm
+from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, ReporteCobranzasForm, ReporteProveedorForm
 
 
 logger = logging.getLogger(__name__)
@@ -1669,8 +1669,20 @@ def construir_reporte_cobranzas(
     estado_venta_filtro=None,
     tipo_factura_filtro=None,
     numero_factura_filtro=None,
+    moneda_cobranza_filtro='todas',
 ):
     cobranzas = []
+
+    def _filtrar_queryset_por_moneda(queryset, *, flag_field, usd_field):
+        if moneda_cobranza_filtro == 'usd':
+            return queryset.filter(**{flag_field: True, f'{usd_field}__gt': 0})
+        if moneda_cobranza_filtro == 'ars':
+            return queryset.filter(
+                Q(**{flag_field: False}) |
+                Q(**{f'{usd_field}__isnull': True}) |
+                Q(**{f'{usd_field}__lte': 0})
+            )
+        return queryset
 
     ventas_query = Venta.objects.filter(deleted_at__isnull=True, sena__gt=0).select_related('cliente')
 
@@ -1691,6 +1703,11 @@ def construir_reporte_cobranzas(
             ventas_query = ventas_query.filter(con_factura=False)
     if numero_factura_filtro:
         ventas_query = ventas_query.filter(numero_factura__icontains=numero_factura_filtro)
+    ventas_query = _filtrar_queryset_por_moneda(
+        ventas_query,
+        flag_field='sena_en_dolares',
+        usd_field='sena_usd',
+    )
 
     for venta in ventas_query:
         cobranzas.append({
@@ -1731,6 +1748,11 @@ def construir_reporte_cobranzas(
             Q(numero_factura__icontains=numero_factura_filtro) |
             Q(venta__numero_factura__icontains=numero_factura_filtro)
         )
+    pagos_query = _filtrar_queryset_por_moneda(
+        pagos_query,
+        flag_field='pago_en_dolares',
+        usd_field='monto_usd',
+    )
 
     for pago in pagos_query.order_by('-fecha_pago', '-created_at'):
         cobranzas.append({
@@ -1836,7 +1858,7 @@ def reportes(request):
 
 @login_required
 def reportes_cobranzas(request):
-    form = ReporteForm()
+    form = ReporteCobranzasForm()
     reporte_data = None
 
     fecha_desde = None
@@ -1847,9 +1869,10 @@ def reportes_cobranzas(request):
     tipo_factura_filtro = None
     numero_factura_filtro = None
     orden_cobranzas = 'fecha_desc'
+    moneda_cobranza_filtro = 'todas'
 
     if request.method == 'POST':
-        form = ReporteForm(request.POST)
+        form = ReporteCobranzasForm(request.POST)
         if form.is_valid():
             fecha_desde = form.cleaned_data.get('fecha_desde')
             fecha_hasta = form.cleaned_data.get('fecha_hasta')
@@ -1859,6 +1882,7 @@ def reportes_cobranzas(request):
             tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
             numero_factura_filtro = form.cleaned_data.get('numero_factura')
             orden_cobranzas = form.cleaned_data.get('orden') or 'fecha_desc'
+            moneda_cobranza_filtro = form.cleaned_data.get('moneda_cobranza') or 'todas'
 
             cobranzas = construir_reporte_cobranzas(
                 fecha_desde=fecha_desde,
@@ -1868,6 +1892,7 @@ def reportes_cobranzas(request):
                 estado_venta_filtro=estado_venta_filtro,
                 tipo_factura_filtro=tipo_factura_filtro,
                 numero_factura_filtro=numero_factura_filtro,
+                moneda_cobranza_filtro=moneda_cobranza_filtro,
             )
             cobranzas = ordenar_reporte_cobranzas(cobranzas, orden_cobranzas)
 

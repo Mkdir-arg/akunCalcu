@@ -41,3 +41,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-019](./REQ-019-roles-permisos-por-modulo-y-opcion.md) | Roles y permisos por módulo y opción | Implementado | 2026-05-09 | FEAT-009 |
 | [REQ-020](./REQ-020-auditoria-actividad-usuarios.md) | Auditoría de actividad de usuarios | En desarrollo | 2026-05-10 | — |
 | [REQ-021](./REQ-021-confirmacion-reemplazo-accesorios-vidrios.md) | Confirmación al reemplazar accesorios o vidrios en configurador de hojas | En desarrollo | 2026-05-15 | — |
+| [REQ-022](./REQ-022-cobranzas-usd-separadas.md) | Visualización separada de cobranzas en USD | En desarrollo | 2026-05-16 | — |

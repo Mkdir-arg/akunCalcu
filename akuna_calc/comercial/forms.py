@@ -356,6 +356,24 @@ class ReporteForm(forms.Form):
     )
 
 
+class ReporteCobranzasForm(ReporteForm):
+    MONEDA_COBRANZA_CHOICES = [
+        ('todas', 'Todas'),
+        ('usd', 'Solo USD'),
+        ('ars', 'Solo pesos'),
+    ]
+
+    moneda_cobranza = forms.ChoiceField(
+        required=False,
+        initial='todas',
+        choices=MONEDA_COBRANZA_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'no-select2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'id': 'id_moneda_cobranza',
+        })
+    )
+
+
 class ReporteGastosForm(forms.Form):
     TIPO_FACTURA_CHOICES = [
         ('blanco', 'Blanco'),
