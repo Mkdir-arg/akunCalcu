@@ -529,7 +529,13 @@ class EditarFechaSenaTest(TestCase):
 
 class ComprasProveedorTest(TestCase):
     def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
         self.user = User.objects.create_user(username='compras', password='testpass')
+        PerfilAccesoUsuario.objects.create(
+            usuario=self.user,
+            permisos=['comercial.gastos', 'reportes.proveedores'],
+        )
         self.client_http = Client()
         self.client_http.login(username='compras', password='testpass')
         self.tipo_proveedor = TipoCuenta.objects.create(tipo='proveedores', descripcion='Proveedores')
@@ -711,6 +717,32 @@ class ComprasProveedorTest(TestCase):
         self.assertFalse(PagoCompra.objects.filter(compra=compra).exists())
         self.assertContains(response, 'no puede exceder el saldo pendiente')
 
+    def test_compra_save_recalcula_saldo_con_pagos_nuevos_aun_con_prefetch_cacheado(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-103B',
+            cuenta=self.proveedor,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        compra_prefetch = Compra.objects.prefetch_related('pagos_compra').get(pk=compra.pk)
+        list(compra_prefetch.pagos_compra.all())
+
+        PagoCompra.objects.create(
+            compra=compra,
+            monto=Decimal('250'),
+            fecha_pago='2026-04-22',
+            forma_pago='transferencia',
+            con_factura=True,
+            created_by=self.user,
+        )
+
+        compra_prefetch.save()
+        compra.refresh_from_db()
+
+        self.assertEqual(compra.saldo, Decimal('750.00'))
+
     def test_reporte_proveedores_muestra_saldo_a_favor(self):
         compra = Compra.objects.create(
             numero_pedido='OC-104',
@@ -763,6 +795,82 @@ class ComprasProveedorTest(TestCase):
         self.assertContains(response, 'Cuenta activa')
         self.assertContains(response, 'Proveedor Uno')
         self.assertEqual(response.context['cuenta_corriente']['saldo_actual'], Decimal('-100.00'))
+
+    def test_reporte_proveedores_refleja_edicion_de_pago(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-104C',
+            cuenta=self.proveedor,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('1000'),
+            sena=Decimal('200'),
+            forma_pago_sena='efectivo',
+            created_by=self.user,
+        )
+        pago = PagoCompra.objects.create(
+            compra=compra,
+            monto=Decimal('300'),
+            fecha_pago='2026-04-22',
+            forma_pago='transferencia',
+            con_factura=True,
+            created_by=self.user,
+        )
+        compra.save()
+
+        edit_response = self.client_http.post(
+            reverse('comercial:editar_pago_compra', args=[pago.pk]),
+            data=json.dumps({
+                'monto': '450',
+                'fecha_pago': '2026-04-23',
+                'forma_pago': 'efectivo',
+                'con_factura': True,
+                'numero_factura': '',
+                'observaciones': '',
+                'pago_en_dolares': False,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(edit_response.status_code, 200)
+
+        response = self.client_http.get(reverse('comercial:reportes_proveedores'), {
+            'proveedor': self.proveedor.id,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['resumen_proveedores'][0]['total_pagos'], Decimal('450.00'))
+        self.assertEqual(response.context['resumen_proveedores'][0]['saldo_actual'], Decimal('350.00'))
+
+    def test_reporte_proveedores_refleja_eliminacion_de_pago(self):
+        compra = Compra.objects.create(
+            numero_pedido='OC-104D',
+            cuenta=self.proveedor,
+            fecha_pago='2026-04-21',
+            valor_total=Decimal('1000'),
+            sena=Decimal('200'),
+            forma_pago_sena='efectivo',
+            created_by=self.user,
+        )
+        pago = PagoCompra.objects.create(
+            compra=compra,
+            monto=Decimal('300'),
+            fecha_pago='2026-04-22',
+            forma_pago='transferencia',
+            con_factura=True,
+            created_by=self.user,
+        )
+        compra.save()
+
+        delete_response = self.client_http.post(reverse('comercial:eliminar_pago_compra', args=[pago.pk]))
+
+        self.assertEqual(delete_response.status_code, 200)
+
+        response = self.client_http.get(reverse('comercial:reportes_proveedores'), {
+            'proveedor': self.proveedor.id,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['resumen_proveedores'][0]['total_pagos'], Decimal('0.00'))
+        self.assertEqual(response.context['resumen_proveedores'][0]['saldo_actual'], Decimal('800.00'))
 
     def test_exportar_reporte_proveedores_excel(self):
         compra = Compra.objects.create(

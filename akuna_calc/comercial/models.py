@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
-from django.db.models import Max
+from django.db.models import Max, Sum
 from decimal import Decimal
 from pathlib import Path
 
@@ -346,7 +346,7 @@ class Compra(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk:
-            total_pagos = sum(pago.monto for pago in self.pagos_compra.all())
+            total_pagos = self.pagos_compra.aggregate(total=Sum('monto'))['total'] or Decimal('0')
             self.saldo = self.valor_total - self.sena - total_pagos
         else:
             self.saldo = self.valor_total - self.sena

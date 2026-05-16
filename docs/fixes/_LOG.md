@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-002 — Reporte de proveedores desincronizado con pagos cargados
+**Fecha**: 2026-05-16
+**Reportado por**: Usuario
+**Severidad**: Alta
+**Feature afectada**: Módulo comercial / reporte de proveedores
+
+**Síntoma**: Había pagos de compras cargados que no impactaban correctamente en el reporte de proveedores, generando saldos, totales y movimientos inconsistentes entre la compra y la cuenta corriente mostrada.
+**Causa raíz**: El saldo de `Compra` se recalculaba usando la relación `pagos_compra` sobre instancias que podían venir cacheadas por `prefetch_related`, y el reporte de proveedores reconstruía los pagos apoyándose en esa misma relación. Eso abría una ventana de desincronización cuando cambiaban los pagos asociados.
+**Solución**: Se cambió el recálculo de saldo para consultar el total de pagos con `aggregate(Sum('monto'))` directamente en base de datos y se actualizó la cuenta corriente del proveedor para obtener los pagos con una consulta dedicada a `PagoCompra`. Además, se agregaron regresiones para edición, eliminación de pagos y recálculo con cache prefetched.
+**Archivos modificados**: `akuna_calc/comercial/models.py`, `akuna_calc/comercial/views.py`, `akuna_calc/comercial/tests.py`
+
 ### FIX-001 — Formulario de usuarios: ocultar permisos para Admin y reducir scroll con solapas
 **Fecha**: 2026-05-09
 **Reportado por**: Usuario

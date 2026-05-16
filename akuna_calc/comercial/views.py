@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -187,8 +188,17 @@ def construir_cuenta_corriente_proveedor(proveedor):
         Compra.objects.filter(
             deleted_at__isnull=True,
             cuenta=proveedor,
-        ).prefetch_related('pagos_compra').order_by('fecha_pago', 'created_at', 'pk')
+        ).order_by('fecha_pago', 'created_at', 'pk')
     )
+    pagos = list(
+        PagoCompra.objects.filter(
+            compra__deleted_at__isnull=True,
+            compra__cuenta=proveedor,
+        ).select_related('compra').order_by('fecha_pago', 'created_at', 'pk')
+    )
+    pagos_por_compra = defaultdict(list)
+    for pago in pagos:
+        pagos_por_compra[pago.compra_id].append(pago)
 
     movimientos = []
     saldo_acumulado = Decimal('0')
@@ -221,7 +231,7 @@ def construir_cuenta_corriente_proveedor(proveedor):
                 'compra': compra,
             })
 
-        for pago in compra.pagos_compra.all().order_by('fecha_pago', 'created_at', 'pk'):
+        for pago in pagos_por_compra.get(compra.pk, []):
             saldo_acumulado -= pago.monto
             movimientos.append({
                 'fecha': pago.fecha_pago,
@@ -243,9 +253,9 @@ def construir_cuenta_corriente_proveedor(proveedor):
         saldo_acumulado += movimiento['debe'] - movimiento['haber']
         movimiento['saldo'] = saldo_acumulado
 
-    total_compras = sum(compra.valor_total for compra in compras)
-    total_senas = sum(compra.sena for compra in compras)
-    total_pagos = sum(sum(pago.monto for pago in compra.pagos_compra.all()) for compra in compras)
+    total_compras = sum((compra.valor_total for compra in compras), Decimal('0'))
+    total_senas = sum((compra.sena for compra in compras), Decimal('0'))
+    total_pagos = sum((pago.monto for pago in pagos), Decimal('0'))
     saldo_actual = total_compras - total_senas - total_pagos
 
     return {
