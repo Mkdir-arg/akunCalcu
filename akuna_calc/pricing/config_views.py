@@ -58,6 +58,20 @@ def is_staff(user):
     return user.is_staff
 
 
+def _resolve_ordering(request, allowed_sort_fields, default_sort):
+    sort = request.GET.get('sort', default_sort)
+    if sort not in allowed_sort_fields:
+        sort = default_sort
+
+    direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
+    sort_fields = allowed_sort_fields[sort]
+    if isinstance(sort_fields, str):
+        sort_fields = (sort_fields,)
+
+    ordering = [f'-{field}' if direction == 'desc' else field for field in sort_fields]
+    return sort, direction, ordering
+
+
 def _next_id(model):
     max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
     return max_id + 1
@@ -128,8 +142,17 @@ def _save_accesorio_edit(old_codigo, old_tipo, cleaned_data):
 @login_required
 @user_passes_test(is_staff)
 def extrusoras_config(request):
-    extrusoras = Extrusora.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/extrusoras.html', {'extrusoras': extrusoras})
+    allowed_sort_fields = {
+        'nombre': ('nombre', 'id'),
+        'estado': ('bloqueado', 'nombre', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'nombre')
+    extrusoras = Extrusora.objects.exclude(bloqueado='Si').order_by(*ordering)
+    return render(request, 'pricing/config/extrusoras.html', {
+        'extrusoras': extrusoras,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -173,9 +196,20 @@ def extrusora_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def lineas_config(request):
-    lineas = Linea.objects.select_related('extrusora').exclude(bloqueado='Si')
+    allowed_sort_fields = {
+        'nombre': ('nombre', 'id'),
+        'extrusora': ('extrusora__nombre', 'nombre', 'id'),
+        'estado': ('bloqueado', 'nombre', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'nombre')
+    lineas = Linea.objects.select_related('extrusora').exclude(bloqueado='Si').order_by(*ordering)
     extrusoras = Extrusora.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/lineas.html', {'lineas': lineas, 'extrusoras': extrusoras})
+    return render(request, 'pricing/config/lineas.html', {
+        'lineas': lineas,
+        'extrusoras': extrusoras,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -219,9 +253,21 @@ def linea_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def productos_config(request):
-    productos = Producto.objects.select_related('linea', 'extrusora').exclude(bloqueado='Si')
+    allowed_sort_fields = {
+        'descripcion': ('descripcion', 'id'),
+        'extrusora': ('extrusora__nombre', 'descripcion', 'id'),
+        'linea': ('linea__nombre', 'descripcion', 'id'),
+        'estado': ('bloqueado', 'descripcion', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
+    productos = Producto.objects.select_related('linea', 'extrusora').exclude(bloqueado='Si').order_by(*ordering)
     lineas = Linea.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/productos.html', {'productos': productos, 'lineas': lineas})
+    return render(request, 'pricing/config/productos.html', {
+        'productos': productos,
+        'lineas': lineas,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -265,9 +311,22 @@ def producto_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def marcos_config(request):
-    marcos = Marco.objects.select_related('producto', 'producto__extrusora', 'producto__linea').exclude(bloqueado='Si')
+    allowed_sort_fields = {
+        'descripcion': ('descripcion', 'id'),
+        'extrusora': ('producto__extrusora__nombre', 'descripcion', 'id'),
+        'linea': ('producto__linea__nombre', 'descripcion', 'id'),
+        'producto': ('producto__descripcion', 'descripcion', 'id'),
+        'estado': ('bloqueado', 'descripcion', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
+    marcos = Marco.objects.select_related('producto', 'producto__extrusora', 'producto__linea').exclude(bloqueado='Si').order_by(*ordering)
     productos = Producto.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/marcos.html', {'marcos': marcos, 'productos': productos})
+    return render(request, 'pricing/config/marcos.html', {
+        'marcos': marcos,
+        'productos': productos,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -448,14 +507,29 @@ def marco_formulas_guardar(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def hojas_config(request):
+    allowed_sort_fields = {
+        'descripcion': ('descripcion', 'id'),
+        'extrusora': ('marco__producto__extrusora__nombre', 'descripcion', 'id'),
+        'linea': ('marco__producto__linea__nombre', 'descripcion', 'id'),
+        'producto': ('marco__producto__descripcion', 'descripcion', 'id'),
+        'marco': ('marco__descripcion', 'descripcion', 'id'),
+        'cantidad': ('cantidad', 'descripcion', 'id'),
+        'estado': ('bloqueado', 'descripcion', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
     hojas = Hoja.objects.select_related(
         'marco',
         'marco__producto',
         'marco__producto__extrusora',
         'marco__producto__linea',
-    ).exclude(bloqueado='Si')
+    ).exclude(bloqueado='Si').order_by(*ordering)
     marcos = Marco.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/hojas.html', {'hojas': hojas, 'marcos': marcos})
+    return render(request, 'pricing/config/hojas.html', {
+        'hojas': hojas,
+        'marcos': marcos,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -736,15 +810,30 @@ def hoja_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def interiores_config(request):
+    allowed_sort_fields = {
+        'descripcion': ('descripcion', 'id'),
+        'extrusora': ('hoja__marco__producto__extrusora__nombre', 'descripcion', 'id'),
+        'linea': ('hoja__marco__producto__linea__nombre', 'descripcion', 'id'),
+        'producto': ('hoja__marco__producto__descripcion', 'descripcion', 'id'),
+        'marco': ('hoja__marco__descripcion', 'descripcion', 'id'),
+        'hoja': ('hoja__descripcion', 'descripcion', 'id'),
+        'estado': ('bloqueado', 'descripcion', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
     interiores = Interior.objects.select_related(
         'hoja',
         'hoja__marco',
         'hoja__marco__producto',
         'hoja__marco__producto__extrusora',
         'hoja__marco__producto__linea',
-    ).exclude(bloqueado='Si')
+    ).exclude(bloqueado='Si').order_by(*ordering)
     hojas = Hoja.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/interiores.html', {'interiores': interiores, 'hojas': hojas})
+    return render(request, 'pricing/config/interiores.html', {
+        'interiores': interiores,
+        'hojas': hojas,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -788,8 +877,21 @@ def interior_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def perfiles_config(request):
-    perfiles = Perfil.objects.select_related('linea').exclude(bloqueado='Si')[:200]
-    return render(request, 'pricing/config/perfiles.html', {'perfiles': perfiles})
+    allowed_sort_fields = {
+        'codigo': ('codigo',),
+        'linea': ('linea__nombre', 'codigo'),
+        'descripcion': ('descripcion', 'codigo'),
+        'precio_kg': ('precio_kg', 'codigo'),
+        'tipo': ('tipo_perfil', 'codigo'),
+        'estado': ('bloqueado', 'codigo'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'codigo')
+    perfiles = Perfil.objects.select_related('linea').exclude(bloqueado='Si').order_by(*ordering)[:200]
+    return render(request, 'pricing/config/perfiles.html', {
+        'perfiles': perfiles,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -831,8 +933,20 @@ def perfil_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def accesorios_config(request):
-    accesorios = Accesorio.objects.exclude(bloqueado='Si')[:200]
-    return render(request, 'pricing/config/accesorios.html', {'accesorios': accesorios})
+    allowed_sort_fields = {
+        'codigo': ('codigo', 'tipo'),
+        'descripcion': ('descripcion', 'codigo', 'tipo'),
+        'precio': ('precio', 'codigo', 'tipo'),
+        'tipo': ('tipo', 'codigo'),
+        'estado': ('bloqueado', 'codigo', 'tipo'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'codigo')
+    accesorios = Accesorio.objects.exclude(bloqueado='Si').order_by(*ordering)[:200]
+    return render(request, 'pricing/config/accesorios.html', {
+        'accesorios': accesorios,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -875,8 +989,19 @@ def accesorio_delete(request, codigo, tipo):
 @login_required
 @user_passes_test(is_staff)
 def vidrios_config(request):
-    vidrios = Vidrio.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/vidrios.html', {'vidrios': vidrios})
+    allowed_sort_fields = {
+        'codigo': ('codigo',),
+        'descripcion': ('descripcion', 'codigo'),
+        'precio': ('precio', 'codigo'),
+        'estado': ('bloqueado', 'codigo'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'codigo')
+    vidrios = Vidrio.objects.exclude(bloqueado='Si').order_by(*ordering)
+    return render(request, 'pricing/config/vidrios.html', {
+        'vidrios': vidrios,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required
@@ -966,8 +1091,18 @@ def vidrio_delete(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def tratamientos_config(request):
-    tratamientos = Tratamiento.objects.exclude(bloqueado='Si')
-    return render(request, 'pricing/config/tratamientos.html', {'tratamientos': tratamientos})
+    allowed_sort_fields = {
+        'descripcion': ('descripcion', 'id'),
+        'precio_kg': ('precio_kg', 'descripcion', 'id'),
+        'estado': ('bloqueado', 'descripcion', 'id'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
+    tratamientos = Tratamiento.objects.exclude(bloqueado='Si').order_by(*ordering)
+    return render(request, 'pricing/config/tratamientos.html', {
+        'tratamientos': tratamientos,
+        'sort': sort,
+        'dir': dir_,
+    })
 
 
 @login_required

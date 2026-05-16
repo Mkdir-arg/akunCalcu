@@ -3,15 +3,40 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max
 from .models import OpcionalFabrica, FormulaOpcional
 from .forms import OpcionalFabricaForm
 
 
 @login_required
 def opcional_list(request):
-    opcionales = OpcionalFabrica.objects.filter(activo=True).order_by('codigo')
-    return render(request, 'plantillas/opcional_list.html', {'opcionales': opcionales})
+    allowed_sort_fields = {
+        'codigo': ('codigo', 'id'),
+        'nombre': ('nombre', 'id'),
+        'descripcion': ('descripcion', 'codigo', 'id'),
+        'formulas': ('formulas_count', 'codigo', 'id'),
+    }
+    sort = request.GET.get('sort', 'codigo')
+    if sort not in allowed_sort_fields:
+        sort = 'codigo'
+
+    direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
+    ordering = [
+        f'-{field}' if direction == 'desc' else field
+        for field in allowed_sort_fields[sort]
+    ]
+
+    opcionales = (
+        OpcionalFabrica.objects
+        .filter(activo=True)
+        .annotate(formulas_count=Count('formulas'))
+        .order_by(*ordering)
+    )
+    return render(request, 'plantillas/opcional_list.html', {
+        'opcionales': opcionales,
+        'sort': sort,
+        'dir': direction,
+    })
 
 
 @login_required

@@ -21,10 +21,10 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Código</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Precio</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio&dir={% if sort == 'precio' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio{% if sort == 'precio' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>

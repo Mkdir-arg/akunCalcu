@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase
 from django.contrib.auth import get_user_model
 
 from plantillas.models import FormulaOpcional, OpcionalFabrica
@@ -267,3 +267,43 @@ class AccesorioEditHelpersTest(SimpleTestCase):
             precio=123.45,
         )
         mock_rename.assert_called_once_with('B-68', 'B-69')
+
+
+class PricingConfigOrderingTest(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = SimpleNamespace(is_authenticated=True, is_staff=True)
+
+    def test_resolve_ordering_normaliza_sort_y_dir_invalidos(self):
+        request = self.factory.get('/pricing/config/productos/', {'sort': 'no-existe', 'dir': 'sideways'})
+
+        sort, direction, ordering = config_views._resolve_ordering(
+            request,
+            {'descripcion': ('descripcion', 'id')},
+            'descripcion',
+        )
+
+        self.assertEqual(sort, 'descripcion')
+        self.assertEqual(direction, 'asc')
+        self.assertEqual(ordering, ['descripcion', 'id'])
+
+    @patch('pricing.config_views.render')
+    @patch('pricing.config_views.Accesorio.objects.exclude')
+    def test_accesorios_config_aplica_orden_descendente_por_tipo(self, mock_exclude, mock_render):
+        ordered_qs = MagicMock()
+        ordered_qs.__getitem__.return_value = ['ordered-accessories']
+        mock_exclude.return_value.order_by.return_value = ordered_qs
+        mock_render.return_value = SimpleNamespace(status_code=200)
+
+        request = self.factory.get('/pricing/config/accesorios/', {'sort': 'tipo', 'dir': 'desc'})
+        request.user = self.user
+
+        response = config_views.accesorios_config(request)
+
+        self.assertEqual(response.status_code, 200)
+        mock_exclude.assert_called_once_with(bloqueado='Si')
+        mock_exclude.return_value.order_by.assert_called_once_with('-tipo', '-codigo')
+        render_context = mock_render.call_args.args[2]
+        self.assertEqual(render_context['sort'], 'tipo')
+        self.assertEqual(render_context['dir'], 'desc')
+        self.assertEqual(render_context['accesorios'], ['ordered-accessories'])

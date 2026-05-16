@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from .forms import OpcionalFabricaForm
-from .models import OpcionalFabrica
+from .models import FormulaOpcional, OpcionalFabrica
 
 
 User = get_user_model()
@@ -97,3 +97,49 @@ class OpcionalViewsTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['error'], 'Selecciona un perfil en la fila 1.')
+
+    def test_opcional_list_permte_ordenar_por_cantidad_de_formulas(self):
+        otro_opcional = OpcionalFabrica.objects.create(
+            codigo='OPC-004',
+            nombre='Mosquitero simple',
+            tipo='otro',
+        )
+
+        FormulaOpcional.objects.create(
+            opcional=self.opcional,
+            cantidad='1',
+            formula='ANCHO',
+            angulo='',
+            tipo_relacionador='perfil',
+            perfil='P-01',
+            precio=0,
+            orden=1,
+        )
+        FormulaOpcional.objects.create(
+            opcional=self.opcional,
+            cantidad='1',
+            formula='ALTO',
+            angulo='',
+            tipo_relacionador='perfil',
+            perfil='P-02',
+            precio=0,
+            orden=2,
+        )
+        FormulaOpcional.objects.create(
+            opcional=otro_opcional,
+            cantidad='1',
+            formula='ANCHO',
+            angulo='',
+            tipo_relacionador='perfil',
+            perfil='P-03',
+            precio=0,
+            orden=1,
+        )
+
+        response = self.client.get('/plantillas/opcionales/?sort=formulas&dir=desc')
+
+        self.assertEqual(response.status_code, 200)
+        opcionales = list(response.context['opcionales'])
+        self.assertEqual(opcionales[0].pk, self.opcional.pk)
+        self.assertEqual(opcionales[0].formulas_count, 2)
+        self.assertEqual(opcionales[1].pk, otro_opcional.pk)
