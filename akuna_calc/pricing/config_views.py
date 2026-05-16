@@ -2,6 +2,7 @@
 
 import logging
 from functools import lru_cache
+from urllib.parse import urlencode
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -33,7 +34,7 @@ from .models import (
 )
 from .forms import (
     ExtrusoraForm, LineaForm, ProductoForm, MarcoForm, HojaForm, InteriorForm,
-    PerfilCreateForm, PerfilEditForm,
+    PerfilCreateForm, PerfilEditForm, PerfilBulkPriceForm,
     AccesorioCreateForm, AccesorioEditForm,
     VidrioCreateForm, VidrioEditForm,
     TratamientoForm,
@@ -75,6 +76,34 @@ def _resolve_ordering(request, allowed_sort_fields, default_sort):
 def _next_id(model):
     max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
     return max_id + 1
+
+
+def _build_current_querystring(request, allowed_keys=None):
+    query_items = []
+    for key in allowed_keys or []:
+        value = request.GET.get(key)
+        if value:
+            query_items.append((key, value))
+    return urlencode(query_items)
+
+
+def _redirect_to_perfiles_list(request):
+    querystring = _build_current_querystring(request, allowed_keys=['sort', 'dir', 'linea'])
+    if querystring:
+        return redirect(f'{request.path}?{querystring}')
+    return redirect('config-perfiles')
+
+
+def _update_perfiles_precio(codigos, nuevo_precio):
+    codigos_unicos = list(dict.fromkeys(codigo for codigo in codigos if codigo))
+    if not codigos_unicos:
+        return 0
+
+    return (
+        Perfil.objects.exclude(bloqueado='Si')
+        .filter(codigo__in=codigos_unicos)
+        .update(precio_kg=nuevo_precio)
+    )
 
 
 @lru_cache(maxsize=1)
@@ -886,11 +915,42 @@ def perfiles_config(request):
         'estado': ('bloqueado', 'codigo'),
     }
     sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'codigo')
-    perfiles = Perfil.objects.select_related('linea').exclude(bloqueado='Si').order_by(*ordering)[:200]
+    selected_linea_id = request.GET.get('linea', '').strip()
+    bulk_form = PerfilBulkPriceForm()
+
+    if request.method == 'POST':
+        bulk_form = PerfilBulkPriceForm(request.POST)
+        codigos_seleccionados = request.POST.getlist('perfiles_seleccionados')
+
+        if bulk_form.is_valid():
+            if not codigos_seleccionados:
+                messages.error(request, 'Selecciona al menos un perfil para actualizar el precio.')
+            else:
+                actualizados = _update_perfiles_precio(
+                    codigos_seleccionados,
+                    bulk_form.cleaned_data['precio_kg'],
+                )
+                if actualizados:
+                    messages.success(request, f'Se actualizaron {actualizados} perfiles correctamente.')
+                else:
+                    messages.error(request, 'No se encontraron perfiles activos para actualizar.')
+            return _redirect_to_perfiles_list(request)
+
+    perfiles_qs = Perfil.objects.select_related('linea').exclude(bloqueado='Si')
+    if selected_linea_id:
+        perfiles_qs = perfiles_qs.filter(linea_id=selected_linea_id)
+
+    perfiles = perfiles_qs.order_by(*ordering)[:200]
+    lineas = Linea.objects.exclude(bloqueado='Si').order_by('nombre')
+
     return render(request, 'pricing/config/perfiles.html', {
         'perfiles': perfiles,
         'sort': sort,
         'dir': dir_,
+        'bulk_form': bulk_form,
+        'lineas': lineas,
+        'selected_linea_id': selected_linea_id,
+        'linea_query': f'&linea={selected_linea_id}' if selected_linea_id else '',
     })
 
 

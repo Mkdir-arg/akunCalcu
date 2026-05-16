@@ -42,3 +42,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-020](./REQ-020-auditoria-actividad-usuarios.md) | Auditoría de actividad de usuarios | En desarrollo | 2026-05-10 | — |
 | [REQ-021](./REQ-021-confirmacion-reemplazo-accesorios-vidrios.md) | Confirmación al reemplazar accesorios o vidrios en configurador de hojas | En desarrollo | 2026-05-15 | — |
 | [REQ-022](./REQ-022-cobranzas-usd-separadas.md) | Visualización separada de cobranzas en USD | En desarrollo | 2026-05-16 | — |
+| [REQ-023](./REQ-023-edicion-masiva-precios-perfiles.md) | Edición masiva de precios en perfiles | En desarrollo | 2026-05-16 | — |

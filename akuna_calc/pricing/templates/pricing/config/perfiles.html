@@ -16,23 +16,78 @@
     </div>
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="border-b border-slate-200 bg-slate-50 px-6 py-5">
+            <form method="get" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-4 xl:items-end">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Filtrar por línea</label>
+                    <select name="linea" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
+                        <option value="">Todas las líneas</option>
+                        {% for linea in lineas %}
+                        <option value="{{ linea.id }}" {% if selected_linea_id == linea.id|stringformat:'s' %}selected{% endif %}>{{ linea.nombre|default:"Sin nombre" }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-slate-500 mt-2">Ideal para seleccionar y actualizar una línea completa en una sola operación.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit" class="inline-flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Aplicar filtro
+                    </button>
+                    <a href="?sort={{ sort }}&dir={{ dir }}" class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-5 py-3 rounded-xl font-semibold transition-colors">
+                        <i class="fas fa-broom mr-2"></i>Quitar filtro
+                    </a>
+                </div>
+            </form>
+        </div>
         {% include 'core/includes/table_filters.html' with table_filter_id='perfiles-table' show_status_filter=True table_filter_placeholder='Buscar por codigo, linea, descripcion o tipo...' %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+        <form method="post" action="{{ request.get_full_path }}" id="bulk-perfiles-form">
+            {% csrf_token %}
+            <div class="border-b border-slate-200 bg-white px-6 py-5">
+                <div class="flex flex-col 2xl:flex-row 2xl:items-end 2xl:justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Edición masiva de precios</h2>
+                        <p class="text-sm text-slate-500 mt-1"><span id="perfiles-seleccionados-cantidad" class="font-semibold text-slate-800">0</span> perfiles seleccionados</p>
+                        <p class="text-xs text-slate-500 mt-2">La acción actualiza solo <strong>Precio/kg</strong> y no modifica línea, descripción, tipo ni moneda.</p>
+                    </div>
+                    <div class="w-full 2xl:w-auto">
+                        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                            <div class="sm:min-w-[260px]">
+                                <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">{{ bulk_form.precio_kg.label }}</label>
+                                {{ bulk_form.precio_kg }}
+                                {% if bulk_form.precio_kg.errors %}
+                                <p class="text-red-600 text-xs mt-2">{{ bulk_form.precio_kg.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <button type="submit" id="aplicar-precio-masivo" class="btn-primary inline-flex items-center justify-center text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="fas fa-layer-group mr-2"></i>Aplicar precio masivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=tipo&dir={% if sort == 'tipo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Tipo{% if sort == 'tipo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider w-14">
+                            <input type="checkbox" id="seleccionar-todos-perfiles" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=tipo&dir={% if sort == 'tipo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Tipo{% if sort == 'tipo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for perfil in perfiles %}
                     <tr class="hover:bg-slate-50 transition-colors" data-filter-row="perfiles-table" data-status="{% if perfil.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="px-4 py-4 text-center">
+                            <input type="checkbox" name="perfiles_seleccionados" value="{{ perfil.codigo }}" class="perfil-selector h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </td>
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ perfil.codigo }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.linea.nombre|default:"-" }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.descripcion }}</td>
@@ -68,21 +123,22 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center">
+                        <td colspan="8" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay perfiles registrados</p>
                         </td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="perfiles-table" class="hidden">
-                        <td colspan="7" class="px-6 py-8 text-center">
+                        <td colspan="8" class="px-6 py-8 text-center">
                             <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay perfiles que coincidan con los filtros</p>
                         </td>
                     </tr>
                 </tbody>
-            </table>
-        </div>
+                </table>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -109,5 +165,129 @@ function confirmarDesactivar(url, nombre) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const bulkForm = document.getElementById('bulk-perfiles-form');
+    if (!bulkForm) {
+        return;
+    }
+
+    const selectAllCheckbox = document.getElementById('seleccionar-todos-perfiles');
+    const selectedCount = document.getElementById('perfiles-seleccionados-cantidad');
+    const submitButton = document.getElementById('aplicar-precio-masivo');
+    const priceInput = document.getElementById('id_precio_kg');
+    const filtersRoot = document.querySelector('[data-table-filters="perfiles-table"]');
+
+    function getAllSelectors() {
+        return Array.from(document.querySelectorAll('.perfil-selector'));
+    }
+
+    function getVisibleSelectors() {
+        return getAllSelectors().filter(function (checkbox) {
+            const row = checkbox.closest('tr');
+            return row && !row.classList.contains('hidden');
+        });
+    }
+
+    function updateBulkSelectionState() {
+        const allSelectors = getAllSelectors();
+        const visibleSelectors = getVisibleSelectors();
+        const checkedSelectors = allSelectors.filter(function (checkbox) {
+            return checkbox.checked;
+        });
+        const checkedVisibleSelectors = visibleSelectors.filter(function (checkbox) {
+            return checkbox.checked;
+        });
+
+        if (selectedCount) {
+            selectedCount.textContent = checkedSelectors.length;
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = visibleSelectors.length > 0 && checkedVisibleSelectors.length === visibleSelectors.length;
+            selectAllCheckbox.indeterminate = checkedVisibleSelectors.length > 0 && checkedVisibleSelectors.length < visibleSelectors.length;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = checkedSelectors.length === 0;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function () {
+            getVisibleSelectors().forEach(function (checkbox) {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateBulkSelectionState();
+        });
+    }
+
+    getAllSelectors().forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateBulkSelectionState);
+    });
+
+    if (filtersRoot) {
+        const searchInput = filtersRoot.querySelector('[data-filter-search]');
+        const statusSelect = filtersRoot.querySelector('[data-filter-status]');
+        const resetButton = filtersRoot.querySelector('[data-filter-reset]');
+        const scheduleUpdate = function () {
+            window.setTimeout(updateBulkSelectionState, 0);
+        };
+
+        if (searchInput) {
+            searchInput.addEventListener('input', scheduleUpdate);
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', scheduleUpdate);
+        }
+        if (resetButton) {
+            resetButton.addEventListener('click', scheduleUpdate);
+        }
+    }
+
+    bulkForm.addEventListener('submit', function (event) {
+        if (bulkForm.dataset.confirmed === 'true') {
+            return;
+        }
+
+        const checkedSelectors = getAllSelectors().filter(function (checkbox) {
+            return checkbox.checked;
+        });
+
+        if (!checkedSelectors.length) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Sin selección',
+                text: 'Selecciona al menos un perfil para aplicar la edición masiva.',
+                icon: 'warning',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        if (!priceInput || !priceInput.value) {
+            return;
+        }
+
+        event.preventDefault();
+        Swal.fire({
+            title: '¿Actualizar precios?',
+            html: `<p>Se actualizará el <strong>Precio/kg</strong> de <strong>${checkedSelectors.length}</strong> perfiles.</p><p class="text-sm text-gray-600 mt-2">Nuevo valor: <strong>${priceInput.value}</strong></p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, actualizar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                bulkForm.dataset.confirmed = 'true';
+                bulkForm.submit();
+            }
+        });
+    });
+
+    updateBulkSelectionState();
+});
 </script>
 {% endblock %}

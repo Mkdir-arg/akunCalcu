@@ -283,6 +283,18 @@ class PerfilEditForm(forms.ModelForm):
         }
 
 
+class PerfilBulkPriceForm(forms.Form):
+    precio_kg = forms.FloatField(
+        label='Nuevo precio x KG',
+        min_value=0,
+        widget=forms.NumberInput(attrs={
+            'class': _input_class,
+            'step': '0.01',
+            'placeholder': 'Ej: 1250.50',
+        }),
+    )
+
+
 class BaseAccesorioForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

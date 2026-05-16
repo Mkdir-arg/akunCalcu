@@ -307,3 +307,77 @@ class PricingConfigOrderingTest(SimpleTestCase):
         self.assertEqual(render_context['sort'], 'tipo')
         self.assertEqual(render_context['dir'], 'desc')
         self.assertEqual(render_context['accesorios'], ['ordered-accessories'])
+
+
+class PerfilesBulkUpdateViewTest(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = SimpleNamespace(is_authenticated=True, is_staff=True)
+
+    @patch('pricing.config_views.render')
+    @patch('pricing.config_views.Linea.objects.exclude')
+    @patch('pricing.config_views.Perfil.objects.select_related')
+    def test_perfiles_config_filtra_por_linea(self, mock_select_related, mock_lineas_exclude, mock_render):
+        filtered_base_qs = MagicMock()
+        filtered_linea_qs = MagicMock()
+        ordered_qs = MagicMock()
+
+        mock_select_related.return_value.exclude.return_value = filtered_base_qs
+        filtered_base_qs.filter.return_value = filtered_linea_qs
+        filtered_linea_qs.order_by.return_value = ordered_qs
+        ordered_qs.__getitem__.return_value = ['linea-filtrada']
+        mock_lineas_exclude.return_value.order_by.return_value = ['lineas']
+        mock_render.return_value = SimpleNamespace(status_code=200)
+
+        request = self.factory.get('/pricing/config/perfiles/', {'linea': '15', 'sort': 'precio_kg', 'dir': 'desc'})
+        request.user = self.user
+
+        response = config_views.perfiles_config(request)
+
+        self.assertEqual(response.status_code, 200)
+        filtered_base_qs.filter.assert_called_once_with(linea_id='15')
+        filtered_linea_qs.order_by.assert_called_once_with('-precio_kg', '-codigo')
+        render_context = mock_render.call_args.args[2]
+        self.assertEqual(render_context['selected_linea_id'], '15')
+        self.assertEqual(render_context['linea_query'], '&linea=15')
+        self.assertEqual(render_context['perfiles'], ['linea-filtrada'])
+
+    @patch('pricing.config_views.messages.error')
+    @patch('pricing.config_views.redirect')
+    @patch('pricing.config_views.Perfil.objects.exclude')
+    def test_perfiles_config_rechaza_edicion_masiva_sin_seleccion(self, mock_exclude, mock_redirect, mock_error):
+        mock_redirect.return_value = SimpleNamespace(status_code=302)
+
+        request = self.factory.post('/pricing/config/perfiles/', {'precio_kg': '99.50'})
+        request.user = self.user
+
+        response = config_views.perfiles_config(request)
+
+        self.assertEqual(response.status_code, 302)
+        mock_exclude.assert_not_called()
+        mock_error.assert_called_once_with(request, 'Selecciona al menos un perfil para actualizar el precio.')
+        mock_redirect.assert_called_once_with('config-perfiles')
+
+    @patch('pricing.config_views.messages.success')
+    @patch('pricing.config_views.redirect')
+    @patch('pricing.config_views.Perfil.objects.exclude')
+    def test_perfiles_config_actualiza_precio_de_perfiles_seleccionados(self, mock_exclude, mock_redirect, mock_success):
+        filtered_qs = MagicMock()
+        mock_exclude.return_value.filter.return_value = filtered_qs
+        filtered_qs.update.return_value = 2
+        mock_redirect.return_value = SimpleNamespace(status_code=302)
+
+        request = self.factory.post('/pricing/config/perfiles/', {
+            'precio_kg': '123.45',
+            'perfiles_seleccionados': ['P-100', 'P-200'],
+        })
+        request.user = self.user
+
+        response = config_views.perfiles_config(request)
+
+        self.assertEqual(response.status_code, 302)
+        mock_exclude.assert_called_once_with(bloqueado='Si')
+        mock_exclude.return_value.filter.assert_called_once_with(codigo__in=['P-100', 'P-200'])
+        filtered_qs.update.assert_called_once_with(precio_kg=123.45)
+        mock_success.assert_called_once_with(request, 'Se actualizaron 2 perfiles correctamente.')
+        mock_redirect.assert_called_once_with('config-perfiles')
