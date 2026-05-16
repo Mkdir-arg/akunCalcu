@@ -1,13 +1,13 @@
-<div class="border-b border-slate-200 bg-slate-50 px-6 py-5" data-table-filters="{{ table_filter_id }}">
-    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+<div class="border-b border-slate-200 bg-slate-50 px-6 {% if compact_filters %}py-4{% else %}py-5{% endif %}" data-table-filters="{{ table_filter_id }}">
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between {% if compact_filters %}gap-2{% else %}gap-4{% endif %}">
         <div>
-            <h2 class="text-xl font-bold text-slate-800">Filtros</h2>
-            <p class="text-sm text-slate-500 mt-1">Filtra rapidamente sobre los registros cargados en esta tabla.</p>
+            <h2 class="{% if compact_filters %}text-lg{% else %}text-xl{% endif %} font-bold text-slate-800">{{ compact_filter_title|default:'Filtros' }}</h2>
+            <p class="text-sm text-slate-500 {% if compact_filters %}mt-0.5{% else %}mt-1{% endif %}">{{ compact_filter_description|default:'Filtra rapidamente sobre los registros cargados en esta tabla.' }}</p>
         </div>
         <p class="text-sm text-slate-500 font-medium" data-filter-results></p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-{% if show_status_filter %}3{% else %}2{% endif %} gap-3 mt-4">
+    <div class="grid grid-cols-1 md:grid-cols-{% if show_status_filter %}3{% else %}2{% endif %} gap-3 {% if compact_filters %}mt-3{% else %}mt-4{% endif %}">
         <div>
             <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Buscar</label>
             <div class="relative">
@@ -15,7 +15,7 @@
                     type="text"
                     data-filter-search
                     placeholder="{{ table_filter_placeholder|default:'Buscar en la tabla...' }}"
-                    class="w-full rounded-xl border border-gray-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full rounded-xl border border-gray-300 bg-white {% if compact_filters %}py-2.5{% else %}py-3{% endif %} pl-11 pr-4 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
             </div>
@@ -24,7 +24,7 @@
         {% if show_status_filter %}
         <div>
             <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Estado</label>
-            <select data-filter-status class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
+            <select data-filter-status class="w-full rounded-xl border border-gray-300 bg-white px-4 {% if compact_filters %}py-2.5{% else %}py-3{% endif %} text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 no-select2">
                 <option value="">Todos</option>
                 <option value="activo">Activos</option>
                 <option value="inactivo">Inactivos</option>
@@ -33,7 +33,7 @@
         {% endif %}
 
         <div class="flex items-end">
-            <button type="button" data-filter-reset class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-xl font-semibold transition-colors">
+            <button type="button" data-filter-reset class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 {% if compact_filters %}py-2.5{% else %}py-3{% endif %} rounded-xl font-semibold transition-colors">
                 <i class="fas fa-eraser mr-2"></i>Limpiar filtros
             </button>
         </div>
