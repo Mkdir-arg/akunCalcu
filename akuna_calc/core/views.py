@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model, login as auth_login, logout as a
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.db.models import Sum
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -28,6 +29,10 @@ class AkunLoginView(LoginView):
         messages.error(self.request, 'Tu usuario no tiene módulos asignados. Contacta a un administrador.')
         auth_logout(self.request)
         return redirect('login')
+
+
+def healthcheck(request):
+    return HttpResponse('ok', content_type='text/plain')
 
 def index(request):
     if request.user.is_authenticated:

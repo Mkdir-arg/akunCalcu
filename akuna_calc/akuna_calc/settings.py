@@ -166,6 +166,7 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'  # Prevenir clickjacking
+SECURE_REDIRECT_EXEMPT = [r'^health/$']
 
 # HTTPS (solo en producción)
 if not DEBUG:

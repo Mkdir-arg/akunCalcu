@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from django.template.loader import render_to_string
-from django.test import RequestFactory, SimpleTestCase
+from django.test import RequestFactory, SimpleTestCase, override_settings
 
 
 class BaseTemplateSelect2HelperTest(SimpleTestCase):
@@ -29,3 +29,40 @@ class BaseTemplateSelect2HelperTest(SimpleTestCase):
         self.assertIn('function reinitAkunSelect2(target, customOptions)', html)
         self.assertIn('initAkunSelect2(document);', html)
         self.assertIn('.select2-container--classic .select2-selection--single', html)
+
+
+class HealthcheckViewTest(SimpleTestCase):
+    @override_settings(
+        MIDDLEWARE=['django.middleware.security.SecurityMiddleware'],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=False,
+    )
+    def test_healthcheck_returns_ok(self):
+        response = self.client.get('/health/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b'ok')
+
+    @override_settings(
+        MIDDLEWARE=['django.middleware.security.SecurityMiddleware'],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=True,
+        SECURE_REDIRECT_EXEMPT=[r'^health/$'],
+    )
+    def test_healthcheck_is_exempt_from_ssl_redirect(self):
+        response = self.client.get('/health/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b'ok')
+
+    @override_settings(
+        MIDDLEWARE=['django.middleware.security.SecurityMiddleware'],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=True,
+        SECURE_REDIRECT_EXEMPT=[r'^health/$'],
+    )
+    def test_non_exempt_path_still_redirects_to_https(self):
+        response = self.client.get('/login/', follow=False)
+
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response['Location'].startswith('https://'))
