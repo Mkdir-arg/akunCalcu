@@ -15,6 +15,7 @@
 | [FEAT-007](./FEAT-007-mejora-presupuestos-cotizador.md) | Mejora Presupuestos: Paridad con Cotizador + UI | Implementado | 2026-03-30 | — |
 | [FEAT-008](./FEAT-008-rediseno-pdf-presupuestos-descripcion-narrativa.md) | Rediseño del PDF de presupuestos con descripción narrativa por ítem | Implementado | 2026-05-04 | — |
 | [FEAT-009](./FEAT-009-roles-permisos-por-modulo-y-opcion.md) | Roles y permisos por módulo y opción | Implementado | 2026-05-09 | — |
+| [FEAT-010](./FEAT-010-buscador-accesorios-config-hojas.md) | Buscador de accesorios en configurador de hojas | Implementado | 2026-05-17 | — |
 
 ---
 
@@ -23,7 +24,7 @@
 | Módulo / App | Features | Último cambio |
 |---|---|---|
 | `pedidos` | FEAT-001 | 2026-03-04 |
-| `pricing` | FEAT-002, FEAT-003 | 2026-03-06 |
+| `pricing` | FEAT-002, FEAT-003, FEAT-010 | 2026-05-17 |
 | `comercial` | FEAT-004, FEAT-006 | 2026-03-28 |
 | `presupuestos` | FEAT-005, FEAT-007, FEAT-008 | 2026-05-04 |
 | `usuarios` | FEAT-009 | 2026-05-09 |

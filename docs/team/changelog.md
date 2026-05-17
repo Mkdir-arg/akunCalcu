@@ -14,6 +14,26 @@
 
 ---
 
+## 2026-05-17 — Buscador de accesorios en configurador de hojas (REQ-025 / FEAT-010)
+
+**User Story:** Como usuario del módulo Fábrica, quiero buscar accesorios escribiendo dentro del campo Accesorio al editar una hoja para encontrar y seleccionar más rápido el accesorio correcto.
+
+**Archivos creados:**
+- `docs/features/FEAT-010-buscador-accesorios-config-hojas.md` — documentación final de la feature
+
+**Archivos modificados:**
+- `akuna_calc/pricing/templates/pricing/config/hoja_form.html` — buscador Select2 para accesorios dinámicos en edición de hojas
+- `akuna_calc/pricing/tests.py` — test de renderizado del buscador de accesorios
+- `docs/requerimientos/REQ-025-buscador-accesorios-config-hojas.md` — requerimiento marcado como implementado
+- `docs/requerimientos/_INDEX.md` — índice actualizado
+- `docs/features/_INDEX.md` — índice actualizado
+- `docs/team/current-sprint.md` — cierre documental fuera de sprint activo
+- `docs/team/changelog.md` — entrada de changelog de la feature
+- `docs/team/design-system.md` — patrón para Select2 en selects dinámicos
+- `memory/MEMORY.md` — memoria del proyecto actualizada
+
+**Descripción:** Se mejoró la experiencia de configuración de hojas para que el campo Accesorio use búsqueda sobre Select2 también en filas agregadas dinámicamente. La persistencia no cambió: el sistema sigue enviando el código del accesorio y el autosave existente continúa funcionando sobre la misma estructura de nombres.
+
 ## 2026-05-09 — Roles y permisos por módulo y opción (REQ-019 / FEAT-009)
 
 **User Story:** Como administrador, quiero definir al crear o editar un usuario qué módulos del sistema y qué opciones o subsecciones internas de cada módulo puede ver y usar, para controlar el acceso operativo según el rol de cada persona sin mostrar menús no autorizados.

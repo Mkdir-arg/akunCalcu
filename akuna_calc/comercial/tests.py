@@ -1214,6 +1214,7 @@ class ReporteCobranzasTest(TestCase):
         reporte_cobranzas = response.context['reporte_data']['cobranzas']
         self.assertEqual(reporte_cobranzas['cantidad'], 3)
         self.assertEqual(reporte_cobranzas['total'], Decimal('300'))
+        self.assertEqual(reporte_cobranzas['total_usd'], Decimal('0.05'))
         self.assertEqual(reporte_cobranzas['cantidad_blanco'], 2)
         self.assertEqual(reporte_cobranzas['cantidad_negro'], 1)
         self.assertEqual(reporte_cobranzas['cantidad_usd'], 1)
@@ -1292,10 +1293,12 @@ class ReporteCobranzasTest(TestCase):
         self.assertEqual(reporte_cobranzas['cantidad'], 2)
         self.assertEqual(reporte_cobranzas['cantidad_usd'], 2)
         self.assertEqual(reporte_cobranzas['total'], Decimal('190'))
+        self.assertEqual(reporte_cobranzas['total_usd'], Decimal('0.19'))
         self.assertTrue(all(item['pago_en_dolares'] for item in reporte_cobranzas['lista']))
         self.assertEqual({item['pedido'] for item in reporte_cobranzas['lista']}, {'VTA-USD-FILTER'})
 
         self.assertContains(response, 'Cobranzas USD')
+        self.assertContains(response, 'USD 0,19')
         self.assertContains(response, 'USD 0,12')
         self.assertContains(response, 'USD 0,07')
         self.assertNotContains(response, 'VTA-ARS-FILTER')

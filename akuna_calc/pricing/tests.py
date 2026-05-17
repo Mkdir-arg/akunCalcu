@@ -1,3 +1,5 @@
+from django import forms
+from django.template.loader import render_to_string
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -104,6 +106,39 @@ class OpcionalesListViewTest(TestCase):
         self.assertIn(premarco_ok.id, ids)
         self.assertIn(generico.id, ids)
         self.assertNotIn(premarco_otra_linea.id, ids)
+
+
+class HojaFormTemplateTest(SimpleTestCase):
+    def test_render_incluye_select_busqueda_para_accesorios(self):
+        request = RequestFactory().get('/pricing/config/hojas/67/editar/')
+        request.user = SimpleNamespace(username='tester', is_authenticated=False)
+
+        html = render_to_string(
+            'pricing/config/hoja_form.html',
+            {
+                'titulo': 'Editar Hoja',
+                'form': forms.Form(),
+                'cancel_url': 'config-hojas',
+                'es_edicion': True,
+                'object': SimpleNamespace(id=67),
+                'hoja': None,
+                'formulas': [],
+                'accesorios_hoja': [],
+                'perfiles': [],
+                'perfiles_json': '[]',
+                'accesorios_hoja_json': '[]',
+                'vidrios_relacionados': [],
+                'sidebar_modules': [],
+                'user_role_label': 'Admin',
+                'user_access_summary': 'Acceso total',
+            },
+            request=request,
+        )
+
+        self.assertIn('function initAccesorioSelect(selectElement)', html)
+        self.assertIn("initAccesorioSelect(row.querySelector('.js-accesorio-select'));", html)
+        self.assertIn("placeholder: 'Buscar accesorio...'", html)
+        self.assertIn('class="w-full px-2 py-1 border rounded js-accesorio-select"', html)
 
 
 class PriceCalculatorVidrioFormulaContextTest(SimpleTestCase):

@@ -200,7 +200,7 @@
 </div>
 ```
 
-**Importante:** Los `<select>` tienen Select2 aplicado automáticamente desde `base.html`. No agregar Select2 manualmente. Para excluir un select, usar clase `no-select2`.
+**Importante:** Los `<select>` tienen Select2 aplicado automáticamente desde `base.html`. No agregar Select2 manualmente salvo cuando el `<select>` se cree dinámicamente por JavaScript después de cargada la página; en ese caso hay que inicializar Select2 de forma puntual sobre el nuevo nodo. Para excluir un select, usar clase `no-select2`.
 
 ---
 

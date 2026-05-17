@@ -207,7 +207,12 @@
         <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Cobranza (ARS)</p>
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <p class="text-sm text-slate-500 font-medium">Total Cobranza (ARS)</p>
+                        {% if reporte_data.cobranzas.total_usd %}
+                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">USD {{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
+                        {% endif %}
+                    </div>
                     <p class="text-3xl font-bold text-blue-600">${{ reporte_data.cobranzas.total|formato_numero }}</p>
                     <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad }} movimientos</p>
                 </div>
@@ -236,7 +241,12 @@
                     </div>
                 </div>
                 <div class="inline-flex lg:flex-col items-start lg:items-end gap-1 rounded-2xl bg-white/80 border border-white/70 px-4 py-3 shadow-sm shrink-0">
-                    <span class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Total en pesos</span>
+                    <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <span class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Total en pesos</span>
+                        {% if reporte_data.cobranzas.total_usd %}
+                        <span class="text-[11px] uppercase tracking-wide text-emerald-600 font-semibold">USD {{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
+                        {% endif %}
+                    </div>
                     <span class="text-2xl lg:text-3xl font-bold text-teal-600 leading-none">${{ reporte_data.cobranzas.total|formato_numero }}</span>
                     <span class="text-[11px] text-slate-400 font-medium">USD informado por separado</span>
                 </div>

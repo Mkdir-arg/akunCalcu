@@ -398,6 +398,24 @@ let accesorioIndex = 0;
 let accesorios = [];
 const accesoriosIniciales = {{ accesorios_hoja_json|safe }};
 
+function initAccesorioSelect(selectElement) {
+    if (!selectElement || typeof window.jQuery === 'undefined') {
+        return;
+    }
+
+    const $select = $(selectElement);
+    if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+    }
+
+    $select.select2({
+        theme: 'classic',
+        width: '100%',
+        placeholder: 'Buscar accesorio...',
+        allowClear: true,
+    });
+}
+
 function _buildAccesorioOptions(selectedCodigo) {
     return '<option value="">Seleccionar...</option>' +
         accesorios.map(a =>
@@ -410,7 +428,7 @@ function _agregarFilaAccesorio(datos) {
     row.className = 'border-b';
     row.innerHTML = `
         <td class="px-4 py-2">
-            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded no-select2" required>
+            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded js-accesorio-select" required>
                 ${_buildAccesorioOptions(datos.accesorio || '')}
             </select>
         </td>
@@ -424,6 +442,7 @@ function _agregarFilaAccesorio(datos) {
         </td>
     `;
     document.getElementById('accesoriosBody').appendChild(row);
+    initAccesorioSelect(row.querySelector('.js-accesorio-select'));
     accesorioIndex++;
 }
 

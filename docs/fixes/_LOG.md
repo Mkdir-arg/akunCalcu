@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-003 — Reporte de cobranzas: total USD faltante en resumen
+**Fecha**: 2026-05-17
+**Reportado por**: Usuario
+**Severidad**: Media
+**Feature afectada**: Módulo comercial / reporte de cobranzas
+
+**Síntoma**: Al filtrar el reporte de cobranzas por moneda USD, el listado mostraba correctamente los movimientos en dólares y el total convertido en pesos, pero el resumen superior no mostraba el total agregado en USD.
+**Causa raíz**: La vista `reportes_cobranzas` contaba movimientos con `monto_usd` y los listaba en el detalle, pero no agregaba un `total_usd` en `reporte_data['cobranzas']`. El template solo disponía del total en ARS.
+**Solución**: Se agregó la suma de `monto_usd` en la vista, se mostró el total USD en los bloques “Total Cobranza (ARS)” y “Total en pesos”, y se ampliaron los tests del reporte para cubrir el agregado general y el filtro solo USD.
+**Archivos modificados**: `akuna_calc/comercial/views.py`, `akuna_calc/comercial/templates/comercial/reportes/reportes_cobranzas.html`, `akuna_calc/comercial/tests.py`
+
 ### FIX-002 — Reporte de proveedores desincronizado con pagos cargados
 **Fecha**: 2026-05-16
 **Reportado por**: Usuario

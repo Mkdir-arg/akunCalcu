@@ -18,6 +18,7 @@ _Se define en el sprint planning._
 | US-008 | Mejora Presupuestos: Paridad con Cotizador + UI | ✅ Completado | Opcionales, desglose, KPIs, unificación; FEAT-007 |
 | US-009 | Rediseño del PDF de presupuestos con descripción narrativa por ítem | ✅ Completado | Implementado fuera de sprint activo; FEAT-008 |
 | US-019 | Roles y permisos por módulo y opción | ✅ Completado | Implementado fuera de sprint activo; FEAT-009 |
+| US-025 | Buscador de accesorios en configurador de hojas | ✅ Completado | Implementado fuera de sprint activo; FEAT-010 |
 
 ## Impedimentos
 
