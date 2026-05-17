@@ -36,6 +36,16 @@ ACCESS_MODULES = [
         ],
     },
     {
+        'key': 'gastos_diarios',
+        'label': 'Gastos Diarios',
+        'icon': 'fas fa-microphone-alt',
+        'dropdown': True,
+        'items': [
+            {'code': 'gastos_diarios.view', 'label': 'Listado', 'route_name': 'gastos_diarios:lista'},
+            {'code': 'gastos_diarios.numeros', 'label': 'Números autorizados', 'route_name': 'gastos_diarios:numero_list'},
+        ],
+    },
+    {
         'key': 'reportes',
         'label': 'Reportes',
         'icon': 'fas fa-chart-bar',
@@ -135,6 +145,10 @@ PUBLIC_ROUTE_KEYS = {
     'index',
     'login',
     'logout',
+    'gastos_diarios:api_crear_borrador',
+    'gastos_diarios:api_confirmar',
+    'pedidos:api_crear_borrador',
+    'pedidos:api_confirmar',
 }
 
 LEGACY_STAFF_ACCESS_CODES = {
@@ -153,6 +167,7 @@ LEGACY_STAFF_ACCESS_CODES = {
     'configuracion.tipos_cuenta',
     'configuracion.tipos_gasto',
     'configuracion.general',
+    'gastos_diarios.numeros',
 }
 
 ACCESS_CODE_METADATA = {}
@@ -219,6 +234,9 @@ _register_route('seguridad.auditoria', 'security:audit_list')
 
 _register_route('configuracion.usuarios', 'user_create', 'user_update', 'user_toggle')
 _register_route('configuracion.general', 'configuracion-hora-hombre')
+
+_register_route('gastos_diarios.view', 'gastos_diarios:aprobar', 'gastos_diarios:rechazar')
+_register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gastos_diarios:numero_edit', 'gastos_diarios:numero_delete')
 
 
 def normalize_access_codes(access_codes):

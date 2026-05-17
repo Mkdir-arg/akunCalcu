@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'pedidos',
     'presupuestos',
     'configuracion',
+    'gastos_diarios',
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,13 @@ DATABASES = {
         },
     }
 }
+
+# Excluir migraciones de apps legacy en tests (pricing tiene managed=False)
+import sys
+if 'test' in sys.argv:
+    MIGRATION_MODULES = {
+        'pricing': None,
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "node",
+      "args": [
+        "C:/Users/mkdir/Proyectos/akunCalcu/asistenten8n/dist/mcp/stdio-wrapper.js"
+      ],
+      "env": {
+        "MCP_MODE": "stdio",
+        "WEBHOOK_SECURITY_MODE": "moderate",
+        "N8N_API_URL": "http://localhost:5678",
+        "N8N_API_KEY": "<JWT public-api obtenido desde Settings > n8n API en el editor de n8n>"
+      }
+    }
+  }
+}

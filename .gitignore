@@ -44,3 +44,9 @@ db.sqlite3-journal
 # OS
 .DS_Store
 Thumbs.db
+
+# Proyecto MCP externo (n8n-mcp clonado para asistente de IA)
+/asistenten8n/
+
+# MCP config con tokens sensibles (usar .mcp.json.example como referencia)
+.mcp.json

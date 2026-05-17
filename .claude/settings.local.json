@@ -13,11 +13,26 @@
       "Bash(docker-compose run:*)",
       "Bash(ls -la /c/Users/mkdir/Proyectos/akunCalcu/akuna_calc/pricing/*.py)",
       "Bash(xargs grep *)",
-      "Bash(netsh wlan *)"
+      "Bash(netsh wlan *)",
+      "Bash(jobs)",
+      "Read(//c/Users/mkdir/AppData/Local/Temp/claude/c--Users-mkdir-Proyectos-akunCalcu/325b0937-cd22-4ee9-8507-6b0daf4d7aeb/tasks/**)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" -H \"X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiOGVlMjA4ZS1mN2YwLTRiZjYtODRmYy0wMGZjNmI0MGVmNWUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmMwNGUyYTItZjBhOS00MWViLThjOWQtMjYyZTRiNWUwNTU0IiwiaWF0IjoxNzc5MDAwNDQzLCJleHAiOjE3ODE1ODI0MDB9.zyiUQVfEAYcjw2g3AE_soDtU86rFMKWiG3lu4fcjkn0\" http://localhost:5678/api/v1/workflows)",
+      "Bash(claude mcp *)",
+      "Bash(findstr /R \"name version main bin\")",
+      "Bash(node dist/mcp/stdio-wrapper.js)",
+      "Bash(grep -n \"require.*['\\\\\"]\\\\\\\\./ui\" C:/Users/mkdir/Proyectos/akunCalcu/asistenten8n/dist/mcp/server.js)",
+      "Bash(npm run *)",
+      "mcp__n8n-mcp__n8n_health_check",
+      "mcp__n8n-mcp__search_nodes",
+      "Bash(docker-compose restart *)",
+      "Bash(docker-compose ps *)",
+      "Bash(grep -oE \"v[0-9]+\\\\\\\\.[0-9]+\\\\\\\\.[0-9]+\")",
+      "mcp__n8n-mcp__n8n_update_partial_workflow"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "n8n"
+    "n8n",
+    "n8n-mcp"
   ]
 }

@@ -71,8 +71,8 @@ class MarcoViewsTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn('/pricing/config/accesorios/editar/?codigo=ACC/LEGACY&amp;tipo=', content)
-        self.assertIn('/pricing/config/accesorios/eliminar/?codigo=ACC/LEGACY&amp;tipo=', content)
+        self.assertIn('/pricing/config/accesorios/editar/?codigo=ACC/LEGACY&tipo=', content)
+        self.assertIn('/pricing/config/accesorios/eliminar/?codigo=ACC/LEGACY&tipo=', content)
 
 
 class OpcionalesListViewTest(TestCase):

@@ -1,0 +1,180 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gastos Diarios{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="max-w-full mx-auto px-4 animate-fade-in">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-microphone-alt text-purple-500 mr-2"></i>Gastos Diarios
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Gastos cargados por nota de voz desde WhatsApp</p>
+        </div>
+        {% if request.user.is_staff %}
+        <a href="{% url 'gastos_diarios:numero_list' %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+            <i class="fas fa-address-book mr-2"></i>Números autorizados
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-3 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                <select name="estado" class="no-select2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">Todos</option>
+                    <option value="en_espera" {% if estado_filter == 'en_espera' %}selected{% endif %}>En espera</option>
+                    <option value="aprobado" {% if estado_filter == 'aprobado' %}selected{% endif %}>Aprobado</option>
+                    <option value="rechazado" {% if estado_filter == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Desde</label>
+                <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Hasta</label>
+                <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+                <i class="fas fa-filter mr-1"></i>Filtrar
+            </button>
+            <a href="{% url 'gastos_diarios:lista' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+                <i class="fas fa-times mr-1"></i>Limpiar
+            </a>
+        </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Monto</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Origen</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for gasto in page_obj %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-semibold text-slate-800">#{{ gasto.pk }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            <p class="font-medium">{{ gasto.descripcion }}</p>
+                            {% if gasto.transcripcion %}
+                            <p class="text-xs text-slate-400 mt-1 truncate max-w-md" title="{{ gasto.transcripcion }}">
+                                <i class="fas fa-quote-left mr-1"></i>{{ gasto.transcripcion|truncatechars:80 }}
+                            </p>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm font-bold text-slate-800">$ {{ gasto.monto|floatformat:2 }}</td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-500">
+                            <i class="fab fa-whatsapp text-green-500 mr-1"></i>{{ gasto.numero_origen }}
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{{ gasto.fecha|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {% if gasto.estado == 'aprobado' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Aprobado
+                                </span>
+                            {% elif gasto.estado == 'rechazado' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>Rechazado
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>En espera
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if gasto.estado == 'en_espera' %}
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="confirmarAccion('{% url 'gastos_diarios:aprobar' gasto.pk %}', 'aprobar', '{{ gasto.descripcion|escapejs }}')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Aprobar">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="confirmarAccion('{% url 'gastos_diarios:rechazar' gasto.pk %}', 'rechazar', '{{ gasto.descripcion|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Rechazar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            {% else %}
+                            <span class="text-slate-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <i class="fas fa-microphone-alt-slash text-slate-200 text-5xl mb-3"></i>
+                            <p class="text-slate-500 font-medium">No hay gastos registrados</p>
+                            <p class="text-slate-400 text-sm mt-1">Mandá una nota de voz por WhatsApp para empezar a cargar gastos</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="bg-slate-50 px-6 py-4 flex items-center justify-between">
+            <p class="text-sm text-slate-600">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} resultados)
+            </p>
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-1 rounded-lg text-sm font-semibold">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-1 rounded-lg text-sm font-semibold">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarAccion(url, accion, descripcion) {
+    const esAprobar = accion === 'aprobar';
+    Swal.fire({
+        title: esAprobar ? '¿Aprobar este gasto?' : '¿Rechazar este gasto?',
+        html: `<p>${descripcion}</p>`,
+        icon: esAprobar ? 'question' : 'warning',
+        showCancelButton: true,
+        confirmButtonColor: esAprobar ? '#16a34a' : '#6b7280',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: esAprobar ? 'Sí, aprobar' : 'Sí, rechazar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+{% endblock %}
