@@ -145,6 +145,7 @@ PUBLIC_ROUTE_KEYS = {
     'index',
     'login',
     'logout',
+    'healthcheck',
     'gastos_diarios:api_crear_borrador',
     'gastos_diarios:api_confirmar',
     'pedidos:api_crear_borrador',
