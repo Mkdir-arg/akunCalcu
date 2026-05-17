@@ -52,6 +52,28 @@ class MarcoViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/json')
 
+    @patch('pricing.config_views.Accesorio.objects.exclude')
+    def test_accesorios_list_renderiza_con_tipo_vacio_y_codigo_con_slash(self, mock_exclude):
+        ordered_qs = MagicMock()
+        ordered_qs.__getitem__.return_value = [
+            SimpleNamespace(
+                codigo='ACC/LEGACY',
+                descripcion='Accesorio legacy',
+                precio=10,
+                tipo='',
+                bloqueado='No',
+            )
+        ]
+        mock_exclude.return_value.order_by.return_value = ordered_qs
+
+        self.client.login(username='staff_test', password='pass123')
+        response = self.client.get('/pricing/config/accesorios/')
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('/pricing/config/accesorios/editar/?codigo=ACC/LEGACY&amp;tipo=', content)
+        self.assertIn('/pricing/config/accesorios/eliminar/?codigo=ACC/LEGACY&amp;tipo=', content)
+
 
 class OpcionalesListViewTest(TestCase):
     @patch('pricing.catalog_views.Producto.objects.exclude')
@@ -273,6 +295,25 @@ class PricingConfigOrderingTest(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.user = SimpleNamespace(is_authenticated=True, is_staff=True)
+
+    @patch('pricing.config_views.Accesorio.objects.filter')
+    def test_get_accesorio_from_request_busca_tipo_vacio_en_querystring(self, mock_filter):
+        base_qs = MagicMock()
+        empty_tipo_qs = MagicMock()
+        accesorio = SimpleNamespace(codigo='ACC/LEGACY', tipo=None)
+
+        mock_filter.return_value = base_qs
+        base_qs.filter.return_value = empty_tipo_qs
+        empty_tipo_qs.first.return_value = accesorio
+
+        request = self.factory.get('/pricing/config/accesorios/editar/', {'codigo': 'ACC/LEGACY', 'tipo': ''})
+
+        result = config_views._get_accesorio_from_request(request)
+
+        self.assertIs(result, accesorio)
+        mock_filter.assert_called_once_with(codigo='ACC/LEGACY')
+        base_qs.filter.assert_called_once()
+        empty_tipo_qs.first.assert_called_once_with()
 
     def test_resolve_ordering_normaliza_sort_y_dir_invalidos(self):
         request = self.factory.get('/pricing/config/productos/', {'sort': 'no-existe', 'dir': 'sideways'})

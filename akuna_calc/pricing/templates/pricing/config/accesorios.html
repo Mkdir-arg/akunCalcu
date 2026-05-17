@@ -2,6 +2,8 @@
 {% block title %}Configuración - Accesorios{% endblock %}
 {% block content %}
 {% csrf_token %}
+{% url 'config-accesorio-edit' as accesorio_edit_url %}
+{% url 'config-accesorio-delete' as accesorio_delete_url %}
 <div class="max-w-full mx-auto px-4">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
@@ -47,11 +49,11 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-accesorio-edit' accesorio.codigo accesorio.tipo %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <a href="{{ accesorio_edit_url }}?codigo={{ accesorio.codigo|urlencode }}&tipo={{ accesorio.tipo|default_if_none:''|urlencode }}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {% if accesorio.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-accesorio-delete' accesorio.codigo accesorio.tipo %}', '{{ accesorio.codigo }} ({{ accesorio.tipo }})' )" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                <button onclick="confirmarDesactivar('{{ accesorio_delete_url }}?codigo={{ accesorio.codigo|urlencode }}&tipo={{ accesorio.tipo|default_if_none:''|urlencode }}', '{{ accesorio.codigo }} ({{ accesorio.tipo|default:'-' }})' )" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
                                     <i class="fas fa-trash"></i>
                                 </button>
                                 {% endif %}

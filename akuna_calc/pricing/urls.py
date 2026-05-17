@@ -86,7 +86,8 @@ urlpatterns = [
     path("config/hojas/<int:pk>/editar/", hoja_edit, name="config-hoja-edit"),
     path("config/interiores/<int:pk>/editar/", interior_edit, name="config-interior-edit"),
     path("config/perfiles/<str:pk>/editar/", perfil_edit, name="config-perfil-edit"),
-    path("config/accesorios/<str:codigo>/<str:tipo>/editar/", accesorio_edit, name="config-accesorio-edit"),
+    path("config/accesorios/editar/", accesorio_edit, name="config-accesorio-edit"),
+    path("config/accesorios/<str:codigo>/<str:tipo>/editar/", accesorio_edit, name="config-accesorio-edit-legacy"),
     path("config/vidrios/<str:pk>/editar/", vidrio_edit, name="config-vidrio-edit"),
     path("config/tratamientos/<int:pk>/editar/", tratamiento_edit, name="config-tratamiento-edit"),
     # Configuración ABMs — eliminar (lógico)
@@ -97,7 +98,8 @@ urlpatterns = [
     path("config/hojas/<int:pk>/eliminar/", hoja_delete, name="config-hoja-delete"),
     path("config/interiores/<int:pk>/eliminar/", interior_delete, name="config-interior-delete"),
     path("config/perfiles/<str:pk>/eliminar/", perfil_delete, name="config-perfil-delete"),
-    path("config/accesorios/<str:codigo>/<str:tipo>/eliminar/", accesorio_delete, name="config-accesorio-delete"),
+    path("config/accesorios/eliminar/", accesorio_delete, name="config-accesorio-delete"),
+    path("config/accesorios/<str:codigo>/<str:tipo>/eliminar/", accesorio_delete, name="config-accesorio-delete-legacy"),
     path("config/vidrios/<str:pk>/eliminar/", vidrio_delete, name="config-vidrio-delete"),
     path("config/tratamientos/<int:pk>/eliminar/", tratamiento_delete, name="config-tratamiento-delete"),
 ]

@@ -8,8 +8,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import connection, transaction
-from django.db.models import Max
-from django.http import JsonResponse
+from django.db.models import Max, Q
+from django.http import Http404, JsonResponse
 from plantillas.models import AccesorioOpcional
 
 from .models import (
@@ -164,6 +164,23 @@ def _save_accesorio_edit(old_codigo, old_tipo, cleaned_data):
             updated_rows = Accesorio.objects.filter(codigo=old_codigo, tipo=old_tipo).update(**update_data)
             if not updated_rows:
                 raise Accesorio.DoesNotExist(f"{old_codigo} ({old_tipo})")
+
+
+def _get_accesorio_from_request(request, codigo=None, tipo=None):
+    resolved_codigo = codigo if codigo is not None else request.GET.get('codigo')
+    resolved_tipo = tipo if tipo is not None else request.GET.get('tipo')
+
+    if not resolved_codigo:
+        raise Http404('Accesorio no especificado.')
+
+    queryset = Accesorio.objects.filter(codigo=resolved_codigo)
+    if resolved_tipo in (None, ''):
+        accesorio = queryset.filter(Q(tipo='') | Q(tipo__isnull=True)).first()
+        if accesorio is None:
+            raise Http404(f'{resolved_codigo} (sin tipo)')
+        return accesorio
+
+    return get_object_or_404(queryset, tipo=resolved_tipo)
 
 
 # ─── EXTRUSORAS ───────────────────────────────────────────────────────────────
@@ -1022,8 +1039,8 @@ def accesorio_create(request):
 
 @login_required
 @user_passes_test(is_staff)
-def accesorio_edit(request, codigo, tipo):
-    obj = get_object_or_404(Accesorio, codigo=codigo, tipo=tipo)
+def accesorio_edit(request, codigo=None, tipo=None):
+    obj = _get_accesorio_from_request(request, codigo=codigo, tipo=tipo)
     original_codigo = obj.codigo
     original_tipo = obj.tipo
     form = AccesorioEditForm(request.POST or None, instance=obj)
@@ -1036,8 +1053,8 @@ def accesorio_edit(request, codigo, tipo):
 
 @login_required
 @user_passes_test(is_staff)
-def accesorio_delete(request, codigo, tipo):
-    obj = get_object_or_404(Accesorio, codigo=codigo, tipo=tipo)
+def accesorio_delete(request, codigo=None, tipo=None):
+    obj = _get_accesorio_from_request(request, codigo=codigo, tipo=tipo)
     if request.method == 'POST':
         Accesorio.objects.filter(codigo=obj.codigo, tipo=obj.tipo).update(bloqueado='Si')
         messages.success(request, 'Accesorio desactivado.')
