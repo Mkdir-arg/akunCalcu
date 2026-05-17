@@ -1172,6 +1172,9 @@ class ReporteCobranzasTest(TestCase):
         self.assertIsNone(response.context['reporte_data'])
         self.assertContains(response, 'Usá los filtros para generar el reporte')
         self.assertNotContains(response, 'VTA-GET-COB')
+        self.assertContains(response, 'class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="id_orden"')
+        self.assertContains(response, 'class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="id_moneda_cobranza"')
+        self.assertNotContains(response, '#filtros-cobranzas select.no-select2')
 
     def test_reporte_cobranzas_muestra_movimientos_individuales(self):
         from datetime import datetime

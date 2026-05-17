@@ -306,7 +306,7 @@ function _crearFila(idx, datos) {
     row.className = 'border-b';
     row.innerHTML = `
         <td class="px-4 py-2">
-            <select name="perfil_${idx}" class="w-full px-2 py-1 border rounded no-select2" required>
+            <select name="perfil_${idx}" class="w-full px-2 py-1 border rounded js-formula-perfil-select" required>
                 ${_buildPerfilOptions(datos.perfil || '')}
             </select>
         </td>
@@ -328,8 +328,21 @@ function _crearFila(idx, datos) {
     return row;
 }
 
+function initFormulaPerfilSelect(selectElement) {
+    if (!selectElement || typeof window.reinitAkunSelect2 !== 'function') {
+        return;
+    }
+
+    window.reinitAkunSelect2(selectElement, {
+        placeholder: 'Buscar perfil...',
+        allowClear: true,
+    });
+}
+
 function _agregarFila(datos) {
-    document.getElementById('formulasBody').appendChild(_crearFila(formulaIndex, datos));
+    const row = _crearFila(formulaIndex, datos);
+    document.getElementById('formulasBody').appendChild(row);
+    initFormulaPerfilSelect(row.querySelector('.js-formula-perfil-select'));
     formulaIndex++;
 }
 
@@ -399,18 +412,11 @@ let accesorios = [];
 const accesoriosIniciales = {{ accesorios_hoja_json|safe }};
 
 function initAccesorioSelect(selectElement) {
-    if (!selectElement || typeof window.jQuery === 'undefined') {
+    if (!selectElement || typeof window.reinitAkunSelect2 !== 'function') {
         return;
     }
 
-    const $select = $(selectElement);
-    if ($select.hasClass('select2-hidden-accessible')) {
-        $select.select2('destroy');
-    }
-
-    $select.select2({
-        theme: 'classic',
-        width: '100%',
+    window.reinitAkunSelect2(selectElement, {
         placeholder: 'Buscar accesorio...',
         allowClear: true,
     });

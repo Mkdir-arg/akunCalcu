@@ -202,6 +202,15 @@
 
 **Importante:** Los `<select>` tienen Select2 aplicado automáticamente desde `base.html`. No agregar Select2 manualmente salvo cuando el `<select>` se cree dinámicamente por JavaScript después de cargada la página; en ese caso hay que inicializar Select2 de forma puntual sobre el nuevo nodo. Para excluir un select, usar clase `no-select2`.
 
+### Patrón Select2 global
+
+- El look & feel estándar de todos los selects del sistema es el del buscador de `Tipo de Factura` del reporte de cobranzas y se configura globalmente en `core/base.html`.
+- El helper compartido es `window.AkunSelect2`.
+- Métodos disponibles: `init`, `reinit`, `refresh`, `destroy`.
+- Si un select se crea dinámicamente por JavaScript, usar `window.reinitAkunSelect2(...)` o `window.refreshAkunSelect2(...)` según el caso. No instanciar `select2()` directo salvo una razón técnica excepcional.
+- Si un select vive dentro de un modal, el contenedor del modal debe declarar `data-select2-dropdown-parent` para que el dropdown quede acotado al modal.
+- `no-select2` queda reservado para micro-selects inline muy compactos donde el buscador rompe la legibilidad o la densidad visual. No usarlo en formularios generales, filtros o pantallas operativas estándar.
+
 ---
 
 ## Confirmaciones de eliminación

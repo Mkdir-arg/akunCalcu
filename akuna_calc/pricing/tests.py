@@ -136,9 +136,40 @@ class HojaFormTemplateTest(SimpleTestCase):
         )
 
         self.assertIn('function initAccesorioSelect(selectElement)', html)
+        self.assertIn('function initFormulaPerfilSelect(selectElement)', html)
+        self.assertIn('window.reinitAkunSelect2(selectElement, {', html)
+        self.assertIn("initFormulaPerfilSelect(row.querySelector('.js-formula-perfil-select'));", html)
         self.assertIn("initAccesorioSelect(row.querySelector('.js-accesorio-select'));", html)
         self.assertIn("placeholder: 'Buscar accesorio...'", html)
+        self.assertIn("placeholder: 'Buscar perfil...'", html)
         self.assertIn('class="w-full px-2 py-1 border rounded js-accesorio-select"', html)
+
+
+class MarcoFormTemplateTest(SimpleTestCase):
+    def test_render_incluye_selectores_busqueda_compartidos(self):
+        request = RequestFactory().get('/pricing/config/marcos/7/editar/')
+        request.user = SimpleNamespace(username='tester', is_authenticated=False)
+
+        html = render_to_string(
+            'pricing/config/marco_form.html',
+            {
+                'titulo': 'Editar Marco',
+                'form': forms.Form(),
+                'formulas': [],
+                'object': SimpleNamespace(id=7, pk=7, producto=None),
+                'accesorios_marco_json': '[]',
+                'sidebar_modules': [],
+                'user_role_label': 'Admin',
+                'user_access_summary': 'Acceso total',
+            },
+            request=request,
+        )
+
+        self.assertIn('function initMarcoFormulaPerfilSelect(selectElement)', html)
+        self.assertIn("placeholder: 'Buscar perfil...'", html)
+        self.assertIn('window.refreshAkunSelect2(selectEl);', html)
+        self.assertIn('class="w-full px-2 py-1 border rounded js-accesorio-select"', html)
+        self.assertIn("placeholder: 'Buscar accesorio...'", html)
 
 
 class PriceCalculatorVidrioFormulaContextTest(SimpleTestCase):

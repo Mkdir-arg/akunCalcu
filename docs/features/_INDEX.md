@@ -16,6 +16,7 @@
 | [FEAT-008](./FEAT-008-rediseno-pdf-presupuestos-descripcion-narrativa.md) | Rediseño del PDF de presupuestos con descripción narrativa por ítem | Implementado | 2026-05-04 | — |
 | [FEAT-009](./FEAT-009-roles-permisos-por-modulo-y-opcion.md) | Roles y permisos por módulo y opción | Implementado | 2026-05-09 | — |
 | [FEAT-010](./FEAT-010-buscador-accesorios-config-hojas.md) | Buscador de accesorios en configurador de hojas | Implementado | 2026-05-17 | — |
+| [FEAT-011](./FEAT-011-estandarizacion-selectores-buscables-sistema.md) | Estandarización de selectores buscables en todo el sistema | Implementado | 2026-05-17 | — |
 
 ---
 
@@ -24,8 +25,12 @@
 | Módulo / App | Features | Último cambio |
 |---|---|---|
 | `pedidos` | FEAT-001 | 2026-03-04 |
-| `pricing` | FEAT-002, FEAT-003, FEAT-010 | 2026-05-17 |
-| `comercial` | FEAT-004, FEAT-006 | 2026-03-28 |
-| `presupuestos` | FEAT-005, FEAT-007, FEAT-008 | 2026-05-04 |
+| `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011 | 2026-05-17 |
+| `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
+| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011 | 2026-05-17 |
 | `usuarios` | FEAT-009 | 2026-05-09 |
-| `core` | FEAT-009 | 2026-05-09 |
+| `core` | FEAT-009, FEAT-011 | 2026-05-17 |
+| `facturacion` | FEAT-011 | 2026-05-17 |
+| `security` | FEAT-011 | 2026-05-17 |
+| `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
+| `gastos_diarios` | FEAT-011 | 2026-05-17 |

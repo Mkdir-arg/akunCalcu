@@ -20,7 +20,7 @@
     <!-- Filtros -->
     <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
         <form method="get" class="flex flex-wrap gap-3 items-center">
-            <select name="estado" class="no-select2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            <select name="estado" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 <option value="">Todos los estados</option>
                 <option value="pendiente" {% if estado_filter == 'pendiente' %}selected{% endif %}>Pendiente</option>
                 <option value="confirmado" {% if estado_filter == 'confirmado' %}selected{% endif %}>Confirmado</option>

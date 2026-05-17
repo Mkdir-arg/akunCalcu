@@ -126,12 +126,10 @@ function addItem() {
     container.appendChild(newForm);
     itemIndex++;
     totalForms.value = itemIndex;
-    
-    // Reinicializar Select2 en nuevos elementos
-    $(newForm).find('select').select2({
-        theme: 'classic',
-        width: '100%'
-    });
+
+    if (typeof window.reinitAkunSelect2 === 'function') {
+        window.reinitAkunSelect2(newForm);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

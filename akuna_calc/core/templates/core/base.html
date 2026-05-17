@@ -58,6 +58,110 @@
         .btn-primary:hover {
             background: linear-gradient(to right, #2563EB, #7E22CE);
         }
+        .select2-container {
+            width: 100% !important;
+        }
+        .select2-container--classic .select2-selection--single,
+        .select2-container--classic .select2-selection--multiple {
+            min-height: 46px;
+            border: 1px solid rgb(203 213 225) !important;
+            border-radius: 1rem !important;
+            background: #fff !important;
+            background-image: none !important;
+            box-shadow: none !important;
+            padding: 0.15rem 0.35rem;
+        }
+        .select2-container--classic .select2-selection--single .select2-selection__rendered {
+            line-height: 42px !important;
+            color: rgb(15 23 42) !important;
+            padding-left: 0.55rem !important;
+            padding-right: 2rem !important;
+        }
+        .select2-container--classic .select2-selection--single .select2-selection__placeholder,
+        .select2-search--dropdown .select2-search__field::placeholder {
+            color: rgb(100 116 139) !important;
+        }
+        .select2-container--classic .select2-selection--single .select2-selection__clear {
+            color: rgb(148 163 184);
+            margin-right: 0.35rem;
+        }
+        .select2-container--classic .select2-selection--single .select2-selection__arrow {
+            height: 44px !important;
+            right: 0.4rem !important;
+            width: 1rem !important;
+            background: transparent !important;
+            border: 0 !important;
+        }
+        .select2-container--classic .select2-selection--single .select2-selection__arrow b {
+            border-color: rgb(100 116 139) transparent transparent transparent !important;
+            border-width: 5px 4px 0 4px !important;
+            margin-left: -4px !important;
+            margin-top: -2px !important;
+        }
+        .select2-container--classic.select2-container--open .select2-selection--single .select2-selection__arrow b {
+            border-color: transparent transparent rgb(100 116 139) transparent !important;
+            border-width: 0 4px 5px 4px !important;
+        }
+        .select2-container--classic .select2-selection--multiple .select2-selection__rendered {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            padding: 0.2rem 0.35rem 0.15rem !important;
+        }
+        .select2-container--classic .select2-selection--multiple .select2-selection__choice {
+            margin: 0 !important;
+            border-radius: 9999px !important;
+            border: 0 !important;
+            background: rgb(224 242 254) !important;
+            color: rgb(30 64 175) !important;
+            padding: 0.15rem 0.5rem !important;
+        }
+        .select2-container--classic .select2-selection--multiple .select2-selection__choice__remove {
+            color: rgb(59 130 246) !important;
+            margin-right: 0.25rem;
+        }
+        .select2-container--classic.select2-container--focus .select2-selection--single,
+        .select2-container--classic.select2-container--focus .select2-selection--multiple,
+        .select2-container--classic.select2-container--open .select2-selection--single,
+        .select2-container--classic.select2-container--open .select2-selection--multiple {
+            border-color: rgb(59 130 246) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+        .select2-container--classic.select2-container--disabled .select2-selection--single,
+        .select2-container--classic.select2-container--disabled .select2-selection--multiple {
+            background: rgb(248 250 252) !important;
+            color: rgb(148 163 184) !important;
+            cursor: not-allowed;
+        }
+        .select2-dropdown {
+            border: 1px solid rgb(203 213 225) !important;
+            border-radius: 1rem !important;
+            overflow: hidden;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+        }
+        .select2-container--classic .select2-dropdown {
+            background: #fff;
+        }
+        .select2-search--dropdown {
+            padding: 0.5rem !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid rgb(203 213 225) !important;
+            border-radius: 0.75rem !important;
+            padding: 0.55rem 0.75rem !important;
+            font-size: 0.875rem;
+            color: rgb(15 23 42);
+            outline: none;
+        }
+        .select2-results__option {
+            padding: 0.65rem 0.85rem !important;
+            font-size: 0.875rem;
+            color: rgb(51 65 85);
+        }
+        .select2-results__option--highlighted[aria-selected] {
+            background: rgb(14 165 233) !important;
+            color: #fff !important;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-50">
@@ -212,13 +316,118 @@
         }
     });
 
-    $(document).ready(function() {
-        $('select').not('.no-select2').not('.swal2-select').select2({
+    function resolveSelect2Targets(target) {
+        if (typeof window.jQuery === 'undefined') {
+            return null;
+        }
+
+        const $ = window.jQuery;
+        const selector = 'select:not(.no-select2):not(.swal2-select)';
+
+        if (!target) {
+            return $(selector);
+        }
+
+        if (target.jquery) {
+            return target.filter(selector).add(target.find(selector));
+        }
+
+        if (target instanceof Element || target === document) {
+            const $target = $(target);
+            return $target.is(selector) ? $target.add($target.find(selector)) : $target.find(selector);
+        }
+
+        return $(selector);
+    }
+
+    function buildSelect2Options(selectElement, customOptions) {
+        const $ = window.jQuery;
+        const options = Object.assign({
             theme: 'classic',
-            width: '100%',
-            placeholder: 'Seleccione...',
-            allowClear: true
+            width: selectElement.dataset.width || '100%',
+            placeholder: selectElement.dataset.placeholder || 'Seleccione...',
+            allowClear: selectElement.dataset.allowClear !== 'false'
+        }, customOptions || {});
+        const dropdownParentSelector = selectElement.dataset.dropdownParent;
+        const closestDropdownParent = selectElement.closest('[data-select2-dropdown-parent]');
+
+        if (!options.dropdownParent && dropdownParentSelector) {
+            const $dropdownParent = $(dropdownParentSelector);
+            if ($dropdownParent.length) {
+                options.dropdownParent = $dropdownParent;
+            }
+        }
+
+        if (!options.dropdownParent && closestDropdownParent) {
+            options.dropdownParent = $(closestDropdownParent);
+        }
+
+        return options;
+    }
+
+    function initAkunSelect2(target, customOptions) {
+        const $targets = resolveSelect2Targets(target);
+        if (!$targets) {
+            return;
+        }
+
+        $targets.each(function() {
+            const $select = window.jQuery(this);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                return;
+            }
+            $select.select2(buildSelect2Options(this, customOptions));
         });
+    }
+
+    function destroyAkunSelect2(target) {
+        const $targets = resolveSelect2Targets(target);
+        if (!$targets) {
+            return;
+        }
+
+        $targets.each(function() {
+            const $select = window.jQuery(this);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+        });
+    }
+
+    function reinitAkunSelect2(target, customOptions) {
+        destroyAkunSelect2(target);
+        initAkunSelect2(target, customOptions);
+    }
+
+    function refreshAkunSelect2(target) {
+        const $targets = resolveSelect2Targets(target);
+        if (!$targets) {
+            return;
+        }
+
+        $targets.each(function() {
+            const $select = window.jQuery(this);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.trigger('change.select2');
+                return;
+            }
+            initAkunSelect2(this);
+        });
+    }
+
+    window.AkunSelect2 = {
+        init: initAkunSelect2,
+        destroy: destroyAkunSelect2,
+        reinit: reinitAkunSelect2,
+        refresh: refreshAkunSelect2,
+    };
+    window.initAkunSelect2 = initAkunSelect2;
+    window.destroyAkunSelect2 = destroyAkunSelect2;
+    window.reinitAkunSelect2 = reinitAkunSelect2;
+    window.refreshAkunSelect2 = refreshAkunSelect2;
+
+    $(document).ready(function() {
+        initAkunSelect2(document);
     });
     </script>
     

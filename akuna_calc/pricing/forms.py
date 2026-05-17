@@ -32,8 +32,8 @@ class ProductoForm(forms.ModelForm):
             'horas_hombre': 'Horas Hombre',
         }
         widgets = {
-            'extrusora': forms.Select(attrs={'class': _select_class + ' no-select2'}),
-            'linea': forms.Select(attrs={'class': _select_class + ' no-select2'}),
+            'extrusora': forms.Select(attrs={'class': _select_class}),
+            'linea': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad_hojas': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
             'horas_hombre': forms.NumberInput(attrs={'class': _input_class, 'step': '0.1', 'value': '0'}),
@@ -54,13 +54,13 @@ class MarcoForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Línea'
     )
     
@@ -71,7 +71,7 @@ class MarcoForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'producto': forms.Select(attrs={'class': _select_class + ' no-select2'}),
+            'producto': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
     
@@ -98,19 +98,19 @@ class HojaForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Línea'
     )
     producto = forms.ModelChoiceField(
         queryset=Producto.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2'}),
+        widget=forms.Select(attrs={'class': _select_class}),
         label='Producto'
     )
     
@@ -121,7 +121,7 @@ class HojaForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'marco': forms.Select(attrs={'class': _select_class + ' no-select2'}),
+            'marco': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad': forms.NumberInput(attrs={'class': _input_class}),
         }
@@ -154,25 +154,25 @@ class InteriorForm(forms.ModelForm):
     extrusora = forms.ModelChoiceField(
         queryset=Extrusora.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
         label='Extrusora'
     )
     linea = forms.ModelChoiceField(
         queryset=Linea.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
         label='Línea'
     )
     producto = forms.ModelChoiceField(
         queryset=Producto.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
         label='Producto'
     )
     marco = forms.ModelChoiceField(
         queryset=Marco.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': _select_class + ' no-select2', 'disabled': 'disabled'}),
+        widget=forms.Select(attrs={'class': _select_class, 'disabled': 'disabled'}),
         label='Marco'
     )
     
@@ -183,7 +183,7 @@ class InteriorForm(forms.ModelForm):
             'descripcion': 'Nombre',
         }
         widgets = {
-            'hoja': forms.Select(attrs={'class': _select_class + ' no-select2'}),
+            'hoja': forms.Select(attrs={'class': _select_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
         }
     

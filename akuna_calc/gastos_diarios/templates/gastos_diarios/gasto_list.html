@@ -27,7 +27,7 @@
         <form method="get" class="flex flex-wrap gap-3 items-end">
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
-                <select name="estado" class="no-select2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                <select name="estado" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">Todos</option>
                     <option value="en_espera" {% if estado_filter == 'en_espera' %}selected{% endif %}>En espera</option>
                     <option value="aprobado" {% if estado_filter == 'aprobado' %}selected{% endif %}>Aprobado</option>

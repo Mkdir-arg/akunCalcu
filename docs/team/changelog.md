@@ -16,6 +16,47 @@
 
 ## 2026-05-17 — Buscador de accesorios en configurador de hojas (REQ-025 / FEAT-010)
 
+## 2026-05-17 — Estandarización de selectores buscables en todo el sistema (REQ-026 / FEAT-011)
+
+**User Story:** Como usuario de AkunCalcu, quiero que todos los selectores del sistema se vean y funcionen como el buscador de Tipo de Factura para tener una experiencia consistente y encontrar opciones más rápido en cualquier pantalla.
+
+**Archivos creados:**
+- `docs/features/FEAT-011-estandarizacion-selectores-buscables-sistema.md` — documentación final de la feature
+
+**Archivos modificados:**
+- `akuna_calc/core/templates/core/base.html` — helper global `window.AkunSelect2` y estilo Select2 compartido
+- `akuna_calc/core/templates/core/includes/table_filters.html` — filtro de estado integrado al patrón global
+- `akuna_calc/core/tests.py` — test del helper compartido
+- `akuna_calc/comercial/forms.py` — widgets de filtros en cobranzas
+- `akuna_calc/comercial/templates/comercial/reportes/reportes_cobranzas.html` — remoción de CSS local duplicado
+- `akuna_calc/comercial/templates/comercial/ventas/form.html` — modal de cliente con helper global
+- `akuna_calc/comercial/templates/comercial/compras/form.html` — modal de cuenta con helper global
+- `akuna_calc/comercial/templates/comercial/ventas/list.html` — filtros integrados al patrón común
+- `akuna_calc/comercial/tests.py` — regresión del render inicial de cobranzas
+- `akuna_calc/pricing/forms.py` — selects dependientes integrados al patrón común
+- `akuna_calc/pricing/templates/pricing/config/hoja_form.html` — helper compartido para perfiles y accesorios dinámicos
+- `akuna_calc/pricing/templates/pricing/config/marco_form.html` — helper compartido para perfiles, accesorios y refresh de selects dependientes
+- `akuna_calc/pricing/templates/pricing/config/perfiles.html` — filtros integrados al patrón común
+- `akuna_calc/pricing/tests.py` — regresiones de `hoja_form` y `marco_form`
+- `akuna_calc/facturacion/templates/facturacion/crear_factura.html` — reinicialización común de selects en formsets dinámicos
+- `akuna_calc/presupuestos/forms.py` — selector de tipo de obra integrado al patrón común
+- `akuna_calc/presupuestos/templates/presupuestos/lista.html` — filtro de estado integrado al patrón común
+- `akuna_calc/presupuestos/templates/presupuestos/detalle.html` — selector de cambio de estado integrado al patrón común
+- `akuna_calc/security/templates/security/audit_list.html` — filtros integrados al patrón común
+- `akuna_calc/pedidos/templates/pedidos/pedidos_list.html` — filtro de estado integrado al patrón común
+- `akuna_calc/gastos_diarios/templates/gastos_diarios/gasto_list.html` — filtro de estado integrado al patrón común
+- `docs/requerimientos/REQ-026-estandarizar-selectores-buscables-sistema.md` — requerimiento marcado como implementado
+- `docs/requerimientos/_INDEX.md` — índice actualizado
+- `docs/features/_INDEX.md` — índice actualizado
+- `docs/team/current-sprint.md` — cierre documental fuera de sprint activo
+- `docs/team/changelog.md` — entrada de changelog de la feature
+- `docs/team/design-system.md` — reglas del helper global, modales y excepciones `no-select2`
+- `memory/MEMORY.md` — memoria del proyecto actualizada con el patrón común
+
+**Descripción:** Se consolidó el patrón de Select2 del reporte de cobranzas como estándar visual y técnico del sistema. La configuración ahora vive en `core/base.html` mediante `window.AkunSelect2`, que también cubre selects dinámicos y modales. Solo quedaron excluidos los micro-selects inline donde el buscador empeora una interfaz compacta.
+
+## 2026-05-17 — Buscador de accesorios en configurador de hojas (REQ-025 / FEAT-010)
+
 **User Story:** Como usuario del módulo Fábrica, quiero buscar accesorios escribiendo dentro del campo Accesorio al editar una hoja para encontrar y seleccionar más rápido el accesorio correcto.
 
 **Archivos creados:**

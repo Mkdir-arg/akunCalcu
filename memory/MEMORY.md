@@ -3,4 +3,5 @@
 - El sistema de permisos quedó centralizado en `akuna_calc/usuarios/access_control.py`, usando códigos de acceso y mapeo por `namespace:url_name`.
 - Los perfiles de acceso viven en `PerfilAccesoUsuario` y los roles globales en `RolSistema`; la migración `usuarios/0002_seed_admin_role.py` asegura el rol `Admin`.
 - Si se agregan nuevas vistas o APIs que deban respetar permisos, hay que registrarlas en `ACCESS_MODULES` y/o `ROUTE_ACCESS_MAP` para mantener alineados sidebar, login y bloqueo por URL.
-- En `pricing/templates/pricing/config/hoja_form.html`, los selects de accesorios se crean dinámicamente; si se agregan nuevos selects runtime, hay que inicializar Select2 manualmente porque el bootstrap global de `base.html` solo corre al cargar la página.
+- El estándar actual de selects vive en `akuna_calc/core/templates/core/base.html` a través de `window.AkunSelect2`; para nodos dinámicos usar `reinit` o `refresh`, y para modales declarar `data-select2-dropdown-parent`.
+- `no-select2` quedó reservado para micro-selects inline donde el buscador rompe una UI compacta; no usarlo en formularios o filtros generales.

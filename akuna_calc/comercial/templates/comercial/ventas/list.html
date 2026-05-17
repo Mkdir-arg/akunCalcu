@@ -81,7 +81,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Estado</label>
-                    <select name="estado" class="no-select2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                    <select name="estado" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                         <option value="">Todos</option>
                         {% for value, label in estados %}
                             <option value="{{ value }}" {% if filtro_estado == value %}selected{% endif %}>{{ label }}</option>
@@ -90,7 +90,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Tipo</label>
-                    <select name="con_factura" class="no-select2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                    <select name="con_factura" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                         <option value="">Todos</option>
                         <option value="si" {% if filtro_factura == 'si' %}selected{% endif %}>Blanco</option>
                         <option value="no" {% if filtro_factura == 'no' %}selected{% endif %}>Negro</option>
@@ -106,7 +106,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Filtrar por</label>
-                    <select name="tipo_fecha" class="no-select2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                    <select name="tipo_fecha" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                         <option value="pago" {% if tipo_fecha == 'pago' or not tipo_fecha %}selected{% endif %}>Fecha de Pago</option>
                         <option value="factura" {% if tipo_fecha == 'factura' %}selected{% endif %}>Fecha de Factura</option>
                     </select>

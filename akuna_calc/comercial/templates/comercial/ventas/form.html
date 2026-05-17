@@ -276,7 +276,7 @@
 </div>
 
 <!-- Modal Crear Cliente -->
-<div id="clienteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+<div id="clienteModal" data-select2-dropdown-parent class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
             <h2 class="text-2xl font-bold text-slate-800">Nuevo Cliente</h2>
@@ -482,21 +482,22 @@ function calcularTotales() {
 }
 
 function openClienteModal() {
-    document.getElementById('clienteModal').classList.remove('hidden');
+    const clienteModal = document.getElementById('clienteModal');
+    clienteModal.classList.remove('hidden');
     document.getElementById('clienteForm').reset();
     document.querySelectorAll('[class^="error-"]').forEach(el => el.textContent = '');
-    
-    // Inicializar Select2 en el modal
-    $('#clienteModal select').select2({
-        theme: 'classic',
-        width: '100%',
-        dropdownParent: $('#clienteModal')
-    });
+
+    if (typeof window.initAkunSelect2 === 'function') {
+        window.initAkunSelect2(clienteModal);
+    }
 }
 
 function closeClienteModal() {
-    document.getElementById('clienteModal').classList.add('hidden');
-    $('#clienteModal select').select2('destroy');
+    const clienteModal = document.getElementById('clienteModal');
+    clienteModal.classList.add('hidden');
+    if (typeof window.destroyAkunSelect2 === 'function') {
+        window.destroyAkunSelect2(clienteModal);
+    }
 }
 
 document.getElementById('clienteModal').addEventListener('click', function(e) {

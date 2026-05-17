@@ -353,7 +353,7 @@
                 <h3 class="font-bold text-slate-800 mb-3">Cambiar estado</h3>
                 <form method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}">
                     {% csrf_token %}
-                    <select name="estado" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
+                    <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
                         {% for value, label in presupuesto.ESTADO_CHOICES %}
                         <option value="{{ value }}" {% if value == presupuesto.estado %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}

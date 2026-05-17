@@ -165,7 +165,7 @@ function _crearFila(idx, datos) {
             <input type="text" name="formula_angulo_${idx}" value="${datos.angulo || '90'}" placeholder="90" class="w-full px-2 py-1 border rounded">
         </td>
         <td class="px-4 py-2">
-            <select name="formula_perfil_${idx}" class="w-full px-2 py-1 border rounded no-select2" required>
+            <select name="formula_perfil_${idx}" class="w-full px-2 py-1 border rounded js-formula-perfil-select" required>
                 ${_buildOptions(datos.perfil || '')}
             </select>
         </td>
@@ -178,8 +178,21 @@ function _crearFila(idx, datos) {
     return row;
 }
 
+function initMarcoFormulaPerfilSelect(selectElement) {
+    if (!selectElement || typeof window.reinitAkunSelect2 !== 'function') {
+        return;
+    }
+
+    window.reinitAkunSelect2(selectElement, {
+        placeholder: 'Buscar perfil...',
+        allowClear: true,
+    });
+}
+
 function _agregarFila(datos) {
-    document.getElementById('formulasTable').appendChild(_crearFila(formulaIndex, datos));
+    const row = _crearFila(formulaIndex, datos);
+    document.getElementById('formulasTable').appendChild(row);
+    initMarcoFormulaPerfilSelect(row.querySelector('.js-formula-perfil-select'));
     formulaIndex++;
 }
 
@@ -288,10 +301,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyOption = '<option value="">---------</option>';
 
     function refreshSelect2(selectEl) {
-        if (!selectEl || typeof window.jQuery === 'undefined') {
+        if (!selectEl || typeof window.refreshAkunSelect2 !== 'function') {
             return;
         }
-        window.jQuery(selectEl).trigger('change.select2');
+        window.refreshAkunSelect2(selectEl);
     }
 
     function resetSelect(selectEl, disabled = true) {
@@ -403,7 +416,7 @@ function _agregarFilaAccesorio(datos) {
     const row = document.createElement('tr');
     row.innerHTML = `
         <td class="px-4 py-2">
-            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded no-select2" required>
+            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded js-accesorio-select" required>
                 ${_buildAccesorioOptions(datos.accesorio || '')}
             </select>
         </td>
@@ -417,6 +430,12 @@ function _agregarFilaAccesorio(datos) {
         </td>
     `;
     document.getElementById('accesoriosTable').appendChild(row);
+    if (typeof window.reinitAkunSelect2 === 'function') {
+        window.reinitAkunSelect2(row.querySelector('.js-accesorio-select'), {
+            placeholder: 'Buscar accesorio...',
+            allowClear: true,
+        });
+    }
     accesorioIndex++;
 }
 
