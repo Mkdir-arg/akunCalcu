@@ -46,3 +46,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-024](./REQ-024-gastos-diarios-voz-whatsapp.md) | Gastos Diarios por nota de voz de WhatsApp | En desarrollo | 2026-05-17 | — |
 | [REQ-025](./REQ-025-buscador-accesorios-config-hojas.md) | Buscador de accesorios en configurador de hojas | Implementado | 2026-05-17 | FEAT-010 |
 | [REQ-026](./REQ-026-estandarizar-selectores-buscables-sistema.md) | Estandarizar selectores buscables en todo el sistema | Implementado | 2026-05-17 | FEAT-011 |
+| [REQ-027](./REQ-027-deploy-railway.md) | Desplegar AkunCalcu en Railway (Django + MySQL + n8n + Evolution) | En desarrollo | 2026-05-17 | — |

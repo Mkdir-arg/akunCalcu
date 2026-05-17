@@ -1,13 +1,15 @@
 #!/bin/sh
 set -e
 
-echo "Esperando MySQL en ${DB_HOST}:${DB_PORT}..."
-while ! nc -z "$DB_HOST" "$DB_PORT"; do
-  echo "MySQL no disponible todavía, reintentando..."
-  sleep 2
-done
+if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
+  echo "Esperando MySQL en ${DB_HOST}:${DB_PORT}..."
+  while ! nc -z "$DB_HOST" "$DB_PORT"; do
+    echo "MySQL no disponible todavía, reintentando..."
+    sleep 2
+  done
+fi
 
-echo "Base de datos disponible, ejecutando migraciones..."
+echo "Ejecutando migraciones..."
 python manage.py migrate --noinput
 
 echo "Creando superusuario (si no existe)..."
@@ -27,12 +29,16 @@ else:
     print(f"Superusuario {username} ya existe")
 EOF
 
-echo "Cargando datos iniciales de productos..."
-python manage.py seed_productos || echo "seed_productos falló o no existe, continuando..."
+PORT="${PORT:-8000}"
 
-echo "Recolectando archivos estáticos..."
-python manage.py collectstatic --noinput
-
-echo "Iniciando servidor Django en 0.0.0.0:8000..."
-exec python manage.py runserver 0.0.0.0:8000
-
+if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "True" ] || [ "$DEBUG" = "1" ]; then
+  echo "Modo DEBUG: usando runserver para hot reload"
+  exec python manage.py runserver 0.0.0.0:${PORT}
+else
+  echo "Modo producción: usando gunicorn en puerto ${PORT}"
+  exec gunicorn akuna_calc.wsgi:application \
+    --bind 0.0.0.0:${PORT} \
+    --workers 3 \
+    --access-logfile - \
+    --error-logfile -
+fi

@@ -20,7 +20,9 @@ COPY akuna_calc/ ./
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
+RUN SECRET_KEY=build-time-dummy-key DEBUG=False \
+    python manage.py collectstatic --noinput --settings=akuna_calc.settings
+
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-

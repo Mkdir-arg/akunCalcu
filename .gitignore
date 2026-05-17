@@ -33,6 +33,9 @@ db.sqlite3
 db.sqlite3-journal
 /staticfiles/
 /media/
+akuna_calc/media/
+akuna_calc/staticfiles/
+akuna_calc/logs/
 
 # IDE
 .vscode/
