@@ -288,7 +288,7 @@ class Accesorio(models.Model):
 
 
 class Vidrio(models.Model):
-    codigo = models.TextField(db_column="CODIGO", primary_key=True)
+    codigo = models.CharField(db_column="CODIGO", max_length=255, primary_key=True)
     producto_id = models.TextField(db_column="Idproducto", null=True, blank=True)
     hoja_id = models.IntegerField(db_column="Idhoja", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
@@ -339,6 +339,7 @@ class VidrioHoja(models.Model):
         on_delete=models.CASCADE,
         to_field='codigo',
         related_name='vidrio_hojas',
+        db_constraint=False,
     )
     hoja = models.ForeignKey(
         Hoja,

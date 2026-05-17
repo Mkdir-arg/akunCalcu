@@ -10,15 +10,7 @@ class Migration(migrations.Migration):
         ("comercial", "0006_tipogasto_delete_subtipocuenta_compra_tipo_gasto"),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name="compra",
-            name="tipo_gasto",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                to="comercial.tipogasto",
-            ),
-        ),
-    ]
+    # 0006 already creates compra.tipo_gasto. After 0008 renames
+    # SubTipoCuenta to TipoGasto, Django state follows that rename without
+    # needing a second SQL AddField on fresh databases.
+    operations = []

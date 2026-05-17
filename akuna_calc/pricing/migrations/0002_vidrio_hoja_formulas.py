@@ -5,6 +5,9 @@ def backfill_vidrio_hoja_formulas(apps, schema_editor):
     Vidrio = apps.get_model('pricing', 'Vidrio')
     VidrioHoja = apps.get_model('pricing', 'VidrioHoja')
 
+    if 'vidrios' not in schema_editor.connection.introspection.table_names():
+        return
+
     rebajes_por_vidrio = {
         vidrio.codigo: (vidrio.rebaje_ancho, vidrio.rebaje_alto)
         for vidrio in Vidrio.objects.all()

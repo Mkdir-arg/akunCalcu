@@ -506,7 +506,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Vidrio',
             fields=[
-                ('codigo', models.TextField(db_column='CODIGO', primary_key=True, serialize=False)),
+                ('codigo', models.CharField(db_column='CODIGO', max_length=255, primary_key=True, serialize=False)),
                 ('producto_id', models.TextField(blank=True, db_column='Idproducto', null=True)),
                 ('hoja_id', models.IntegerField(blank=True, db_column='Idhoja', null=True)),
                 ('descripcion', models.TextField(blank=True, db_column='DESCRI', null=True)),
@@ -548,7 +548,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('hoja', models.ForeignKey(db_column='hoja_id', db_constraint=False, on_delete=django.db.models.deletion.CASCADE, related_name='vidrio_hojas', to='pricing.hoja')),
-                ('vidrio', models.ForeignKey(db_column='vidrio_codigo', on_delete=django.db.models.deletion.CASCADE, related_name='vidrio_hojas', to='pricing.vidrio')),
+                ('vidrio', models.ForeignKey(db_column='vidrio_codigo', db_constraint=False, on_delete=django.db.models.deletion.CASCADE, related_name='vidrio_hojas', to='pricing.vidrio')),
             ],
             options={
                 'db_table': 'vidrio_hojas',

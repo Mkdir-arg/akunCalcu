@@ -9,12 +9,6 @@ class Migration(migrations.Migration):
         ("comercial", "0012_merge_20260217_1229"),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name="pagoventa",
-            name="con_factura",
-            field=models.BooleanField(
-                default=True, verbose_name="Pago en blanco (con factura)"
-            ),
-        ),
-    ]
+    # 0012_pagoventa_con_factura already adds pagoventa.con_factura.
+    # Keep this branch in the graph without issuing duplicate SQL on clean DBs.
+    operations = []
