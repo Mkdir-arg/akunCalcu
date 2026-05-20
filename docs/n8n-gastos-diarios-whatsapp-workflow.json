@@ -1,0 +1,632 @@
+{
+  "name": "WhatsApp Gastos Diarios AkunCalcu v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gastos-diarios-whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-evolution",
+      "name": "Webhook Evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json.body ?? $json;\nconst data = payload.data ?? payload;\nconst key = data.key ?? {};\nconst message = data.message ?? payload.message ?? {};\nconst audioMessage = message.audioMessage ?? data.audioMessage ?? payload.audioMessage ?? null;\nconst textMessage = message.conversation ?? message.extendedTextMessage?.text ?? data.text ?? payload.text ?? payload.body ?? '';\nconst remoteJid = key.remoteJid ?? data.remoteJid ?? payload.remoteJid ?? data.sender ?? payload.sender ?? '';\nconst numeroOrigen = String(remoteJid).split('@')[0].trim();\nconst audioUrl = data.mediaUrl ?? payload.mediaUrl ?? audioMessage?.url ?? audioMessage?.mediaUrl ?? data.url ?? payload.url ?? '';\nconst audioId = key.id ?? data.messageId ?? payload.messageId ?? '';\nconst pushName = data.pushName ?? payload.pushName ?? data.senderName ?? payload.senderName ?? '';\nconst isAudio = Boolean(audioMessage || audioUrl || data.messageType === 'audio' || payload.messageType === 'audio');\n\nreturn [{\n  json: {\n    numero_origen: numeroOrigen,\n    push_name: pushName,\n    texto: textMessage,\n    audio_url: audioUrl,\n    audio_id: audioId,\n    is_audio: isAudio\n  }\n}];"
+      },
+      "id": "normalizar-evento",
+      "name": "Normalizar Evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-audio",
+              "leftValue": "={{ $json.is_audio ? 'si' : 'no' }}",
+              "rightValue": "si",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-audio",
+      "name": "IF Audio",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 420]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.audio_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-audio",
+      "name": "Download Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 260]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "data",
+        "options": {
+          "language": "es"
+        }
+      },
+      "id": "transcribe-audio",
+      "name": "Transcribe Audio",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [1080, 260],
+      "credentials": {
+        "openAiApi": {
+          "id": "2",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Eres un asistente que extrae gastos diarios desde una transcripcion de audio de WhatsApp. Analiza el siguiente texto y devuelve UNICAMENTE un JSON array. Cada elemento debe tener:\n- \"descripcion\": string breve\n- \"monto\": numero positivo\n\nSi no puedes identificar un monto concreto, no inventes nada y devuelve [] para ese caso.\n\nTexto: {{ $json.text }}\n\nResponde SOLO con el JSON array, sin texto adicional, sin markdown, sin ```json. Ejemplo valido: [{\"descripcion\":\"Nafta\",\"monto\":20000},{\"descripcion\":\"Peaje\",\"monto\":1500}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "parsear-gastos-gpt",
+      "name": "Parsear Gastos GPT",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [1300, 260],
+      "credentials": {
+        "openAiApi": {
+          "id": "2",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const numeroOrigen = $('Normalizar Evento').item.json.numero_origen;\nconst audioId = $('Normalizar Evento').item.json.audio_id;\nconst transcripcion = $('Transcribe Audio').item.json.text;\nconst respuesta = $input.item.json.message.content;\n\nlet gastos = [];\ntry {\n  gastos = JSON.parse(respuesta);\n} catch (error) {\n  gastos = [];\n}\n\ngastos = (Array.isArray(gastos) ? gastos : [])\n  .map((item) => ({\n    descripcion: String(item.descripcion ?? '').trim(),\n    monto: Number(String(item.monto ?? '').replace(',', '.'))\n  }))\n  .filter((item) => item.descripcion && Number.isFinite(item.monto) && item.monto > 0);\n\nreturn [{\n  json: {\n    numero_origen: numeroOrigen,\n    audio_id: audioId,\n    transcripcion: transcripcion,\n    gastos: gastos\n  }\n}];"
+      },
+      "id": "procesar-json-gastos",
+      "name": "Procesar JSON Gastos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-gastos",
+              "leftValue": "={{ $json.gastos.length > 0 ? 'si' : 'no' }}",
+              "rightValue": "si",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-hay-gastos",
+      "name": "IF Hay Gastos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1740, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.DJANGO_BASE_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/gastos-diarios/api/crear-borrador/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Bot-Secret",
+              "value": "={{ $env.TELEGRAM_BOT_SECRET || 'akuna-bot-secret-2024' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "crear-borrador-django",
+      "name": "Crear Borrador Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1960, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "const numeroOrigen = $('Procesar JSON Gastos').item.json.numero_origen;\nconst gastos = $('Procesar JSON Gastos').item.json.gastos;\nconst creados = $json.creados ?? gastos.length;\nconst total = gastos.reduce((acumulado, item) => acumulado + Number(item.monto), 0);\nconst itemsTexto = gastos\n  .map((item) => `- ${item.descripcion}: $${item.monto.toFixed(2)}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    numero_origen: numeroOrigen,\n    texto: `🧾 Detecté ${creados} gasto(s):\\n\\n${itemsTexto}\\n\\nTotal: $${total.toFixed(2)}\\n\\n¿Confirmás? Respondé SI para guardar o NO para cancelar.`\n  }\n}];"
+      },
+      "id": "armar-resumen",
+      "name": "Armar Resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2180, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.EVOLUTION_API_URL || 'https://TU_EVOLUTION_URL') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || $env.EVOLUTION_INSTANCE_NAME || 'TU_INSTANCIA_EVOLUTION') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.numero_origen, text: $json.texto }) }}",
+        "options": {}
+      },
+      "id": "whatsapp-enviar-resumen",
+      "name": "WhatsApp Enviar Resumen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2400, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.EVOLUTION_API_URL || 'https://TU_EVOLUTION_URL') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || $env.EVOLUTION_INSTANCE_NAME || 'TU_INSTANCIA_EVOLUTION') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Procesar JSON Gastos').item.json.numero_origen, text: 'No pude extraer gastos con monto del audio. Reenviá el audio o dictá cada gasto con monto, por ejemplo: nafta 20000, peaje 1500.' }) }}",
+        "options": {}
+      },
+      "id": "whatsapp-reintentar",
+      "name": "WhatsApp Reintentar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1960, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = ($('Normalizar Evento').item.json.texto || '')\n  .toLowerCase()\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '')\n  .trim();\n\nlet accion = 'otro';\nif (['si', 's', 'ok', 'confirmo', 'confirmar', 'dale'].includes(texto)) {\n  accion = 'si';\n} else if (['no', 'n', 'cancelar', 'cancelo'].includes(texto)) {\n  accion = 'no';\n}\n\nreturn [{\n  json: {\n    numero_origen: $('Normalizar Evento').item.json.numero_origen,\n    accion: accion,\n    texto_original: texto\n  }\n}];"
+      },
+      "id": "normalizar-respuesta",
+      "name": "Normalizar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 580]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-sino",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "otro",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-si-no",
+      "name": "IF Si o No",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1080, 580]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.DJANGO_BASE_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/gastos-diarios/api/confirmar/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Bot-Secret",
+              "value": "={{ $env.TELEGRAM_BOT_SECRET || 'akuna-bot-secret-2024' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ numero_origen: $json.numero_origen, accion: $json.accion }) }}",
+        "options": {}
+      },
+      "id": "confirmar-django",
+      "name": "Confirmar Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-accion-si",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "si",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-accion-si",
+      "name": "IF Accion Si",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.EVOLUTION_API_URL || 'https://TU_EVOLUTION_URL') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || $env.EVOLUTION_INSTANCE_NAME || 'TU_INSTANCIA_EVOLUTION') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Normalizar Respuesta').item.json.numero_origen, text: '✅ Listo. Tus gastos quedaron cargados en AkunCalcu con estado en espera para revisión.' }) }}",
+        "options": {}
+      },
+      "id": "whatsapp-confirmado",
+      "name": "WhatsApp Confirmado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.EVOLUTION_API_URL || 'https://TU_EVOLUTION_URL') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || $env.EVOLUTION_INSTANCE_NAME || 'TU_INSTANCIA_EVOLUTION') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Normalizar Respuesta').item.json.numero_origen, text: '❌ Cancelado. Eliminé el borrador de gastos generado por ese audio.' }) }}",
+        "options": {}
+      },
+      "id": "whatsapp-cancelado",
+      "name": "WhatsApp Cancelado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 580]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.EVOLUTION_API_URL || 'https://TU_EVOLUTION_URL') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || $env.EVOLUTION_INSTANCE_NAME || 'TU_INSTANCIA_EVOLUTION') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY || 'akuna-evolution-key-2026' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Normalizar Respuesta').item.json.numero_origen, text: 'No entendí la respuesta. Respondé SI para guardar los gastos o NO para cancelarlos.' }) }}",
+        "options": {}
+      },
+      "id": "whatsapp-no-entendido",
+      "name": "WhatsApp No Entendido",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 680]
+    }
+  ],
+  "connections": {
+    "Webhook Evolution": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Evento": {
+      "main": [
+        [
+          {
+            "node": "IF Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Audio": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalizar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Parsear Gastos GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Gastos GPT": {
+      "main": [
+        [
+          {
+            "node": "Procesar JSON Gastos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar JSON Gastos": {
+      "main": [
+        [
+          {
+            "node": "IF Hay Gastos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Hay Gastos": {
+      "main": [
+        [
+          {
+            "node": "Crear Borrador Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Reintentar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Borrador Django": {
+      "main": [
+        [
+          {
+            "node": "Armar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar Resumen": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Enviar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "IF Si o No",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Si o No": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp No Entendido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar Django": {
+      "main": [
+        [
+          {
+            "node": "IF Accion Si",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Accion Si": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Confirmado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Cancelado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
