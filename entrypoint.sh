@@ -1,6 +1,17 @@
 #!/bin/sh
 set -e
 
+is_truthy() {
+  case "$1" in
+    true|True|TRUE|1|yes|Yes|YES|on|On|ON)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ]; then
   if [ -n "$DATABASE_URL" ]; then
     db_host_from_url=$(python -c "import os; from urllib.parse import urlparse; parsed = urlparse(os.environ.get('DATABASE_URL', '')); print(parsed.hostname or '')")
@@ -29,11 +40,37 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
   done
 fi
 
-echo "Ejecutando migraciones..."
-python manage.py migrate --noinput
+run_migrations_on_startup="${RUN_MIGRATIONS_ON_STARTUP:-}"
+if [ -z "$run_migrations_on_startup" ]; then
+  if is_truthy "$DEBUG"; then
+    run_migrations_on_startup="true"
+  else
+    run_migrations_on_startup="false"
+  fi
+fi
 
-echo "Creando superusuario (si no existe)..."
-python manage.py shell -c "from django.contrib.auth import get_user_model; import os; User = get_user_model(); username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin'); email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com'); password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin123'); exists = User.objects.filter(username=username).exists(); print(f'Superusuario {username} ya existe' if exists else f'Superusuario {username} creado'); None if exists else User.objects.create_superuser(username=username, email=email, password=password)"
+if is_truthy "$run_migrations_on_startup"; then
+  echo "Ejecutando migraciones..."
+  python manage.py migrate --noinput
+else
+  echo "Saltando migraciones al arranque (RUN_MIGRATIONS_ON_STARTUP=${run_migrations_on_startup})"
+fi
+
+create_superuser_on_startup="${CREATE_SUPERUSER_ON_STARTUP:-}"
+if [ -z "$create_superuser_on_startup" ]; then
+  if is_truthy "$DEBUG"; then
+    create_superuser_on_startup="true"
+  else
+    create_superuser_on_startup="false"
+  fi
+fi
+
+if is_truthy "$create_superuser_on_startup"; then
+  echo "Creando superusuario (si no existe)..."
+  python manage.py shell -c "from django.contrib.auth import get_user_model; import os; User = get_user_model(); username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin'); email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com'); password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin123'); exists = User.objects.filter(username=username).exists(); print(f'Superusuario {username} ya existe' if exists else f'Superusuario {username} creado'); None if exists else User.objects.create_superuser(username=username, email=email, password=password)"
+else
+  echo "Saltando creación de superusuario al arranque (CREATE_SUPERUSER_ON_STARTUP=${create_superuser_on_startup})"
+fi
 
 PORT="${PORT:-8000}"
 
