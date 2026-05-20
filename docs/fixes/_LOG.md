@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-004 — Deploy web desacoplado de migraciones para evitar caídas por healthcheck
+**Fecha**: 2026-05-20
+**Reportado por**: Usuario
+**Severidad**: Alta
+**Feature afectada**: Deploy Railway / módulo core
+
+**Síntoma**: El servicio `web` podía quedar fuera de línea en Railway cuando el arranque ejecutaba migraciones o creación de superusuario antes de exponer Gunicorn, lo que hacía fallar el healthcheck y dejaba el dominio público en fallback.
+**Causa raíz**: El contenedor ataba el ciclo de vida del proceso web a tareas administrativas dependientes de MySQL. Si la base demoraba en responder o las migraciones tardaban demasiado, Railway mataba el deploy por healthcheck aunque la app en sí estuviera correcta.
+**Solución**: Se hizo opcional la ejecución de migraciones y la creación de superusuario al arranque mediante variables de entorno. En producción Railway el servicio puede iniciar rápido y las tareas administrativas pasan a correrse de forma controlada, sin tocar la base de datos ni bloquear el healthcheck.
+**Archivos modificados**: `entrypoint.sh`, `.env.example`
+
 ### FIX-003 — Reporte de cobranzas: total USD faltante en resumen
 **Fecha**: 2026-05-17
 **Reportado por**: Usuario
