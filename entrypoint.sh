@@ -44,7 +44,7 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
 
   echo "Esperando MySQL en ${DB_HOST}:${DB_PORT} (timeout ${db_wait_timeout}s)..."
   wait_started_at=$(date +%s)
-  while ! nc -z "$DB_HOST" "$DB_PORT"; do
+  while ! nc -z -w 1 "$DB_HOST" "$DB_PORT"; do
     current_time=$(date +%s)
     elapsed_seconds=$((current_time - wait_started_at))
 

@@ -43,6 +43,7 @@ class HealthcheckViewTest(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b'ok')
+        self.assertEqual(response['Content-Type'].split(';', 1)[0], 'text/plain')
 
     @override_settings(
         MIDDLEWARE=['django.middleware.security.SecurityMiddleware'],
@@ -97,3 +98,23 @@ class HealthcheckViewTest(SimpleTestCase):
         self.assertEqual(response.content, b'ok')
         self.assertFalse(mocked_settings.called)
         self.assertFalse(mocked_blacklist.called)
+
+    @override_settings(
+        MIDDLEWARE=[
+            'django.middleware.security.SecurityMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'core.middleware.PersistedNavigationMiddleware',
+        ],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=False,
+    )
+    def test_healthcheck_skips_persisted_navigation(self):
+        with patch(
+            'core.middleware.remember_page_state',
+            side_effect=AssertionError('page state persisted on /health/'),
+        ) as mocked_remember_page_state:
+            response = self.client.get('/health/', follow=False)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b'ok')
+        self.assertFalse(mocked_remember_page_state.called)

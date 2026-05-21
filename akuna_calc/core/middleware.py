@@ -3,8 +3,14 @@ from django.utils.deprecation import MiddlewareMixin
 from .navigation import remember_page_state
 
 
+HEALTHCHECK_PATHS = {'/health', '/health/'}
+
+
 class PersistedNavigationMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
+        if request.path in HEALTHCHECK_PATHS:
+            return response
+
         content_type = response.get('Content-Type', '')
         is_html_response = content_type.startswith('text/html')
 
