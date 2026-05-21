@@ -28,9 +28,9 @@
 **Severidad**: Alta
 **Feature afectada**: Deploy Railway / módulo core
 
-**Síntoma**: El servicio `web` podía quedar fuera de línea en Railway cuando el arranque ejecutaba migraciones o creación de superusuario antes de exponer Gunicorn, lo que hacía fallar el healthcheck y dejaba el dominio público en fallback.
-**Causa raíz**: El contenedor ataba el ciclo de vida del proceso web a tareas administrativas dependientes de MySQL. Si la base demoraba en responder o las migraciones tardaban demasiado, Railway mataba el deploy por healthcheck aunque la app en sí estuviera correcta.
-**Solución**: Se hizo opcional la ejecución de migraciones y la creación de superusuario al arranque mediante variables de entorno. En producción Railway el servicio puede iniciar rápido y las tareas administrativas pasan a correrse de forma controlada, sin tocar la base de datos ni bloquear el healthcheck.
+**Síntoma**: El servicio `web` podía quedar fuera de línea en Railway cuando el arranque ejecutaba migraciones o creación de superusuario antes de exponer Gunicorn, o cuando esperaba MySQL indefinidamente, lo que hacía fallar el healthcheck y dejaba el dominio público en fallback.
+**Causa raíz**: El contenedor ataba el ciclo de vida del proceso web a tareas administrativas dependientes de MySQL y además bloqueaba el arranque con un wait loop sin límite. Si la base demoraba en responder o las migraciones tardaban demasiado, Railway mataba el deploy por healthcheck aunque la app en sí estuviera correcta.
+**Solución**: Se hizo opcional la ejecución de migraciones y la creación de superusuario al arranque mediante variables de entorno, y se agregó un timeout configurable para la espera de MySQL. En producción Railway el servicio puede iniciar rápido y las tareas administrativas pasan a correrse de forma controlada, sin tocar la base de datos ni bloquear el healthcheck.
 **Archivos modificados**: `entrypoint.sh`, `.env.example`
 
 ### FIX-003 — Reporte de cobranzas: total USD faltante en resumen

@@ -33,8 +33,26 @@ if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ]; then
 fi
 
 if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
-  echo "Esperando MySQL en ${DB_HOST}:${DB_PORT}..."
+  db_wait_timeout="${DB_WAIT_TIMEOUT:-}"
+  if [ -z "$db_wait_timeout" ]; then
+    if is_truthy "$DEBUG"; then
+      db_wait_timeout="0"
+    else
+      db_wait_timeout="60"
+    fi
+  fi
+
+  echo "Esperando MySQL en ${DB_HOST}:${DB_PORT} (timeout ${db_wait_timeout}s)..."
+  wait_started_at=$(date +%s)
   while ! nc -z "$DB_HOST" "$DB_PORT"; do
+    current_time=$(date +%s)
+    elapsed_seconds=$((current_time - wait_started_at))
+
+    if [ "$db_wait_timeout" -gt 0 ] && [ "$elapsed_seconds" -ge "$db_wait_timeout" ]; then
+      echo "MySQL sigue inaccesible tras ${elapsed_seconds}s; continúo arranque de web sin bloquear healthcheck."
+      break
+    fi
+
     echo "MySQL no disponible todavía, reintentando..."
     sleep 2
   done
