@@ -6,6 +6,13 @@ from .models import AuditLog, LoginAttempt, SecuritySettings, IPBlacklist
 import json
 
 
+HEALTHCHECK_PATHS = {'/health', '/health/'}
+
+
+def is_healthcheck_request(request):
+    return request.path in HEALTHCHECK_PATHS
+
+
 class AuditMiddleware(MiddlewareMixin):
     """Middleware para registrar todas las acciones del sistema"""
     
@@ -14,6 +21,8 @@ class AuditMiddleware(MiddlewareMixin):
         '/media/',
         '/admin/jsi18n/',
         '/favicon.ico',
+        '/health',
+        '/health/',
     ]
     
     SENSITIVE_FIELDS = ['password', 'token', 'secret', 'key']
@@ -141,6 +150,9 @@ class SecurityMiddleware(MiddlewareMixin):
     """Middleware para controles de seguridad"""
     
     def process_request(self, request):
+        if is_healthcheck_request(request):
+            return None
+
         # Verificar IP bloqueada
         ip_address = self._get_client_ip(request)
         
