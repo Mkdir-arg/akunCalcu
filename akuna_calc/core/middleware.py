@@ -11,6 +11,9 @@ class PersistedNavigationMiddleware(MiddlewareMixin):
         if request.path in HEALTHCHECK_PATHS:
             return response
 
+        if not getattr(request, 'user', None) or not request.user.is_authenticated:
+            return response
+
         content_type = response.get('Content-Type', '')
         is_html_response = content_type.startswith('text/html')
 

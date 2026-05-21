@@ -73,6 +73,7 @@ class HealthcheckViewTest(SimpleTestCase):
         MIDDLEWARE=[
             'django.middleware.security.SecurityMiddleware',
             'django.contrib.sessions.middleware.SessionMiddleware',
+            'core.middleware.PersistedNavigationMiddleware',
             'django.middleware.common.CommonMiddleware',
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
@@ -142,16 +143,22 @@ class HealthcheckViewTest(SimpleTestCase):
                 'security.middleware.SecurityMiddleware._is_ip_blocked',
                 side_effect=AssertionError('ip blacklist checked on /login/'),
             ) as mocked_blacklist:
-                response = self.client.get('/login/', follow=False)
+                with patch(
+                    'core.middleware.remember_page_state',
+                    side_effect=AssertionError('page state persisted on /login/'),
+                ) as mocked_remember_page_state:
+                    response = self.client.get('/login/', follow=False)
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(mocked_settings.called)
         self.assertFalse(mocked_blacklist.called)
+        self.assertFalse(mocked_remember_page_state.called)
 
     @override_settings(
         MIDDLEWARE=[
             'django.middleware.security.SecurityMiddleware',
             'django.contrib.sessions.middleware.SessionMiddleware',
+            'core.middleware.PersistedNavigationMiddleware',
             'django.middleware.common.CommonMiddleware',
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
@@ -171,9 +178,14 @@ class HealthcheckViewTest(SimpleTestCase):
                 'security.middleware.SecurityMiddleware._is_ip_blocked',
                 side_effect=AssertionError('ip blacklist checked on /'),
             ) as mocked_blacklist:
-                response = self.client.get('/', follow=False)
+                with patch(
+                    'core.middleware.remember_page_state',
+                    side_effect=AssertionError('page state persisted on /'),
+                ) as mocked_remember_page_state:
+                    response = self.client.get('/', follow=False)
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], '/login/')
         self.assertFalse(mocked_settings.called)
         self.assertFalse(mocked_blacklist.called)
+        self.assertFalse(mocked_remember_page_state.called)
