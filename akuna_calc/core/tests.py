@@ -118,3 +118,62 @@ class HealthcheckViewTest(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b'ok')
         self.assertFalse(mocked_remember_page_state.called)
+
+    @override_settings(
+        MIDDLEWARE=[
+            'django.middleware.security.SecurityMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.middleware.common.CommonMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+            'usuarios.middleware.RouteAccessMiddleware',
+            'security.middleware.SecurityMiddleware',
+            'security.middleware.AuditMiddleware',
+        ],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=False,
+    )
+    def test_login_page_skips_custom_security_queries(self):
+        with patch(
+            'security.middleware.SecuritySettings.get_settings',
+            side_effect=AssertionError('security settings queried on /login/'),
+        ) as mocked_settings:
+            with patch(
+                'security.middleware.SecurityMiddleware._is_ip_blocked',
+                side_effect=AssertionError('ip blacklist checked on /login/'),
+            ) as mocked_blacklist:
+                response = self.client.get('/login/', follow=False)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(mocked_settings.called)
+        self.assertFalse(mocked_blacklist.called)
+
+    @override_settings(
+        MIDDLEWARE=[
+            'django.middleware.security.SecurityMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.middleware.common.CommonMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+            'usuarios.middleware.RouteAccessMiddleware',
+            'security.middleware.SecurityMiddleware',
+            'security.middleware.AuditMiddleware',
+        ],
+        ALLOWED_HOSTS=['testserver'],
+        SECURE_SSL_REDIRECT=False,
+    )
+    def test_index_redirect_skips_custom_security_queries(self):
+        with patch(
+            'security.middleware.SecuritySettings.get_settings',
+            side_effect=AssertionError('security settings queried on /'),
+        ) as mocked_settings:
+            with patch(
+                'security.middleware.SecurityMiddleware._is_ip_blocked',
+                side_effect=AssertionError('ip blacklist checked on /'),
+            ) as mocked_blacklist:
+                response = self.client.get('/', follow=False)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/login/')
+        self.assertFalse(mocked_settings.called)
+        self.assertFalse(mocked_blacklist.called)

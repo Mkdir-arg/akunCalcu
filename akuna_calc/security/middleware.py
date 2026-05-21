@@ -7,10 +7,30 @@ import json
 
 
 HEALTHCHECK_PATHS = {'/health', '/health/'}
+SECURITY_EXEMPT_PATHS = {
+    '/',
+    '/login',
+    '/login/',
+    '/logout',
+    '/logout/',
+    '/health',
+    '/health/',
+    '/favicon.ico',
+}
+SECURITY_EXEMPT_PREFIXES = (
+    '/static/',
+    '/media/',
+    '/admin/jsi18n/',
+)
 
 
 def is_healthcheck_request(request):
     return request.path in HEALTHCHECK_PATHS
+
+
+def is_security_exempt_request(request):
+    path = request.path
+    return path in SECURITY_EXEMPT_PATHS or any(path.startswith(prefix) for prefix in SECURITY_EXEMPT_PREFIXES)
 
 
 class AuditMiddleware(MiddlewareMixin):
@@ -36,14 +56,16 @@ class AuditMiddleware(MiddlewareMixin):
         # No auditar rutas excluidas
         if any(request.path.startswith(path) for path in self.EXCLUDED_PATHS):
             return response
+
+        if not self._should_audit(request):
+            return response
         
         # Solo auditar si está configurado
         settings = SecuritySettings.get_settings()
         if not settings.log_all_actions:
             return response
-        
-        if self._should_audit(request):
-            self._create_audit_log(request, response)
+
+        self._create_audit_log(request, response)
         
         return response
     
@@ -84,9 +106,15 @@ class AuditMiddleware(MiddlewareMixin):
             print(f"Error en auditoría: {e}")
 
     def _should_audit(self, request):
+        if request.path in ['/login', '/login/']:
+            return request.method == 'POST'
+
+        if request.path in ['/logout', '/logout/']:
+            return True
+
         if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
             return True
-        return request.path in ['/login/', '/logout/']
+        return False
     
     def _get_action(self, request):
         """Determinar tipo de acción según método HTTP y ruta."""
@@ -150,7 +178,7 @@ class SecurityMiddleware(MiddlewareMixin):
     """Middleware para controles de seguridad"""
     
     def process_request(self, request):
-        if is_healthcheck_request(request):
+        if is_security_exempt_request(request):
             return None
 
         # Verificar IP bloqueada
