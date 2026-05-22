@@ -91,15 +91,18 @@ else
 fi
 
 PORT="${PORT:-8000}"
+GUNICORN_WORKERS="${GUNICORN_WORKERS:-3}"
+GUNICORN_TIMEOUT="${GUNICORN_TIMEOUT:-30}"
 
 if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "True" ] || [ "$DEBUG" = "1" ]; then
   echo "Modo DEBUG: usando runserver para hot reload"
   exec python manage.py runserver 0.0.0.0:${PORT}
 else
-  echo "Modo producción: usando gunicorn en puerto ${PORT}"
+  echo "Modo producción: usando gunicorn en puerto ${PORT} con ${GUNICORN_WORKERS} workers y timeout ${GUNICORN_TIMEOUT}s"
   exec gunicorn akuna_calc.wsgi:application \
     --bind 0.0.0.0:${PORT} \
-    --workers 3 \
+    --workers "${GUNICORN_WORKERS}" \
+    --timeout "${GUNICORN_TIMEOUT}" \
     --access-logfile - \
     --error-logfile -
 fi

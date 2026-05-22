@@ -49,11 +49,14 @@ class Command(BaseCommand):
             db_port = db_config['PORT']
             
             # Comando mysqldump
+            # --ssl-mode=DISABLED: MySQL en Railway usa cert auto-firmado y la
+            # conexión va por red privada interna (mysql.railway.internal).
             cmd = [
                 'mysqldump',
                 f'--host={db_host}',
                 f'--user={db_user}',
                 f'--password={db_password}',
+                '--ssl-mode=DISABLED',
                 '--single-transaction',
                 '--quick',
                 '--lock-tables=false',

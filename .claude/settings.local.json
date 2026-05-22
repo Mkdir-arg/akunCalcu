@@ -28,7 +28,9 @@
       "Bash(docker-compose ps *)",
       "Bash(grep -oE \"v[0-9]+\\\\\\\\.[0-9]+\\\\\\\\.[0-9]+\")",
       "mcp__n8n-mcp__n8n_update_partial_workflow",
-      "mcp__railway__whoami"
+      "mcp__railway__whoami",
+      "mcp__railway__get-logs",
+      "mcp__railway__railway-agent"
     ]
   },
   "enableAllProjectMcpServers": true,

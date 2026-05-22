@@ -11,6 +11,23 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
+
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in {'1', 'true', 'yes', 'on'}
+
+
+def env_int(name, default):
+    value = os.environ.get(name)
+    if value in (None, ''):
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
 _allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
 if _allowed_hosts_env:
     ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
@@ -80,8 +97,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'akuna_calc.wsgi.application'
 
 _database_url = os.environ.get("DATABASE_URL")
+_default_conn_max_age = env_int('DB_CONN_MAX_AGE', 600)
 if _database_url:
-    DATABASES = {"default": dj_database_url.parse(_database_url, conn_max_age=600)}
+    DATABASES = {"default": dj_database_url.parse(_database_url, conn_max_age=_default_conn_max_age)}
 else:
     DATABASES = {
         "default": {
@@ -91,14 +109,26 @@ else:
             "PASSWORD": os.environ.get("DB_PASSWORD", ""),
             "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
             "PORT": os.environ.get("DB_PORT", "3306"),
+            "CONN_MAX_AGE": _default_conn_max_age,
         }
     }
 
-DATABASES["default"].setdefault("OPTIONS", {})
-DATABASES["default"]["OPTIONS"].update({
-    "charset": "utf8mb4",
-    "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
-})
+if DATABASES["default"].get("ENGINE", "").endswith("mysql"):
+    DATABASES["default"].setdefault("CONN_HEALTH_CHECKS", env_bool('DB_CONN_HEALTH_CHECKS', True))
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"].update({
+        "charset": "utf8mb4",
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
+    })
+    DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", env_int('DB_CONNECT_TIMEOUT', 5))
+
+    _db_read_timeout = env_int('DB_READ_TIMEOUT', None)
+    if _db_read_timeout is not None:
+        DATABASES["default"]["OPTIONS"].setdefault("read_timeout", _db_read_timeout)
+
+    _db_write_timeout = env_int('DB_WRITE_TIMEOUT', None)
+    if _db_write_timeout is not None:
+        DATABASES["default"]["OPTIONS"].setdefault("write_timeout", _db_write_timeout)
 
 # Excluir migraciones de apps legacy en tests (pricing tiene managed=False)
 import sys
