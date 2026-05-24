@@ -24,13 +24,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "REEMPLAZAR_URL_DJANGO",
+        "url": "http://web.railway.internal/security/backups/api/create/",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Bot-Secret",
-              "value": "REEMPLAZAR_BACKUP_BOT_SECRET"
+              "value": "akuncalcu-backup-n8n-2026"
             }
           ]
         },
@@ -65,7 +65,7 @@
         "folderId": {
           "__rl": true,
           "mode": "id",
-          "value": "REEMPLAZAR_DRIVE_FOLDER_ID"
+          "value": "1rBV-wO6KqIhbQPHwtREPN8h4nmuJjd4P"
         },
         "options": {}
       },
