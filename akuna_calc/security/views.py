@@ -325,6 +325,51 @@ def _build_mysqldump_command():
     return cmd
 
 
+@login_required
+@backup_required
+@require_http_methods(["POST"])
+def backup_trigger_n8n(request):
+    """Fuerza la ejecución del workflow de backup n8n → Google Drive."""
+    import urllib.request
+    import urllib.error
+    import json
+
+    n8n_url = os.environ.get('N8N_BASE_URL', 'https://n8n-production-9a1a.up.railway.app').rstrip('/')
+    workflow_id = os.environ.get('N8N_BACKUP_WORKFLOW_ID', '9qXmKDqq0mOEKnHc')
+    api_key = os.environ.get('N8N_API_KEY', '')
+
+    if not api_key:
+        messages.error(request, '❌ N8N_API_KEY no está configurado en el servidor.')
+        return redirect('security:backup_list')
+
+    try:
+        url = f"{n8n_url}/api/v1/workflows/{workflow_id}/run"
+        req = urllib.request.Request(
+            url,
+            data=b'{}',
+            headers={
+                'Content-Type': 'application/json',
+                'X-N8N-API-KEY': api_key,
+            },
+            method='POST',
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp_body = json.loads(resp.read())
+        execution_id = resp_body.get('data', {}).get('executionId', '—')
+        messages.success(
+            request,
+            f'✅ Workflow n8n iniciado (ejecución #{execution_id}). '
+            'El backup se guardará en Google Drive en breve.'
+        )
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode('utf-8', errors='replace')[:300]
+        messages.error(request, f'❌ Error n8n HTTP {exc.code}: {body}')
+    except Exception as exc:
+        messages.error(request, f'❌ Error al iniciar workflow n8n: {exc}')
+
+    return redirect('security:backup_list')
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def backup_api_create(request):
