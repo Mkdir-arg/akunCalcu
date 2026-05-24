@@ -18,8 +18,24 @@
       "typeVersion": 1.2,
       "position": [
         260,
-        300
+        220
       ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "backup-trigger",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0004-0000-0000-000000000004",
+      "name": "Webhook - Manual Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        400
+      ],
+      "webhookId": "akuncalcu-backup-trigger"
     },
     {
       "parameters": {
@@ -79,14 +95,25 @@
       ],
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "REEMPLAZAR_CREDENTIAL_ID",
-          "name": "Google Drive - AkunCalcu"
+          "id": "YD0hIXiajQPt25Db",
+          "name": "Google Drive account"
         }
       }
     }
   ],
   "connections": {
     "Schedule Trigger 00:00 ARG": {
+      "main": [
+        [
+          {
+            "node": "POST /security/backups/api/create/",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Manual Trigger": {
       "main": [
         [
           {
