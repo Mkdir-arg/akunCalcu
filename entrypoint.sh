@@ -69,7 +69,7 @@ fi
 
 if is_truthy "$run_migrations_on_startup"; then
   echo "Ejecutando migraciones..."
-  python manage.py migrate --noinput
+  python manage.py migrate --noinput --fake-initial
 else
   echo "Saltando migraciones al arranque (RUN_MIGRATIONS_ON_STARTUP=${run_migrations_on_startup})"
 fi
