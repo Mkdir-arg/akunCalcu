@@ -150,6 +150,7 @@ PUBLIC_ROUTE_KEYS = {
     'gastos_diarios:api_confirmar',
     'pedidos:api_crear_borrador',
     'pedidos:api_confirmar',
+    'security:backup_api_create',
 }
 
 LEGACY_STAFF_ACCESS_CODES = {
