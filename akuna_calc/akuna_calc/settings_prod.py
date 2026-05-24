@@ -9,6 +9,7 @@ ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
 if railway_public_domain:
 	ALLOWED_HOSTS.append(railway_public_domain)
 ALLOWED_HOSTS.append('healthcheck.railway.app')
+ALLOWED_HOSTS.append('web.railway.internal')
 ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
 
 _csrf_trusted_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
