@@ -1,13 +1,15 @@
+import os
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
-from django.test import Client, RequestFactory, SimpleTestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.http import HttpResponse
 from django.contrib.auth.models import AnonymousUser
 
 from security.middleware import AuditMiddleware
 from security import views as security_views
+from security.models import Backup
 
 
 class FakeAuditQuerySet(list):
@@ -124,3 +126,43 @@ class AuditMiddlewareTest(SimpleTestCase):
 
         self.assertTrue(mock_create.called)
         self.assertEqual(mock_create.call_args.kwargs['action'], 'LOGOUT')
+
+
+class BackupApiCreateTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = '/security/backups/api/create/'
+
+    @patch.dict(os.environ, {'BACKUP_BOT_SECRET': 'secreto-test'})
+    def test_post_sin_header_devuelve_403(self):
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    @patch.dict(os.environ, {'BACKUP_BOT_SECRET': 'secreto-test'})
+    def test_post_con_secret_incorrecto_devuelve_403(self):
+        response = self.client.post(self.url, HTTP_X_BOT_SECRET='otro-secreto')
+        self.assertEqual(response.status_code, 403)
+
+    @patch.dict(os.environ, {'BACKUP_BOT_SECRET': 'secreto-test'})
+    @patch('security.views.subprocess.Popen')
+    def test_post_con_secret_valido_crea_backup_drive(self, mock_popen):
+        fake_process = MagicMock()
+        fake_process.stdout.read.side_effect = [b'-- SQL dump\n', b'']
+        fake_process.stderr.read.return_value = b''
+        fake_process.returncode = 0
+        fake_process.wait.return_value = 0
+        mock_popen.return_value = fake_process
+
+        response = self.client.post(self.url, HTTP_X_BOT_SECRET='secreto-test')
+
+        self.assertEqual(response.status_code, 200)
+        b''.join(response.streaming_content)
+
+        self.assertEqual(Backup.objects.count(), 1)
+        backup = Backup.objects.first()
+        self.assertEqual(backup.storage_location, 'drive')
+        self.assertEqual(backup.status, 'completed')
+
+    def test_get_no_permitido(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)

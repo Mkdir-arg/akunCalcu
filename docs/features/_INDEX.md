@@ -17,6 +17,7 @@
 | [FEAT-009](./FEAT-009-roles-permisos-por-modulo-y-opcion.md) | Roles y permisos por módulo y opción | Implementado | 2026-05-09 | — |
 | [FEAT-010](./FEAT-010-buscador-accesorios-config-hojas.md) | Buscador de accesorios en configurador de hojas | Implementado | 2026-05-17 | — |
 | [FEAT-011](./FEAT-011-estandarizacion-selectores-buscables-sistema.md) | Estandarización de selectores buscables en todo el sistema | Implementado | 2026-05-17 | — |
+| [FEAT-012](./FEAT-012-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | — |
 
 ---
 
@@ -31,6 +32,6 @@
 | `usuarios` | FEAT-009 | 2026-05-09 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |
-| `security` | FEAT-011 | 2026-05-17 |
+| `security` | FEAT-011, FEAT-012 | 2026-05-24 |
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |

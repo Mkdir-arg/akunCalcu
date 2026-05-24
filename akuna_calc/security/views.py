@@ -2,13 +2,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 from django.core.paginator import Paginator
+from django.conf import settings as django_settings
+from django.utils import timezone
 
 from .models import AuditLog, Backup, SecuritySettings
 import os
+import subprocess
+from datetime import datetime
 
 
 BACKUP_PASSWORD = "Modeoffputin.1167252190@!"
@@ -295,3 +300,101 @@ def _format_bytes(bytes_size):
             return f"{bytes_size:.2f} {unit}"
         bytes_size /= 1024.0
     return f"{bytes_size:.2f} PB"
+
+
+def _build_mysqldump_command():
+    """Construye el comando mysqldump usando la config de Django.
+
+    Reutilizable por el management command y por el endpoint API.
+    Usa --skip-ssl por compatibilidad con mariadb-client (ver HFX-001).
+    """
+    db_config = django_settings.DATABASES['default']
+    cmd = [
+        'mysqldump',
+        f"--host={db_config['HOST']}",
+        f"--user={db_config['USER']}",
+        f"--password={db_config['PASSWORD']}",
+        '--skip-ssl',
+        '--single-transaction',
+        '--quick',
+        '--lock-tables=false',
+    ]
+    if db_config.get('PORT'):
+        cmd.insert(3, f"--port={db_config['PORT']}")
+    cmd.append(db_config['NAME'])
+    return cmd
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def backup_api_create(request):
+    """Endpoint API protegido por header X-Bot-Secret.
+
+    Ejecuta mysqldump y devuelve el SQL como respuesta binaria stream.
+    Registra el backup como storage_location='drive'.
+    Pensado para ser consumido por n8n + Google Drive.
+    """
+    expected_secret = os.environ.get('BACKUP_BOT_SECRET', '')
+    received_secret = request.META.get('HTTP_X_BOT_SECRET', '')
+
+    if not expected_secret or received_secret != expected_secret:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'backup_{timestamp}.sql'
+
+    backup = Backup.objects.create(
+        filename=filename,
+        filepath='',
+        status='running',
+        storage_location='drive',
+    )
+
+    try:
+        cmd = _build_mysqldump_command()
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        total_bytes = {'count': 0}
+
+        def stream_chunks():
+            try:
+                while True:
+                    chunk = process.stdout.read(64 * 1024)
+                    if not chunk:
+                        break
+                    total_bytes['count'] += len(chunk)
+                    yield chunk
+                process.wait()
+                if process.returncode != 0:
+                    err = process.stderr.read().decode('utf-8', errors='replace')
+                    backup.status = 'failed'
+                    backup.error_message = f'mysqldump rc={process.returncode}: {err[:500]}'
+                    backup.save()
+                else:
+                    backup.size_bytes = total_bytes['count']
+                    backup.status = 'completed'
+                    backup.completed_at = timezone.now()
+                    backup.save()
+            except Exception as exc:
+                backup.status = 'failed'
+                backup.error_message = str(exc)[:500]
+                backup.save()
+                raise
+
+        response = StreamingHttpResponse(
+            stream_chunks(),
+            content_type='application/sql',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['X-Backup-Id'] = str(backup.id)
+        return response
+
+    except Exception as exc:
+        backup.status = 'failed'
+        backup.error_message = str(exc)[:500]
+        backup.save()
+        return JsonResponse({'error': 'backup_failed', 'detail': str(exc)}, status=500)

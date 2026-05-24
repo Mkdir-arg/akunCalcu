@@ -96,6 +96,22 @@
 
 ---
 
+## ADR-009: Backups automatizados con n8n + endpoint Django streaming
+**Fecha**: 2026-05-24
+**Estado**: Activo
+
+**Contexto**: Tras HFX-001 quedó claro que los backups guardados en `/app/backups/` del contenedor son efímeros (Railway recicla el filesystem en cada deploy/reinicio). Se necesitaba un respaldo externo confiable, automatizado y resistente a reinicios. Las opciones eran: (a) `django-crontab`/Celery dentro de Django, (b) cron del host Railway, (c) usar n8n que ya está en la infraestructura del proyecto.
+
+**Decisión**: 
+1. **Cron en n8n, no en Django**: Schedule Trigger diario a 00:00 hora Argentina (UTC-3) llama a un endpoint Django que devuelve el dump SQL como respuesta binaria, y n8n lo sube a Google Drive (`Backups AkunCalcu/`). Evita instalar `django-crontab`/Celery solo para este caso. n8n maneja timezone, retries y errores visualmente.
+2. **`StreamingHttpResponse` envolviendo `subprocess.Popen(mysqldump)`**: el endpoint streamea el stdout del `mysqldump` directo al response sin cargar el dump en RAM, lo que permite soportar dumps grandes en contenedores con memoria limitada.
+3. **Auth por header `X-Bot-Secret`**: secret separado del de Telegram (`BACKUP_BOT_SECRET` ≠ `TELEGRAM_BOT_SECRET`) para poder rotarlo independientemente. El path `/security/backups/api/` se exime de `SecurityMiddleware` (vía `SECURITY_EXEMPT_PREFIXES`) y de `AuditMiddleware.EXCLUDED_PATHS` para no llenar `AuditLog` con la cron diaria.
+4. **`storage_location` como string corto en el modelo `Backup`**: solo dos valores hoy (`local`, `drive`), con badge "Auto - Drive" en el listado. Si crece a más destinos (S3, Dropbox, etc.) se promoverá a `choices` formal o tabla.
+
+**Consecuencias**: El sistema queda con respaldo externo diario sin acoplarse a Django para cron. Si en el futuro se quiere trazabilidad de las corridas, conviene loguearlas explícitamente desde la view (no via middleware, ya está exenta). Cualquier nuevo destino de backup debe respetar el contrato del endpoint (header secret + streaming).
+
+---
+
 ## ADR-005: Chart.js para gráficos en detalle de cliente
 **Fecha**: 2026-03-06
 **Estado**: Activo

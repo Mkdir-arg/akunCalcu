@@ -14,6 +14,47 @@
 
 ---
 
+## 2026-05-24 — Backup automatizado de BD con n8n + Google Drive (REQ-028 / FEAT-012)
+
+**User Story:** Como administrador de AkunCalcu, quiero que los backups de la base de datos se generen automáticamente todos los días y se guarden en Google Drive, para tener un respaldo externo confiable que sobreviva a reinicios de Railway.
+
+**Archivos creados:**
+- `akuna_calc/security/migrations/0003_backup_storage_location.py`
+- `docs/n8n/n8n-backups-workflow.json`
+- `docs/n8n/n8n-backups-workflow.md`
+- `docs/features/FEAT-012-backup-automatizado-n8n-drive.md`
+- `docs/requerimientos/REQ-028-backup-automatizado-n8n-drive.md`
+
+**Archivos modificados:**
+- `akuna_calc/security/models.py` — campo `storage_location` (`local` / `drive`).
+- `akuna_calc/security/views.py` — endpoint `backup_api_create` (StreamingHttpResponse + subprocess + header `X-Bot-Secret`).
+- `akuna_calc/security/urls.py` — ruta `backups/api/create/`.
+- `akuna_calc/security/middleware.py` — exenciones para `/security/backups/api/` en `SECURITY_EXEMPT_PREFIXES` y `AuditMiddleware.EXCLUDED_PATHS`.
+- `akuna_calc/security/tests.py` — `BackupApiCreateTest` (4 tests).
+- `akuna_calc/security/templates/security/backup_list.html` — badge "Auto - Drive".
+- `.env.example` — variable `BACKUP_BOT_SECRET`.
+
+**Descripción:** Se incorpora un endpoint API protegido por header secret que ejecuta `mysqldump` y devuelve el SQL como respuesta binaria streameada. n8n lo invoca cada día a las 00:00 ARG y sube el archivo a la carpeta `Backups AkunCalcu/` de Google Drive. Los backups quedan registrados en `/security/backups/list/` con badge **"Auto - Drive"**. Reemplaza la dependencia del filesystem efímero del contenedor (Railway).
+
+---
+
+
+
+**Tipo:** Hotfix urgente en producción.
+
+**Síntoma:** Crear backup desde `/security/backups/list/` fallaba con `TLS/SSL error: self-signed certificate in certificate chain` y, tras un primer intento, con `unknown variable 'ssl-mode=DISABLED'`.
+
+**Causa:** `default-mysql-client` en Debian slim es mariadb-client, que no soporta `--ssl-mode=DISABLED`.
+
+**Solución:** Reemplazo del flag por `--skip-ssl`, portable entre clientes. Conexión va por red privada interna de Railway.
+
+**Archivos modificados:**
+- `akuna_calc/security/management/commands/create_backup.py`
+
+**Commit:** `37c2858`. Ver `docs/hotfix/_LOG.md` (HFX-001) para detalle completo.
+
+---
+
 ## 2026-05-17 — Buscador de accesorios en configurador de hojas (REQ-025 / FEAT-010)
 
 ## 2026-05-17 — Estandarización de selectores buscables en todo el sistema (REQ-026 / FEAT-011)

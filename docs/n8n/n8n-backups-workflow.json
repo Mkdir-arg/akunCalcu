@@ -1,0 +1,129 @@
+{
+  "name": "AkunCalcu - Backup diario a Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "id": "1a2b3c4d-0001-0000-0000-000000000001",
+      "name": "Schedule Trigger 00:00 ARG",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "REEMPLAZAR_URL_DJANGO",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Bot-Secret",
+              "value": "REEMPLAZAR_BACKUP_BOT_SECRET"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          },
+          "timeout": 600000
+        }
+      },
+      "id": "1a2b3c4d-0002-0000-0000-000000000002",
+      "name": "POST /security/backups/api/create/",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $binary.data.fileName || ('backup_' + $now.format('yyyyMMdd_HHmmss') + '.sql') }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REEMPLAZAR_DRIVE_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000003",
+      "name": "Upload a Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        820,
+        300
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REEMPLAZAR_CREDENTIAL_ID",
+          "name": "Google Drive - AkunCalcu"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger 00:00 ARG": {
+      "main": [
+        [
+          {
+            "node": "POST /security/backups/api/create/",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /security/backups/api/create/": {
+      "main": [
+        [
+          {
+            "node": "Upload a Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "active": false,
+  "versionId": "1",
+  "meta": {
+    "templateId": "akuncalcu-backup-drive-v1"
+  },
+  "tags": [
+    {
+      "name": "akuncalcu"
+    },
+    {
+      "name": "backup"
+    }
+  ]
+}

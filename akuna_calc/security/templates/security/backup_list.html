@@ -117,9 +117,14 @@
                     {% for backup in backups %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-file-archive text-blue-500 mr-3"></i>
+                            <div class="flex items-center flex-wrap gap-2">
+                                <i class="fas fa-file-archive text-blue-500 mr-1"></i>
                                 <span class="text-sm font-medium text-gray-900">{{ backup.filename }}</span>
+                                {% if backup.storage_location == 'drive' %}
+                                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        <i class="fab fa-google-drive mr-1"></i>Auto - Drive
+                                    </span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">
@@ -149,9 +154,15 @@
                         </td>
                         <td class="px-6 py-4 text-right text-sm font-medium">
                             {% if backup.status == 'completed' %}
-                                <a href="{% url 'security:backup_download' backup.pk %}" class="text-blue-600 hover:text-blue-900 mr-4">
-                                    <i class="fas fa-download"></i> Descargar
-                                </a>
+                                {% if backup.storage_location == 'drive' %}
+                                    <span class="text-purple-600 mr-4">
+                                        <i class="fab fa-google-drive"></i> En Google Drive
+                                    </span>
+                                {% else %}
+                                    <a href="{% url 'security:backup_download' backup.pk %}" class="text-blue-600 hover:text-blue-900 mr-4">
+                                        <i class="fas fa-download"></i> Descargar
+                                    </a>
+                                {% endif %}
                                 <form method="post" action="{% url 'security:backup_delete' backup.pk %}" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este backup?');">
                                     {% csrf_token %}
                                     <button type="submit" class="text-red-600 hover:text-red-900">

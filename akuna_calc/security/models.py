@@ -170,11 +170,22 @@ class Backup(models.Model):
         ('completed', 'Completado'),
         ('failed', 'Fallido'),
     ]
-    
+
+    STORAGE_CHOICES = [
+        ('local', 'Local'),
+        ('drive', 'Google Drive'),
+    ]
+
     filename = models.CharField(max_length=255)
     filepath = models.CharField(max_length=500)
     size_bytes = models.BigIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    storage_location = models.CharField(
+        max_length=20,
+        choices=STORAGE_CHOICES,
+        default='local',
+        verbose_name='Ubicación de almacenamiento',
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

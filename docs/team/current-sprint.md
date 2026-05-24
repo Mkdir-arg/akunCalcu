@@ -20,6 +20,7 @@ _Se define en el sprint planning._
 | US-019 | Roles y permisos por módulo y opción | ✅ Completado | Implementado fuera de sprint activo; FEAT-009 |
 | US-025 | Buscador de accesorios en configurador de hojas | ✅ Completado | Implementado fuera de sprint activo; FEAT-010 |
 | US-026 | Estandarizar selectores buscables en todo el sistema | ✅ Completado | Implementado fuera de sprint activo; FEAT-011 |
+| US-028 | Backup automatizado de BD con n8n + Google Drive | ✅ Completado | Implementado fuera de sprint activo; FEAT-012 |
 
 ## Impedimentos
 

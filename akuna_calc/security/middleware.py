@@ -21,6 +21,7 @@ SECURITY_EXEMPT_PREFIXES = (
     '/static/',
     '/media/',
     '/admin/jsi18n/',
+    '/security/backups/api/',
 )
 
 
@@ -43,6 +44,7 @@ class AuditMiddleware(MiddlewareMixin):
         '/favicon.ico',
         '/health',
         '/health/',
+        '/security/backups/api/',
     ]
     
     SENSITIVE_FIELDS = ['password', 'token', 'secret', 'key']

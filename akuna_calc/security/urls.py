@@ -12,5 +12,6 @@ urlpatterns = [
     path('backups/<int:pk>/download/', views.backup_download, name='backup_download'),
     path('backups/<int:pk>/delete/', views.backup_delete, name='backup_delete'),
     path('backups/settings/', views.backup_settings, name='backup_settings'),
+    path('backups/api/create/', views.backup_api_create, name='backup_api_create'),
     path('audit/', views.audit_list, name='audit_list'),
 ]
