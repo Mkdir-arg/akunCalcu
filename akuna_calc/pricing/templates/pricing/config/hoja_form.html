@@ -434,7 +434,7 @@ function _agregarFilaAccesorio(datos) {
     row.className = 'border-b';
     row.innerHTML = `
         <td class="px-4 py-2">
-            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded js-accesorio-select" required>
+            <select name="accesorio_${accesorioIndex}" class="w-full px-2 py-1 border rounded js-accesorio-select" data-previous-value="${datos.accesorio || ''}" required>
                 ${_buildAccesorioOptions(datos.accesorio || '')}
             </select>
         </td>
@@ -571,7 +571,41 @@ document.addEventListener('DOMContentLoaded', function() {
         accesoriosBody.addEventListener('input', function() {
             scheduleAccesoriosSave();
         });
-        accesoriosBody.addEventListener('change', function() {
+        accesoriosBody.addEventListener('change', function(e) {
+            const target = e.target;
+            if (target.classList.contains('js-accesorio-select')) {
+                const previousValue = target.dataset.previousValue || '';
+                const newValue = target.value;
+                if (previousValue && newValue && newValue !== previousValue) {
+                    const previousText = target.dataset.previousText || previousValue;
+                    const newText = target.options[target.selectedIndex] ? target.options[target.selectedIndex].text : newValue;
+                    Swal.fire({
+                        title: '¿Reemplazar accesorio?',
+                        html: `<p>Tenés cargado <strong>${previousText}</strong>.</p><p>¿Querés reemplazarlo por <strong>${newText}</strong>?</p>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, reemplazar',
+                        cancelButtonText: 'Cancelar'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            target.dataset.previousValue = newValue;
+                            target.dataset.previousText = newText;
+                            scheduleAccesoriosSave();
+                        } else {
+                            if (window.jQuery) {
+                                window.jQuery(target).val(previousValue).trigger('change.select2');
+                            } else {
+                                target.value = previousValue;
+                            }
+                        }
+                    });
+                    return;
+                }
+                target.dataset.previousValue = newValue;
+                target.dataset.previousText = target.options[target.selectedIndex] ? target.options[target.selectedIndex].text : newValue;
+            }
             scheduleAccesoriosSave();
         });
     }

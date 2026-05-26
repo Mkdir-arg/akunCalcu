@@ -22,6 +22,7 @@ _Se define en el sprint planning._
 | US-026 | Estandarizar selectores buscables en todo el sistema | ✅ Completado | Implementado fuera de sprint activo; FEAT-011 |
 | US-028 | Backup automatizado de BD con n8n + Google Drive | ✅ Completado | Implementado fuera de sprint activo; FEAT-012 |
 | US-029 | Modalidad de seña en presupuestos | ✅ Completado | Implementado fuera de sprint activo; FEAT-013 |
+| US-030 | Confirmación antes de reemplazar accesorio en hoja configurator | ✅ Completado | Implementado fuera de sprint activo; FEAT-014 |
 
 ## Impedimentos
 

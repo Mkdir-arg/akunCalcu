@@ -19,6 +19,7 @@
 | [FEAT-011](./FEAT-011-estandarizacion-selectores-buscables-sistema.md) | Estandarización de selectores buscables en todo el sistema | Implementado | 2026-05-17 | — |
 | [FEAT-012](./FEAT-012-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | — |
 | [FEAT-013](./FEAT-013-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | — |
+| [FEAT-014](./FEAT-014-confirmacion-reemplazo-accesorio-hoja.md) | Confirmación antes de reemplazar accesorio en hoja configurator | Implementado | 2026-05-26 | — |
 
 ---
 

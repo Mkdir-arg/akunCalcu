@@ -14,6 +14,14 @@
 
 ---
 
+## 2026-05-26 — Confirmación antes de reemplazar accesorio en hoja configurator (REQ-030 / FEAT-014)
+
+**User Story:** Como configurador de hojas, quiero que el sistema me pida confirmación antes de reemplazar un accesorio ya cargado, para no perder configuraciones por un cambio accidental.
+**Archivos modificados:** `akuna_calc/pricing/templates/pricing/config/hoja_form.html`
+**Descripción:** Se agregó lógica JS en el listener `change` de `accesoriosBody` para detectar cuándo el usuario cambia un selector que ya tenía valor. En ese caso se muestra un modal SweetAlert2 con el nombre del accesorio anterior y el nuevo; al cancelar, el selector revierte usando `.trigger('change.select2')` sin re-disparar el autosave.
+
+---
+
 ## 2026-05-24 — Backup automatizado de BD con n8n + Google Drive (REQ-028 / FEAT-012)
 
 **User Story:** Como administrador de AkunCalcu, quiero que los backups de la base de datos se generen automáticamente todos los días y se guarden en Google Drive, para tener un respaldo externo confiable que sobreviva a reinicios de Railway.
