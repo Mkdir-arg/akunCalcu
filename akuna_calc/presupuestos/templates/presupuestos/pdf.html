@@ -490,6 +490,7 @@
                         {% if presupuesto.venta and presupuesto.venta.forma_pago %}
                         <p class="bottom-note"><strong>Forma de pago:</strong> {{ presupuesto.venta.get_forma_pago_display }}</p>
                         {% endif %}
+                        <p class="bottom-note"><strong>Modalidad de seña:</strong> {{ presupuesto.get_modalidad_sena_display }}</p>
                         <p class="bottom-note"><strong>Estado:</strong> {{ presupuesto.get_estado_display }}</p>
                         <p class="bottom-note"><strong>Validez:</strong> hasta el {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
                     </td>
