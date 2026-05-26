@@ -48,3 +48,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-026](./REQ-026-estandarizar-selectores-buscables-sistema.md) | Estandarizar selectores buscables en todo el sistema | Implementado | 2026-05-17 | FEAT-011 |
 | [REQ-027](./REQ-027-deploy-railway.md) | Desplegar AkunCalcu en Railway (Django + MySQL + n8n + Evolution) | En desarrollo | 2026-05-17 | — |
 | [REQ-028](./REQ-028-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | FEAT-012 |
+| [REQ-029](./REQ-029-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | FEAT-013 |

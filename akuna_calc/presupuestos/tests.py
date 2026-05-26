@@ -82,6 +82,12 @@ class PresupuestoModelTest(TestCase):
 
         self.assertEqual(p.total, Decimal('2350'))
 
+    def test_modalidad_sena_default(self):
+        p = crear_presupuesto(self.user)
+
+        self.assertEqual(p.modalidad_sena, '50_50')
+        self.assertEqual(p.get_modalidad_sena_display(), '50% adelanto / 50% saldo')
+
 
 class ItemPresupuestoModelTest(TestCase):
     def setUp(self):
@@ -282,7 +288,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         presupuestos = list(res.context['presupuestos'])
         self.assertEqual(presupuestos[0].item_count, 2)
-        self.assertContains(res, '>2<', html=True)
+        self.assertContains(res, 'text-center text-sm text-slate-600">2</td>')
 
     def test_crear_requiere_login(self):
         res = self.client.get('/presupuestos/nuevo/')
@@ -484,6 +490,17 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Recibo')
 
+    def test_detalle_muestra_modalidad_sena_en_configuracion(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Modalidad de seña')
+        self.assertContains(res, '50% adelanto / 50% saldo')
+        self.assertContains(res, '70% adelanto / 30% saldo')
+
     def test_recibo_descarga_pdf(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
@@ -539,7 +556,11 @@ class PresupuestosViewsTest(TestCase):
 
         res = self.client.post(
             f'/presupuestos/{p.pk}/configuracion-obra/',
-            {'tipo_obra': 'renovacion', 'recargo_renovacion_unitario': '5000'},
+            {
+                'tipo_obra': 'renovacion',
+                'modalidad_sena': '50_50',
+                'recargo_renovacion_unitario': '5000',
+            },
         )
 
         self.assertEqual(res.status_code, 302)
@@ -549,3 +570,20 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(item.precio_unitario, Decimal('355000'))
         self.assertEqual(item.precio_total, Decimal('710000'))
         self.assertEqual(p.total, Decimal('710000'))
+
+    def test_actualizar_configuracion_obra_guarda_modalidad_sena(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {
+                'tipo_obra': 'obra_nueva',
+                'modalidad_sena': '70_30',
+                'recargo_obra_nueva': '1000',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.modalidad_sena, '70_30')

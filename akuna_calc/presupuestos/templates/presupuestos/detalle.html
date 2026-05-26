@@ -299,6 +299,11 @@
                             {{ configuracion_form.tipo_obra }}
                             {% if configuracion_form.tipo_obra.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.tipo_obra.errors.0 }}</p>{% endif %}
                         </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.modalidad_sena.label }}</label>
+                            {{ configuracion_form.modalidad_sena }}
+                            {% if configuracion_form.modalidad_sena.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
+                        </div>
                         <div id="recargo-obra-nueva-field">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
@@ -332,6 +337,10 @@
                     <div class="flex justify-between gap-3">
                         <span class="text-slate-500">Tipo</span>
                         <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_tipo_obra_display|default:'Sin definir' }}</span>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <span class="text-slate-500">Seña</span>
+                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between gap-3">
@@ -383,6 +392,10 @@
                     <div class="flex justify-between">
                         <span class="text-slate-500">Tipo de obra</span>
                         <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Modalidad de seña</span>
+                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between">

@@ -18,6 +18,7 @@
 | [FEAT-010](./FEAT-010-buscador-accesorios-config-hojas.md) | Buscador de accesorios en configurador de hojas | Implementado | 2026-05-17 | — |
 | [FEAT-011](./FEAT-011-estandarizacion-selectores-buscables-sistema.md) | Estandarización de selectores buscables en todo el sistema | Implementado | 2026-05-17 | — |
 | [FEAT-012](./FEAT-012-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | — |
+| [FEAT-013](./FEAT-013-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | — |
 
 ---
 
@@ -28,7 +29,7 @@
 | `pedidos` | FEAT-001 | 2026-03-04 |
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011 | 2026-05-17 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
-| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011 | 2026-05-17 |
+| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013 | 2026-05-26 |
 | `usuarios` | FEAT-009 | 2026-05-09 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |

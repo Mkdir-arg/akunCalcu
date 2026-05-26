@@ -38,6 +38,29 @@
 
 ---
 
+## 2026-05-26 — Modalidad de seña en presupuestos (REQ-029 / FEAT-013)
+
+**User Story:** Como vendedor, quiero seleccionar una modalidad de seña al generar un presupuesto para definir claramente el porcentaje de adelanto y saldo a cobrar.
+
+**Archivos creados:**
+- `akuna_calc/presupuestos/migrations/0006_presupuesto_modalidad_sena.py`
+- `docs/features/FEAT-013-modalidad-sena-presupuestos.md`
+
+**Archivos modificados:**
+- `akuna_calc/presupuestos/models.py` — nuevo campo `modalidad_sena` con choices cerrados y default `50_50`.
+- `akuna_calc/presupuestos/forms.py` — `PresupuestoConfiguracionObraForm` incorpora selector de modalidad.
+- `akuna_calc/presupuestos/templates/presupuestos/detalle.html` — selector ubicado debajo de "Tipo" en "Configuración de obra", más visualización en panel bloqueado y resumen.
+- `akuna_calc/presupuestos/tests.py` — cobertura de default, render de opciones y persistencia.
+- `docs/requerimientos/REQ-029-modalidad-sena-presupuestos.md` — requerimiento marcado como implementado.
+- `docs/requerimientos/_INDEX.md` — índice de requerimientos actualizado.
+- `docs/features/_INDEX.md` — índice de features actualizado.
+- `docs/team/current-sprint.md` — registro de cierre documental fuera de sprint activo.
+- `memory/MEMORY.md` — memoria técnica del proyecto actualizada.
+
+**Descripción:** Se agregó la modalidad de seña al flujo de configuración de presupuestos, con dos combinaciones fijas (50/50 y 70/30), preservando el diseño existente del panel lateral. El dato queda persistido en `Presupuesto`, con valor por defecto para compatibilidad histórica, sin introducir nuevas rutas ni cambios de permisos.
+
+---
+
 
 
 **Tipo:** Hotfix urgente en producción.

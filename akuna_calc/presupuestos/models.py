@@ -26,6 +26,10 @@ class Presupuesto(models.Model):
         ('obra_nueva', 'Obra nueva'),
         ('renovacion', 'Renovación'),
     ]
+    MODALIDAD_SENA_CHOICES = [
+        ('50_50', '50% adelanto / 50% saldo'),
+        ('70_30', '70% adelanto / 30% saldo'),
+    ]
 
     numero = models.CharField(max_length=20, unique=True, verbose_name='Número')
     cliente = models.ForeignKey(
@@ -48,6 +52,12 @@ class Presupuesto(models.Model):
         blank=True,
         default='',
         verbose_name='Tipo de obra',
+    )
+    modalidad_sena = models.CharField(
+        max_length=10,
+        choices=MODALIDAD_SENA_CHOICES,
+        default='50_50',
+        verbose_name='Modalidad de seña',
     )
     recargo_obra_nueva = models.DecimalField(
         max_digits=14,

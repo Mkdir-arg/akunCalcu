@@ -30,9 +30,10 @@ class PresupuestoForm(forms.ModelForm):
 class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['tipo_obra', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva']
+        fields = ['tipo_obra', 'modalidad_sena', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva']
         widgets = {
             'tipo_obra': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'modalidad_sena': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_obra_nueva': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_renovacion_unitario': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'aplicar_iva': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
@@ -43,6 +44,7 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
         self.fields['tipo_obra'].required = True
         self.fields['tipo_obra'].empty_label = None
         self.fields['tipo_obra'].widget.choices = [('', 'Seleccionar...'), *Presupuesto.TIPO_OBRA_CHOICES]
+        self.fields['modalidad_sena'].required = True
         self.fields['recargo_obra_nueva'].required = False
         self.fields['recargo_renovacion_unitario'].required = False
 
