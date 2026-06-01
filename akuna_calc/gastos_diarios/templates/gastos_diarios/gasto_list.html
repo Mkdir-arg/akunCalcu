@@ -60,7 +60,7 @@
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Monto</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Origen</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
@@ -80,7 +80,7 @@
                         </td>
                         <td class="px-6 py-4 text-right text-sm font-bold text-slate-800">$ {{ gasto.monto|floatformat:2 }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-500">
-                            <i class="fab fa-whatsapp text-green-500 mr-1"></i>{{ gasto.numero_origen }}
+                            <i class="fab fa-whatsapp text-green-500 mr-1"></i>{{ gasto.origen_nombre }}
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{{ gasto.fecha|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-center">

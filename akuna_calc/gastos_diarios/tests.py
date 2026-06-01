@@ -143,11 +143,12 @@ class ApiConfirmarTests(TestCase):
         self.assertEqual(GastoDiario.objects.filter(estado='en_espera').count(), 2)
         self.assertFalse(GastoDiario.objects.filter(estado='borrador').exists())
 
-    def test_confirmar_no_elimina_borradores(self):
+    def test_confirmar_no_marca_borradores_como_rechazado(self):
         resp = self._post({'numero_origen': '5491155555555', 'accion': 'no'})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['afectados'], 2)
-        self.assertFalse(GastoDiario.objects.exists())
+        self.assertEqual(GastoDiario.objects.filter(estado='rechazado').count(), 2)
+        self.assertFalse(GastoDiario.objects.filter(estado='borrador').exists())
 
     def test_sin_borrador_devuelve_ok_con_afectados_cero(self):
         GastoDiario.objects.all().delete()

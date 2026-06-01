@@ -118,7 +118,7 @@ def api_confirmar(request):
     if accion == 'si':
         afectados = borradores.update(estado='en_espera')
     else:
-        afectados, _ = borradores.delete()
+        afectados = borradores.update(estado='rechazado')
 
     return JsonResponse({'ok': True, 'accion': accion, 'afectados': afectados})
 
@@ -140,6 +140,13 @@ def gasto_list(request):
     paginator = Paginator(qs, 25)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
+
+    numeros = {gasto.numero_origen for gasto in page_obj}
+    nombres = dict(
+        NumeroAutorizado.objects.filter(numero__in=numeros).values_list('numero', 'nombre')
+    )
+    for gasto in page_obj:
+        gasto.origen_nombre = nombres.get(gasto.numero_origen) or gasto.numero_origen
 
     return render(request, 'gastos_diarios/gasto_list.html', {
         'page_obj': page_obj,
