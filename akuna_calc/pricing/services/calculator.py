@@ -76,6 +76,7 @@ class PriceCalculator:
             "Ancho": cleaned["ancho_mm"],
             "Alto": cleaned["alto_mm"],
             "Cantidad": cleaned["cantidad_hojas"],
+            "ProductoId": cleaned.get("producto_id"),
         }
 
         perfiles_items: List[Dict[str, Any]] = []
@@ -810,6 +811,9 @@ class PriceCalculator:
             if opcional.tipo == 'mosquitero':
                 # Calcular por fórmulas: resultado_formula * precio_m2 * cantidad
                 formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
+                producto_id = variables.get("ProductoId")
+                if producto_id not in (None, ""):
+                    formulas = formulas.filter(perfil=str(producto_id))
                 detalles_formulas = []
                 for formula in formulas:
                     cantidad = self._eval_formula(formula.cantidad, variables)

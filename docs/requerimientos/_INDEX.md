@@ -49,3 +49,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-027](./REQ-027-deploy-railway.md) | Desplegar AkunCalcu en Railway (Django + MySQL + n8n + Evolution) | En desarrollo | 2026-05-17 | — |
 | [REQ-028](./REQ-028-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | FEAT-012 |
 | [REQ-029](./REQ-029-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | FEAT-013 |
+| [REQ-030](./REQ-030-confirmacion-reemplazo-accesorio-vidrio.md) | Confirmación modal antes de reemplazar accesorio o vidrio | En desarrollo | 2026-05-26 | — |

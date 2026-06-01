@@ -108,6 +108,55 @@ class OpcionalesListViewTest(TestCase):
         self.assertNotIn(premarco_otra_linea.id, ids)
 
 
+class PriceCalculatorOpcionalesMosquiteroTest(TestCase):
+    def test_mosquitero_filtra_formulas_por_producto(self):
+        opcional = OpcionalFabrica.objects.create(
+            codigo='M1',
+            nombre='Mosquitero',
+            tipo='mosquitero',
+            precio_m2=41999.99,
+        )
+
+        FormulaOpcional.objects.create(
+            opcional=opcional,
+            cantidad='1',
+            formula='1000000',
+            angulo='',
+            tipo_relacionador='perfil',
+            perfil='123',
+            precio=0,
+            orden=0,
+        )
+        FormulaOpcional.objects.create(
+            opcional=opcional,
+            cantidad='1',
+            formula='1000000',
+            angulo='',
+            tipo_relacionador='perfil',
+            perfil='999',
+            precio=0,
+            orden=1,
+        )
+
+        items = []
+        with patch.object(PriceCalculator, '_eval_formula', side_effect=[1.0, 1_000_000.0]):
+            total = PriceCalculator()._calcular_opcionales(
+                [{"id": opcional.id}],
+                {
+                    "Ancho": 1200,
+                    "Alto": 1500,
+                    "Cantidad": 1,
+                    "ProductoId": 123,
+                },
+                None,
+                items,
+            )
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(len(items[0]['formulas']), 1)
+        self.assertAlmostEqual(total, 41999.99, places=2)
+
+
 class HojaFormTemplateTest(SimpleTestCase):
     def test_render_incluye_select_busqueda_para_accesorios(self):
         request = RequestFactory().get('/pricing/config/hojas/67/editar/')
