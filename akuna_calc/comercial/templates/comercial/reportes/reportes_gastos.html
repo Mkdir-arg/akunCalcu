@@ -116,12 +116,13 @@
         </div>
     </div>
     
-    <!-- Sumas por Tipo -->
+    <!-- Sumas por Tipo (desplegables) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-slate-200">
-                <h3 class="text-lg font-bold text-slate-800"><i class="fas fa-layer-group mr-2"></i>Total por Tipo de Cuenta</h3>
-            </div>
+        <details class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+            <summary class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-slate-200 cursor-pointer flex items-center justify-between select-none">
+                <span class="text-lg font-bold text-slate-800"><i class="fas fa-layer-group mr-2"></i>Total por Tipo de Cuenta</span>
+                <i class="fas fa-chevron-down text-slate-400 chevron-toggle ml-2"></i>
+            </summary>
             <table class="min-w-full divide-y divide-gray-200">
                 <tbody class="divide-y divide-gray-100">
                     {% for item in reporte_data.gastos.por_tipo_cuenta %}
@@ -133,11 +134,12 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-slate-200">
-                <h3 class="text-lg font-bold text-slate-800"><i class="fas fa-tags mr-2"></i>Total por Tipo de Gasto</h3>
-            </div>
+        </details>
+        <details class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+            <summary class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-slate-200 cursor-pointer flex items-center justify-between select-none">
+                <span class="text-lg font-bold text-slate-800"><i class="fas fa-tags mr-2"></i>Total por Tipo de Gasto</span>
+                <i class="fas fa-chevron-down text-slate-400 chevron-toggle ml-2"></i>
+            </summary>
             <table class="min-w-full divide-y divide-gray-200">
                 <tbody class="divide-y divide-gray-100">
                     {% for item in reporte_data.gastos.por_tipo_gasto %}
@@ -149,7 +151,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
+        </details>
     </div>
 
     <!-- Tabla de Gastos -->
@@ -225,6 +227,10 @@
 </div>
 
 <style>
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.chevron-toggle { transition: transform 0.2s ease; }
+details[open] .chevron-toggle { transform: rotate(180deg); }
 @media print {
     .no-print { display: none !important; }
     body { font-size: 12px; }
