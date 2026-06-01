@@ -312,23 +312,29 @@ def ventas_list(request):
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
 
-    if fecha_desde:
-        if tipo_fecha == 'factura':
-            ventas = ventas.filter(fecha_factura__gte=fecha_desde)
-        else:
-            ventas = ventas.filter(fecha_pago__gte=fecha_desde)
-
-    if fecha_hasta:
-        if tipo_fecha == 'factura':
-            ventas = ventas.filter(fecha_factura__lte=fecha_hasta)
-        else:
-            ventas = ventas.filter(fecha_pago__lte=fecha_hasta)
+    if fecha_desde or fecha_hasta:
+        # El filtro por fecha considera tanto la fecha de la venta como la de
+        # sus pagos, para que una venta cuya factura/pago cae en el rango
+        # aparezca aunque la fecha propia de la venta sea de otro mes.
+        date_field = 'fecha_factura' if tipo_fecha == 'factura' else 'fecha_pago'
+        venta_q = Q()
+        pago_q = Q()
+        if fecha_desde:
+            venta_q &= Q(**{f'{date_field}__gte': fecha_desde})
+            pago_q &= Q(**{f'pagos__{date_field}__gte': fecha_desde})
+        if fecha_hasta:
+            venta_q &= Q(**{f'{date_field}__lte': fecha_hasta})
+            pago_q &= Q(**{f'pagos__{date_field}__lte': fecha_hasta})
+        ventas = ventas.filter(venta_q | pago_q).distinct()
 
     if con_saldo == 'si':
         ventas = ventas.filter(saldo__gt=0)
 
-    # Totales del filtro activo (antes de paginar)
-    totales = ventas.aggregate(
+    # Totales del filtro activo (antes de paginar).
+    # Se agregan sobre IDs distintos para evitar el doble conteo que producen
+    # los JOIN a pagos (por busqueda o filtro de fecha por pago).
+    venta_ids = list(ventas.values_list('id', flat=True).distinct())
+    totales = Venta.objects.filter(id__in=venta_ids).aggregate(
         total_monto=Sum('valor_total'),
         total_saldo=Sum('saldo'),
         total_count=Count('id'),
