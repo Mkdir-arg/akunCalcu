@@ -2148,8 +2148,9 @@ def reportes_gastos(request):
     fecha_hasta = None
     cuenta_filtro = None
     tipo_cuenta_filtro = None
+    tipo_gasto_filtro = None
     tipo_factura_filtro = None
-    
+
     if request.method == 'POST':
         form = ReporteGastosForm(request.POST)
         if form.is_valid():
@@ -2157,17 +2158,19 @@ def reportes_gastos(request):
             fecha_hasta = form.cleaned_data.get('fecha_hasta')
             cuenta_filtro = form.cleaned_data.get('cuenta')
             tipo_cuenta_filtro = form.cleaned_data.get('tipo_cuenta')
+            tipo_gasto_filtro = form.cleaned_data.get('tipo_gasto')
             tipo_factura_filtro = form.cleaned_data.get('tipo_factura')
-            
+
             request.session['reporte_gastos_filtros'] = {
                 'fecha_desde': fecha_desde.isoformat() if fecha_desde else None,
                 'fecha_hasta': fecha_hasta.isoformat() if fecha_hasta else None,
                 'cuenta_id': [c.id for c in cuenta_filtro] if cuenta_filtro else None,
                 'tipo_cuenta_id': [t.id for t in tipo_cuenta_filtro] if tipo_cuenta_filtro else None,
+                'tipo_gasto_id': [t.id for t in tipo_gasto_filtro] if tipo_gasto_filtro else None,
                 'tipo_factura': list(tipo_factura_filtro) if tipo_factura_filtro else None,
             }
             gastos = []
-            compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta')
+            compras_query = Compra.objects.filter(deleted_at__isnull=True).select_related('cuenta', 'cuenta__tipo_cuenta', 'tipo_gasto')
 
             if fecha_desde:
                 compras_query = compras_query.filter(fecha_pago__gte=fecha_desde)
@@ -2177,6 +2180,8 @@ def reportes_gastos(request):
                 compras_query = compras_query.filter(cuenta__in=cuenta_filtro)
             if tipo_cuenta_filtro:
                 compras_query = compras_query.filter(cuenta__tipo_cuenta__in=tipo_cuenta_filtro)
+            if tipo_gasto_filtro:
+                compras_query = compras_query.filter(tipo_gasto__in=tipo_gasto_filtro)
             if tipo_factura_filtro:
                 if 'blanco' in tipo_factura_filtro and 'negro' not in tipo_factura_filtro:
                     compras_query = compras_query.filter(con_factura=True)
@@ -2190,6 +2195,7 @@ def reportes_gastos(request):
                     'numero_factura': compra.numero_factura or '-',
                     'cuenta': str(compra.cuenta),
                     'tipo_cuenta': compra.cuenta.tipo_cuenta.get_tipo_display(),
+                    'tipo_gasto': compra.tipo_gasto.nombre if compra.tipo_gasto else 'Sin tipo',
                     'monto': compra.valor_total,
                     'tipo': 'Blanco' if compra.con_factura else 'Negro'
                 })
@@ -2203,6 +2209,19 @@ def reportes_gastos(request):
             cantidad_blanco = len([g for g in gastos if g['tipo'] == 'Blanco'])
             cantidad_negro = len([g for g in gastos if g['tipo'] == 'Negro'])
 
+            resumen_tipo_cuenta = {}
+            resumen_tipo_gasto = {}
+            for g in gastos:
+                rc = resumen_tipo_cuenta.setdefault(g['tipo_cuenta'], {'nombre': g['tipo_cuenta'], 'total': 0, 'cantidad': 0})
+                rc['total'] += g['monto']
+                rc['cantidad'] += 1
+                rg = resumen_tipo_gasto.setdefault(g['tipo_gasto'], {'nombre': g['tipo_gasto'], 'total': 0, 'cantidad': 0})
+                rg['total'] += g['monto']
+                rg['cantidad'] += 1
+
+            por_tipo_cuenta = sorted(resumen_tipo_cuenta.values(), key=lambda x: x['total'], reverse=True)
+            por_tipo_gasto = sorted(resumen_tipo_gasto.values(), key=lambda x: x['total'], reverse=True)
+
             reporte_data = {
                 'gastos': {
                     'total_blanco': total_blanco,
@@ -2211,7 +2230,9 @@ def reportes_gastos(request):
                     'cantidad_blanco': cantidad_blanco,
                     'cantidad_negro': cantidad_negro,
                     'cantidad': len(gastos),
-                    'lista': gastos
+                    'lista': gastos,
+                    'por_tipo_cuenta': por_tipo_cuenta,
+                    'por_tipo_gasto': por_tipo_gasto,
                 }
             }
     else:

@@ -227,6 +227,7 @@ class TipoCuenta(models.Model):
         ('retiros_propios', 'Retiros Propios'),
         ('varios', 'Varios'),
         ('proveedores', 'Proveedores'),
+        ('caja_chica', 'Caja Chica'),
     ]
     
     tipo = models.CharField(max_length=20, choices=TIPOS_CUENTA, unique=True)

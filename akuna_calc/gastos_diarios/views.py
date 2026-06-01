@@ -156,14 +156,52 @@ def gasto_list(request):
     })
 
 
+def _registrar_en_caja_chica(gasto, user):
+    """Registra un gasto diario aprobado como una Compra de tipo Caja Chica
+    para que aparezca en el reporte de gastos de comercial."""
+    from comercial.models import TipoCuenta, Cuenta, TipoGasto, Compra
+
+    numero_pedido = f'CAJA-{gasto.pk}'
+    if Compra.objects.filter(numero_pedido=numero_pedido, deleted_at__isnull=True).exists():
+        return
+
+    tipo_cuenta_cc, _ = TipoCuenta.objects.get_or_create(
+        tipo='caja_chica',
+        defaults={'descripcion': 'Caja Chica', 'activo': True},
+    )
+    cuenta_cc, _ = Cuenta.objects.get_or_create(
+        tipo_cuenta=tipo_cuenta_cc,
+        nombre='Caja Chica',
+        defaults={'activo': True},
+    )
+    tipo_gasto_cc, _ = TipoGasto.objects.get_or_create(
+        tipo_cuenta=tipo_cuenta_cc,
+        nombre='Caja Chica',
+        defaults={'activo': True},
+    )
+    Compra.objects.create(
+        numero_pedido=numero_pedido,
+        cuenta=cuenta_cc,
+        tipo_gasto=tipo_gasto_cc,
+        fecha_pago=gasto.fecha,
+        valor_total=gasto.monto,
+        con_factura=False,
+        descripcion=gasto.descripcion,
+        estado='pagado',
+        created_by=user,
+    )
+
+
 @login_required
 @require_POST
 def gasto_aprobar(request, pk):
     gasto = get_object_or_404(GastoDiario, pk=pk)
     if gasto.estado == 'en_espera':
-        gasto.estado = 'aprobado'
-        gasto.save(update_fields=['estado', 'updated_at'])
-        messages.success(request, f"Gasto #{gasto.pk} aprobado.")
+        with transaction.atomic():
+            gasto.estado = 'aprobado'
+            gasto.save(update_fields=['estado', 'updated_at'])
+            _registrar_en_caja_chica(gasto, request.user)
+        messages.success(request, f"Gasto #{gasto.pk} aprobado y registrado en Caja Chica.")
     else:
         messages.info(request, f"El gasto #{gasto.pk} ya estaba {gasto.get_estado_display().lower()}.")
     return redirect('gastos_diarios:lista')

@@ -186,6 +186,23 @@ class GastoViewsTests(TestCase):
         self.gasto.refresh_from_db()
         self.assertEqual(self.gasto.estado, 'rechazado')
 
+    def test_aprobar_registra_compra_en_caja_chica(self):
+        from comercial.models import Compra
+        self.client.login(username='vendedor', password='pass1234')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
+        compra = Compra.objects.filter(numero_pedido=f'CAJA-{self.gasto.pk}').first()
+        self.assertIsNotNone(compra)
+        self.assertEqual(compra.valor_total, self.gasto.monto)
+        self.assertEqual(compra.cuenta.tipo_cuenta.tipo, 'caja_chica')
+        self.assertFalse(compra.con_factura)
+
+    def test_aprobar_dos_veces_no_duplica_compra(self):
+        from comercial.models import Compra
+        self.client.login(username='vendedor', password='pass1234')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
+        self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
+        self.assertEqual(Compra.objects.filter(numero_pedido=f'CAJA-{self.gasto.pk}').count(), 1)
+
 
 class NumeroAutorizadoViewsTests(TestCase):
 
