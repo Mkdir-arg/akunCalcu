@@ -50,3 +50,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-028](./REQ-028-backup-automatizado-n8n-drive.md) | Backup automatizado de BD con n8n + Google Drive | Implementado | 2026-05-24 | FEAT-012 |
 | [REQ-029](./REQ-029-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | FEAT-013 |
 | [REQ-030](./REQ-030-confirmacion-reemplazo-accesorio-vidrio.md) | Confirmación modal antes de reemplazar accesorio o vidrio | En desarrollo | 2026-05-26 | — |
+| [REQ-031](./REQ-031-modulo-agenda-recordatorios.md) | Módulo de Agenda con recordatorios por WhatsApp | En desarrollo | 2026-06-07 | — |

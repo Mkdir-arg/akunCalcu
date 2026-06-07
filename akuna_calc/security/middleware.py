@@ -22,6 +22,7 @@ SECURITY_EXEMPT_PREFIXES = (
     '/media/',
     '/admin/jsi18n/',
     '/security/backups/api/',
+    '/agenda/api/',
 )
 
 
@@ -45,6 +46,7 @@ class AuditMiddleware(MiddlewareMixin):
         '/health',
         '/health/',
         '/security/backups/api/',
+        '/agenda/api/',
     ]
     
     SENSITIVE_FIELDS = ['password', 'token', 'secret', 'key']

@@ -1,0 +1,123 @@
+import json
+import os
+
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.urls import reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+
+from .forms import EventoAgendaForm
+from .models import EventoAgenda
+
+
+def _validar_token(request):
+    token = request.headers.get('X-Bot-Secret', '')
+    secret = os.environ.get('TELEGRAM_BOT_SECRET', '')
+    return bool(secret) and token == secret
+
+
+class EventoListView(LoginRequiredMixin, ListView):
+    model = EventoAgenda
+    template_name = 'agenda/evento_list.html'
+    context_object_name = 'eventos'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return EventoAgenda.objects.prefetch_related('destinatarios')
+
+
+class EventoCreateView(LoginRequiredMixin, CreateView):
+    model = EventoAgenda
+    form_class = EventoAgendaForm
+    template_name = 'agenda/evento_form.html'
+    success_url = reverse_lazy('agenda:lista')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, "Evento agendado correctamente.")
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Nuevo evento'
+        return ctx
+
+
+class EventoUpdateView(LoginRequiredMixin, UpdateView):
+    model = EventoAgenda
+    form_class = EventoAgendaForm
+    template_name = 'agenda/evento_form.html'
+    success_url = reverse_lazy('agenda:lista')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Evento actualizado correctamente.")
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Editar evento'
+        return ctx
+
+
+class EventoDeleteView(LoginRequiredMixin, DeleteView):
+    model = EventoAgenda
+    success_url = reverse_lazy('agenda:lista')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Evento eliminado.")
+        return super().form_valid(form)
+
+
+# --- API para n8n ---
+
+@csrf_exempt
+@require_POST
+def api_pendientes(request):
+    if not _validar_token(request):
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    eventos = EventoAgenda.objects.pendientes()
+    data = []
+    for evento in eventos:
+        destinatarios = [
+            {'numero': n.numero, 'nombre': n.nombre}
+            for n in evento.destinatarios.all() if n.activo
+        ]
+        if not destinatarios:
+            continue
+        data.append({
+            'id': evento.pk,
+            'titulo': evento.titulo,
+            'descripcion': evento.descripcion,
+            'tipo': evento.tipo,
+            'mensaje': evento.mensaje(),
+            'destinatarios': destinatarios,
+        })
+
+    return JsonResponse({'ok': True, 'eventos': data, 'cantidad': len(data)})
+
+
+@csrf_exempt
+@require_POST
+def api_marcar_enviado(request):
+    if not _validar_token(request):
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    ids = payload.get('ids', [])
+    if not isinstance(ids, list):
+        return JsonResponse({'error': 'ids debe ser una lista'}, status=400)
+
+    marcados = 0
+    for evento in EventoAgenda.objects.filter(pk__in=ids):
+        evento.marcar_enviado()
+        marcados += 1
+
+    return JsonResponse({'ok': True, 'marcados': marcados})
