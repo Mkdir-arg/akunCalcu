@@ -220,10 +220,14 @@ def api_responder(request):
     if not NumeroAutorizado.objects.filter(numero=numero_origen, activo=True).exists():
         return JsonResponse({'error': 'Número no autorizado'}, status=403)
 
+    # 'manejado' indica si había un borrador pendiente y por lo tanto este
+    # mensaje se interpretó como respuesta conversacional. n8n lo usa para
+    # decidir si un audio era una respuesta o un gasto nuevo a extraer.
     borradores = GastoDiario.objects.filter(numero_origen=numero_origen, estado='borrador')
     if not borradores.exists():
         return JsonResponse({
             'ok': True,
+            'manejado': False,
             'finalizado': True,
             'mensaje': 'No tenés gastos pendientes. Mandá una nota de voz con el gasto y el monto (ej: nafta 20000).',
         })
@@ -236,6 +240,7 @@ def api_responder(request):
             objetivo = sin_clasificar.first()
             return JsonResponse({
                 'ok': True,
+                'manejado': True,
                 'finalizado': False,
                 'mensaje': (
                     f"No reconocí el tipo. Para «{objetivo.descripcion}» respondé uno de: {OPCIONES_TEXTO}."
@@ -246,6 +251,7 @@ def api_responder(request):
         objetivo.save(update_fields=['tipo_cuenta', 'updated_at'])
         return JsonResponse({
             'ok': True,
+            'manejado': True,
             'finalizado': False,
             'mensaje': _siguiente_mensaje(numero_origen),
         })
@@ -255,6 +261,7 @@ def api_responder(request):
         afectados = borradores.update(estado='en_espera')
         return JsonResponse({
             'ok': True,
+            'manejado': True,
             'finalizado': True,
             'accion': 'si',
             'afectados': afectados,
@@ -265,6 +272,7 @@ def api_responder(request):
         borradores.delete()
         return JsonResponse({
             'ok': True,
+            'manejado': True,
             'finalizado': True,
             'accion': 'no',
             'afectados': afectados,
@@ -273,6 +281,7 @@ def api_responder(request):
 
     return JsonResponse({
         'ok': True,
+        'manejado': True,
         'finalizado': False,
         'mensaje': 'No te entendí. Respondé SI para confirmar o NO para cancelar.',
     })

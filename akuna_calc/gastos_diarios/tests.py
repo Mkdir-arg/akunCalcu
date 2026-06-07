@@ -259,6 +259,13 @@ class ApiResponderTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()['finalizado'])
 
+    def test_sin_borrador_manejado_false(self):
+        self.assertFalse(self._post('hola').json()['manejado'])
+
+    def test_con_borrador_manejado_true(self):
+        self._crear_borrador(descripcion='Nafta', tipo_cuenta='fletes')
+        self.assertTrue(self._post('si').json()['manejado'])
+
     def test_clasifica_gasto_sin_tipo(self):
         g = self._crear_borrador(descripcion='Nafta', tipo_cuenta='')
         resp = self._post('fletes')
