@@ -63,6 +63,7 @@
                         <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Clasificación</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -98,10 +99,24 @@
                                 </span>
                             {% endif %}
                         </td>
+                        <td class="px-6 py-4 text-sm text-slate-600">
+                            {% if gasto.estado == 'en_espera' %}
+                            <select id="tipo-{{ gasto.pk }}" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                <option value="">Sin clasificar</option>
+                                {% for clave, etiqueta in tipo_choices %}
+                                <option value="{{ clave }}" {% if gasto.tipo_cuenta == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                                {% endfor %}
+                            </select>
+                            {% elif gasto.tipo_cuenta %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{{ gasto.get_tipo_cuenta_display }}</span>
+                            {% else %}
+                                <span class="text-slate-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-center">
                             {% if gasto.estado == 'en_espera' %}
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="confirmarAccion('{% url 'gastos_diarios:aprobar' gasto.pk %}', 'aprobar', '{{ gasto.descripcion|escapejs }}')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Aprobar">
+                                <button onclick="confirmarAccion('{% url 'gastos_diarios:aprobar' gasto.pk %}', 'aprobar', '{{ gasto.descripcion|escapejs }}', {{ gasto.pk }})" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Aprobar">
                                     <i class="fas fa-check"></i>
                                 </button>
                                 <button onclick="confirmarAccion('{% url 'gastos_diarios:rechazar' gasto.pk %}', 'rechazar', '{{ gasto.descripcion|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Rechazar">
@@ -115,7 +130,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="8" class="px-6 py-12 text-center">
                             <i class="fas fa-microphone-alt-slash text-slate-200 text-5xl mb-3"></i>
                             <p class="text-slate-500 font-medium">No hay gastos registrados</p>
                             <p class="text-slate-400 text-sm mt-1">Mandá una nota de voz por WhatsApp para empezar a cargar gastos</p>
@@ -151,11 +166,21 @@
 
 {% block extra_js %}
 <script>
-function confirmarAccion(url, accion, descripcion) {
+function confirmarAccion(url, accion, descripcion, pk) {
     const esAprobar = accion === 'aprobar';
+    let htmlContenido = `<p>${descripcion}</p>`;
+    let tipoSeleccionado = '';
+    if (esAprobar && pk !== undefined) {
+        const select = document.getElementById('tipo-' + pk);
+        if (select) {
+            tipoSeleccionado = select.value;
+            const etiqueta = select.options[select.selectedIndex].text;
+            htmlContenido += `<p class="mt-2 text-sm text-slate-500">Se registrará en: <strong>${etiqueta}</strong></p>`;
+        }
+    }
     Swal.fire({
         title: esAprobar ? '¿Aprobar este gasto?' : '¿Rechazar este gasto?',
-        html: `<p>${descripcion}</p>`,
+        html: htmlContenido,
         icon: esAprobar ? 'question' : 'warning',
         showCancelButton: true,
         confirmButtonColor: esAprobar ? '#16a34a' : '#6b7280',
@@ -168,9 +193,14 @@ function confirmarAccion(url, accion, descripcion) {
             form.method = 'POST';
             form.action = url;
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            let inner = '';
             if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+                inner += `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
             }
+            if (esAprobar) {
+                inner += `<input type="hidden" name="tipo_cuenta" value="${tipoSeleccionado}">`;
+            }
+            form.innerHTML = inner;
             document.body.appendChild(form);
             form.submit();
         }

@@ -14,4 +14,5 @@ urlpatterns = [
     path('numeros/<int:pk>/eliminar/', views.numero_delete, name='numero_delete'),
     path('api/crear-borrador/', views.api_crear_borrador, name='api_crear_borrador'),
     path('api/confirmar/', views.api_confirmar, name='api_confirmar'),
+    path('api/responder/', views.api_responder, name='api_responder'),
 ]

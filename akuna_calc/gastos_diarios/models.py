@@ -36,6 +36,18 @@ class GastoDiario(models.Model):
         ('rechazado', 'Rechazado'),
     ]
 
+    # Espejo de comercial.TipoCuenta.TIPOS_CUENTA. Se replica acá para no
+    # acoplar el modelo (y su migración) a la app comercial.
+    TIPO_CUENTA_CHOICES = [
+        ('colocadores', 'Colocadores'),
+        ('colaboradores', 'Colaboradores'),
+        ('fletes', 'Fletes'),
+        ('retiros_propios', 'Retiros Propios'),
+        ('varios', 'Varios'),
+        ('proveedores', 'Proveedores'),
+        ('caja_chica', 'Caja Chica'),
+    ]
+
     descripcion = models.CharField(max_length=300, verbose_name="Descripción")
     monto = models.DecimalField(
         max_digits=12,
@@ -48,6 +60,13 @@ class GastoDiario(models.Model):
         choices=ESTADO_CHOICES,
         default='en_espera',
         verbose_name="Estado",
+    )
+    tipo_cuenta = models.CharField(
+        max_length=20,
+        choices=TIPO_CUENTA_CHOICES,
+        blank=True,
+        verbose_name="Clasificación (Tipo de Cuenta)",
+        help_text="Tipo de cuenta donde se registra el gasto al aprobarlo. Vacío = sin clasificar.",
     )
     numero_origen = models.CharField(
         max_length=30,

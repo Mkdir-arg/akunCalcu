@@ -160,7 +160,7 @@ class ApiConfirmarTests(TestCase):
 class GastoViewsTests(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(username='vendedor', password='pass1234')
+        self.user = User.objects.create_user(username='vendedor', password='pass1234', is_staff=True)
         self.gasto = GastoDiario.objects.create(descripcion='Test', monto=Decimal('500'),
                                                  numero_origen='5491155555555')
 
@@ -202,6 +202,133 @@ class GastoViewsTests(TestCase):
         self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
         self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
         self.assertEqual(Compra.objects.filter(numero_pedido=f'CAJA-{self.gasto.pk}').count(), 1)
+
+
+@patch.dict('os.environ', {'TELEGRAM_BOT_SECRET': 'test-secret'})
+class ApiCrearBorradorTipoTests(TestCase):
+
+    def setUp(self):
+        self.url = reverse('gastos_diarios:api_crear_borrador')
+        NumeroAutorizado.objects.create(numero='5491155555555', activo=True)
+
+    def _post(self, gastos):
+        payload = {'numero_origen': '5491155555555', 'audio_id': 'A', 'transcripcion': 'x', 'gastos': gastos}
+        return self.client.post(self.url, data=json.dumps(payload), content_type='application/json',
+                                HTTP_X_BOT_SECRET='test-secret')
+
+    def test_guarda_tipo_valido(self):
+        self._post([{'descripcion': 'Flete', 'monto': 5000, 'tipo': 'fletes'}])
+        self.assertEqual(GastoDiario.objects.get(descripcion='Flete').tipo_cuenta, 'fletes')
+
+    def test_mapea_sinonimo_a_tipo(self):
+        self._post([{'descripcion': 'Compra', 'monto': 5000, 'tipo': 'proveedor'}])
+        self.assertEqual(GastoDiario.objects.get(descripcion='Compra').tipo_cuenta, 'proveedores')
+
+    def test_tipo_invalido_queda_vacio(self):
+        self._post([{'descripcion': 'X', 'monto': 5000, 'tipo': 'nada'}])
+        self.assertEqual(GastoDiario.objects.get(descripcion='X').tipo_cuenta, '')
+
+    def test_sin_tipo_queda_vacio(self):
+        self._post([{'descripcion': 'X', 'monto': 5000}])
+        self.assertEqual(GastoDiario.objects.get(descripcion='X').tipo_cuenta, '')
+
+
+@patch.dict('os.environ', {'TELEGRAM_BOT_SECRET': 'test-secret'})
+class ApiResponderTests(TestCase):
+
+    def setUp(self):
+        self.url = reverse('gastos_diarios:api_responder')
+        NumeroAutorizado.objects.create(numero='5491155555555', activo=True)
+
+    def _crear_borrador(self, **kwargs):
+        defaults = dict(numero_origen='5491155555555', monto=Decimal('1000'),
+                        estado='borrador', audio_id='A')
+        defaults.update(kwargs)
+        return GastoDiario.objects.create(**defaults)
+
+    def _post(self, texto, secret='test-secret'):
+        body = {'numero_origen': '5491155555555', 'texto': texto}
+        return self.client.post(self.url, data=json.dumps(body), content_type='application/json',
+                                HTTP_X_BOT_SECRET=secret)
+
+    def test_sin_secret_devuelve_401(self):
+        self.assertEqual(self._post('si', secret='malo').status_code, 401)
+
+    def test_sin_borrador_responde_finalizado(self):
+        resp = self._post('si')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['finalizado'])
+
+    def test_clasifica_gasto_sin_tipo(self):
+        g = self._crear_borrador(descripcion='Nafta', tipo_cuenta='')
+        resp = self._post('fletes')
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.json()['finalizado'])
+        g.refresh_from_db()
+        self.assertEqual(g.tipo_cuenta, 'fletes')
+
+    def test_tipo_no_reconocido_no_clasifica(self):
+        g = self._crear_borrador(descripcion='Nafta', tipo_cuenta='')
+        resp = self._post('cualquiercosa')
+        self.assertFalse(resp.json()['finalizado'])
+        g.refresh_from_db()
+        self.assertEqual(g.tipo_cuenta, '')
+
+    def test_confirmar_si_pasa_a_en_espera(self):
+        self._crear_borrador(descripcion='Nafta', tipo_cuenta='fletes')
+        resp = self._post('si')
+        self.assertTrue(resp.json()['finalizado'])
+        self.assertEqual(GastoDiario.objects.filter(estado='en_espera').count(), 1)
+
+    def test_confirmar_si_bloqueado_si_falta_clasificar(self):
+        self._crear_borrador(descripcion='Nafta', tipo_cuenta='')
+        # 'si' debe interpretarse como intento de tipo (no reconocido), no como confirmación
+        self._post('si')
+        self.assertFalse(GastoDiario.objects.filter(estado='en_espera').exists())
+        self.assertTrue(GastoDiario.objects.filter(estado='borrador').exists())
+
+    def test_cancelar_no_borra_borradores(self):
+        self._crear_borrador(descripcion='Nafta', tipo_cuenta='fletes')
+        resp = self._post('no')
+        self.assertTrue(resp.json()['finalizado'])
+        self.assertFalse(GastoDiario.objects.filter(numero_origen='5491155555555').exists())
+
+
+class GastoAprobarTipoTests(TestCase):
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='vendedor', password='pass1234', is_staff=True)
+        self.client.login(username='vendedor', password='pass1234')
+
+    def test_aprobar_con_tipo_registra_compra_en_ese_tipo(self):
+        from comercial.models import Compra
+        gasto = GastoDiario.objects.create(descripcion='Flete', monto=Decimal('5000'),
+                                           numero_origen='5491155555555', tipo_cuenta='fletes')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[gasto.pk]),
+                         {'tipo_cuenta': 'fletes'})
+        gasto.refresh_from_db()
+        self.assertEqual(gasto.tipo_cuenta, 'fletes')
+        compra = Compra.objects.get(numero_pedido=f'CAJA-{gasto.pk}')
+        self.assertEqual(compra.cuenta.tipo_cuenta.tipo, 'fletes')
+
+    def test_aprobar_sin_tipo_cae_en_caja_chica(self):
+        from comercial.models import Compra
+        gasto = GastoDiario.objects.create(descripcion='X', monto=Decimal('500'),
+                                           numero_origen='5491155555555', tipo_cuenta='')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[gasto.pk]))
+        compra = Compra.objects.get(numero_pedido=f'CAJA-{gasto.pk}')
+        self.assertEqual(compra.cuenta.tipo_cuenta.tipo, 'caja_chica')
+
+    def test_select_post_sobreescribe_tipo_del_audio(self):
+        from comercial.models import Compra
+        gasto = GastoDiario.objects.create(descripcion='X', monto=Decimal('500'),
+                                           numero_origen='5491155555555', tipo_cuenta='varios')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[gasto.pk]),
+                         {'tipo_cuenta': 'proveedores'})
+        gasto.refresh_from_db()
+        self.assertEqual(gasto.tipo_cuenta, 'proveedores')
+        compra = Compra.objects.get(numero_pedido=f'CAJA-{gasto.pk}')
+        self.assertEqual(compra.cuenta.tipo_cuenta.tipo, 'proveedores')
 
 
 class NumeroAutorizadoViewsTests(TestCase):

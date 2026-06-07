@@ -148,6 +148,7 @@ PUBLIC_ROUTE_KEYS = {
     'healthcheck',
     'gastos_diarios:api_crear_borrador',
     'gastos_diarios:api_confirmar',
+    'gastos_diarios:api_responder',
     'pedidos:api_crear_borrador',
     'pedidos:api_confirmar',
     'security:backup_api_create',
