@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from comercial.models import Cliente
 from gastos_diarios.models import NumeroAutorizado
 
 from .models import EventoAgenda
@@ -102,6 +103,50 @@ class EventoAgendaModelTests(TestCase):
         e.refresh_from_db()
         self.assertEqual(e.estado, 'programado')
         self.assertIsNotNone(e.ultimo_envio)
+
+
+class EventoVisitaClienteTests(TestCase):
+
+    def setUp(self):
+        self.cliente = Cliente.objects.create(
+            nombre='Juan', apellido='Pérez', direccion='Calle 123', localidad='La Plata',
+            telefono='2211234567',
+        )
+
+    def test_maps_url_con_coordenadas(self):
+        e = EventoAgenda(titulo='V', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+                         tipo='visita', lat=-34.92, lng=-57.95)
+        self.assertIn('query=-34.92,-57.95', e.maps_url())
+
+    def test_maps_url_por_direccion(self):
+        e = EventoAgenda(titulo='V', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+                         tipo='visita', direccion='Calle 123, La Plata')
+        self.assertIn('maps/search', e.maps_url())
+        self.assertIn('Calle', e.maps_url())
+
+    def test_mensaje_incluye_cliente_direccion_y_maps(self):
+        e = EventoAgenda.objects.create(
+            titulo='Visita Pérez', tipo='visita', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            cliente=self.cliente, direccion='Calle 123, La Plata', lat=-34.92, lng=-57.95,
+        )
+        msg = e.mensaje()
+        self.assertIn('Juan', msg)
+        self.assertIn('Pérez', msg)
+        self.assertIn('2211234567', msg)
+        self.assertIn('Calle 123', msg)
+        self.assertIn('google.com/maps', msg)
+
+    def test_cliente_info_sin_login_redirige(self):
+        self.assertEqual(self.client.get(reverse('agenda:cliente_info', args=[self.cliente.pk])).status_code, 302)
+
+    def test_cliente_info_con_login(self):
+        User.objects.create_user(username='admin', password='pass1234', is_staff=True)
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.get(reverse('agenda:cliente_info', args=[self.cliente.pk]))
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data['telefono'], '2211234567')
+        self.assertIn('La Plata', data['direccion'])
 
 
 @patch.dict('os.environ', {'TELEGRAM_BOT_SECRET': 'test-secret'})

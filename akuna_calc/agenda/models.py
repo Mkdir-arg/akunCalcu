@@ -57,6 +57,13 @@ class EventoAgenda(models.Model):
         related_name='eventos_agenda',
         verbose_name="Destinatarios",
     )
+    cliente = models.ForeignKey(
+        'comercial.Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='eventos_agenda', verbose_name="Cliente",
+    )
+    direccion = models.CharField(max_length=300, blank=True, verbose_name="Dirección")
+    lat = models.FloatField(null=True, blank=True, verbose_name="Latitud")
+    lng = models.FloatField(null=True, blank=True, verbose_name="Longitud")
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default='programado', verbose_name="Estado",
     )
@@ -153,10 +160,28 @@ class EventoAgenda(models.Model):
             self.estado = 'enviado'
         self.save(update_fields=['ultimo_envio', 'estado', 'updated_at'])
 
+    def maps_url(self):
+        """Link a Google Maps a partir de coordenadas o dirección (no requiere API key)."""
+        from urllib.parse import quote
+        if self.lat is not None and self.lng is not None:
+            return f"https://www.google.com/maps/search/?api=1&query={self.lat},{self.lng}"
+        if self.direccion:
+            return f"https://www.google.com/maps/search/?api=1&query={quote(self.direccion)}"
+        return ''
+
     def mensaje(self):
         """Texto del recordatorio que se manda por WhatsApp."""
         partes = [f"🔔 {self.get_tipo_display()}: {self.titulo}"]
         if self.descripcion:
             partes.append(self.descripcion)
         partes.append(f"📅 {self.fecha_evento.strftime('%d/%m/%Y')}")
+        if self.cliente:
+            partes.append(f"👤 {self.cliente.nombre} {self.cliente.apellido}".rstrip())
+            if self.cliente.telefono:
+                partes.append(f"📞 {self.cliente.telefono}")
+        if self.direccion:
+            partes.append(f"📍 {self.direccion}")
+        url = self.maps_url()
+        if url:
+            partes.append(f"🗺️ {url}")
         return "\n".join(partes)

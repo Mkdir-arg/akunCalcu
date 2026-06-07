@@ -72,6 +72,35 @@
                     <p class="text-xs text-slate-500 mt-1">{{ form.destinatarios.help_text }}</p>
                     {% if form.destinatarios.errors %}<p class="text-xs text-red-600 mt-1">{{ form.destinatarios.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Cliente + Ubicación (visitas) -->
+                <div id="seccion-visita" class="md:col-span-2 border-t pt-5 mt-1 hidden">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>Cliente y ubicación</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.cliente.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Cliente (opcional)</label>
+                            {{ form.cliente }}
+                            <p class="text-xs text-slate-500 mt-1">Si elegís un cliente, se autocompleta la dirección y el WhatsApp incluye nombre y teléfono.</p>
+                        </div>
+                        <div>
+                            <label for="{{ form.direccion.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Dirección</label>
+                            <div class="flex gap-2">
+                                {{ form.direccion }}
+                                <button type="button" id="btn-buscar-mapa" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg font-semibold text-sm whitespace-nowrap">
+                                    <i class="fas fa-search-location mr-1"></i>Buscar
+                                </button>
+                            </div>
+                            <p id="mapa-status" class="text-xs text-slate-500 mt-1"></p>
+                        </div>
+                    </div>
+                    {{ form.lat }}{{ form.lng }}
+                    <div id="mapa-container" class="mt-4 hidden">
+                        <iframe id="mapa-frame" class="w-full h-64 rounded-xl border border-gray-200" loading="lazy"></iframe>
+                        <a id="mapa-link" href="#" target="_blank" class="inline-flex items-center text-sm text-blue-600 hover:underline mt-2">
+                            <i class="fas fa-external-link-alt mr-1"></i>Ver en Google Maps
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
@@ -83,4 +112,82 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const tipo = document.getElementById('id_tipo');
+    const seccion = document.getElementById('seccion-visita');
+    const cliente = document.getElementById('id_cliente');
+    const direccion = document.getElementById('id_direccion');
+    const lat = document.getElementById('id_lat');
+    const lng = document.getElementById('id_lng');
+    const btnBuscar = document.getElementById('btn-buscar-mapa');
+    const mapaCont = document.getElementById('mapa-container');
+    const mapaFrame = document.getElementById('mapa-frame');
+    const mapaLink = document.getElementById('mapa-link');
+    const status = document.getElementById('mapa-status');
+
+    function toggleSeccion() {
+        if (!tipo || !seccion) return;
+        seccion.classList.toggle('hidden', tipo.value !== 'visita');
+    }
+
+    function mostrarMapa(la, lo) {
+        const d = 0.005;
+        const bbox = `${(+lo - d)}%2C${(+la - d)}%2C${(+lo + d)}%2C${(+la + d)}`;
+        mapaFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${la}%2C${lo}`;
+        mapaLink.href = `https://www.google.com/maps/search/?api=1&query=${la},${lo}`;
+        mapaCont.classList.remove('hidden');
+    }
+
+    async function buscarDireccion() {
+        const q = (direccion.value || '').trim();
+        if (!q) { status.textContent = 'Escribí una dirección primero.'; return; }
+        status.textContent = 'Buscando...';
+        try {
+            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await resp.json();
+            if (data && data.length) {
+                lat.value = data[0].lat;
+                lng.value = data[0].lon;
+                mostrarMapa(data[0].lat, data[0].lon);
+                status.textContent = '✓ Ubicación encontrada. Confirmá que el pin sea correcto.';
+            } else {
+                lat.value = ''; lng.value = '';
+                status.textContent = 'No se encontró la dirección. Probá ser más específico.';
+            }
+        } catch (e) {
+            status.textContent = 'Error al buscar la dirección.';
+        }
+    }
+
+    async function autocompletarCliente() {
+        if (!cliente || !cliente.value) return;
+        try {
+            const resp = await fetch(`/agenda/cliente/${cliente.value}/info/`);
+            if (!resp.ok) return;
+            const info = await resp.json();
+            if (info.direccion) {
+                direccion.value = info.direccion;
+                lat.value = ''; lng.value = '';
+                mapaCont.classList.add('hidden');
+                status.textContent = 'Dirección del cliente cargada. Tocá "Buscar" para ubicarla en el mapa.';
+            }
+        } catch (e) { /* noop */ }
+    }
+
+    if (tipo) tipo.addEventListener('change', toggleSeccion);
+    if (cliente) cliente.addEventListener('change', autocompletarCliente);
+    if (btnBuscar) btnBuscar.addEventListener('click', buscarDireccion);
+
+    toggleSeccion();
+    if (lat && lat.value && lng && lng.value) {
+        mostrarMapa(lat.value, lng.value);
+    }
+})();
+</script>
 {% endblock %}

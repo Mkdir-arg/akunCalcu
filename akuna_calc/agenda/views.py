@@ -123,6 +123,23 @@ def calendario(request):
     })
 
 
+@login_required
+def cliente_info(request, pk):
+    """Datos del cliente para autocompletar la dirección en el form de visita."""
+    from comercial.models import Cliente
+    from django.shortcuts import get_object_or_404
+    cliente = get_object_or_404(Cliente, pk=pk, deleted_at__isnull=True)
+    direccion = cliente.direccion or ''
+    if cliente.localidad:
+        direccion = f"{direccion}, {cliente.localidad}".strip(', ')
+    return JsonResponse({
+        'nombre': cliente.nombre,
+        'apellido': cliente.apellido,
+        'telefono': cliente.telefono,
+        'direccion': direccion,
+    })
+
+
 # --- API para n8n ---
 
 @csrf_exempt
