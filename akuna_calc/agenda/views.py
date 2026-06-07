@@ -1,16 +1,26 @@
+import calendar as _calendar
 import json
 import os
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from .forms import EventoAgendaForm
 from .models import EventoAgenda
+
+
+NOMBRES_MES = [
+    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+]
 
 
 def _validar_token(request):
@@ -69,6 +79,48 @@ class EventoDeleteView(LoginRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Evento eliminado.")
         return super().form_valid(form)
+
+
+@login_required
+def calendario(request):
+    hoy = timezone.localdate()
+    try:
+        anio = int(request.GET.get('anio', hoy.year))
+        mes = int(request.GET.get('mes', hoy.month))
+    except (TypeError, ValueError):
+        anio, mes = hoy.year, hoy.month
+    if not 1 <= mes <= 12:
+        anio, mes = hoy.year, hoy.month
+
+    eventos = list(
+        EventoAgenda.objects.filter(activo=True).exclude(estado='cancelado')
+    )
+
+    cal = _calendar.Calendar(firstweekday=0)  # lunes primero
+    semanas = []
+    for semana in cal.monthdatescalendar(anio, mes):
+        fila = []
+        for dia in semana:
+            fila.append({
+                'fecha': dia,
+                'in_month': dia.month == mes,
+                'is_today': dia == hoy,
+                'eventos': [e for e in eventos if e.ocurre_en(dia)],
+            })
+        semanas.append(fila)
+
+    mes_prev, anio_prev = (12, anio - 1) if mes == 1 else (mes - 1, anio)
+    mes_next, anio_next = (1, anio + 1) if mes == 12 else (mes + 1, anio)
+
+    return render(request, 'agenda/evento_calendar.html', {
+        'semanas': semanas,
+        'anio': anio,
+        'mes': mes,
+        'nombre_mes': NOMBRES_MES[mes],
+        'mes_prev': mes_prev, 'anio_prev': anio_prev,
+        'mes_next': mes_next, 'anio_next': anio_next,
+        'hoy': hoy,
+    })
 
 
 # --- API para n8n ---

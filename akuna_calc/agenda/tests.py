@@ -158,6 +158,23 @@ class EventoViewsTests(TestCase):
         self.client.login(username='admin', password='pass1234')
         self.assertEqual(self.client.get(reverse('agenda:lista')).status_code, 200)
 
+    def test_calendario_sin_login_redirige(self):
+        self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 302)
+
+    def test_calendario_con_login_200(self):
+        self.client.login(username='admin', password='pass1234')
+        self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 200)
+
+    def test_calendario_muestra_evento_del_mes(self):
+        self.client.login(username='admin', password='pass1234')
+        e = EventoAgenda.objects.create(
+            titulo='Visita calendario', tipo='visita',
+            fecha_evento=date(2026, 7, 15), hora_envio=time(9, 0),
+        )
+        e.destinatarios.add(self.num)
+        resp = self.client.get(reverse('agenda:calendario'), {'anio': 2026, 'mes': 7})
+        self.assertContains(resp, 'Visita calendario')
+
     def test_crear_evento(self):
         self.client.login(username='admin', password='pass1234')
         resp = self.client.post(reverse('agenda:crear'), {

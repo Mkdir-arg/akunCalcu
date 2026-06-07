@@ -252,7 +252,7 @@ _register_route('configuracion.general', 'configuracion-hora-hombre')
 _register_route('gastos_diarios.view', 'gastos_diarios:aprobar', 'gastos_diarios:rechazar')
 _register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gastos_diarios:numero_edit', 'gastos_diarios:numero_delete')
 
-_register_route('agenda.view', 'agenda:crear', 'agenda:editar', 'agenda:eliminar')
+_register_route('agenda.view', 'agenda:calendario', 'agenda:crear', 'agenda:editar', 'agenda:eliminar')
 
 
 def normalize_access_codes(access_codes):

@@ -140,6 +140,12 @@ class EventoAgenda(models.Model):
             return candidato
         return None
 
+    def ocurre_en(self, fecha):
+        """Si el evento cae en la fecha dada (para mostrarlo en el calendario)."""
+        if self.recurrencia == 'ninguna':
+            return self.fecha_evento == fecha
+        return self._corresponde(fecha)
+
     def marcar_enviado(self, ahora=None):
         ahora = ahora or timezone.now()
         self.ultimo_envio = ahora
