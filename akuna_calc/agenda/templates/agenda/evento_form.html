@@ -180,8 +180,15 @@
         } catch (e) { /* noop */ }
     }
 
-    if (tipo) tipo.addEventListener('change', toggleSeccion);
-    if (cliente) cliente.addEventListener('change', autocompletarCliente);
+    // Select2 (de base.html) dispara 'change' vía jQuery, no como evento nativo:
+    // por eso enlazamos los selects con jQuery y dejamos lo demás en vanilla.
+    if (window.jQuery) {
+        if (tipo) window.jQuery(tipo).on('change', toggleSeccion);
+        if (cliente) window.jQuery(cliente).on('change', autocompletarCliente);
+    } else {
+        if (tipo) tipo.addEventListener('change', toggleSeccion);
+        if (cliente) cliente.addEventListener('change', autocompletarCliente);
+    }
     if (btnBuscar) btnBuscar.addEventListener('click', buscarDireccion);
 
     toggleSeccion();
