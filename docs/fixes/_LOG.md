@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-005 — Opcional mosquitero multiplica su precio al agregarse al presupuesto
+**Fecha**: 2026-06-08
+**Reportado por**: Usuario
+**Severidad**: Alta
+**Feature afectada**: FEAT-005 (presupuestos) / módulo pricing
+
+**Síntoma**: Al calcular un ítem en vivo ("Calcular precio"), el opcional tipo mosquitero se calculaba bien (1 sola fórmula, ej. `1 x 0.9m2 x $41.999,99/m2 = $37.799,99`). Pero al **agregar el ítem al presupuesto**, el mismo mosquitero aparecía con muchas líneas repetidas (una por producto del catálogo) y el precio quedaba multiplicado (ej. $680.399,84 en vez de $37.799,99). Ocurría con cualquier tipo de mosquitero.
+**Causa raíz**: El cálculo del mosquitero filtra las `FormulaOpcional` por el producto seleccionado (`formulas.filter(perfil=str(producto_id))` en `calculator.py`), pero solo si recibe `ProductoId` en las variables. El formulario de guardado (`detalle.html`) no incluía un input oculto `producto_id`, por lo que `agregar_item` armaba el `config` sin ese dato. Sin `producto_id`, el filtro se salteaba y se sumaban **todas** las fórmulas del opcional (una por cada producto). El cálculo en vivo no tenía el bug porque su endpoint API sí envía `producto_id`.
+**Solución**: Se agregó el input oculto `producto_id` al formulario de guardado, se vuelca `config.producto_id` al enviarlo, y `agregar_item` ahora lo lee dentro del `config` que pasa a `calcular_precio`. Los ítems ya guardados con el cálculo erróneo deben borrarse y volver a agregarse para recalcularse.
+**Archivos modificados**: `akuna_calc/presupuestos/templates/presupuestos/detalle.html`, `akuna_calc/presupuestos/views.py`
+
 ### FIX-004 — Deploy web desacoplado de migraciones para evitar caídas por healthcheck
 **Fecha**: 2026-05-20
 **Reportado por**: Usuario
