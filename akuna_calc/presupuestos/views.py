@@ -169,6 +169,7 @@ def agregar_item(request, pk):
     if request.method == 'POST':
         data = request.POST
         config = {
+            'producto_id': data.get('producto_id') and int(data['producto_id']),
             'marco_id': data.get('marco_id') and int(data['marco_id']),
             'hoja_id': data.get('hoja_id') and int(data['hoja_id']),
             'vidrio_codigo': data.get('vidrio_codigo') or None,

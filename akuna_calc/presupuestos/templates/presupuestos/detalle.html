@@ -455,6 +455,7 @@
 
 <form id="item-save-form" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
     {% csrf_token %}
+    <input type="hidden" name="producto_id" id="f-producto_id">
     <input type="hidden" name="marco_id" id="f-marco_id">
     <input type="hidden" name="hoja_id" id="f-hoja_id">
     <input type="hidden" name="vidrio_codigo" id="f-vidrio_codigo">
@@ -914,6 +915,7 @@ const CotizadorModal = () => {
     const guardar = () => {
         if (!result) { setError('Calcula el precio primero'); return; }
         setSaving(true);
+        document.getElementById('f-producto_id').value = config.producto_id || '';
         document.getElementById('f-marco_id').value = config.marco_id || '';
         document.getElementById('f-hoja_id').value = config.hoja_id || '';
         document.getElementById('f-vidrio_codigo').value = config.vidrio_codigo || '';
