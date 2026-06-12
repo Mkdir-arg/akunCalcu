@@ -129,10 +129,16 @@ fetch('/pricing/api/perfiles-simple/?tipo=Marco')
     });
 
 function _buildOptions(selectedCodigo) {
-    return '<option value="">Seleccionar...</option>' +
+    let opciones = '<option value="">Seleccionar...</option>' +
         perfiles.map(p =>
             `<option value="${p.codigo}" ${p.codigo === selectedCodigo ? 'selected' : ''}>${p.codigo}${p.descripcion ? ' - ' + p.descripcion : ''}</option>`
         ).join('');
+    // Si la fórmula referencia un perfil que ya no está en el catálogo (o el catálogo
+    // no cargó), conservarlo igual para no perder la fila al autoguardar
+    if (selectedCodigo && !perfiles.some(p => p.codigo === selectedCodigo)) {
+        opciones += `<option value="${selectedCodigo}" selected>${selectedCodigo} (fuera de catálogo)</option>`;
+    }
+    return opciones;
 }
 
 function _crearFila(idx, datos) {
@@ -220,6 +226,24 @@ const autosaveTimers = {
     accesorios: null,
 };
 
+// Evita guardados solapados: si hay uno en vuelo, encola el siguiente
+const autosaveEstado = {};
+function ejecutarGuardadoSerializado(clave, fn) {
+    const estado = autosaveEstado[clave] || (autosaveEstado[clave] = { enCurso: false, pendiente: false });
+    if (estado.enCurso) {
+        estado.pendiente = true;
+        return;
+    }
+    estado.enCurso = true;
+    fn().finally(() => {
+        estado.enCurso = false;
+        if (estado.pendiente) {
+            estado.pendiente = false;
+            ejecutarGuardadoSerializado(clave, fn);
+        }
+    });
+}
+
 function setSaveStatus(elementId, state) {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -242,13 +266,13 @@ function setSaveStatus(elementId, state) {
 function scheduleFormulasSave() {
     clearTimeout(autosaveTimers.formulas);
     setSaveStatus('estadoFormulas', 'saving');
-    autosaveTimers.formulas = setTimeout(() => guardarFormulas(), 900);
+    autosaveTimers.formulas = setTimeout(() => ejecutarGuardadoSerializado('formulas', guardarFormulas), 900);
 }
 
 function scheduleAccesoriosSave() {
     clearTimeout(autosaveTimers.accesorios);
     setSaveStatus('estadoAccesorios', 'saving');
-    autosaveTimers.accesorios = setTimeout(() => guardarAccesorios(), 900);
+    autosaveTimers.accesorios = setTimeout(() => ejecutarGuardadoSerializado('accesorios', guardarAccesorios), 900);
 }
 
 function guardarFormulas() {
@@ -267,7 +291,7 @@ function guardarFormulas() {
         });
     });
 
-    fetch('{% url "config-marco-formulas-guardar" object.pk %}', {
+    return fetch('{% url "config-marco-formulas-guardar" object.pk %}', {
         method: 'POST',
         body: formData,
     })
@@ -480,7 +504,7 @@ function guardarAccesorios() {
         });
     });
 
-    fetch(window.location.href, {
+    return fetch(window.location.href, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: formData,

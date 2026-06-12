@@ -107,7 +107,25 @@
     function scheduleRelacionesSave() {
         clearTimeout(autosaveRelaciones.timer);
         setSaveStatus('saving');
-        autosaveRelaciones.timer = setTimeout(() => guardarHojas(), 900);
+        autosaveRelaciones.timer = setTimeout(() => ejecutarGuardadoSerializado('hojas', guardarHojas), 900);
+    }
+
+    // Evita guardados solapados: si hay uno en vuelo, encola el siguiente
+    const autosaveEstado = {};
+    function ejecutarGuardadoSerializado(clave, fn) {
+        const estado = autosaveEstado[clave] || (autosaveEstado[clave] = { enCurso: false, pendiente: false });
+        if (estado.enCurso) {
+            estado.pendiente = true;
+            return;
+        }
+        estado.enCurso = true;
+        fn().finally(() => {
+            estado.enCurso = false;
+            if (estado.pendiente) {
+                estado.pendiente = false;
+                ejecutarGuardadoSerializado(clave, fn);
+            }
+        });
     }
 
     function agregarHoja() {
@@ -148,7 +166,7 @@
         rows.forEach((row, index) => {
             formData.append(`hoja_${index}`, row.querySelector('select[name="hoja"]').value);
         });
-        fetch(window.location.href, {
+        return fetch(window.location.href, {
             method: 'POST',
             body: formData,
             headers: { 'X-Requested-With': 'XMLHttpRequest' }

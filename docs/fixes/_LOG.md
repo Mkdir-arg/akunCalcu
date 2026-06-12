@@ -22,6 +22,29 @@
 
 ## Fixes registrados
 
+### FIX-006 — Fórmulas de perfiles de hojas/marcos se corrompen o no persisten con autoguardado concurrente
+**Fecha**: 2026-06-12
+**Reportado por**: Usuario + Romina
+**Severidad**: Alta
+**Feature afectada**: Módulo pricing / configuración de hojas y marcos
+
+**Síntoma**: En `/pricing/config/hojas/53/editar/` las fórmulas de perfiles aparecían "cambiadas todas y varias veces" (filas duplicadas/alteradas) y, en otros casos, un guardado parecía no persistir: el usuario editaba una fórmula, salía y al volver la veía igual que antes.
+**Causa raíz**: El guardado de fórmulas/accesorios hacía borrar-todo + recrear fila por fila **sin transacción**, asignando el `id` a mano con `max_id + 1` por cada fila (tablas legacy `managed=False` sin PK autoincremental). Combinado con el autoguardado que dispara un POST en cada tecla (debounce 900ms) y con más de un usuario/pestaña editando, dos guardados solapados calculaban el mismo `max_id` y colisionaban en la PK: el que perdía la carrera fallaba a mitad de camino (delete ya ejecutado, creates incompletos) dejando filas perdidas, duplicadas o a medias. El mismo patrón existía en 8 lugares (hojas y marcos: fórmulas y accesorios, vía AJAX y submit normal).
+**Solución**: Se creó el helper `_reemplazar_filas_despiece()` que ejecuta el borrar+recrear dentro de `transaction.atomic()`, serializa guardados concurrentes sobre la misma entidad con `select_for_update()` sobre el padre, calcula el `max_id` una sola vez usando `bulk_create`, y reintenta hasta 3 veces ante colisión de id con guardados de otras entidades. Se migraron los 8 puntos de guardado a este helper. En el frontend (`hoja_form.html` y `marco_form.html`) se agregó `ejecutarGuardadoSerializado()` para que nunca haya dos autosaves en vuelo a la vez (si llega uno mientras otro corre, se encola y se ejecuta al terminar).
+
+**Extensión a todo el sistema** (mismo día): se aplicó el mismo patrón en todos los puntos restantes con guardados delete+recrear o ids manuales:
+- `vidrio_edit` (relaciones vidrio↔hojas): atomic + lock sobre el vidrio + `bulk_create`.
+- `plantillas/views_opcionales.py` (fórmulas, accesorios y relaciones de opcionales): atomic + `select_for_update()` sobre el opcional + `bulk_create` (accesorios y relaciones no tenían transacción).
+- Altas de entidades legacy con id manual (`Extrusora`, `Linea`, `Producto`, `Marco`, `Hoja`, `Interior`, `Tratamiento`): nuevo helper `_guardar_nuevo_con_id()` con atomic + reintento ante colisión de id.
+- Guard anti-solape `ejecutarGuardadoSerializado()` también en `vidrio_form.html` y `opcional_form.html`.
+
+**Endurecimiento contra pérdida silenciosa de filas** (2026-06-12, tras reporte de fórmulas que "se pierden al día siguiente"): el guardado descartaba sin avisar las filas incompletas, lo que borraba fórmulas en dos escenarios reales: (a) el usuario borra temporalmente el contenido de un campo y el autosave dispara a los 900ms; (b) la fórmula referencia un perfil que quedó fuera del catálogo filtrado (bloqueado o de otro tipo) y el select renderiza vacío. Cambios:
+- Backend (hojas y marcos, AJAX y POST normal): una fila *a medio completar* ahora **aborta el guardado completo sin tocar la base** y devuelve error indicando la fila (`Fila N incompleta... No se guardó nada`). Las filas totalmente vacías (recién agregadas) se ignoran como antes. `marco_formulas_guardar` además no validaba nada y creaba filas basura — ahora valida igual.
+- Frontend (`hoja_form.html`, `marco_form.html`): si una fórmula referencia un perfil fuera del catálogo, el select lo conserva como opción "(fuera de catálogo)" en vez de quedar vacío — cubre también el caso en que el fetch del catálogo de perfiles falla en marcos.
+- `opcional_form.html` ya estaba protegido: su backend rechaza filas incompletas con error 400 sin tocar datos.
+
+**Archivos modificados**: `akuna_calc/pricing/config_views.py`, `akuna_calc/plantillas/views_opcionales.py`, `akuna_calc/pricing/templates/pricing/config/hoja_form.html`, `akuna_calc/pricing/templates/pricing/config/marco_form.html`, `akuna_calc/pricing/templates/pricing/config/vidrio_form.html`, `akuna_calc/plantillas/templates/plantillas/opcional_form.html`
+
 ### FIX-005 — Opcional mosquitero multiplica su precio al agregarse al presupuesto
 **Fecha**: 2026-06-08
 **Reportado por**: Usuario

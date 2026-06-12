@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db import connection, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Max, Q
 from django.http import Http404, JsonResponse
 from plantillas.models import AccesorioOpcional
@@ -76,6 +76,52 @@ def _resolve_ordering(request, allowed_sort_fields, default_sort):
 def _next_id(model):
     max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
     return max_id + 1
+
+
+def _guardar_nuevo_con_id(obj, model):
+    """Guarda una entidad legacy nueva asignando el id a mano (tablas sin autoincremental).
+
+    Si dos altas concurrentes calculan el mismo id, reintenta con uno nuevo.
+    """
+    for intento in range(3):
+        try:
+            with transaction.atomic():
+                obj.id = _next_id(model)
+                obj.save(force_insert=True)
+            return obj
+        except IntegrityError:
+            if intento == 2:
+                raise
+
+
+def _reemplazar_filas_despiece(model, parent_field, parent_obj, filas):
+    """Reemplaza atómicamente las filas de despiece de una entidad legacy.
+
+    Las tablas de despiece no tienen PK autoincremental, por lo que el id se
+    asigna a mano. Para evitar que dos guardados concurrentes (autosave de dos
+    pestañas/usuarios) borren y recreen pisándose entre sí:
+    - Se bloquea la fila del padre (select_for_update) para serializar los
+      guardados sobre la misma entidad.
+    - Todo el borrar+recrear ocurre en una transacción: o se guarda completo
+      o no se toca nada.
+    - Ante colisión de id con un guardado sobre otra entidad, se reintenta.
+    """
+    for intento in range(3):
+        try:
+            with transaction.atomic():
+                parent_obj.__class__.objects.select_for_update().get(pk=parent_obj.pk)
+                model.objects.filter(**{parent_field: parent_obj}).delete()
+                max_id = model.objects.aggregate(Max('id'))['id__max'] or 0
+                objetos = [
+                    model(id=max_id + offset, **{parent_field: parent_obj}, **fila)
+                    for offset, fila in enumerate(filas, start=1)
+                ]
+                model.objects.bulk_create(objetos)
+            return len(objetos)
+        except IntegrityError:
+            if intento == 2:
+                raise
+    return 0
 
 
 def _build_current_querystring(request, allowed_keys=None):
@@ -207,8 +253,7 @@ def extrusora_create(request):
     form = ExtrusoraForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Extrusora)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Extrusora)
         messages.success(request, 'Extrusora creada correctamente.')
         return redirect('config-extrusoras')
     return render(request, 'pricing/config/extrusora_form.html', {'form': form, 'titulo': 'Nueva Extrusora', 'cancel_url': 'config-extrusoras'})
@@ -264,8 +309,7 @@ def linea_create(request):
     form = LineaForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Linea)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Linea)
         messages.success(request, 'Línea creada correctamente.')
         return redirect('config-lineas')
     return render(request, 'pricing/config/linea_form.html', {'form': form, 'titulo': 'Nueva Línea', 'cancel_url': 'config-lineas'})
@@ -322,8 +366,7 @@ def producto_create(request):
     form = ProductoForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Producto)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Producto)
         messages.success(request, 'Producto creado correctamente.')
         return redirect('config-productos')
     return render(request, 'pricing/config/producto_form.html', {'form': form, 'titulo': 'Nuevo Producto', 'cancel_url': 'config-productos'})
@@ -381,33 +424,40 @@ def marco_create(request):
     form = MarcoForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Marco)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Marco)
         
         # Guardar fórmulas si existen
         if 'formula_cantidad_0' in request.POST:
             from .models import DespiecePerfilesMarco
-            index = 0
-            while f'formula_cantidad_{index}' in request.POST:
-                variable = request.POST.get(f'formula_variable_{index}')
-                operador = request.POST.get(f'formula_operador_{index}')
-                valor = request.POST.get(f'formula_valor_{index}')
-                formula_texto = f"{variable} {operador} {valor}"
-                
-                try:
-                    max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
-                    DespiecePerfilesMarco.objects.create(
-                        id=max_id + 1,
-                        marco=obj,
-                        formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                        formula_perfil=formula_texto,
-                        angulo=request.POST.get(f'formula_angulo_{index}'),
-                        perfil=request.POST.get(f'formula_perfil_{index}')
-                    )
-                except Exception as e:
-                    messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
-                    break
-                index += 1
+            try:
+                filas = []
+                fila_incompleta = None
+                index = 0
+                while f'formula_cantidad_{index}' in request.POST:
+                    variable = (request.POST.get(f'formula_variable_{index}') or '').strip()
+                    operador = (request.POST.get(f'formula_operador_{index}') or '').strip()
+                    valor = (request.POST.get(f'formula_valor_{index}') or '').strip()
+                    cantidad = (request.POST.get(f'formula_cantidad_{index}') or '').strip()
+                    angulo = (request.POST.get(f'formula_angulo_{index}') or '').strip()
+                    perfil = (request.POST.get(f'formula_perfil_{index}') or '').strip()
+
+                    if perfil and cantidad and valor:
+                        filas.append({
+                            'formula_cantidad': cantidad,
+                            'formula_perfil': f"{variable} {operador} {valor}",
+                            'angulo': angulo,
+                            'perfil': perfil,
+                        })
+                    elif perfil or valor:
+                        fila_incompleta = index + 1
+                        break
+                    index += 1
+                if fila_incompleta:
+                    messages.warning(request, f'Fórmulas NO guardadas: la fila {fila_incompleta} está incompleta.')
+                else:
+                    _reemplazar_filas_despiece(DespiecePerfilesMarco, 'marco', obj, filas)
+            except Exception as e:
+                messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
         
         messages.success(request, 'Marco creado correctamente.')
         return redirect('config-marcos')
@@ -439,23 +489,19 @@ def marco_edit(request, pk):
         # AJAX: guardar solo accesorios
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and 'save_accesorios' in request.POST:
             try:
-                DespieceAccesoriosMarco.objects.filter(marco=obj).delete()
+                filas = []
                 index = 0
-                guardadas = 0
                 while f'accesorio_{index}' in request.POST:
                     accesorio = request.POST.get(f'accesorio_{index}')
                     obligatorio = 'Si' if request.POST.get(f'obligatorio_{index}') == 'on' else 'No'
                     if accesorio:
-                        max_id = DespieceAccesoriosMarco.objects.aggregate(Max('id'))['id__max'] or 0
-                        DespieceAccesoriosMarco.objects.create(
-                            id=max_id + 1,
-                            marco=obj,
-                            accesorio=accesorio,
-                            formula_cantidad='1',
-                            obligatorio=obligatorio,
-                        )
-                        guardadas += 1
+                        filas.append({
+                            'accesorio': accesorio,
+                            'formula_cantidad': '1',
+                            'obligatorio': obligatorio,
+                        })
                     index += 1
+                guardadas = _reemplazar_filas_despiece(DespieceAccesoriosMarco, 'marco', obj, filas)
                 return JsonResponse({'ok': True, 'guardadas': guardadas})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
@@ -466,24 +512,32 @@ def marco_edit(request, pk):
             # Eliminar fórmulas existentes y crear nuevas
             if 'formula_cantidad_0' in request.POST:
                 try:
-                    DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+                    filas = []
+                    fila_incompleta = None
                     index = 0
                     while f'formula_cantidad_{index}' in request.POST:
-                        variable = request.POST.get(f'formula_variable_{index}')
-                        operador = request.POST.get(f'formula_operador_{index}')
-                        valor = request.POST.get(f'formula_valor_{index}')
-                        formula_texto = f"{variable} {operador} {valor}"
+                        variable = (request.POST.get(f'formula_variable_{index}') or '').strip()
+                        operador = (request.POST.get(f'formula_operador_{index}') or '').strip()
+                        valor = (request.POST.get(f'formula_valor_{index}') or '').strip()
+                        cantidad = (request.POST.get(f'formula_cantidad_{index}') or '').strip()
+                        angulo = (request.POST.get(f'formula_angulo_{index}') or '').strip()
+                        perfil = (request.POST.get(f'formula_perfil_{index}') or '').strip()
 
-                        max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
-                        DespiecePerfilesMarco.objects.create(
-                            id=max_id + 1,
-                            marco=obj,
-                            formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                            formula_perfil=formula_texto,
-                            angulo=request.POST.get(f'formula_angulo_{index}'),
-                            perfil=request.POST.get(f'formula_perfil_{index}')
-                        )
+                        if perfil and cantidad and valor:
+                            filas.append({
+                                'formula_cantidad': cantidad,
+                                'formula_perfil': f"{variable} {operador} {valor}",
+                                'angulo': angulo,
+                                'perfil': perfil,
+                            })
+                        elif perfil or valor:
+                            fila_incompleta = index + 1
+                            break
                         index += 1
+                    if fila_incompleta:
+                        messages.warning(request, f'Fórmulas NO guardadas: la fila {fila_incompleta} está incompleta. Se conservaron las fórmulas anteriores.')
+                    else:
+                        _reemplazar_filas_despiece(DespiecePerfilesMarco, 'marco', obj, filas)
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
 
@@ -522,27 +576,32 @@ def marco_formulas_guardar(request, pk):
     from .models import DespiecePerfilesMarco
 
     try:
-        DespiecePerfilesMarco.objects.filter(marco=obj).delete()
+        filas = []
         index = 0
-        guardadas = 0
         while f'formula_cantidad_{index}' in request.POST:
-            variable = request.POST.get(f'formula_variable_{index}', '')
-            operador = request.POST.get(f'formula_operador_{index}', '')
-            valor = request.POST.get(f'formula_valor_{index}', '')
-            formula_texto = f"{variable} {operador} {valor}"
+            variable = (request.POST.get(f'formula_variable_{index}') or '').strip()
+            operador = (request.POST.get(f'formula_operador_{index}') or '').strip()
+            valor = (request.POST.get(f'formula_valor_{index}') or '').strip()
+            cantidad = (request.POST.get(f'formula_cantidad_{index}') or '').strip()
+            angulo = (request.POST.get(f'formula_angulo_{index}') or '').strip()
+            perfil = (request.POST.get(f'formula_perfil_{index}') or '').strip()
 
-            max_id = DespiecePerfilesMarco.objects.aggregate(Max('id'))['id__max'] or 0
-            DespiecePerfilesMarco.objects.create(
-                id=max_id + 1,
-                marco=obj,
-                formula_cantidad=request.POST.get(f'formula_cantidad_{index}'),
-                formula_perfil=formula_texto,
-                angulo=request.POST.get(f'formula_angulo_{index}'),
-                perfil=request.POST.get(f'formula_perfil_{index}'),
-            )
-            guardadas += 1
+            if perfil and cantidad and valor:
+                filas.append({
+                    'formula_cantidad': cantidad,
+                    'formula_perfil': f"{variable} {operador} {valor}",
+                    'angulo': angulo,
+                    'perfil': perfil,
+                })
+            elif perfil or valor:
+                # Fila a medio completar: no tocar nada para no perder datos
+                return JsonResponse(
+                    {'error': f'Fila {index + 1} incompleta (perfil, cantidad y valor son obligatorios). No se guardó nada.'},
+                    status=400,
+                )
             index += 1
 
+        guardadas = _reemplazar_filas_despiece(DespiecePerfilesMarco, 'marco', obj, filas)
         return JsonResponse({'ok': True, 'guardadas': guardadas})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -585,9 +644,8 @@ def hoja_create(request):
     form = HojaForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Hoja)
         obj.cantidad = 1  # Valor por defecto
-        obj.save()
+        _guardar_nuevo_con_id(obj, Hoja)
         messages.success(request, 'Hoja creada correctamente.')
         return redirect('config-hoja-edit', pk=obj.id)
     perfiles_json = json.dumps(list(Perfil.objects.exclude(bloqueado='Si').filter(tipo_perfil='Hojas').values('codigo', 'descripcion')))
@@ -711,24 +769,20 @@ def hoja_edit(request, pk):
                         obj.id,
                         len(accesorios_recibidos),
                     )
-                    DespieceAccesoriosHoja.objects.filter(hoja=obj).delete()
+                    filas = []
                     index = 0
-                    guardadas = 0
                     while f'accesorio_{index}' in request.POST:
                         accesorio = request.POST.get(f'accesorio_{index}')
                         obligatorio = 'Si' if request.POST.get(f'obligatorio_{index}') == 'on' else 'No'
-                        
+
                         if accesorio:
-                            max_id = DespieceAccesoriosHoja.objects.aggregate(Max('id'))['id__max'] or 0
-                            DespieceAccesoriosHoja.objects.create(
-                                id=max_id + 1,
-                                hoja=obj,
-                                accesorio=accesorio,
-                                formula_cantidad='1',
-                                obligatorio=obligatorio
-                            )
-                            guardadas += 1
+                            filas.append({
+                                'accesorio': accesorio,
+                                'formula_cantidad': '1',
+                                'obligatorio': obligatorio,
+                            })
                         index += 1
+                    guardadas = _reemplazar_filas_despiece(DespieceAccesoriosHoja, 'hoja', obj, filas)
                     logger.warning(
                         "save_accesorios guardado hoja_id=%s guardadas=%s",
                         obj.id,
@@ -745,27 +799,29 @@ def hoja_edit(request, pk):
             
             # Guardar fórmulas
             try:
-                DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
+                filas = []
                 index = 0
-                guardadas = 0
                 while f'perfil_{index}' in request.POST:
-                    perfil = request.POST.get(f'perfil_{index}')
-                    cantidad = request.POST.get(f'cantidad_{index}')
-                    formula = request.POST.get(f'formula_{index}')
-                    angulo = request.POST.get(f'angulo_{index}')
-                    
+                    perfil = (request.POST.get(f'perfil_{index}') or '').strip()
+                    cantidad = (request.POST.get(f'cantidad_{index}') or '').strip()
+                    formula = (request.POST.get(f'formula_{index}') or '').strip()
+                    angulo = (request.POST.get(f'angulo_{index}') or '').strip()
+
                     if perfil and cantidad and formula:
-                        max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
-                        DespiecePerfilesHoja.objects.create(
-                            id=max_id + 1,
-                            hoja=obj,
-                            perfil=perfil,
-                            formula_cantidad=cantidad,
-                            formula_perfil=formula,
-                            angulo=angulo or ''
+                        filas.append({
+                            'perfil': perfil,
+                            'formula_cantidad': cantidad,
+                            'formula_perfil': formula,
+                            'angulo': angulo or '',
+                        })
+                    elif perfil or formula:
+                        # Fila a medio completar: no tocar nada para no perder datos
+                        return JsonResponse(
+                            {'error': f'Fila {index + 1} incompleta (perfil, cantidad y fórmula son obligatorios). No se guardó nada.'},
+                            status=400,
                         )
-                        guardadas += 1
                     index += 1
+                guardadas = _reemplazar_filas_despiece(DespiecePerfilesHoja, 'hoja', obj, filas)
                 return JsonResponse({'ok': True, 'guardadas': guardadas})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
@@ -777,47 +833,50 @@ def hoja_edit(request, pk):
             # Guardar fórmulas
             if 'perfil_0' in request.POST:
                 try:
-                    DespiecePerfilesHoja.objects.filter(hoja=obj).delete()
+                    filas = []
+                    fila_incompleta = None
                     index = 0
                     while f'perfil_{index}' in request.POST:
-                        perfil = request.POST.get(f'perfil_{index}')
-                        cantidad = request.POST.get(f'cantidad_{index}')
-                        formula = request.POST.get(f'formula_{index}')
-                        angulo = request.POST.get(f'angulo_{index}')
-                        
+                        perfil = (request.POST.get(f'perfil_{index}') or '').strip()
+                        cantidad = (request.POST.get(f'cantidad_{index}') or '').strip()
+                        formula = (request.POST.get(f'formula_{index}') or '').strip()
+                        angulo = (request.POST.get(f'angulo_{index}') or '').strip()
+
                         if perfil and cantidad and formula:
-                            max_id = DespiecePerfilesHoja.objects.aggregate(Max('id'))['id__max'] or 0
-                            DespiecePerfilesHoja.objects.create(
-                                id=max_id + 1,
-                                hoja=obj,
-                                perfil=perfil,
-                                formula_cantidad=cantidad,
-                                formula_perfil=formula,
-                                angulo=angulo or ''
-                            )
+                            filas.append({
+                                'perfil': perfil,
+                                'formula_cantidad': cantidad,
+                                'formula_perfil': formula,
+                                'angulo': angulo or '',
+                            })
+                        elif perfil or formula:
+                            fila_incompleta = index + 1
+                            break
                         index += 1
+                    if fila_incompleta:
+                        messages.warning(request, f'Fórmulas NO guardadas: la fila {fila_incompleta} está incompleta. Se conservaron las fórmulas anteriores.')
+                    else:
+                        _reemplazar_filas_despiece(DespiecePerfilesHoja, 'hoja', obj, filas)
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
             
             # Guardar accesorios
             if 'accesorio_0' in request.POST:
                 try:
-                    DespieceAccesoriosHoja.objects.filter(hoja=obj).delete()
+                    filas = []
                     index = 0
                     while f'accesorio_{index}' in request.POST:
                         accesorio = request.POST.get(f'accesorio_{index}')
                         obligatorio = 'Si' if f'obligatorio_{index}' in request.POST else 'No'
-                        
+
                         if accesorio:
-                            max_id = DespieceAccesoriosHoja.objects.aggregate(Max('id'))['id__max'] or 0
-                            DespieceAccesoriosHoja.objects.create(
-                                id=max_id + 1,
-                                hoja=obj,
-                                accesorio=accesorio,
-                                formula_cantidad='1',
-                                obligatorio=obligatorio
-                            )
+                            filas.append({
+                                'accesorio': accesorio,
+                                'formula_cantidad': '1',
+                                'obligatorio': obligatorio,
+                            })
                         index += 1
+                    _reemplazar_filas_despiece(DespieceAccesoriosHoja, 'hoja', obj, filas)
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar los accesorios: {str(e)}')
             
@@ -888,8 +947,7 @@ def interior_create(request):
     form = InteriorForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Interior)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Interior)
         messages.success(request, 'Interior creado correctamente.')
         return redirect('config-interiores')
     return render(request, 'pricing/config/interior_form.html', {'form': form, 'titulo': 'Nuevo Interior', 'cancel_url': 'config-interiores'})
@@ -1128,12 +1186,14 @@ def vidrio_edit(request, pk):
                 if hojas_invalidas:
                     return JsonResponse({'error': f'Hay hojas inválidas en la selección: {", ".join(str(h) for h in hojas_invalidas)}'}, status=400)
 
-                VidrioHoja.objects.filter(vidrio=obj).delete()
-                guardadas = 0
-                for hoja_id in hoja_ids:
-                    VidrioHoja.objects.create(vidrio=obj, hoja_id=hoja_id)
-                    guardadas += 1
-                return JsonResponse({'ok': True, 'guardadas': guardadas})
+                with transaction.atomic():
+                    Vidrio.objects.select_for_update().get(pk=obj.pk)
+                    VidrioHoja.objects.filter(vidrio=obj).delete()
+                    VidrioHoja.objects.bulk_create([
+                        VidrioHoja(vidrio=obj, hoja_id=hoja_id)
+                        for hoja_id in hoja_ids
+                    ])
+                return JsonResponse({'ok': True, 'guardadas': len(hoja_ids)})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
 
@@ -1188,8 +1248,7 @@ def tratamiento_create(request):
     form = TratamientoForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
-        obj.id = _next_id(Tratamiento)
-        obj.save()
+        _guardar_nuevo_con_id(obj, Tratamiento)
         messages.success(request, 'Tratamiento creado correctamente.')
         return redirect('config-tratamientos')
     return render(request, 'pricing/config/tratamiento_form.html', {'form': form, 'titulo': 'Nuevo Tratamiento', 'cancel_url': 'config-tratamientos'})

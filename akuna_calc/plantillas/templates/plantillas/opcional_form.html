@@ -257,6 +257,24 @@ const autosaveTimers = {
     accesorios: null,
 };
 
+// Evita guardados solapados: si hay uno en vuelo, encola el siguiente
+const autosaveEstado = {};
+function ejecutarGuardadoSerializado(clave, fn) {
+    const estado = autosaveEstado[clave] || (autosaveEstado[clave] = { enCurso: false, pendiente: false });
+    if (estado.enCurso) {
+        estado.pendiente = true;
+        return;
+    }
+    estado.enCurso = true;
+    fn().finally(() => {
+        estado.enCurso = false;
+        if (estado.pendiente) {
+            estado.pendiente = false;
+            ejecutarGuardadoSerializado(clave, fn);
+        }
+    });
+}
+
 function setSaveStatus(elementId, state) {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -280,7 +298,7 @@ function setSaveStatus(elementId, state) {
 function scheduleFormulasSave() {
     clearTimeout(autosaveTimers.formulas);
     setSaveStatus('estadoFormulasOpcional', 'saving');
-    autosaveTimers.formulas = setTimeout(() => guardarFormulasMosq(), 900);
+    autosaveTimers.formulas = setTimeout(() => ejecutarGuardadoSerializado('formulas', guardarFormulasMosq), 900);
 }
 
 function filtrarLineas(selectExtrusora) {
@@ -374,7 +392,7 @@ function guardarFormulasMosq() {
         formData.append(`formula_${index}`, row.querySelector('input[name="formula"]').value);
         formData.append(`perfil_${index}`, row.querySelector('select[name="producto"]').value);
     });
-    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    return fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
         if (data.ok) {
@@ -429,13 +447,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function scheduleFormulasSave() {
     clearTimeout(autosaveTimers.formulas);
     setSaveStatus('estadoFormulasOpcional', 'saving');
-    autosaveTimers.formulas = setTimeout(() => guardarFormulas(), 900);
+    autosaveTimers.formulas = setTimeout(() => ejecutarGuardadoSerializado('formulas', guardarFormulas), 900);
 }
 
 function scheduleAccesoriosSave() {
     clearTimeout(autosaveTimers.accesorios);
     setSaveStatus('estadoAccesoriosOpcional', 'saving');
-    autosaveTimers.accesorios = setTimeout(() => guardarAccesorios(), 900);
+    autosaveTimers.accesorios = setTimeout(() => ejecutarGuardadoSerializado('accesorios', guardarAccesorios), 900);
 }
 
 function filtrarPerfilesPorLinea() {
@@ -509,7 +527,7 @@ function guardarFormulas() {
         formData.append(`formula_${index}`, row.querySelector('input[name="formula"]').value);
         formData.append(`perfil_${index}`, row.querySelector('select[name="perfil"]').value);
     });
-    fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    return fetch('{% url "plantillas:opcional_formulas_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
         if (data.ok) {
@@ -591,7 +609,7 @@ function guardarAccesorios() {
         formData.append(`cantidad_acc_${index}`, row.querySelector('input[name="cantidad_acc"]').value);
         formData.append(`accesorio_${index}`, row.querySelector('select[name="accesorio"]').value);
     });
-    fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', { method: 'POST', body: formData })
+    return fetch('{% url "plantillas:opcional_accesorios_guardar" opcional.pk %}', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
         if (data.ok) {

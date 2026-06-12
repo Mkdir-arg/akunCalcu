@@ -174,6 +174,7 @@ def opcional_formulas_guardar(request, pk):
             index += 1
 
         with transaction.atomic():
+            OpcionalFabrica.objects.select_for_update().get(pk=opcional.pk)
             FormulaOpcional.objects.filter(opcional=opcional).delete()
             FormulaOpcional.objects.bulk_create(nuevas_formulas)
         
@@ -192,26 +193,28 @@ def opcional_accesorios_guardar(request, pk):
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
     
     try:
-        AccesorioOpcional.objects.filter(opcional=opcional).delete()
-        
+        nuevos_accesorios = []
         index = 0
-        guardadas = 0
         while f'cantidad_acc_{index}' in request.POST:
             cantidad = request.POST.get(f'cantidad_acc_{index}', '').strip()
             accesorio = request.POST.get(f'accesorio_{index}', '').strip()
-            
+
             if cantidad and accesorio:
-                AccesorioOpcional.objects.create(
+                nuevos_accesorios.append(AccesorioOpcional(
                     opcional=opcional,
                     cantidad=cantidad,
                     accesorio=accesorio,
                     orden=index
-                )
-                guardadas += 1
-            
+                ))
+
             index += 1
-        
-        return JsonResponse({'ok': True, 'guardadas': guardadas})
+
+        with transaction.atomic():
+            OpcionalFabrica.objects.select_for_update().get(pk=opcional.pk)
+            AccesorioOpcional.objects.filter(opcional=opcional).delete()
+            AccesorioOpcional.objects.bulk_create(nuevos_accesorios)
+
+        return JsonResponse({'ok': True, 'guardadas': len(nuevos_accesorios)})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -226,29 +229,31 @@ def opcional_relaciones_guardar(request, pk):
     opcional = get_object_or_404(OpcionalFabrica, pk=pk)
     
     try:
-        RelacionProductoOpcional.objects.filter(opcional=opcional).delete()
-        
+        nuevas_relaciones = []
         index = 0
-        guardadas = 0
         while f'extrusora_{index}' in request.POST:
             extrusora_id = request.POST.get(f'extrusora_{index}', '').strip()
             linea_id = request.POST.get(f'linea_{index}', '').strip()
             producto_id = request.POST.get(f'producto_{index}', '').strip()
             cantidad = request.POST.get(f'cantidad_{index}', '1').strip()
-            
+
             if extrusora_id and linea_id and producto_id:
-                RelacionProductoOpcional.objects.create(
+                nuevas_relaciones.append(RelacionProductoOpcional(
                     opcional=opcional,
                     extrusora_id=int(extrusora_id),
                     linea_id=int(linea_id),
                     producto_id=int(producto_id),
                     cantidad=int(cantidad) if cantidad else 1,
                     orden=index
-                )
-                guardadas += 1
-            
+                ))
+
             index += 1
-        
-        return JsonResponse({'ok': True, 'guardadas': guardadas})
+
+        with transaction.atomic():
+            OpcionalFabrica.objects.select_for_update().get(pk=opcional.pk)
+            RelacionProductoOpcional.objects.filter(opcional=opcional).delete()
+            RelacionProductoOpcional.objects.bulk_create(nuevas_relaciones)
+
+        return JsonResponse({'ok': True, 'guardadas': len(nuevas_relaciones)})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
