@@ -879,7 +879,38 @@ def hoja_edit(request, pk):
                     _reemplazar_filas_despiece(DespieceAccesoriosHoja, 'hoja', obj, filas)
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar los accesorios: {str(e)}')
-            
+
+            # Guardar fórmulas de vidrio
+            relacion_ids = request.POST.getlist('relacion_id')
+            vidrio_codigos = request.POST.getlist('vidrio_codigo')
+            rebaje_anchos = request.POST.getlist('rebaje_ancho')
+            rebaje_altos = request.POST.getlist('rebaje_alto')
+            if vidrio_codigos:
+                try:
+                    relaciones_existentes = {
+                        str(r.id): r
+                        for r in VidrioHoja.objects.filter(hoja_id=obj.id)
+                    }
+                    for i, vidrio_codigo in enumerate(vidrio_codigos):
+                        vidrio_codigo = vidrio_codigo.strip()
+                        if not vidrio_codigo:
+                            continue
+                        relacion_id = (relacion_ids[i] if i < len(relacion_ids) else '').strip()
+                        rebaje_ancho = (rebaje_anchos[i] if i < len(rebaje_anchos) else '').strip()
+                        rebaje_alto = (rebaje_altos[i] if i < len(rebaje_altos) else '').strip()
+                        if relacion_id:
+                            relacion = relaciones_existentes.get(relacion_id)
+                            if relacion:
+                                relacion.rebaje_ancho = rebaje_ancho
+                                relacion.rebaje_alto = rebaje_alto
+                                relacion.save(update_fields=['rebaje_ancho', 'rebaje_alto'])
+                        else:
+                            VidrioHoja.objects.filter(
+                                hoja=obj, vidrio_id=vidrio_codigo
+                            ).update(rebaje_ancho=rebaje_ancho, rebaje_alto=rebaje_alto)
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar las fórmulas de vidrio: {str(e)}')
+
             messages.success(request, 'Hoja actualizada correctamente.')
             return redirect('config-hojas')
     

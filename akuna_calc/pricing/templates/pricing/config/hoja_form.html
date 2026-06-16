@@ -30,7 +30,6 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-slate-800">Fórmulas de Perfiles</h2>
                     <div class="flex gap-2">
-                        <span id="estadoFormulas" class="text-sm text-slate-500 self-center">Guardado</span>
                         <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
                         </button>
@@ -56,7 +55,6 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-slate-800">Accesorios</h2>
                     <div class="flex gap-2">
-                        <span id="estadoAccesorios" class="text-sm text-slate-500 self-center">Guardado</span>
                         <button type="button" onclick="agregarAccesorio()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
                         </button>
@@ -84,9 +82,6 @@
                         <h2 class="text-xl font-bold text-slate-800">Fórmulas de Vidrio</h2>
                         <p class="text-sm text-slate-500 mt-1">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
                     </div>
-                    {% if vidrios_relacionados %}
-                    <span id="estadoVidrio" class="text-sm text-slate-500 self-center">Guardado</span>
-                    {% endif %}
                 </div>
                 {% if vidrios_relacionados %}
                 <div class="overflow-x-auto">
@@ -235,66 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const perfiles = {{ perfiles_json|safe }};
 let formulaIndex = 0;
-const autosaveTimers = {
-    formulas: null,
-    accesorios: null,
-    vidrio: null,
-};
-
-// Evita guardados solapados: si hay uno en vuelo, encola el siguiente
-const autosaveEstado = {};
-function ejecutarGuardadoSerializado(clave, fn) {
-    const estado = autosaveEstado[clave] || (autosaveEstado[clave] = { enCurso: false, pendiente: false });
-    if (estado.enCurso) {
-        estado.pendiente = true;
-        return;
-    }
-    estado.enCurso = true;
-    fn().finally(() => {
-        estado.enCurso = false;
-        if (estado.pendiente) {
-            estado.pendiente = false;
-            ejecutarGuardadoSerializado(clave, fn);
-        }
-    });
-}
-
-function setSaveStatus(elementId, state) {
-    const element = document.getElementById(elementId);
-    if (!element) {
-        return;
-    }
-    if (state === 'saving') {
-        element.textContent = 'Guardando...';
-        element.className = 'text-sm text-amber-600 self-center';
-        return;
-    }
-    if (state === 'saved') {
-        element.textContent = 'Guardado';
-        element.className = 'text-sm text-emerald-600 self-center';
-        return;
-    }
-    element.textContent = 'Error al guardar';
-    element.className = 'text-sm text-red-600 self-center';
-}
-
-function scheduleFormulasSave() {
-    clearTimeout(autosaveTimers.formulas);
-    setSaveStatus('estadoFormulas', 'saving');
-    autosaveTimers.formulas = setTimeout(() => ejecutarGuardadoSerializado('formulas', guardarFormulas), 900);
-}
-
-function scheduleAccesoriosSave() {
-    clearTimeout(autosaveTimers.accesorios);
-    setSaveStatus('estadoAccesorios', 'saving');
-    autosaveTimers.accesorios = setTimeout(() => ejecutarGuardadoSerializado('accesorios', guardarAccesorios), 900);
-}
-
-function scheduleVidrioSave() {
-    clearTimeout(autosaveTimers.vidrio);
-    setSaveStatus('estadoVidrio', 'saving');
-    autosaveTimers.vidrio = setTimeout(() => ejecutarGuardadoSerializado('vidrio', guardarVidrioFormula), 900);
-}
 
 // Cargar fórmulas existentes
 const formulasIniciales = [
@@ -372,12 +307,10 @@ function _agregarFila(datos) {
 
 function agregarFormula() {
     _agregarFila({});
-    scheduleFormulasSave();
 }
 
 function eliminarFormula(btn) {
     btn.closest('tr').remove();
-    scheduleFormulasSave();
 }
 
 // Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
@@ -394,42 +327,6 @@ document.getElementById('hojaForm').addEventListener('submit', function() {
     });
 });
 
-function guardarFormulas() {
-    // Re-numerar antes de recolectar
-    document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
-        row.querySelectorAll('[name]').forEach(input => {
-            const baseName = input.name.replace(/_\d+$/, '');
-            input.name = `${baseName}_${idx}`;
-        });
-    });
-
-    const formData = new FormData();
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
-        row.querySelectorAll('[name]').forEach(input => {
-            formData.append(input.name, input.value);
-        });
-    });
-
-    return fetch(window.location.href, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData,
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.ok) {
-            setSaveStatus('estadoFormulas', 'saved');
-        } else {
-            setSaveStatus('estadoFormulas', 'error');
-        }
-    })
-    .catch(() => {
-        setSaveStatus('estadoFormulas', 'error');
-    });
-}
 
 let accesorioIndex = 0;
 let accesorios = [];
@@ -488,160 +385,11 @@ fetch('/pricing/api/pricing/accesorios/?tipo=hoja')
 
 function agregarAccesorio() {
     _agregarFilaAccesorio({});
-    scheduleAccesoriosSave();
 }
 
 function eliminarAccesorio(btn) {
     btn.closest('tr').remove();
-    scheduleAccesoriosSave();
 }
 
-function guardarVidrioFormula() {
-    const formData = new FormData();
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    formData.append('save_vidrio_formula', '1');
-    document.querySelectorAll('.vidrio-formula-row').forEach((row, index) => {
-        formData.append(`relacion_id_${index}`, row.querySelector('[name="relacion_id"]').value);
-        formData.append(`vidrio_codigo_${index}`, row.querySelector('[name="vidrio_codigo"]').value);
-        formData.append(`rebaje_ancho_${index}`, row.querySelector('[name="rebaje_ancho"]').value);
-        formData.append(`rebaje_alto_${index}`, row.querySelector('[name="rebaje_alto"]').value);
-    });
-
-    return fetch(window.location.href, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData,
-    })
-    .then(async r => {
-        const text = await r.text();
-        let data = {};
-        try { data = text ? JSON.parse(text) : {}; } catch { throw new Error(`Respuesta inválida (HTTP ${r.status}).`); }
-        if (!r.ok || !data.ok) throw new Error(data.error || `Error HTTP ${r.status}`);
-        return data;
-    })
-    .then(() => {
-        setSaveStatus('estadoVidrio', 'saved');
-    })
-    .catch(() => {
-        setSaveStatus('estadoVidrio', 'error');
-    });
-}
-
-function guardarAccesorios() {
-    // Re-numerar antes de recolectar
-    document.querySelectorAll('#accesoriosBody tr').forEach((row, idx) => {
-        row.querySelectorAll('[name]').forEach(input => {
-            const baseName = input.name.replace(/_\d+$/, '');
-            input.name = `${baseName}_${idx}`;
-        });
-    });
-
-    const formData = new FormData();
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    formData.append('save_accesorios', '1');
-    document.querySelectorAll('#accesoriosBody tr').forEach((row, idx) => {
-        row.querySelectorAll('[name]').forEach(input => {
-            if (input.type === 'checkbox') {
-                formData.append(input.name, input.checked ? 'on' : '');
-            } else {
-                formData.append(input.name, input.value);
-            }
-        });
-    });
-
-    return fetch(window.location.href, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData,
-    })
-    .then(async (r) => {
-        const text = await r.text();
-        let data = {};
-        try {
-            data = text ? JSON.parse(text) : {};
-        } catch (e) {
-            throw new Error(`Respuesta inválida del servidor (HTTP ${r.status}).`);
-        }
-        if (!r.ok || !data.ok) {
-            throw new Error(data.error || `Error HTTP ${r.status} al guardar.`);
-        }
-        return data;
-    })
-    .then(data => {
-        setSaveStatus('estadoAccesorios', 'saved');
-    })
-    .catch(() => {
-        setSaveStatus('estadoAccesorios', 'error');
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const formulasBody = document.getElementById('formulasBody');
-    const accesoriosBody = document.getElementById('accesoriosBody');
-    const vidriosFormulaBody = document.getElementById('vidriosFormulaBody');
-
-    if (formulasBody) {
-        formulasBody.addEventListener('input', function() {
-            scheduleFormulasSave();
-        });
-        formulasBody.addEventListener('change', function() {
-            scheduleFormulasSave();
-        });
-    }
-
-    if (accesoriosBody) {
-        accesoriosBody.addEventListener('input', function() {
-            scheduleAccesoriosSave();
-        });
-        accesoriosBody.addEventListener('change', function(e) {
-            const target = e.target;
-            if (target.classList.contains('js-accesorio-select')) {
-                const previousValue = target.dataset.previousValue || '';
-                const newValue = target.value;
-                if (previousValue && newValue && newValue !== previousValue) {
-                    const previousText = target.dataset.previousText || previousValue;
-                    const newText = target.options[target.selectedIndex] ? target.options[target.selectedIndex].text : newValue;
-                    Swal.fire({
-                        title: '¿Reemplazar accesorio?',
-                        html: `<p>Tenés cargado <strong>${previousText}</strong>.</p><p>¿Querés reemplazarlo por <strong>${newText}</strong>?</p>`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc2626',
-                        cancelButtonColor: '#6b7280',
-                        confirmButtonText: 'Sí, reemplazar',
-                        cancelButtonText: 'Cancelar'
-                    }).then(result => {
-                        if (result.isConfirmed) {
-                            target.dataset.previousValue = newValue;
-                            target.dataset.previousText = newText;
-                            scheduleAccesoriosSave();
-                        } else {
-                            if (window.jQuery) {
-                                window.jQuery(target).val(previousValue).trigger('change.select2');
-                            } else {
-                                target.value = previousValue;
-                            }
-                        }
-                    });
-                    return;
-                }
-                target.dataset.previousValue = newValue;
-                target.dataset.previousText = target.options[target.selectedIndex] ? target.options[target.selectedIndex].text : newValue;
-            }
-            scheduleAccesoriosSave();
-        });
-    }
-
-    if (vidriosFormulaBody) {
-        vidriosFormulaBody.addEventListener('input', function() {
-            scheduleVidrioSave();
-        });
-        vidriosFormulaBody.addEventListener('change', function() {
-            scheduleVidrioSave();
-        });
-    }
-});
 </script>
 {% endblock %}
