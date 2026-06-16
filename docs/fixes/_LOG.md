@@ -99,3 +99,19 @@
 **Causa raíz**: El template no conocía si el rol seleccionado tenía `acceso_total`, por lo que siempre renderizaba la sección de permisos. También todos los grupos se apilaban en una sola vista sin paginación ni navegación por secciones.
 **Solución**: Se agregó al formulario un estado explícito para detectar roles con acceso total y se usó en la UI para ocultar la configuración manual cuando corresponde. La grilla de permisos se reorganizó en solapas por módulo para mostrar un solo grupo a la vez y reducir la altura total de la página.
 **Archivos modificados**: `akuna_calc/usuarios/forms.py`, `akuna_calc/usuarios/templates/usuarios/user_form.html`, `akuna_calc/usuarios/tests.py`
+
+---
+
+### FIX-008 — Eliminar autosave en pricing/config (reemplazar por guardado manual)
+**Fecha**: 2026-06-16
+**Severidad**: Alta
+**Feature afectada**: Módulo pricing/config
+
+**Síntoma**: Las fórmulas de vidrio (rebaje_alto / rebaje_ancho) en `/pricing/config/hojas/` aparecían con valores NULL en la BD aunque en el frontend se mostraban datos. El autosave se disparaba ante cualquier `input`/`change` con debounce 900ms, causando que campos no terminados de tipear (o no confirmados) sobreescribieran la BD.
+**Causa raíz**: El autosave AJAX en `hoja_form.html`, `marco_form.html` y `vidrio_form.html` se activaba por eventos del DOM incluyendo el simple foco en un campo. Los campos vacíos (placeholder) eran enviados como strings vacíos, pisando valores existentes con NULL.
+**Solución**: Se eliminó completamente el autosave (timers, event listeners, funciones AJAX guardar*) de los 3 templates. El botón "Guardar" existente ya procesaba fórmulas y accesorios. Se agregó procesamiento de fórmulas de vidrio al POST normal de `hoja_edit`, accesorios al POST normal de `marco_edit`, y relaciones de hojas al POST normal de `vidrio_edit`. La sección de hojas en `vidrio_form.html` se movió dentro del `<form>` principal.
+**Archivos modificados**:
+- `akuna_calc/pricing/templates/pricing/config/hoja_form.html`
+- `akuna_calc/pricing/templates/pricing/config/marco_form.html`
+- `akuna_calc/pricing/templates/pricing/config/vidrio_form.html`
+- `akuna_calc/pricing/config_views.py`

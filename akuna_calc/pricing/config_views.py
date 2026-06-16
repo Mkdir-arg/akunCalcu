@@ -541,6 +541,25 @@ def marco_edit(request, pk):
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
 
+            # Guardar accesorios
+            if 'accesorio_0' in request.POST:
+                try:
+                    filas = []
+                    index = 0
+                    while f'accesorio_{index}' in request.POST:
+                        accesorio = request.POST.get(f'accesorio_{index}')
+                        obligatorio = 'Si' if request.POST.get(f'obligatorio_{index}') == 'on' else 'No'
+                        if accesorio:
+                            filas.append({
+                                'accesorio': accesorio,
+                                'formula_cantidad': '1',
+                                'obligatorio': obligatorio,
+                            })
+                        index += 1
+                    _reemplazar_filas_despiece(DespieceAccesoriosMarco, 'marco', obj, filas)
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar los accesorios: {str(e)}')
+
             messages.success(request, 'Marco actualizado correctamente.')
             return redirect('config-marcos')
 
@@ -1230,6 +1249,27 @@ def vidrio_edit(request, pk):
 
         if form.is_valid():
             form.save()
+            # Guardar relaciones de hojas
+            hoja_ids_raw = request.POST.getlist('hoja')
+            if hoja_ids_raw:
+                try:
+                    hoja_ids = []
+                    hoja_ids_vistos = set()
+                    for hoja_id_raw in hoja_ids_raw:
+                        hoja_id_raw = hoja_id_raw.strip()
+                        if hoja_id_raw:
+                            hoja_id = int(hoja_id_raw)
+                            if hoja_id not in hoja_ids_vistos:
+                                hoja_ids.append(hoja_id)
+                                hoja_ids_vistos.add(hoja_id)
+                    with transaction.atomic():
+                        VidrioHoja.objects.filter(vidrio=obj).delete()
+                        VidrioHoja.objects.bulk_create([
+                            VidrioHoja(vidrio=obj, hoja_id=hoja_id)
+                            for hoja_id in hoja_ids
+                        ])
+                except Exception as e:
+                    messages.warning(request, f'No se pudieron guardar las relaciones de hojas: {str(e)}')
             messages.success(request, 'Vidrio actualizado correctamente.')
             return redirect('config-vidrios')
 
