@@ -567,10 +567,22 @@ function toggleConfiguracionObraFields() {
     const mostrarObraNueva = tipoObra === 'obra_nueva';
     const mostrarRenovacion = tipoObra === 'renovacion';
 
-    obraField.classList.toggle('hidden', !mostrarObraNueva);
-    renovacionField.classList.toggle('hidden', !mostrarRenovacion);
-    obraInput.disabled = !mostrarObraNueva;
-    renovacionInput.disabled = !mostrarRenovacion;
+    if (mostrarObraNueva) {
+        obraField.classList.remove('hidden');
+        renovacionField.classList.add('hidden');
+        obraInput.disabled = false;
+        renovacionInput.disabled = true;
+    } else if (mostrarRenovacion) {
+        obraField.classList.add('hidden');
+        renovacionField.classList.remove('hidden');
+        obraInput.disabled = true;
+        renovacionInput.disabled = false;
+    } else {
+        obraField.classList.remove('hidden');
+        renovacionField.classList.remove('hidden');
+        obraInput.disabled = false;
+        renovacionInput.disabled = false;
+    }
 }
 
 function verDetalleItemDesdeScript(scriptId, descripcion) {
@@ -676,11 +688,13 @@ function verDetalleItem(resultado, descripcion) {
     document.body.style.overflow = 'hidden';
 }
 
-const tipoObraSelect = document.getElementById('id_tipo_obra');
-if (tipoObraSelect) {
-    toggleConfiguracionObraFields();
-    tipoObraSelect.addEventListener('change', toggleConfiguracionObraFields);
-}
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoObraSelect = document.getElementById('id_tipo_obra');
+    if (tipoObraSelect) {
+        toggleConfiguracionObraFields();
+        tipoObraSelect.addEventListener('change', toggleConfiguracionObraFields);
+    }
+});
 
 function buildSection(title, icon, color, total, items) {
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
