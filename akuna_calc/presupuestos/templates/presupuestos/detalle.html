@@ -304,13 +304,13 @@
                             {{ configuracion_form.modalidad_sena }}
                             {% if configuracion_form.modalidad_sena.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-obra-nueva-field">
+                        <div id="recargo-obra-nueva-field" class="hidden">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
                             <p class="text-xs text-slate-400 mt-1">Se suma al total del presupuesto, pero no se detalla en el PDF.</p>
                             {% if configuracion_form.recargo_obra_nueva.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_obra_nueva.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-renovacion-field">
+                        <div id="recargo-renovacion-field" class="hidden">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_renovacion_unitario.label }}</label>
                             {{ configuracion_form.recargo_renovacion_unitario }}
                             <p class="text-xs text-slate-400 mt-1">Este valor se suma a cada unidad agregada al presupuesto.</p>
