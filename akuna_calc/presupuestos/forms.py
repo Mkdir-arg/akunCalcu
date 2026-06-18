@@ -9,9 +9,10 @@ from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 class PresupuestoForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['cliente', 'fecha_expiracion', 'notas']
+        fields = ['cliente', 'tipo_material', 'fecha_expiracion', 'notas']
         widgets = {
             'cliente': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'tipo_material': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'fecha_expiracion': forms.DateInput(
                 attrs={'type': 'date', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'},
                 format='%Y-%m-%d',

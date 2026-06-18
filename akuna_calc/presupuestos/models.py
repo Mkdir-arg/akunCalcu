@@ -26,6 +26,10 @@ class Presupuesto(models.Model):
         ('obra_nueva', 'Obra nueva'),
         ('renovacion', 'Renovación'),
     ]
+    TIPO_MATERIAL_CHOICES = [
+        ('aluminio', 'Aluminio'),
+        ('pvc', 'PVC'),
+    ]
     MODALIDAD_SENA_CHOICES = [
         ('50_50', '50% adelanto / 50% saldo'),
         ('70_30', '70% adelanto / 30% saldo'),
@@ -46,6 +50,12 @@ class Presupuesto(models.Model):
         verbose_name='Estado',
     )
     notas = models.TextField(blank=True, verbose_name='Notas')
+    tipo_material = models.CharField(
+        max_length=20,
+        choices=TIPO_MATERIAL_CHOICES,
+        default='aluminio',
+        verbose_name='Tipo de material',
+    )
     tipo_obra = models.CharField(
         max_length=20,
         choices=TIPO_OBRA_CHOICES,

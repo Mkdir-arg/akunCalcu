@@ -21,6 +21,11 @@
                     {% if form.cliente.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cliente.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.tipo_material.label }}</label>
+                    {{ form.tipo_material }}
+                    {% if form.tipo_material.errors %}<p class="text-red-600 text-xs mt-1">{{ form.tipo_material.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.fecha_expiracion.label }}</label>
                     {{ form.fecha_expiracion }}
                     {% if form.fecha_expiracion.errors %}<p class="text-red-600 text-xs mt-1">{{ form.fecha_expiracion.errors.0 }}</p>{% endif %}
