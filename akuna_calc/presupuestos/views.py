@@ -174,6 +174,9 @@ def agregar_item(request, pk):
             cantidad = max(1, int(request.POST.get('cantidad', 1)))
             valor_base = float(request.POST.get('valor', 0))
             margen_porcentaje = float(request.POST.get('margen_porcentaje', 30))
+            valor_en_dolares = request.POST.get('valor_en_dolares') == 'true'
+            valor_usd = float(request.POST.get('valor_usd', 0)) if valor_en_dolares else 0
+            cotizacion_usd = float(request.POST.get('cotizacion_usd', 0)) if valor_en_dolares else 0
             
             # Calcular precio con margen
             precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
@@ -185,6 +188,20 @@ def agregar_item(request, pk):
                 precio_unitario = precio_unitario_base + recargo_unitario
             
             orden = presupuesto.items.count()
+            resultado_json = {
+                'precio_unitario_base': precio_unitario_base,
+                'valor_base': valor_base,
+                'margen': margen_porcentaje,
+                'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
+                'tipo': 'pvc_simple'
+            }
+            
+            # Agregar información de USD si aplica
+            if valor_en_dolares:
+                resultado_json['valor_en_dolares'] = True
+                resultado_json['valor_usd'] = valor_usd
+                resultado_json['cotizacion_usd'] = cotizacion_usd
+            
             item = ItemPresupuesto.objects.create(
                 presupuesto=presupuesto,
                 descripcion=descripcion,
@@ -193,13 +210,7 @@ def agregar_item(request, pk):
                 alto_mm=0,
                 margen_porcentaje=margen_porcentaje,
                 precio_unitario=precio_unitario,
-                resultado_json={
-                    'precio_unitario_base': precio_unitario_base,
-                    'valor_base': valor_base,
-                    'margen': margen_porcentaje,
-                    'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
-                    'tipo': 'pvc_simple'
-                },
+                resultado_json=resultado_json,
                 orden=orden,
             )
             presupuesto.recalcular_total()

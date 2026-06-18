@@ -464,6 +464,9 @@
     <input type="hidden" name="cantidad" id="f-pvc-cantidad">
     <input type="hidden" name="valor" id="f-pvc-valor">
     <input type="hidden" name="margen_porcentaje" id="f-pvc-margen">
+    <input type="hidden" name="valor_en_dolares" id="f-pvc-valor-en-dolares">
+    <input type="hidden" name="valor_usd" id="f-pvc-valor-usd">
+    <input type="hidden" name="cotizacion_usd" id="f-pvc-cotizacion-usd">
 </form>
 {% else %}
 <form id="item-save-form" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
@@ -775,6 +778,9 @@ const FormularioPVC = () => {
         document.getElementById('f-pvc-cantidad').value = cantidad;
         document.getElementById('f-pvc-valor').value = valorCalculado.toFixed(2);
         document.getElementById('f-pvc-margen').value = margen;
+        document.getElementById('f-pvc-valor-en-dolares').value = valorEnDolares;
+        document.getElementById('f-pvc-valor-usd').value = valorEnDolares ? valorUsd.toFixed(2) : '0';
+        document.getElementById('f-pvc-cotizacion-usd').value = valorEnDolares ? cotizacionUsd.toFixed(2) : '0';
         document.getElementById('item-save-form-pvc').submit();
     };
 
