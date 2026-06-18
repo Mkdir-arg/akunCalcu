@@ -734,11 +734,19 @@ const { useState } = React;
 const FormularioPVC = () => {
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
+    const [valorEnDolares, setValorEnDolares] = useState(false);
+    const [valorUsd, setValorUsd] = useState(0);
+    const [cotizacionUsd, setCotizacionUsd] = useState(0);
     const [valor, setValor] = useState(0);
     const [margen, setMargen] = useState(30);
     const [saving, setSaving] = useState(false);
 
-    const precioConMargen = valor * (1 + margen / 100);
+    // Cuando cambia USD o cotización, recalcular valor en pesos
+    const valorCalculado = valorEnDolares && valorUsd > 0 && cotizacionUsd > 0 
+        ? valorUsd * cotizacionUsd 
+        : valor;
+
+    const precioConMargen = valorCalculado * (1 + margen / 100);
     const precioTotal = precioConMargen * cantidad;
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -747,14 +755,25 @@ const FormularioPVC = () => {
             alert('Ingresa una descripción');
             return;
         }
-        if (valor <= 0) {
-            alert('Ingresa un valor mayor a 0');
-            return;
+        if (valorEnDolares) {
+            if (valorUsd <= 0) {
+                alert('Ingresa un valor en USD mayor a 0');
+                return;
+            }
+            if (cotizacionUsd <= 0) {
+                alert('Ingresa una cotización del dólar');
+                return;
+            }
+        } else {
+            if (valor <= 0) {
+                alert('Ingresa un valor mayor a 0');
+                return;
+            }
         }
         setSaving(true);
         document.getElementById('f-pvc-descripcion').value = descripcion;
         document.getElementById('f-pvc-cantidad').value = cantidad;
-        document.getElementById('f-pvc-valor').value = valor;
+        document.getElementById('f-pvc-valor').value = valorCalculado.toFixed(2);
         document.getElementById('f-pvc-margen').value = margen;
         document.getElementById('item-save-form-pvc').submit();
     };
@@ -779,14 +798,46 @@ const FormularioPVC = () => {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                 </div>
             </div>
-            <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Valor base ($)</label>
-                <input type="number" step="0.01" min="0" value={valor} onChange={e => setValor(parseFloat(e.target.value)||0)}
-                    placeholder="0.00"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+
+            <div className="border-t pt-4">
+                <label className="flex items-center cursor-pointer mb-3">
+                    <input type="checkbox" checked={valorEnDolares} onChange={e => setValorEnDolares(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2" />
+                    <span className="text-sm font-semibold text-slate-700">Valor en dólares</span>
+                </label>
+
+                {valorEnDolares ? (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Valor en USD</label>
+                            <input type="number" step="0.01" min="0" value={valorUsd} onChange={e => setValorUsd(parseFloat(e.target.value)||0)}
+                                placeholder="0.00"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Cotización USD</label>
+                            <input type="number" step="0.01" min="0" value={cotizacionUsd} onChange={e => setCotizacionUsd(parseFloat(e.target.value)||0)}
+                                placeholder="0.00"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        {valorUsd > 0 && cotizacionUsd > 0 && (
+                            <div className="col-span-2 text-sm text-slate-600 bg-blue-50 p-2 rounded">
+                                <i className="fas fa-info-circle mr-1"></i>
+                                Valor calculado en pesos: <strong>${fmt(valorCalculado)}</strong>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Valor base ($)</label>
+                        <input type="number" step="0.01" min="0" value={valor} onChange={e => setValor(parseFloat(e.target.value)||0)}
+                            placeholder="0.00"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                )}
             </div>
 
-            {valor > 0 && (
+            {valorCalculado > 0 && (
                 <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white">
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-sm opacity-80">Precio unitario con margen</span>
