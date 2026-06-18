@@ -304,16 +304,16 @@
                             {{ configuracion_form.modalidad_sena }}
                             {% if configuracion_form.modalidad_sena.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-obra-nueva-field" style="display:none;">
+                        <div id="recargo-obra-nueva-field">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
-                            <p class="text-xs text-slate-400 mt-1">Se suma al total del presupuesto, pero no se detalla en el PDF.</p>
+                            <p class="text-xs text-slate-400 mt-1">Solo para obra nueva. Se suma al total del presupuesto.</p>
                             {% if configuracion_form.recargo_obra_nueva.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_obra_nueva.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-renovacion-field" style="display:none;">
+                        <div id="recargo-renovacion-field">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_renovacion_unitario.label }}</label>
                             {{ configuracion_form.recargo_renovacion_unitario }}
-                            <p class="text-xs text-slate-400 mt-1">Este valor se suma a cada unidad agregada al presupuesto.</p>
+                            <p class="text-xs text-slate-400 mt-1">Solo para renovación. Se suma por cada unidad agregada.</p>
                             {% if configuracion_form.recargo_renovacion_unitario.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_renovacion_unitario.errors.0 }}</p>{% endif %}
                         </div>
                         <div class="border-t pt-3">
@@ -569,35 +569,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-function toggleConfiguracionObraFields() {
-    const tipoObraSelect = document.getElementById('id_tipo_obra');
-    const obraField = document.getElementById('recargo-obra-nueva-field');
-    const renovacionField = document.getElementById('recargo-renovacion-field');
-    const obraInput = document.getElementById('id_recargo_obra_nueva');
-    const renovacionInput = document.getElementById('id_recargo_renovacion_unitario');
-
-    if (!tipoObraSelect || !obraField || !renovacionField || !obraInput || !renovacionInput) {
-        return;
-    }
-
-    const tipoObra = tipoObraSelect.value;
-
-    // Ocultar ambos por defecto
-    obraField.style.display = 'none';
-    renovacionField.style.display = 'none';
-    obraInput.disabled = true;
-    renovacionInput.disabled = true;
-
-    // Mostrar solo el campo correspondiente
-    if (tipoObra === 'obra_nueva') {
-        obraField.style.display = 'block';
-        obraInput.disabled = false;
-    } else if (tipoObra === 'renovacion') {
-        renovacionField.style.display = 'block';
-        renovacionInput.disabled = false;
-    }
-}
-
 function verDetalleItemDesdeScript(scriptId, descripcion) {
     const scriptTag = document.getElementById(scriptId);
     let resultado = null;
@@ -700,14 +671,6 @@ function verDetalleItem(resultado, descripcion) {
     document.getElementById('modal-desglose').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const tipoObraSelect = document.getElementById('id_tipo_obra');
-    if (tipoObraSelect) {
-        toggleConfiguracionObraFields();
-        tipoObraSelect.addEventListener('change', toggleConfiguracionObraFields);
-    }
-});
 
 function buildSection(title, icon, color, total, items) {
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
