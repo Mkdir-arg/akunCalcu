@@ -581,23 +581,19 @@ function toggleConfiguracionObraFields() {
     }
 
     const tipoObra = tipoObraSelect.value;
-    const mostrarObraNueva = tipoObra === 'obra_nueva';
-    const mostrarRenovacion = tipoObra === 'renovacion';
 
-    if (mostrarObraNueva) {
+    // Ocultar ambos por defecto
+    obraField.classList.add('hidden');
+    renovacionField.classList.add('hidden');
+    obraInput.disabled = true;
+    renovacionInput.disabled = true;
+
+    // Mostrar solo el campo correspondiente
+    if (tipoObra === 'obra_nueva') {
         obraField.classList.remove('hidden');
-        renovacionField.classList.add('hidden');
         obraInput.disabled = false;
-        renovacionInput.disabled = true;
-    } else if (mostrarRenovacion) {
-        obraField.classList.add('hidden');
+    } else if (tipoObra === 'renovacion') {
         renovacionField.classList.remove('hidden');
-        obraInput.disabled = true;
-        renovacionInput.disabled = false;
-    } else {
-        obraField.classList.remove('hidden');
-        renovacionField.classList.remove('hidden');
-        obraInput.disabled = false;
         renovacionInput.disabled = false;
     }
 }
