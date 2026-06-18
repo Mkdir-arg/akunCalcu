@@ -699,6 +699,8 @@ function buildSection(title, icon, color, total, items) {
 
 {% if not presupuesto.esta_bloqueado %}
 <script type="text/babel">
+(function() {
+'use strict';
 const { useState, useEffect } = React;
 
 // -- Componente Select con busqueda --
@@ -1148,6 +1150,7 @@ const CotizadorModal = () => {
 
 const root = ReactDOM.createRoot(document.getElementById('cotizador-modal-root'));
 root.render(<CotizadorModal />);
+})();
 </script>
 {% endif %}
 {% endblock %}
