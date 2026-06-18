@@ -133,6 +133,7 @@ def detalle(request, pk):
     presupuesto = get_object_or_404(_get_detalle_queryset().filter(deleted_at__isnull=True), pk=pk)
     context = _build_detalle_context(presupuesto)
     context['return_url'] = _presupuestos_return_url(request)
+    context['es_pvc'] = presupuesto.tipo_material == 'pvc'
     return render(request, 'presupuestos/detalle.html', context)
 
 
@@ -167,6 +168,45 @@ def agregar_item(request, pk):
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if request.method == 'POST':
+        # Si es PVC, usar formulario simple
+        if presupuesto.tipo_material == 'pvc':
+            descripcion = request.POST.get('descripcion', '').strip() or 'Item sin descripción'
+            cantidad = max(1, int(request.POST.get('cantidad', 1)))
+            valor_base = float(request.POST.get('valor', 0))
+            margen_porcentaje = float(request.POST.get('margen_porcentaje', 30))
+            
+            # Calcular precio con margen
+            precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
+            precio_unitario = precio_unitario_base
+            
+            # Aplicar recargo de renovación si corresponde
+            if presupuesto.tipo_obra == 'renovacion':
+                recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
+                precio_unitario = precio_unitario_base + recargo_unitario
+            
+            orden = presupuesto.items.count()
+            item = ItemPresupuesto.objects.create(
+                presupuesto=presupuesto,
+                descripcion=descripcion,
+                cantidad=cantidad,
+                ancho_mm=0,
+                alto_mm=0,
+                margen_porcentaje=margen_porcentaje,
+                precio_unitario=precio_unitario,
+                resultado_json={
+                    'precio_unitario_base': precio_unitario_base,
+                    'valor_base': valor_base,
+                    'margen': margen_porcentaje,
+                    'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
+                    'tipo': 'pvc_simple'
+                },
+                orden=orden,
+            )
+            presupuesto.recalcular_total()
+            messages.success(request, f'Ítem "{item.descripcion}" agregado.')
+            return redirect('presupuestos:presupuestos-detalle', pk=pk)
+        
+        # Si es Aluminio, usar cotizador completo
         data = request.POST
         config = {
             'producto_id': data.get('producto_id') and int(data['producto_id']),

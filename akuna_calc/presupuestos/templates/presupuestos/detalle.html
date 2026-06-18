@@ -439,20 +439,33 @@
 <div id="modal-item" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalItem()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl w-full {% if es_pvc %}max-w-md{% else %}max-w-5xl{% endif %} max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
-                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-calculator mr-2 text-blue-600"></i>Agregar item al presupuesto</h2>
+                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-{% if es_pvc %}plus{% else %}calculator{% endif %} mr-2 text-blue-600"></i>Agregar item al presupuesto</h2>
                 <button onclick="cerrarModalItem()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="overflow-y-auto flex-1 p-6">
+                {% if es_pvc %}
+                <div id="formulario-pvc"></div>
+                {% else %}
                 <div id="cotizador-modal-root"></div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
+{% if es_pvc %}
+<form id="item-save-form-pvc" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
+    {% csrf_token %}
+    <input type="hidden" name="descripcion" id="f-pvc-descripcion">
+    <input type="hidden" name="cantidad" id="f-pvc-cantidad">
+    <input type="hidden" name="valor" id="f-pvc-valor">
+    <input type="hidden" name="margen_porcentaje" id="f-pvc-margen">
+</form>
+{% else %}
 <form id="item-save-form" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
     {% csrf_token %}
     <input type="hidden" name="producto_id" id="f-producto_id">
@@ -468,6 +481,7 @@
     <input type="hidden" name="cantidad" id="f-cantidad">
     <input type="hidden" name="opcionales_json" id="f-opcionales_json">
 </form>
+{% endif %}
 {% endif %}
 
 <!-- ===== MODAL VER DESGLOSE ===== -->
@@ -711,7 +725,97 @@ function buildSection(title, icon, color, total, items) {
 }
 </script>
 
-{% if not presupuesto.esta_bloqueado %}
+{% if es_pvc %}
+<script type="text/babel">
+(function() {
+'use strict';
+const { useState } = React;
+
+const FormularioPVC = () => {
+    const [descripcion, setDescripcion] = useState('');
+    const [cantidad, setCantidad] = useState(1);
+    const [valor, setValor] = useState(0);
+    const [margen, setMargen] = useState(30);
+    const [saving, setSaving] = useState(false);
+
+    const precioConMargen = valor * (1 + margen / 100);
+    const precioTotal = precioConMargen * cantidad;
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const guardar = () => {
+        if (!descripcion.trim()) {
+            alert('Ingresa una descripción');
+            return;
+        }
+        if (valor <= 0) {
+            alert('Ingresa un valor mayor a 0');
+            return;
+        }
+        setSaving(true);
+        document.getElementById('f-pvc-descripcion').value = descripcion;
+        document.getElementById('f-pvc-cantidad').value = cantidad;
+        document.getElementById('f-pvc-valor').value = valor;
+        document.getElementById('f-pvc-margen').value = margen;
+        document.getElementById('item-save-form-pvc').submit();
+    };
+
+    return (
+        <div className="space-y-4">
+            <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Descripción</label>
+                <input type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)}
+                    placeholder="Ej: Ventana PVC 120x150"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Cantidad</label>
+                    <input type="number" min="1" value={cantidad} onChange={e => setCantidad(Math.max(1, parseInt(e.target.value)||1))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Margen (%)</label>
+                    <input type="number" step="0.01" value={margen} onChange={e => setMargen(parseFloat(e.target.value)||0)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+            <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Valor base ($)</label>
+                <input type="number" step="0.01" min="0" value={valor} onChange={e => setValor(parseFloat(e.target.value)||0)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            {valor > 0 && (
+                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm opacity-80">Precio unitario con margen</span>
+                        <span className="text-xl font-bold">${fmt(precioConMargen)}</span>
+                    </div>
+                    {cantidad > 1 && (
+                        <div className="flex justify-between items-center border-t border-white/20 pt-2">
+                            <span className="text-sm opacity-80">Total ({cantidad} unidades)</span>
+                            <span className="text-2xl font-bold">${fmt(precioTotal)}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <button onClick={guardar} disabled={saving}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center">
+                {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>Agregar al presupuesto</>}
+            </button>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('formulario-pvc'));
+root.render(<FormularioPVC />);
+})();
+</script>
+{% endif %}
+
+{% if not presupuesto.esta_bloqueado and not es_pvc %}
 <script type="text/babel">
 (function() {
 'use strict';
