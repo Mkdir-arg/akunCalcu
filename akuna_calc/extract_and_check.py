@@ -14,6 +14,6 @@ for label, pk in [('pvc_con_cot', 1), ('pvc_sin_cot', 2), ('aluminio', 3)]:
     scripts = re.findall(r'<script type="text/babel">(.*?)</script>', html, re.S)
     out[label] = scripts
 
-with open('/tmp/pw/scripts.json', 'w') as f:
+with open('scripts.json', 'w') as f:
     json.dump(out, f)
 print({k: len(v) for k, v in out.items()})
