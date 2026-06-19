@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
+{% load l10n %}
 {% block title %}{{ presupuesto.numero }}{% endblock %}
 
 {% block extra_head %}
@@ -759,7 +760,7 @@ function buildSection(title, icon, color, total, items) {
 'use strict';
 const { useState } = React;
 
-const COTIZACION_USD = {{ presupuesto.cotizacion_usd|default:0 }};
+const COTIZACION_USD = {{ presupuesto.cotizacion_usd|default:0|unlocalize }};
 
 const FormularioPVC = () => {
     const [descripcion, setDescripcion] = useState('');
