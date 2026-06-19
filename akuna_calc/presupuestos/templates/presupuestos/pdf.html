@@ -445,6 +445,11 @@
                     <td class="summary-cell"><span class="summary-label">Condición IVA:</span> {{ presupuesto.cliente.get_condicion_iva_display }}</td>
                     <td class="summary-cell right"><span class="summary-label">Válido hasta:</span> {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</td>
                 </tr>
+                {% if presupuesto.es_pvc %}
+                <tr>
+                    <td class="summary-cell" colspan="2"><span class="summary-label">Presupuesto en dólares.</span> Cotización USD utilizada: ${{ presupuesto.cotizacion_usd|formato_numero }}</td>
+                </tr>
+                {% endif %}
                 {% if presupuesto.notas %}
                 <tr>
                     <td class="summary-cell" colspan="2"><span class="summary-label">Observaciones:</span> {{ presupuesto.notas }}</td>
@@ -473,8 +478,13 @@
                             {% endif %}
                         </td>
                         <td class="col-qty">{{ entry.item.cantidad }}</td>
+                        {% if presupuesto.es_pvc %}
+                        <td class="col-unit">US${{ entry.item.get_precio_unitario_usd|formato_numero }}</td>
+                        <td class="col-total">US${{ entry.item.get_precio_total_usd|formato_numero }}</td>
+                        {% else %}
                         <td class="col-unit">${{ entry.item.precio_unitario|formato_numero }}</td>
                         <td class="col-total">${{ entry.item.precio_total|formato_numero }}</td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
@@ -496,6 +506,20 @@
                     </td>
                     <td class="bottom-totals">
                         <table class="totals-table">
+                            {% if presupuesto.es_pvc %}
+                            <tr>
+                                <td class="totals-label totals-subtotal">Subtotal</td>
+                                <td class="totals-value">US${{ presupuesto.get_subtotal_sin_iva_usd|formato_numero }}</td>
+                            </tr>
+                            <tr>
+                                <td class="totals-label totals-iva">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
+                                <td class="totals-value">US${{ presupuesto.get_iva_usd|formato_numero }}</td>
+                            </tr>
+                            <tr class="grand-total">
+                                <td class="totals-label totals-total">Total</td>
+                                <td class="totals-value">US${{ presupuesto.get_total_usd|formato_numero }}</td>
+                            </tr>
+                            {% else %}
                             <tr>
                                 <td class="totals-label totals-subtotal">Subtotal</td>
                                 <td class="totals-value">${{ pdf_subtotal|formato_numero }}</td>
@@ -508,6 +532,7 @@
                                 <td class="totals-label totals-total">Total</td>
                                 <td class="totals-value">${{ presupuesto.total|formato_numero }}</td>
                             </tr>
+                            {% endif %}
                         </table>
                     </td>
                 </tr>

@@ -86,6 +86,13 @@ class Presupuesto(models.Model):
         verbose_name='Aplicar IVA 21%',
     )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total')
+    cotizacion_usd = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Cotización USD',
+    )
     created_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
@@ -127,21 +134,44 @@ class Presupuesto(models.Model):
     def esta_bloqueado(self):
         return self.estado in ('confirmado', 'cancelado')
 
+    def es_pvc(self):
+        return self.tipo_material == 'pvc'
+
+    def tiene_cotizacion_usd(self):
+        return bool(self.cotizacion_usd and self.cotizacion_usd > 0)
+
+    def _convertir_a_usd(self, monto_ars):
+        if not self.tiene_cotizacion_usd():
+            return None
+        return monto_ars / self.cotizacion_usd
+
     def esta_eliminado(self):
         return self.deleted_at is not None
 
     def get_total_items(self):
         return sum((item.precio_total for item in self.items.all()), Decimal('0'))
 
+    def get_total_items_usd(self):
+        return self._convertir_a_usd(self.get_total_items())
+
     def get_recargo_obra_nueva_aplicado(self):
         if self.tipo_obra != 'obra_nueva':
             return Decimal('0')
         return _decimal_or_zero(self.recargo_obra_nueva)
 
+    def get_recargo_obra_nueva_aplicado_usd(self):
+        return self._convertir_a_usd(self.get_recargo_obra_nueva_aplicado())
+
     def get_recargo_total_renovacion(self):
         if self.tipo_obra != 'renovacion':
             return Decimal('0')
         return sum((item.get_recargo_renovacion_total() for item in self.items.all()), Decimal('0'))
+
+    def get_recargo_total_renovacion_usd(self):
+        return self._convertir_a_usd(self.get_recargo_total_renovacion())
+
+    def get_recargo_renovacion_unitario_usd(self):
+        return self._convertir_a_usd(_decimal_or_zero(self.recargo_renovacion_unitario))
 
     def actualizar_items_por_configuracion(self):
         recargo_unitario = self.recargo_renovacion_unitario if self.tipo_obra == 'renovacion' else Decimal('0')
@@ -158,6 +188,15 @@ class Presupuesto(models.Model):
         if not self.aplicar_iva:
             return Decimal('0')
         return self.get_iva_desglosado()
+
+    def get_subtotal_sin_iva_usd(self):
+        return self._convertir_a_usd(self.get_subtotal_sin_iva())
+
+    def get_iva_usd(self):
+        return self._convertir_a_usd(self.get_iva())
+
+    def get_total_usd(self):
+        return self._convertir_a_usd(self.total)
 
     def recalcular_total(self):
         subtotal = self.get_subtotal_sin_iva()
@@ -233,6 +272,12 @@ class ItemPresupuesto(models.Model):
 
     def get_recargo_renovacion_total(self):
         return self.get_recargo_renovacion_unitario() * self.cantidad
+
+    def get_precio_unitario_usd(self):
+        return self.presupuesto._convertir_a_usd(self.precio_unitario)
+
+    def get_precio_total_usd(self):
+        return self.presupuesto._convertir_a_usd(self.precio_total)
 
     def aplicar_recargo_renovacion(self, recargo_unitario):
         recargo_unitario = _decimal_or_zero(recargo_unitario)

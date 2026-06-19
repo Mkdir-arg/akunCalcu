@@ -92,18 +92,39 @@
                     </div>
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Total</p>
+                        {% if presupuesto.es_pvc %}
+                        <p class="text-blue-600 font-bold text-xl mt-1">US${{ presupuesto.get_total_usd|floatformat:2 }}</p>
+                        <p class="text-slate-400 text-xs">${{ presupuesto.total|floatformat:2 }}</p>
+                        {% else %}
                         <p class="text-blue-600 font-bold text-xl mt-1">${{ presupuesto.total|floatformat:2 }}</p>
+                        {% endif %}
                     </div>
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Tipo de obra</p>
                         <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</p>
                     </div>
+                    {% if presupuesto.es_pvc %}
+                    <div>
+                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Cotización USD</p>
+                        <p class="text-slate-800 font-semibold mt-1">
+                            <i class="fas fa-coins mr-1 text-blue-500"></i>${{ presupuesto.cotizacion_usd|floatformat:2 }}
+                        </p>
+                    </div>
+                    {% endif %}
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Recargo interno</p>
                         {% if presupuesto.tipo_obra == 'obra_nueva' %}
-                        <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</p>
+                            {% if presupuesto.es_pvc %}
+                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|floatformat:2 }}</p>
+                            {% else %}
+                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</p>
+                            {% endif %}
                         {% elif presupuesto.tipo_obra == 'renovacion' %}
-                        <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }} por unidad</p>
+                            {% if presupuesto.es_pvc %}
+                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_renovacion_unitario_usd|floatformat:2 }} por unidad</p>
+                            {% else %}
+                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }} por unidad</p>
+                            {% endif %}
                         {% else %}
                         <p class="text-amber-600 font-semibold mt-1">Definir configuración</p>
                         {% endif %}
@@ -153,9 +174,16 @@
                                 </p>
                             </div>
                             <div class="text-right shrink-0">
+                                {% if presupuesto.es_pvc %}
+                                <p class="font-bold text-slate-800">US${{ item.get_precio_total_usd|floatformat:2 }}</p>
+                                {% if item.cantidad > 1 %}
+                                <p class="text-xs text-slate-400">US${{ item.get_precio_unitario_usd|floatformat:2 }} c/u</p>
+                                {% endif %}
+                                {% else %}
                                 <p class="font-bold text-slate-800">${{ item.precio_total|floatformat:2 }}</p>
                                 {% if item.cantidad > 1 %}
                                 <p class="text-xs text-slate-400">${{ item.precio_unitario|floatformat:2 }} c/u</p>
+                                {% endif %}
                                 {% endif %}
                             </div>
                             <button type="button"
@@ -183,6 +211,33 @@
                     {% endfor %}
                 </div>
                 <div class="px-5 py-4 bg-slate-50 border-t space-y-2">
+                    {% if presupuesto.es_pvc %}
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-500">Subtotal ítems</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_total_items_usd|floatformat:2 }}</span>
+                    </div>
+                    {% if presupuesto.tipo_obra == 'obra_nueva' %}
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-500">Recargo obra nueva</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|floatformat:2 }}</span>
+                    </div>
+                    {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-500">Recargo renovación incluido</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_total_renovacion_usd|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if presupuesto.aplicar_iva %}
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold text-slate-500">IVA (21%)</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_iva_usd|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="pt-2 border-t flex justify-between items-center">
+                        <span class="font-bold text-slate-600">Total presupuesto</span>
+                        <span class="text-2xl font-bold text-blue-600">US${{ presupuesto.get_total_usd|floatformat:2 }}</span>
+                    </div>
+                    {% else %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Subtotal ítems</span>
                         <span class="font-semibold text-slate-700">${{ presupuesto.get_total_items|floatformat:2 }}</span>
@@ -208,6 +263,7 @@
                         <span class="font-bold text-slate-600">Total presupuesto</span>
                         <span class="text-2xl font-bold text-blue-600">${{ presupuesto.total|floatformat:2 }}</span>
                     </div>
+                    {% endif %}
                 </div>
                 {% else %}
                 <div class="px-5 py-14 text-center">
@@ -462,11 +518,8 @@
     {% csrf_token %}
     <input type="hidden" name="descripcion" id="f-pvc-descripcion">
     <input type="hidden" name="cantidad" id="f-pvc-cantidad">
-    <input type="hidden" name="valor" id="f-pvc-valor">
-    <input type="hidden" name="margen_porcentaje" id="f-pvc-margen">
-    <input type="hidden" name="valor_en_dolares" id="f-pvc-valor-en-dolares">
     <input type="hidden" name="valor_usd" id="f-pvc-valor-usd">
-    <input type="hidden" name="cotizacion_usd" id="f-pvc-cotizacion-usd">
+    <input type="hidden" name="margen_porcentaje" id="f-pvc-margen">
 </form>
 {% else %}
 <form id="item-save-form" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
@@ -693,23 +746,18 @@ function buildSection(title, icon, color, total, items) {
 'use strict';
 const { useState } = React;
 
+const COTIZACION_USD = {{ presupuesto.cotizacion_usd|default:0 }};
+
 const FormularioPVC = () => {
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
-    const [valorEnDolares, setValorEnDolares] = useState(false);
     const [valorUsd, setValorUsd] = useState(0);
-    const [cotizacionUsd, setCotizacionUsd] = useState(0);
-    const [valor, setValor] = useState(0);
     const [margen, setMargen] = useState(30);
     const [saving, setSaving] = useState(false);
 
-    // Cuando cambia USD o cotización, recalcular valor en pesos
-    const valorCalculado = valorEnDolares && valorUsd > 0 && cotizacionUsd > 0 
-        ? valorUsd * cotizacionUsd 
-        : valor;
-
-    const precioConMargen = valorCalculado * (1 + margen / 100);
-    const precioTotal = precioConMargen * cantidad;
+    const valorPesos = valorUsd * COTIZACION_USD;
+    const precioConMargenUsd = valorUsd * (1 + margen / 100);
+    const precioTotalUsd = precioConMargenUsd * cantidad;
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const guardar = () => {
@@ -717,31 +765,26 @@ const FormularioPVC = () => {
             alert('Ingresa una descripción');
             return;
         }
-        if (valorEnDolares) {
-            if (valorUsd <= 0) {
-                alert('Ingresa un valor en USD mayor a 0');
-                return;
-            }
-            if (cotizacionUsd <= 0) {
-                alert('Ingresa una cotización del dólar');
-                return;
-            }
-        } else {
-            if (valor <= 0) {
-                alert('Ingresa un valor mayor a 0');
-                return;
-            }
+        if (valorUsd <= 0) {
+            alert('Ingresa un valor en USD mayor a 0');
+            return;
         }
         setSaving(true);
         document.getElementById('f-pvc-descripcion').value = descripcion;
         document.getElementById('f-pvc-cantidad').value = cantidad;
-        document.getElementById('f-pvc-valor').value = valorCalculado.toFixed(2);
+        document.getElementById('f-pvc-valor-usd').value = valorUsd.toFixed(2);
         document.getElementById('f-pvc-margen').value = margen;
-        document.getElementById('f-pvc-valor-en-dolares').value = valorEnDolares;
-        document.getElementById('f-pvc-valor-usd').value = valorEnDolares ? valorUsd.toFixed(2) : '0';
-        document.getElementById('f-pvc-cotizacion-usd').value = valorEnDolares ? cotizacionUsd.toFixed(2) : '0';
         document.getElementById('item-save-form-pvc').submit();
     };
+
+    if (!COTIZACION_USD) {
+        return (
+            <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <i className="fas fa-exclamation-triangle mr-2"></i>
+                Este presupuesto en PVC todavía no tiene una cotización USD configurada. Editá el presupuesto y completá la cotización antes de agregar ítems.
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
@@ -765,53 +808,26 @@ const FormularioPVC = () => {
             </div>
 
             <div className="border-t pt-4">
-                <label className="flex items-center cursor-pointer mb-3">
-                    <input type="checkbox" checked={valorEnDolares} onChange={e => setValorEnDolares(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2" />
-                    <span className="text-sm font-semibold text-slate-700">Valor en dólares</span>
-                </label>
-
-                {valorEnDolares ? (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Valor en USD</label>
-                            <input type="number" step="0.01" min="0" value={valorUsd} onChange={e => setValorUsd(parseFloat(e.target.value)||0)}
-                                placeholder="0.00"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Cotización USD</label>
-                            <input type="number" step="0.01" min="0" value={cotizacionUsd} onChange={e => setCotizacionUsd(parseFloat(e.target.value)||0)}
-                                placeholder="0.00"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                        {valorUsd > 0 && cotizacionUsd > 0 && (
-                            <div className="col-span-2 text-sm text-slate-600 bg-blue-50 p-2 rounded">
-                                <i className="fas fa-info-circle mr-1"></i>
-                                Valor calculado en pesos: <strong>${fmt(valorCalculado)}</strong>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Valor base ($)</label>
-                        <input type="number" step="0.01" min="0" value={valor} onChange={e => setValor(parseFloat(e.target.value)||0)}
-                            placeholder="0.00"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                )}
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Valor en USD</label>
+                <input type="number" step="0.01" min="0" value={valorUsd} onChange={e => setValorUsd(parseFloat(e.target.value)||0)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                <p className="mt-2 text-xs text-slate-500">
+                    Cotización del presupuesto: <strong>${fmt(COTIZACION_USD)}</strong>
+                    {valorUsd > 0 && <> · Equivalente en pesos: <strong>${fmt(valorPesos)}</strong></>}
+                </p>
             </div>
 
-            {valorCalculado > 0 && (
+            {valorUsd > 0 && (
                 <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white">
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-sm opacity-80">Precio unitario con margen</span>
-                        <span className="text-xl font-bold">${fmt(precioConMargen)}</span>
+                        <span className="text-xl font-bold">US${fmt(precioConMargenUsd)}</span>
                     </div>
                     {cantidad > 1 && (
                         <div className="flex justify-between items-center border-t border-white/20 pt-2">
                             <span className="text-sm opacity-80">Total ({cantidad} unidades)</span>
-                            <span className="text-2xl font-bold">${fmt(precioTotal)}</span>
+                            <span className="text-2xl font-bold">US${fmt(precioTotalUsd)}</span>
                         </div>
                     )}
                 </div>

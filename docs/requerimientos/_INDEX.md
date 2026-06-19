@@ -51,3 +51,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-029](./REQ-029-modalidad-sena-presupuestos.md) | Modalidad de seña en presupuestos | Implementado | 2026-05-26 | FEAT-013 |
 | [REQ-030](./REQ-030-confirmacion-reemplazo-accesorio-vidrio.md) | Confirmación modal antes de reemplazar accesorio o vidrio | En desarrollo | 2026-05-26 | — |
 | [REQ-031](./REQ-031-modulo-agenda-recordatorios.md) | Módulo de Agenda con recordatorios por WhatsApp | En desarrollo | 2026-06-07 | — |
+| [REQ-032](./REQ-032-presupuestos-pvc-en-dolares.md) | Presupuestos PVC siempre en dólares | En desarrollo | 2026-06-19 | — |

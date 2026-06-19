@@ -10,6 +10,7 @@ from datetime import timedelta, date
 
 from comercial.models import Cliente
 from usuarios.models import PerfilAccesoUsuario, RolSistema
+from .forms import PresupuestoForm
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context
 
@@ -31,6 +32,21 @@ def crear_presupuesto(user, cliente=None):
         fecha_expiracion=date.today() + timedelta(days=30),
         estado='borrador',
         created_by=user,
+    )
+
+
+def crear_presupuesto_pvc(user, cliente=None, cotizacion_usd=Decimal('1000')):
+    if not cliente:
+        cliente = crear_cliente()
+    return Presupuesto.objects.create(
+        numero=Presupuesto.generar_numero(),
+        cliente=cliente,
+        fecha_expiracion=date.today() + timedelta(days=30),
+        estado='borrador',
+        created_by=user,
+        tipo_material='pvc',
+        tipo_obra='obra_nueva',
+        cotizacion_usd=cotizacion_usd,
     )
 
 
@@ -88,6 +104,36 @@ class PresupuestoModelTest(TestCase):
         self.assertEqual(p.modalidad_sena, '50_50')
         self.assertEqual(p.get_modalidad_sena_display(), '50% adelanto / 50% saldo')
 
+    def test_es_pvc(self):
+        aluminio = crear_presupuesto(self.user)
+        pvc = crear_presupuesto_pvc(self.user)
+
+        self.assertFalse(aluminio.es_pvc())
+        self.assertTrue(pvc.es_pvc())
+
+    def test_totales_usd_sin_cotizacion_son_none(self):
+        p = crear_presupuesto(self.user)
+        p.total = Decimal('1000')
+
+        self.assertIsNone(p.get_total_usd())
+        self.assertIsNone(p.get_subtotal_sin_iva_usd())
+        self.assertIsNone(p.get_iva_usd())
+
+    def test_totales_usd_con_cotizacion(self):
+        p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana PVC', cantidad=1,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=30,
+            precio_unitario=Decimal('500000'), resultado_json={},
+        )
+        p.aplicar_iva = True
+        p.save(update_fields=['aplicar_iva'])
+        p.recalcular_total()
+
+        self.assertEqual(p.get_subtotal_sin_iva_usd(), Decimal('500'))
+        self.assertEqual(p.get_iva_usd(), Decimal('105'))
+        self.assertEqual(p.get_total_usd(), Decimal('605'))
+
 
 class ItemPresupuestoModelTest(TestCase):
     def setUp(self):
@@ -125,6 +171,17 @@ class ItemPresupuestoModelTest(TestCase):
         self.assertEqual(item.precio_unitario, Decimal('575'))
         self.assertEqual(item.precio_total, Decimal('1150'))
         self.assertEqual(item.get_recargo_renovacion_total(), Decimal('150'))
+
+    def test_precio_usd_se_calcula_con_cotizacion_del_presupuesto(self):
+        p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+        item = ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana PVC', cantidad=2,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=30,
+            precio_unitario=Decimal('500000'), resultado_json={},
+        )
+
+        self.assertEqual(item.get_precio_unitario_usd(), Decimal('500'))
+        self.assertEqual(item.get_precio_total_usd(), Decimal('1000'))
 
 
 class PdfDescriptionsHelpersTest(SimpleTestCase):
@@ -233,6 +290,38 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
         self.assertIn('Modena', snapshot['resumen_tecnico'])
         self.assertIn('BANDEROLA', snapshot['resumen_tecnico'])
         self.assertIn('Vidrio 4+9+4', snapshot['resumen_tecnico'])
+
+
+class PresupuestoFormTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('formuser', password='testpass')
+        self.cliente = crear_cliente()
+
+    def _datos_base(self, **overrides):
+        datos = {
+            'cliente': self.cliente.pk,
+            'tipo_material': 'aluminio',
+            'fecha_expiracion': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
+            'notas': '',
+        }
+        datos.update(overrides)
+        return datos
+
+    def test_pvc_sin_cotizacion_usd_es_invalido(self):
+        form = PresupuestoForm(data=self._datos_base(tipo_material='pvc'))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('cotizacion_usd', form.errors)
+
+    def test_pvc_con_cotizacion_usd_es_valido(self):
+        form = PresupuestoForm(data=self._datos_base(tipo_material='pvc', cotizacion_usd='1000'))
+
+        self.assertTrue(form.is_valid())
+
+    def test_aluminio_sin_cotizacion_usd_es_valido(self):
+        form = PresupuestoForm(data=self._datos_base(tipo_material='aluminio'))
+
+        self.assertTrue(form.is_valid())
 
 
 class PresupuestosViewsTest(TestCase):
@@ -587,3 +676,113 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 302)
         p.refresh_from_db()
         self.assertEqual(p.modalidad_sena, '70_30')
+
+
+class PresupuestoPvcUsdViewsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('pvcuser', password='testpass')
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={
+                'nombre': 'Admin',
+                'descripcion': 'Acceso total para pruebas.',
+                'acceso_total': True,
+                'activo': True,
+            },
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
+        self.client = Client()
+        self.client.login(username='pvcuser', password='testpass')
+
+    def test_crear_presupuesto_pvc_requiere_cotizacion_usd(self):
+        cliente = crear_cliente()
+
+        res = self.client.post(
+            '/presupuestos/nuevo/',
+            {
+                'cliente': cliente.pk,
+                'tipo_material': 'pvc',
+                'fecha_expiracion': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
+                'notas': '',
+            },
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(Presupuesto.objects.count(), 0)
+
+    def test_crear_presupuesto_pvc_con_cotizacion_usd(self):
+        cliente = crear_cliente()
+
+        res = self.client.post(
+            '/presupuestos/nuevo/',
+            {
+                'cliente': cliente.pk,
+                'tipo_material': 'pvc',
+                'cotizacion_usd': '1000',
+                'fecha_expiracion': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
+                'notas': '',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        presupuesto = Presupuesto.objects.get()
+        self.assertEqual(presupuesto.tipo_material, 'pvc')
+        self.assertEqual(presupuesto.cotizacion_usd, Decimal('1000'))
+
+    def test_agregar_item_pvc_sin_cotizacion_rechaza(self):
+        p = crear_presupuesto(self.user)
+        p.tipo_material = 'pvc'
+        p.tipo_obra = 'obra_nueva'
+        p.save(update_fields=['tipo_material', 'tipo_obra'])
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/item/agregar/',
+            {'descripcion': 'Ventana PVC', 'cantidad': '1', 'valor_usd': '500', 'margen_porcentaje': '30'},
+        )
+
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(p.items.count(), 0)
+
+    def test_agregar_item_pvc_convierte_usd_a_pesos_con_cotizacion_del_presupuesto(self):
+        p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/item/agregar/',
+            {'descripcion': 'Ventana PVC', 'cantidad': '1', 'valor_usd': '500', 'margen_porcentaje': '30'},
+        )
+
+        self.assertEqual(res.status_code, 302)
+        item = p.items.get()
+        self.assertEqual(item.precio_unitario, Decimal('650000'))
+        self.assertEqual(item.get_precio_unitario_usd(), Decimal('650'))
+
+    def test_lista_muestra_badge_usd_para_presupuesto_pvc(self):
+        crear_presupuesto_pvc(self.user)
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Presupuesto USD')
+
+    def test_lista_no_muestra_badge_usd_para_presupuesto_aluminio(self):
+        crear_presupuesto(self.user)
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'Presupuesto USD')
+
+    def test_pdf_presupuesto_pvc_muestra_totales_en_usd(self):
+        p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana PVC', cantidad=1,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=0,
+            precio_unitario=Decimal('500000'), resultado_json={},
+        )
+        p.recalcular_total()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'US$500,00')
+        self.assertContains(res, 'Cotización USD utilizada')

@@ -9,10 +9,11 @@ from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 class PresupuestoForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['cliente', 'tipo_material', 'fecha_expiracion', 'notas']
+        fields = ['cliente', 'tipo_material', 'cotizacion_usd', 'fecha_expiracion', 'notas']
         widgets = {
             'cliente': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
-            'tipo_material': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'tipo_material': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500', 'id': 'id_tipo_material'}),
+            'cotizacion_usd': forms.NumberInput(attrs={'step': '0.01', 'min': '0.01', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500', 'id': 'id_cotizacion_usd'}),
             'fecha_expiracion': forms.DateInput(
                 attrs={'type': 'date', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'},
                 format='%Y-%m-%d',
@@ -24,8 +25,21 @@ class PresupuestoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['cliente'].queryset = Cliente.objects.filter(deleted_at__isnull=True).order_by('apellido', 'nombre')
         self.fields['notas'].required = False
+        self.fields['cotizacion_usd'].required = False
+        self.fields['cotizacion_usd'].label = 'Cotización USD'
+        self.fields['cotizacion_usd'].help_text = 'Obligatoria para presupuestos en PVC (siempre se cotizan en dólares).'
         if not self.instance.pk:
             self.fields['fecha_expiracion'].initial = (timezone.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_material = cleaned_data.get('tipo_material')
+        cotizacion_usd = cleaned_data.get('cotizacion_usd')
+
+        if tipo_material == 'pvc' and not cotizacion_usd:
+            self.add_error('cotizacion_usd', 'Los presupuestos en PVC son siempre en dólares: ingresá la cotización USD.')
+
+        return cleaned_data
 
 
 class PresupuestoConfiguracionObraForm(forms.ModelForm):

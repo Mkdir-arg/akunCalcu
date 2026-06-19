@@ -25,6 +25,12 @@
                     {{ form.tipo_material }}
                     {% if form.tipo_material.errors %}<p class="text-red-600 text-xs mt-1">{{ form.tipo_material.errors.0 }}</p>{% endif %}
                 </div>
+                <div id="campo-cotizacion-usd">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cotizacion_usd.label }}</label>
+                    {{ form.cotizacion_usd }}
+                    <p class="text-xs text-slate-400 mt-1">{{ form.cotizacion_usd.help_text }}</p>
+                    {% if form.cotizacion_usd.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cotizacion_usd.errors.0 }}</p>{% endif %}
+                </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.fecha_expiracion.label }}</label>
                     {{ form.fecha_expiracion }}
@@ -46,4 +52,20 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function syncCampoCotizacionUsd() {
+    const tipoMaterial = document.getElementById('id_tipo_material');
+    const campo = document.getElementById('campo-cotizacion-usd');
+    if (!tipoMaterial || !campo) return;
+    campo.style.display = tipoMaterial.value === 'pvc' ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    syncCampoCotizacionUsd();
+    const tipoMaterial = document.getElementById('id_tipo_material');
+    if (tipoMaterial) tipoMaterial.addEventListener('change', syncCampoCotizacionUsd);
+});
+</script>
 {% endblock %}
