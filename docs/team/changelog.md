@@ -14,6 +14,14 @@
 
 ---
 
+## 2026-06-19 — Presupuestos PVC siempre en dólares (REQ-032 / FEAT-015)
+
+**User Story:** Como vendedor, quiero que un presupuesto de PVC se cotice y se muestre siempre en dólares (con su propia cotización), para que el cliente vea el presupuesto en la moneda real en la que se vende el PVC, igual que ocurre con las ventas en dólares en `comercial/ventas`.
+**Archivos modificados:** `akuna_calc/presupuestos/models.py`, `forms.py`, `views.py`, `templates/presupuestos/form.html`, `detalle.html`, `pdf.html`, `lista.html`, `tests.py`, migración `0007_presupuesto_cotizacion_usd_presupuesto_tipo_material.py`.
+**Descripción:** Se agregó `cotizacion_usd` a nivel de cabecera del presupuesto (obligatoria para PVC) y se eliminó el checkbox de USD por ítem. El cálculo interno sigue en pesos como base común; detalle, PDF y listado muestran los montos convertidos a USD cuando el presupuesto es PVC. Aluminio no cambia. Durante el deploy se detectó y corrigió un hueco de migración preexistente del campo `tipo_material` (commit previo sin migración), y un problema similar no relacionado en la app `productos` (migración de borrado de `Cotizacion`/`CotizacionItem` con tablas ya inexistentes); ambos se resolvieron con `migrate --fake` tras confirmar el estado real de las tablas en Railway.
+
+---
+
 ## 2026-05-26 — Confirmación antes de reemplazar accesorio en hoja configurator (REQ-030 / FEAT-014)
 
 **User Story:** Como configurador de hojas, quiero que el sistema me pida confirmación antes de reemplazar un accesorio ya cargado, para no perder configuraciones por un cambio accidental.

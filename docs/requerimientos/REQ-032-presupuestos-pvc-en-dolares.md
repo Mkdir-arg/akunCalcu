@@ -1,6 +1,6 @@
 # REQ-032 — Presupuestos PVC siempre en dólares
 
-**Estado:** En desarrollo
+**Estado:** Implementado
 **Fecha:** 2026-06-19
 **Origen:** Pedido directo del usuario sobre el módulo de Presupuestos en producción (Railway).
 
@@ -41,4 +41,4 @@ Mediano (cambio de modelo + migración, vistas, forms, templates de detalle/list
 
 ## Derivó en
 
-—
+[FEAT-015](../features/FEAT-015-presupuestos-pvc-en-dolares.md)

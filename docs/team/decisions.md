@@ -112,6 +112,18 @@
 
 ---
 
+## ADR-010: Cotización USD de presupuestos PVC a nivel de cabecera
+**Fecha**: 2026-06-19
+**Estado**: Activo
+
+**Contexto**: Los presupuestos en PVC se cotizan siempre en dólares, pero el sistema necesita seguir calculando todo en pesos como base común (recargos, IVA, KPIs). Antes existía un checkbox "valor en dólares" opcional por ítem con su propia cotización, que solo se usaba para convertir a pesos al guardar — nunca se mostraba en PDF ni listado, y permitía cotizaciones distintas entre ítems del mismo presupuesto.
+
+**Decisión**: Se agregó `Presupuesto.cotizacion_usd` como campo único de cabecera (obligatorio si `tipo_material = pvc`, validado en `PresupuestoForm.clean()`). El monto en pesos sigue siendo la fuente de verdad (`total`, `precio_unitario`, etc., sin cambios); el USD se deriva siempre en el momento de mostrarlo (`monto_ars / cotizacion_usd`) vía métodos `get_*_usd()` en `Presupuesto` e `ItemPresupuesto`, nunca se persiste un monto en USD por ítem. Se eliminó el checkbox por ítem y el alta de ítems PVC se bloquea si el presupuesto no tiene cotización configurada.
+
+**Consecuencias**: Si se cambia la cotización de un presupuesto PVC después de cargar ítems, el USD mostrado de todos los ítems se recalcula automáticamente (es el comportamiento esperado, no un bug). Los presupuestos en Aluminio no se ven afectados. Cualquier nuevo lugar que muestre montos de un presupuesto PVC debe usar los getters `_usd` en lugar de leer `precio_unitario`/`total` directamente, para no mezclar monedas.
+
+---
+
 ## ADR-005: Chart.js para gráficos en detalle de cliente
 **Fecha**: 2026-03-06
 **Estado**: Activo

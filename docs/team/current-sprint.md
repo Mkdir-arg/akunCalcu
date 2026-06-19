@@ -23,6 +23,7 @@ _Se define en el sprint planning._
 | US-028 | Backup automatizado de BD con n8n + Google Drive | ✅ Completado | Implementado fuera de sprint activo; FEAT-012 |
 | US-029 | Modalidad de seña en presupuestos | ✅ Completado | Implementado fuera de sprint activo; FEAT-013 |
 | US-030 | Confirmación antes de reemplazar accesorio en hoja configurator | ✅ Completado | Implementado fuera de sprint activo; FEAT-014 |
+| US-032 | Presupuestos PVC siempre en dólares | ✅ Completado | Implementado fuera de sprint activo; FEAT-015 |
 
 ## Impedimentos
 

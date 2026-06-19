@@ -610,6 +610,20 @@ function cerrarModalItem() {
     document.body.style.overflow = '';
 }
 
+function syncCamposRecargo() {
+    const tipoObraSelect = document.getElementById('id_tipo_obra');
+    const campoObraNueva = document.getElementById('recargo-obra-nueva-field');
+    const campoRenovacion = document.getElementById('recargo-renovacion-field');
+    if (!tipoObraSelect || !campoObraNueva || !campoRenovacion) return;
+    campoObraNueva.style.display = tipoObraSelect.value === 'obra_nueva' ? '' : 'none';
+    campoRenovacion.style.display = tipoObraSelect.value === 'renovacion' ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    syncCamposRecargo();
+    const tipoObraSelect = document.getElementById('id_tipo_obra');
+    if (tipoObraSelect) tipoObraSelect.addEventListener('change', syncCamposRecargo);
+});
+
 function cerrarModalDesglose() {
     document.getElementById('modal-desglose').classList.add('hidden');
     document.body.style.overflow = '';
