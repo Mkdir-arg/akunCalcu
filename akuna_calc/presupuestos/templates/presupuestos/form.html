@@ -62,10 +62,9 @@ function syncCampoCotizacionUsd() {
     if (!tipoMaterial || !campo) return;
     campo.style.display = tipoMaterial.value === 'pvc' ? '' : 'none';
 }
-document.addEventListener('DOMContentLoaded', () => {
-    syncCampoCotizacionUsd();
-    const tipoMaterial = document.getElementById('id_tipo_material');
-    if (tipoMaterial) tipoMaterial.addEventListener('change', syncCampoCotizacionUsd);
-});
+document.addEventListener('DOMContentLoaded', syncCampoCotizacionUsd);
+if (window.jQuery) {
+    window.jQuery(document).on('change', '#id_tipo_material', syncCampoCotizacionUsd);
+}
 </script>
 {% endblock %}

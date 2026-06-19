@@ -618,11 +618,10 @@ function syncCamposRecargo() {
     campoObraNueva.style.display = tipoObraSelect.value === 'obra_nueva' ? '' : 'none';
     campoRenovacion.style.display = tipoObraSelect.value === 'renovacion' ? '' : 'none';
 }
-document.addEventListener('DOMContentLoaded', () => {
-    syncCamposRecargo();
-    const tipoObraSelect = document.getElementById('id_tipo_obra');
-    if (tipoObraSelect) tipoObraSelect.addEventListener('change', syncCamposRecargo);
-});
+document.addEventListener('DOMContentLoaded', syncCamposRecargo);
+if (window.jQuery) {
+    window.jQuery(document).on('change', '#id_tipo_obra', syncCamposRecargo);
+}
 
 function cerrarModalDesglose() {
     document.getElementById('modal-desglose').classList.add('hidden');
