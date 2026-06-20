@@ -131,7 +131,7 @@
 
     function toggleSeccion() {
         if (!tipo || !seccion) return;
-        seccion.classList.toggle('hidden', tipo.value !== 'visita');
+        seccion.classList.toggle('hidden', !['mediciones', 'colocaciones'].includes(tipo.value));
     }
 
     function mostrarMapa(la, lo) {

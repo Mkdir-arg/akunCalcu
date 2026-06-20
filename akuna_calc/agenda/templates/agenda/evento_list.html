@@ -54,7 +54,21 @@
                             <p class="text-xs text-slate-400 mt-1 truncate max-w-md">{{ evento.descripcion|truncatechars:70 }}</p>
                             {% endif %}
                         </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-600">{{ evento.get_tipo_display }}</td>
+                        <td class="hidden md:table-cell px-6 py-4">
+                            {% if evento.tipo == 'mediciones' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"><i class="fas fa-ruler-combined mr-1"></i>Mediciones</span>
+                            {% elif evento.tipo == 'servicio_tecnico' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800"><i class="fas fa-tools mr-1"></i>Servicio técnico</span>
+                            {% elif evento.tipo == 'pendientes' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Pendientes</span>
+                            {% elif evento.tipo == 'llamar' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fas fa-phone mr-1"></i>Llamar</span>
+                            {% elif evento.tipo == 'colocaciones' %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800"><i class="fas fa-hammer mr-1"></i>Colocaciones</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{{ evento.get_tipo_display }}</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-700 whitespace-nowrap">
                             {% with prox=evento.proximo_envio %}
                                 {% if prox %}{{ prox|date:"d/m/Y H:i" }}{% else %}<span class="text-slate-300">—</span>{% endif %}

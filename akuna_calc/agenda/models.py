@@ -20,10 +20,11 @@ class EventoAgendaQuerySet(models.QuerySet):
 
 class EventoAgenda(models.Model):
     TIPO_CHOICES = [
-        ('visita', 'Visita'),
-        ('vencimiento', 'Vencimiento'),
-        ('cobro', 'Cobro'),
-        ('otro', 'Otro'),
+        ('mediciones', 'Mediciones'),
+        ('servicio_tecnico', 'Servicio técnico'),
+        ('pendientes', 'Pendientes'),
+        ('llamar', 'Llamar'),
+        ('colocaciones', 'Colocaciones'),
     ]
     RECURRENCIA_CHOICES = [
         ('ninguna', 'Sin repetir'),
@@ -40,7 +41,7 @@ class EventoAgenda(models.Model):
     titulo = models.CharField(max_length=200, verbose_name="Título")
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
     tipo = models.CharField(
-        max_length=20, choices=TIPO_CHOICES, default='otro', verbose_name="Tipo",
+        max_length=20, choices=TIPO_CHOICES, default='pendientes', verbose_name="Tipo",
     )
     fecha_evento = models.DateField(verbose_name="Fecha del evento")
     hora_envio = models.TimeField(verbose_name="Hora de envío")

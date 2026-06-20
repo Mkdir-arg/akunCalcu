@@ -65,9 +65,11 @@
                     <a href="{% url 'agenda:editar' evento.pk %}"
                        title="{{ evento.hora_envio|time:'H:i' }} · {{ evento.titulo }} ({{ evento.get_tipo_display }})"
                        class="block truncate rounded px-1.5 py-0.5 text-[11px] font-medium leading-tight
-                       {% if evento.tipo == 'visita' %}bg-blue-100 text-blue-800 hover:bg-blue-200
-                       {% elif evento.tipo == 'vencimiento' %}bg-red-100 text-red-800 hover:bg-red-200
-                       {% elif evento.tipo == 'cobro' %}bg-green-100 text-green-800 hover:bg-green-200
+                       {% if evento.tipo == 'mediciones' %}bg-blue-100 text-blue-800 hover:bg-blue-200
+                       {% elif evento.tipo == 'servicio_tecnico' %}bg-orange-100 text-orange-800 hover:bg-orange-200
+                       {% elif evento.tipo == 'pendientes' %}bg-yellow-100 text-yellow-800 hover:bg-yellow-200
+                       {% elif evento.tipo == 'llamar' %}bg-purple-100 text-purple-800 hover:bg-purple-200
+                       {% elif evento.tipo == 'colocaciones' %}bg-green-100 text-green-800 hover:bg-green-200
                        {% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                         <i class="fas fa-circle text-[6px] align-middle mr-0.5"></i>{{ evento.hora_envio|time:'H:i' }} {{ evento.titulo }}
                     </a>
@@ -79,10 +81,11 @@
 
         <!-- Referencias -->
         <div class="flex flex-wrap gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
-            <span><i class="fas fa-circle text-blue-400 mr-1"></i>Visita</span>
-            <span><i class="fas fa-circle text-red-400 mr-1"></i>Vencimiento</span>
-            <span><i class="fas fa-circle text-green-400 mr-1"></i>Cobro</span>
-            <span><i class="fas fa-circle text-slate-400 mr-1"></i>Otro</span>
+            <span><i class="fas fa-circle text-blue-400 mr-1"></i>Mediciones</span>
+            <span><i class="fas fa-circle text-orange-400 mr-1"></i>Servicio técnico</span>
+            <span><i class="fas fa-circle text-yellow-400 mr-1"></i>Pendientes</span>
+            <span><i class="fas fa-circle text-purple-400 mr-1"></i>Llamar</span>
+            <span><i class="fas fa-circle text-green-400 mr-1"></i>Colocaciones</span>
         </div>
     </div>
 </div>

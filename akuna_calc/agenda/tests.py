@@ -24,11 +24,11 @@ class EventoAgendaModelTests(TestCase):
 
     def test_str(self):
         e = EventoAgenda.objects.create(
-            titulo='Visita Pérez', tipo='visita', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            titulo='Medición Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
         )
         s = str(e)
-        self.assertIn('Visita Pérez', s)
-        self.assertIn('Visita', s)
+        self.assertIn('Medición Pérez', s)
+        self.assertIn('Mediciones', s)
         self.assertIn('Programado', s)
 
     def test_fecha_recordatorio_con_anticipacion(self):
@@ -115,18 +115,18 @@ class EventoVisitaClienteTests(TestCase):
 
     def test_maps_url_con_coordenadas(self):
         e = EventoAgenda(titulo='V', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
-                         tipo='visita', lat=-34.92, lng=-57.95)
+                         tipo='mediciones', lat=-34.92, lng=-57.95)
         self.assertIn('query=-34.92,-57.95', e.maps_url())
 
     def test_maps_url_por_direccion(self):
         e = EventoAgenda(titulo='V', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
-                         tipo='visita', direccion='Calle 123, La Plata')
+                         tipo='mediciones', direccion='Calle 123, La Plata')
         self.assertIn('maps/search', e.maps_url())
         self.assertIn('Calle', e.maps_url())
 
     def test_mensaje_incluye_cliente_direccion_y_maps(self):
         e = EventoAgenda.objects.create(
-            titulo='Visita Pérez', tipo='visita', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            titulo='Visita Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
             cliente=self.cliente, direccion='Calle 123, La Plata', lat=-34.92, lng=-57.95,
         )
         msg = e.mensaje()
@@ -213,7 +213,7 @@ class EventoViewsTests(TestCase):
     def test_calendario_muestra_evento_del_mes(self):
         self.client.login(username='admin', password='pass1234')
         e = EventoAgenda.objects.create(
-            titulo='Visita calendario', tipo='visita',
+            titulo='Visita calendario', tipo='mediciones',
             fecha_evento=date(2026, 7, 15), hora_envio=time(9, 0),
         )
         e.destinatarios.add(self.num)
@@ -223,12 +223,12 @@ class EventoViewsTests(TestCase):
     def test_crear_evento(self):
         self.client.login(username='admin', password='pass1234')
         resp = self.client.post(reverse('agenda:crear'), {
-            'titulo': 'Visita obra', 'descripcion': 'Medir aberturas', 'tipo': 'visita',
+            'titulo': 'Medición obra', 'descripcion': 'Medir aberturas', 'tipo': 'mediciones',
             'fecha_evento': '2026-06-20', 'hora_envio': '09:00', 'anticipacion_dias': 0,
             'recurrencia': 'ninguna', 'destinatarios': [self.num.pk], 'activo': 'on',
         })
         self.assertEqual(resp.status_code, 302)
-        self.assertTrue(EventoAgenda.objects.filter(titulo='Visita obra').exists())
+        self.assertTrue(EventoAgenda.objects.filter(titulo='Medición obra').exists())
 
     def test_crear_sin_destinatarios_falla(self):
         self.client.login(username='admin', password='pass1234')
