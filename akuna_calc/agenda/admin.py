@@ -5,7 +5,7 @@ from .models import EventoAgenda
 
 @admin.register(EventoAgenda)
 class EventoAgendaAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'tipo', 'fecha_evento', 'hora_envio', 'recurrencia', 'estado', 'activo')
-    list_filter = ('tipo', 'recurrencia', 'estado', 'activo')
+    list_display = ('titulo', 'tipo', 'fecha_evento', 'hora_envio', 'estado', 'activo')
+    list_filter = ('tipo', 'estado', 'activo')
     search_fields = ('titulo', 'descripcion')
     filter_horizontal = ('destinatarios',)
