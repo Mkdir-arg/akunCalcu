@@ -83,44 +83,87 @@ class EventoDeleteView(LoginRequiredMixin, DeleteView):
 
 @login_required
 def calendario(request):
+    from datetime import date as _date, timedelta
     hoy = timezone.localdate()
-    try:
-        anio = int(request.GET.get('anio', hoy.year))
-        mes = int(request.GET.get('mes', hoy.month))
-    except (TypeError, ValueError):
-        anio, mes = hoy.year, hoy.month
-    if not 1 <= mes <= 12:
-        anio, mes = hoy.year, hoy.month
+    escala = request.GET.get('escala', 'mes')
+    if escala not in ('mes', 'semana', 'dia'):
+        escala = 'mes'
 
-    eventos = list(
-        EventoAgenda.objects.filter(activo=True).exclude(estado='cancelado')
-    )
+    eventos_qs = list(EventoAgenda.objects.filter(activo=True).exclude(estado='cancelado'))
+    ctx = {'hoy': hoy, 'escala': escala}
 
-    cal = _calendar.Calendar(firstweekday=0)  # lunes primero
-    semanas = []
-    for semana in cal.monthdatescalendar(anio, mes):
-        fila = []
-        for dia in semana:
-            fila.append({
+    if escala == 'mes':
+        try:
+            anio = int(request.GET.get('anio', hoy.year))
+            mes  = int(request.GET.get('mes',  hoy.month))
+        except (TypeError, ValueError):
+            anio, mes = hoy.year, hoy.month
+        if not 1 <= mes <= 12:
+            anio, mes = hoy.year, hoy.month
+
+        cal = _calendar.Calendar(firstweekday=0)
+        semanas = []
+        for semana in cal.monthdatescalendar(anio, mes):
+            fila = []
+            for dia in semana:
+                fila.append({
+                    'fecha': dia,
+                    'in_month': dia.month == mes,
+                    'is_today': dia == hoy,
+                    'eventos': [e for e in eventos_qs if e.ocurre_en(dia)],
+                })
+            semanas.append(fila)
+
+        mes_prev, anio_prev = (12, anio - 1) if mes == 1 else (mes - 1, anio)
+        mes_next, anio_next = (1, anio + 1) if mes == 12 else (mes + 1, anio)
+        ctx.update({
+            'semanas': semanas,
+            'anio': anio, 'mes': mes,
+            'nombre_mes': NOMBRES_MES[mes],
+            'mes_prev': mes_prev, 'anio_prev': anio_prev,
+            'mes_next': mes_next, 'anio_next': anio_next,
+        })
+
+    elif escala == 'semana':
+        try:
+            fecha_ref = _date.fromisoformat(request.GET.get('fecha', str(hoy)))
+        except (ValueError, TypeError):
+            fecha_ref = hoy
+        lunes = fecha_ref - timedelta(days=fecha_ref.weekday())
+        dias_semana = []
+        for i in range(7):
+            dia = lunes + timedelta(days=i)
+            dias_semana.append({
                 'fecha': dia,
-                'in_month': dia.month == mes,
                 'is_today': dia == hoy,
-                'eventos': [e for e in eventos if e.ocurre_en(dia)],
+                'eventos': sorted([e for e in eventos_qs if e.ocurre_en(dia)], key=lambda e: e.hora_envio),
             })
-        semanas.append(fila)
+        ctx.update({
+            'dias_semana': dias_semana,
+            'lunes': lunes,
+            'domingo': lunes + timedelta(days=6),
+            'sem_prev': str(lunes - timedelta(days=7)),
+            'sem_next': str(lunes + timedelta(days=7)),
+            'nombre_mes_lunes': NOMBRES_MES[lunes.month],
+            'nombre_mes_domingo': NOMBRES_MES[(lunes + timedelta(days=6)).month],
+        })
 
-    mes_prev, anio_prev = (12, anio - 1) if mes == 1 else (mes - 1, anio)
-    mes_next, anio_next = (1, anio + 1) if mes == 12 else (mes + 1, anio)
+    elif escala == 'dia':
+        try:
+            fecha_ref = _date.fromisoformat(request.GET.get('fecha', str(hoy)))
+        except (ValueError, TypeError):
+            fecha_ref = hoy
+        DIAS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        ctx.update({
+            'fecha_dia': fecha_ref,
+            'eventos_dia': sorted([e for e in eventos_qs if e.ocurre_en(fecha_ref)], key=lambda e: e.hora_envio),
+            'dia_prev': str(fecha_ref - timedelta(days=1)),
+            'dia_next': str(fecha_ref + timedelta(days=1)),
+            'nombre_dia': DIAS_ES[fecha_ref.weekday()],
+            'nombre_mes_dia': NOMBRES_MES[fecha_ref.month],
+        })
 
-    return render(request, 'agenda/evento_calendar.html', {
-        'semanas': semanas,
-        'anio': anio,
-        'mes': mes,
-        'nombre_mes': NOMBRES_MES[mes],
-        'mes_prev': mes_prev, 'anio_prev': anio_prev,
-        'mes_next': mes_next, 'anio_next': anio_next,
-        'hoy': hoy,
-    })
+    return render(request, 'agenda/evento_calendar.html', ctx)
 
 
 @login_required

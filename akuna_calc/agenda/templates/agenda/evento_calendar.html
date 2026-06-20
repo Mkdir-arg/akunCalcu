@@ -7,22 +7,28 @@
 <div class="max-w-full mx-auto px-4 animate-fade-in">
 
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
             <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
                 <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>Agenda
             </h1>
             <p class="text-slate-500 font-medium mt-1">Vista de calendario</p>
         </div>
-        <div class="flex items-center gap-2">
-            <!-- Toggle vista -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- Selector de escala -->
             <div class="inline-flex rounded-xl overflow-hidden border border-gray-300">
-                <a href="{% url 'agenda:lista' %}" class="px-4 py-2 text-sm font-semibold bg-white text-slate-600 hover:bg-slate-50">
-                    <i class="fas fa-list mr-1"></i>Lista
+                <a href="?escala=dia{% if escala == 'dia' %}&fecha={{ fecha_dia }}{% elif escala == 'semana' %}&fecha={{ lunes }}{% endif %}"
+                   class="px-4 py-2 text-sm font-semibold {% if escala == 'dia' %}bg-blue-600 text-white{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+                    <i class="fas fa-square mr-1"></i>Día
                 </a>
-                <span class="px-4 py-2 text-sm font-semibold bg-blue-600 text-white">
-                    <i class="fas fa-calendar mr-1"></i>Calendario
-                </span>
+                <a href="?escala=semana{% if escala == 'semana' %}&fecha={{ lunes }}{% elif escala == 'dia' %}&fecha={{ fecha_dia }}{% endif %}"
+                   class="px-4 py-2 text-sm font-semibold {% if escala == 'semana' %}bg-blue-600 text-white{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+                    <i class="fas fa-grip-lines mr-1"></i>Semana
+                </a>
+                <a href="?escala=mes{% if escala == 'mes' %}&anio={{ anio }}&mes={{ mes }}{% endif %}"
+                   class="px-4 py-2 text-sm font-semibold {% if escala == 'mes' %}bg-blue-600 text-white{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+                    <i class="fas fa-calendar mr-1"></i>Mes
+                </a>
             </div>
             <a href="{% url 'agenda:crear' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-2xl font-semibold shadow-xl inline-flex items-center">
                 <i class="fas fa-plus mr-2"></i>Nuevo
@@ -31,27 +37,28 @@
     </div>
 
     <div class="bg-white rounded-3xl shadow-xl p-4 sm:p-6">
-        <!-- Navegación de mes -->
+
+        {# ===================== VISTA MES ===================== #}
+        {% if escala == 'mes' %}
+
         <div class="flex items-center justify-between mb-4">
-            <a href="?anio={{ anio_prev }}&mes={{ mes_prev }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+            <a href="?escala=mes&anio={{ anio_prev }}&mes={{ mes_prev }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
                 <i class="fas fa-chevron-left"></i>
             </a>
             <h2 class="text-xl font-bold text-slate-800">{{ nombre_mes }} {{ anio }}</h2>
-            <a href="?anio={{ anio_next }}&mes={{ mes_next }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+            <a href="?escala=mes&anio={{ anio_next }}&mes={{ mes_next }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
                 <i class="fas fa-chevron-right"></i>
             </a>
         </div>
 
-        <!-- Encabezados de día -->
         <div class="grid grid-cols-7 gap-1 mb-1">
-            {% for dia in "LMXJVSD" %}
+            {% for label in "LMXJVSD" %}
             <div class="text-center text-xs font-bold text-slate-500 uppercase py-2">
                 {% if forloop.counter0 == 0 %}Lun{% elif forloop.counter0 == 1 %}Mar{% elif forloop.counter0 == 2 %}Mié{% elif forloop.counter0 == 3 %}Jue{% elif forloop.counter0 == 4 %}Vie{% elif forloop.counter0 == 5 %}Sáb{% else %}Dom{% endif %}
             </div>
             {% endfor %}
         </div>
 
-        <!-- Grilla -->
         <div class="grid grid-cols-7 gap-1">
             {% for semana in semanas %}
                 {% for celda in semana %}
@@ -79,7 +86,133 @@
             {% endfor %}
         </div>
 
-        <!-- Referencias -->
+        {# ===================== VISTA SEMANA ===================== #}
+        {% elif escala == 'semana' %}
+
+        <div class="flex items-center justify-between mb-4">
+            <a href="?escala=semana&fecha={{ sem_prev }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <h2 class="text-xl font-bold text-slate-800">
+                {% if lunes.month == domingo.month %}
+                    {{ lunes.day }}–{{ domingo.day }} de {{ nombre_mes_domingo }} {{ domingo.year }}
+                {% else %}
+                    {{ lunes.day }} {{ nombre_mes_lunes }} – {{ domingo.day }} {{ nombre_mes_domingo }} {{ domingo.year }}
+                {% endif %}
+            </h2>
+            <a href="?escala=semana&fecha={{ sem_next }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-7 gap-2">
+            {% for dia in dias_semana %}
+            <a href="?escala=dia&fecha={{ dia.fecha|date:'Y-m-d' }}"
+               class="block rounded-xl border p-2 min-h-[200px]
+               {% if dia.is_today %}ring-2 ring-blue-400 border-blue-300 bg-blue-50{% else %}border-gray-200 bg-white hover:bg-slate-50{% endif %}
+               transition-colors">
+                <div class="text-center mb-2">
+                    <p class="text-[11px] font-bold uppercase {% if dia.is_today %}text-blue-600{% else %}text-slate-500{% endif %}">
+                        {% with wd=dia.fecha.weekday %}
+                            {% if wd == 0 %}Lun{% elif wd == 1 %}Mar{% elif wd == 2 %}Mié{% elif wd == 3 %}Jue{% elif wd == 4 %}Vie{% elif wd == 5 %}Sáb{% else %}Dom{% endif %}
+                        {% endwith %}
+                    </p>
+                    <p class="text-2xl font-bold {% if dia.is_today %}text-blue-600{% else %}text-slate-800{% endif %}">{{ dia.fecha.day }}</p>
+                </div>
+                <div class="flex flex-col gap-1">
+                    {% for evento in dia.eventos %}
+                    <span class="block rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight
+                        {% if evento.tipo == 'mediciones' %}bg-blue-100 text-blue-800
+                        {% elif evento.tipo == 'servicio_tecnico' %}bg-orange-100 text-orange-800
+                        {% elif evento.tipo == 'pendientes' %}bg-yellow-100 text-yellow-800
+                        {% elif evento.tipo == 'llamar' %}bg-purple-100 text-purple-800
+                        {% elif evento.tipo == 'colocaciones' %}bg-green-100 text-green-800
+                        {% else %}bg-slate-100 text-slate-700{% endif %}">
+                        <i class="fas fa-circle text-[5px] align-middle mr-0.5"></i>{{ evento.hora_envio|time:'H:i' }} {{ evento.titulo|truncatechars:20 }}
+                    </span>
+                    {% empty %}
+                    <p class="text-[10px] text-slate-300 text-center mt-4">—</p>
+                    {% endfor %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {# ===================== VISTA DÍA ===================== #}
+        {% elif escala == 'dia' %}
+
+        <div class="flex items-center justify-between mb-6">
+            <a href="?escala=dia&fecha={{ dia_prev }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <div class="text-center">
+                <h2 class="text-xl font-bold text-slate-800">{{ nombre_dia }}, {{ fecha_dia.day }} de {{ nombre_mes_dia }} {{ fecha_dia.year }}</h2>
+                {% if fecha_dia == hoy %}<span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Hoy</span>{% endif %}
+            </div>
+            <a href="?escala=dia&fecha={{ dia_next }}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        {% if eventos_dia %}
+        <div class="flex flex-col gap-3 max-w-2xl mx-auto">
+            {% for evento in eventos_dia %}
+            <a href="{% url 'agenda:editar' evento.pk %}"
+               class="flex items-start gap-4 p-4 rounded-2xl border transition-all hover:shadow-md
+               {% if evento.tipo == 'mediciones' %}border-blue-200 bg-blue-50 hover:bg-blue-100
+               {% elif evento.tipo == 'servicio_tecnico' %}border-orange-200 bg-orange-50 hover:bg-orange-100
+               {% elif evento.tipo == 'pendientes' %}border-yellow-200 bg-yellow-50 hover:bg-yellow-100
+               {% elif evento.tipo == 'llamar' %}border-purple-200 bg-purple-50 hover:bg-purple-100
+               {% elif evento.tipo == 'colocaciones' %}border-green-200 bg-green-50 hover:bg-green-100
+               {% else %}border-slate-200 bg-slate-50 hover:bg-slate-100{% endif %}">
+                <div class="text-center min-w-[52px]">
+                    <p class="text-lg font-bold
+                        {% if evento.tipo == 'mediciones' %}text-blue-700
+                        {% elif evento.tipo == 'servicio_tecnico' %}text-orange-700
+                        {% elif evento.tipo == 'pendientes' %}text-yellow-700
+                        {% elif evento.tipo == 'llamar' %}text-purple-700
+                        {% elif evento.tipo == 'colocaciones' %}text-green-700
+                        {% else %}text-slate-700{% endif %}">
+                        {{ evento.hora_envio|time:'H:i' }}
+                    </p>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="font-semibold text-slate-800">{{ evento.titulo }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
+                            {% if evento.tipo == 'mediciones' %}bg-blue-200 text-blue-800
+                            {% elif evento.tipo == 'servicio_tecnico' %}bg-orange-200 text-orange-800
+                            {% elif evento.tipo == 'pendientes' %}bg-yellow-200 text-yellow-800
+                            {% elif evento.tipo == 'llamar' %}bg-purple-200 text-purple-800
+                            {% elif evento.tipo == 'colocaciones' %}bg-green-200 text-green-800
+                            {% else %}bg-slate-200 text-slate-700{% endif %}">
+                            {{ evento.get_tipo_display }}
+                        </span>
+                        {% if evento.estado == 'enviado' %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700"><i class="fas fa-check mr-1"></i>Enviado</span>{% endif %}
+                    </div>
+                    {% if evento.descripcion %}<p class="text-sm text-slate-500 truncate">{{ evento.descripcion|truncatechars:80 }}</p>{% endif %}
+                    <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-500">
+                        {% if evento.cliente %}<span><i class="fas fa-user mr-1"></i>{{ evento.cliente.nombre }} {{ evento.cliente.apellido }}</span>{% endif %}
+                        {% if evento.tecnico %}<span><i class="fas fa-hard-hat mr-1"></i>{{ evento.tecnico.get_full_name|default:evento.tecnico.username }}</span>{% endif %}
+                        {% if evento.colocador %}<span><i class="fas fa-hammer mr-1"></i>{{ evento.colocador.nombre }}</span>{% endif %}
+                        {% if evento.direccion %}<span><i class="fas fa-map-marker-alt mr-1"></i>{{ evento.direccion|truncatechars:40 }}</span>{% endif %}
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-slate-300 mt-1"></i>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <i class="fas fa-calendar-check text-slate-200 text-5xl mb-3"></i>
+            <p class="text-slate-400 font-medium">Sin eventos para este día</p>
+        </div>
+        {% endif %}
+
+        {% endif %}
+
+        <!-- Referencias (solo mes y semana) -->
+        {% if escala != 'dia' %}
         <div class="flex flex-wrap gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
             <span><i class="fas fa-circle text-blue-400 mr-1"></i>Mediciones</span>
             <span><i class="fas fa-circle text-orange-400 mr-1"></i>Servicio técnico</span>
@@ -87,6 +220,8 @@
             <span><i class="fas fa-circle text-purple-400 mr-1"></i>Llamar</span>
             <span><i class="fas fa-circle text-green-400 mr-1"></i>Colocaciones</span>
         </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}
