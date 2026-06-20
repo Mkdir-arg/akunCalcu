@@ -56,6 +56,10 @@ class EventoAgenda(models.Model):
         'comercial.Cuenta', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='eventos_agenda', verbose_name="Colocador",
     )
+    tecnico = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='eventos_tecnico', verbose_name="Técnico responsable",
+    )
     direccion = models.CharField(max_length=300, blank=True, verbose_name="Dirección")
     lat = models.FloatField(null=True, blank=True, verbose_name="Latitud")
     lng = models.FloatField(null=True, blank=True, verbose_name="Longitud")

@@ -1,10 +1,13 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from comercial.models import Cliente, Cuenta
 from gastos_diarios.models import NumeroAutorizado
 
 from .models import EventoAgenda
 
+
+User = get_user_model()
 
 _INPUT = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
@@ -15,7 +18,7 @@ class EventoAgendaForm(forms.ModelForm):
         fields = [
             'titulo', 'descripcion', 'tipo', 'fecha_evento', 'hora_envio',
             'anticipacion_dias', 'destinatarios', 'activo',
-            'colocador', 'cliente', 'direccion', 'lat', 'lng',
+            'tecnico', 'colocador', 'cliente', 'direccion', 'lat', 'lng',
         ]
         widgets = {
             'titulo': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'Ej: Colocación de ventana en obra Pérez'}),
@@ -26,6 +29,7 @@ class EventoAgendaForm(forms.ModelForm):
             'anticipacion_dias': forms.NumberInput(attrs={'class': _INPUT, 'min': 0}),
             'destinatarios': forms.SelectMultiple(attrs={'class': _INPUT}),
             'activo': forms.CheckboxInput(attrs={'class': 'h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500'}),
+            'tecnico': forms.Select(attrs={'class': _INPUT, 'id': 'id_tecnico'}),
             'colocador': forms.Select(attrs={'class': _INPUT, 'id': 'id_colocador'}),
             'cliente': forms.Select(attrs={'class': _INPUT, 'id': 'id_cliente'}),
             'direccion': forms.TextInput(attrs={'class': _INPUT, 'id': 'id_direccion', 'placeholder': 'Calle 123, Localidad'}),
@@ -44,6 +48,8 @@ class EventoAgendaForm(forms.ModelForm):
             tipo_cuenta__tipo='colocadores', activo=True, deleted_at__isnull=True,
         ).select_related('tipo_cuenta')
         self.fields['colocador'].required = False
+        self.fields['tecnico'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'username')
+        self.fields['tecnico'].required = False
         self.fields['hora_envio'].input_formats = ['%H:%M', '%H:%M:%S']
         self.fields['fecha_evento'].input_formats = ['%Y-%m-%d']
 

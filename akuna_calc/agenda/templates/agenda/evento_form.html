@@ -36,6 +36,14 @@
                     {% if form.tipo.errors %}<p class="text-xs text-red-600 mt-1">{{ form.tipo.errors.0 }}</p>{% endif %}
                 </div>
 
+                <!-- Técnico responsable (solo Mediciones) -->
+                <div id="campo-tecnico" class="hidden">
+                    <label for="{{ form.tecnico.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Técnico responsable</label>
+                    {{ form.tecnico }}
+                    {% if form.tecnico.errors %}<p class="text-xs text-red-600 mt-1">{{ form.tecnico.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Colocador (solo Colocaciones) -->
                 <div id="campo-colocador" class="hidden">
                     <label for="{{ form.colocador.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Colocador</label>
                     {{ form.colocador }}
@@ -73,8 +81,19 @@
                     {% if form.destinatarios.errors %}<p class="text-xs text-red-600 mt-1">{{ form.destinatarios.errors.0 }}</p>{% endif %}
                 </div>
 
-                <!-- Cliente + Ubicación (visitas) -->
-                <div id="seccion-visita" class="md:col-span-2 border-t pt-5 mt-1 hidden">
+                <!-- Cliente (solo Llamar) -->
+                <div id="seccion-llamar" class="md:col-span-2 border-t pt-5 mt-1 hidden">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-user text-purple-500 mr-1"></i>Cliente a llamar</h2>
+                    <div>
+                        <label for="{{ form.cliente.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                        {{ form.cliente }}
+                        <p class="text-xs text-slate-500 mt-1">El nombre y teléfono del cliente se incluyen en el recordatorio de WhatsApp.</p>
+                    </div>
+                    {{ form.lat }}{{ form.lng }}
+                </div>
+
+                <!-- Cliente + Ubicación (Mediciones y Colocaciones) -->
+                <div id="seccion-ubicacion" class="md:col-span-2 border-t pt-5 mt-1 hidden">
                     <h2 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>Cliente y ubicación</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -117,28 +136,28 @@
 {% block extra_js %}
 <script>
 (function () {
-    const tipo = document.getElementById('id_tipo');
-    const seccion = document.getElementById('seccion-visita');
-    const cliente = document.getElementById('id_cliente');
-    const direccion = document.getElementById('id_direccion');
-    const lat = document.getElementById('id_lat');
-    const lng = document.getElementById('id_lng');
-    const btnBuscar = document.getElementById('btn-buscar-mapa');
-    const mapaCont = document.getElementById('mapa-container');
-    const mapaFrame = document.getElementById('mapa-frame');
-    const mapaLink = document.getElementById('mapa-link');
-    const status = document.getElementById('mapa-status');
+    const tipo          = document.getElementById('id_tipo');
+    const campoTecnico  = document.getElementById('campo-tecnico');
+    const campoColoc    = document.getElementById('campo-colocador');
+    const secLlamar     = document.getElementById('seccion-llamar');
+    const secUbicacion  = document.getElementById('seccion-ubicacion');
+    const cliente       = document.getElementById('id_cliente');
+    const direccion     = document.getElementById('id_direccion');
+    const lat           = document.getElementById('id_lat');
+    const lng           = document.getElementById('id_lng');
+    const btnBuscar     = document.getElementById('btn-buscar-mapa');
+    const mapaCont      = document.getElementById('mapa-container');
+    const mapaFrame     = document.getElementById('mapa-frame');
+    const mapaLink      = document.getElementById('mapa-link');
+    const status        = document.getElementById('mapa-status');
 
-    const campoColocador = document.getElementById('campo-colocador');
-
-    function toggleSeccion() {
-        if (!tipo || !seccion) return;
-        seccion.classList.toggle('hidden', !['mediciones', 'colocaciones'].includes(tipo.value));
-    }
-
-    function toggleColocador() {
-        if (!tipo || !campoColocador) return;
-        campoColocador.classList.toggle('hidden', tipo.value !== 'colocaciones');
+    function syncCampos() {
+        if (!tipo) return;
+        const v = tipo.value;
+        if (campoTecnico)  campoTecnico.classList.toggle('hidden',  v !== 'mediciones');
+        if (campoColoc)    campoColoc.classList.toggle('hidden',    v !== 'colocaciones');
+        if (secLlamar)     secLlamar.classList.toggle('hidden',     v !== 'llamar');
+        if (secUbicacion)  secUbicacion.classList.toggle('hidden',  !['mediciones', 'colocaciones'].includes(v));
     }
 
     function mostrarMapa(la, lo) {
@@ -150,9 +169,9 @@
     }
 
     async function buscarDireccion() {
-        const q = (direccion.value || '').trim();
-        if (!q) { status.textContent = 'Escribí una dirección primero.'; return; }
-        status.textContent = 'Buscando...';
+        const q = (direccion ? direccion.value : '').trim();
+        if (!q) { if (status) status.textContent = 'Escribí una dirección primero.'; return; }
+        if (status) status.textContent = 'Buscando...';
         try {
             const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, {
                 headers: { 'Accept': 'application/json' }
@@ -162,13 +181,13 @@
                 lat.value = data[0].lat;
                 lng.value = data[0].lon;
                 mostrarMapa(data[0].lat, data[0].lon);
-                status.textContent = '✓ Ubicación encontrada. Confirmá que el pin sea correcto.';
+                if (status) status.textContent = '✓ Ubicación encontrada. Confirmá que el pin sea correcto.';
             } else {
                 lat.value = ''; lng.value = '';
-                status.textContent = 'No se encontró la dirección. Probá ser más específico.';
+                if (status) status.textContent = 'No se encontró la dirección. Probá ser más específico.';
             }
         } catch (e) {
-            status.textContent = 'Error al buscar la dirección.';
+            if (status) status.textContent = 'Error al buscar la dirección.';
         }
     }
 
@@ -178,28 +197,26 @@
             const resp = await fetch(`/agenda/cliente/${cliente.value}/info/`);
             if (!resp.ok) return;
             const info = await resp.json();
-            if (info.direccion) {
+            if (info.direccion && direccion) {
                 direccion.value = info.direccion;
                 lat.value = ''; lng.value = '';
-                mapaCont.classList.add('hidden');
-                status.textContent = 'Dirección del cliente cargada. Tocá "Buscar" para ubicarla en el mapa.';
+                if (mapaCont) mapaCont.classList.add('hidden');
+                if (status) status.textContent = 'Dirección del cliente cargada. Tocá "Buscar" para ubicarla en el mapa.';
             }
         } catch (e) { /* noop */ }
     }
 
-    // Select2 (de base.html) dispara 'change' vía jQuery, no como evento nativo:
-    // por eso enlazamos los selects con jQuery y dejamos lo demás en vanilla.
+    // Select2 dispara 'change' vía jQuery — necesario para que los handlers funcionen
     if (window.jQuery) {
-        if (tipo) window.jQuery(tipo).on('change', function () { toggleSeccion(); toggleColocador(); });
+        if (tipo)    window.jQuery(tipo).on('change', syncCampos);
         if (cliente) window.jQuery(cliente).on('change', autocompletarCliente);
     } else {
-        if (tipo) tipo.addEventListener('change', function () { toggleSeccion(); toggleColocador(); });
+        if (tipo)    tipo.addEventListener('change', syncCampos);
         if (cliente) cliente.addEventListener('change', autocompletarCliente);
     }
     if (btnBuscar) btnBuscar.addEventListener('click', buscarDireccion);
 
-    toggleSeccion();
-    toggleColocador();
+    syncCampos();
     if (lat && lat.value && lng && lng.value) {
         mostrarMapa(lat.value, lng.value);
     }

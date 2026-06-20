@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from comercial.models import Cliente
+from comercial.models import Cliente, Cuenta, TipoCuenta
 from gastos_diarios.models import NumeroAutorizado
 
 from .models import EventoAgenda
@@ -35,74 +35,46 @@ class EventoAgendaModelTests(TestCase):
         e = EventoAgenda(fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), anticipacion_dias=2)
         self.assertEqual(e.fecha_recordatorio(), date(2026, 6, 8))
 
-    def test_unico_pendiente_cuando_paso_la_hora(self):
+    def test_pendiente_cuando_paso_la_hora(self):
         e = EventoAgenda.objects.create(
-            titulo='Cobro', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), recurrencia='ninguna',
+            titulo='Evento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
         )
-        # ahora = mismo día 10:00 -> ya pasó las 9:00
         self.assertTrue(e.esta_pendiente(_aware(2026, 6, 10, 10, 0)))
 
-    def test_unico_no_pendiente_antes_de_la_hora(self):
+    def test_no_pendiente_antes_de_la_hora(self):
         e = EventoAgenda.objects.create(
-            titulo='Cobro', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), recurrencia='ninguna',
+            titulo='Evento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
         )
         self.assertFalse(e.esta_pendiente(_aware(2026, 6, 10, 8, 0)))
 
-    def test_unico_con_anticipacion_dispara_antes(self):
+    def test_con_anticipacion_dispara_antes(self):
         e = EventoAgenda.objects.create(
-            titulo='Vencimiento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
-            anticipacion_dias=2, recurrencia='ninguna',
+            titulo='Evento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            anticipacion_dias=2,
         )
         self.assertTrue(e.esta_pendiente(_aware(2026, 6, 8, 9, 30)))
         self.assertFalse(e.esta_pendiente(_aware(2026, 6, 7, 9, 30)))
 
-    def test_unico_enviado_no_vuelve_a_estar_pendiente(self):
+    def test_enviado_no_vuelve_a_estar_pendiente(self):
         e = EventoAgenda.objects.create(
-            titulo='Cobro', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
-            recurrencia='ninguna', estado='enviado',
+            titulo='Evento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            estado='enviado',
         )
         self.assertFalse(e.esta_pendiente(_aware(2026, 6, 10, 10, 0)))
 
-    def test_recurrente_mensual_dispara_el_dia_correcto(self):
+    def test_marcar_enviado_pasa_a_enviado(self):
         e = EventoAgenda.objects.create(
-            titulo='Alquiler', fecha_evento=date(2026, 1, 10), hora_envio=time(9, 0), recurrencia='mensual',
-        )
-        self.assertTrue(e.esta_pendiente(_aware(2026, 6, 10, 9, 30)))   # día 10 de otro mes
-        self.assertFalse(e.esta_pendiente(_aware(2026, 6, 11, 9, 30)))  # día 11 no corresponde
-
-    def test_recurrente_mensual_dia_31_en_mes_corto(self):
-        e = EventoAgenda.objects.create(
-            titulo='Cierre', fecha_evento=date(2026, 1, 31), hora_envio=time(9, 0), recurrencia='mensual',
-        )
-        # Febrero 2026 tiene 28 días -> dispara el 28
-        self.assertTrue(e.esta_pendiente(_aware(2026, 2, 28, 9, 30)))
-
-    def test_recurrente_no_duplica_si_ya_se_envio_hoy(self):
-        e = EventoAgenda.objects.create(
-            titulo='Diario', fecha_evento=date(2026, 6, 1), hora_envio=time(9, 0), recurrencia='diaria',
-            ultimo_envio=_aware(2026, 6, 10, 9, 1),
-        )
-        self.assertFalse(e.esta_pendiente(_aware(2026, 6, 10, 10, 0)))
-        # al otro día sí
-        self.assertTrue(e.esta_pendiente(_aware(2026, 6, 11, 10, 0)))
-
-    def test_marcar_enviado_unico_pasa_a_enviado(self):
-        e = EventoAgenda.objects.create(
-            titulo='Cobro', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), recurrencia='ninguna',
+            titulo='Evento', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
         )
         e.marcar_enviado()
         e.refresh_from_db()
         self.assertEqual(e.estado, 'enviado')
         self.assertIsNotNone(e.ultimo_envio)
 
-    def test_marcar_enviado_recurrente_sigue_programado(self):
-        e = EventoAgenda.objects.create(
-            titulo='Diario', fecha_evento=date(2026, 6, 1), hora_envio=time(9, 0), recurrencia='diaria',
-        )
-        e.marcar_enviado()
-        e.refresh_from_db()
-        self.assertEqual(e.estado, 'programado')
-        self.assertIsNotNone(e.ultimo_envio)
+    def test_ocurre_en_devuelve_true_en_la_fecha(self):
+        e = EventoAgenda(fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0))
+        self.assertTrue(e.ocurre_en(date(2026, 6, 10)))
+        self.assertFalse(e.ocurre_en(date(2026, 6, 11)))
 
 
 class EventoVisitaClienteTests(TestCase):
@@ -126,7 +98,7 @@ class EventoVisitaClienteTests(TestCase):
 
     def test_mensaje_incluye_cliente_direccion_y_maps(self):
         e = EventoAgenda.objects.create(
-            titulo='Visita Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            titulo='Medición Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
             cliente=self.cliente, direccion='Calle 123, La Plata', lat=-34.92, lng=-57.95,
         )
         msg = e.mensaje()
@@ -149,6 +121,53 @@ class EventoVisitaClienteTests(TestCase):
         self.assertIn('La Plata', data['direccion'])
 
 
+class EventoRelacionesTests(TestCase):
+
+    def setUp(self):
+        self.tipo_cta = TipoCuenta.objects.create(tipo='colocadores', descripcion='Colocadores')
+        self.colocador = Cuenta.objects.create(
+            nombre='García Colocaciones', tipo_cuenta=self.tipo_cta, activo=True,
+        )
+        self.tecnico = User.objects.create_user(username='tecnico1', password='pass', first_name='Carlos')
+        self.cliente = Cliente.objects.create(nombre='Ana', apellido='López', telefono='2219999999')
+
+    def test_colocaciones_guarda_colocador(self):
+        e = EventoAgenda.objects.create(
+            titulo='Colocación ventana', tipo='colocaciones',
+            fecha_evento=date(2026, 6, 20), hora_envio=time(9, 0),
+            colocador=self.colocador,
+        )
+        e.refresh_from_db()
+        self.assertEqual(e.colocador, self.colocador)
+
+    def test_mediciones_guarda_tecnico(self):
+        e = EventoAgenda.objects.create(
+            titulo='Medición obra', tipo='mediciones',
+            fecha_evento=date(2026, 6, 20), hora_envio=time(9, 0),
+            tecnico=self.tecnico,
+        )
+        e.refresh_from_db()
+        self.assertEqual(e.tecnico, self.tecnico)
+
+    def test_llamar_guarda_cliente(self):
+        e = EventoAgenda.objects.create(
+            titulo='Llamar a Ana', tipo='llamar',
+            fecha_evento=date(2026, 6, 20), hora_envio=time(9, 0),
+            cliente=self.cliente,
+        )
+        e.refresh_from_db()
+        self.assertEqual(e.cliente, self.cliente)
+
+    def test_campos_opcionales_son_nulos_por_defecto(self):
+        e = EventoAgenda.objects.create(
+            titulo='Pendiente', tipo='pendientes',
+            fecha_evento=date(2026, 6, 20), hora_envio=time(9, 0),
+        )
+        self.assertIsNone(e.colocador)
+        self.assertIsNone(e.tecnico)
+        self.assertIsNone(e.cliente)
+
+
 @patch.dict('os.environ', {'TELEGRAM_BOT_SECRET': 'test-secret'})
 class ApiAgendaTests(TestCase):
 
@@ -158,8 +177,8 @@ class ApiAgendaTests(TestCase):
     def _evento_pendiente(self):
         ayer = timezone.localdate() - timedelta(days=1)
         e = EventoAgenda.objects.create(
-            titulo='Cobro', descripcion='Cobrar a Pérez', tipo='cobro',
-            fecha_evento=ayer, hora_envio=time(0, 1), recurrencia='ninguna',
+            titulo='Llamado', descripcion='Llamar a Pérez', tipo='llamar',
+            fecha_evento=ayer, hora_envio=time(0, 1),
         )
         e.destinatarios.add(self.num)
         return e
@@ -177,7 +196,7 @@ class ApiAgendaTests(TestCase):
         self.assertEqual(data['cantidad'], 1)
         evento = data['eventos'][0]
         self.assertEqual(evento['destinatarios'][0]['numero'], '5491155555555')
-        self.assertIn('Cobro', evento['mensaje'])
+        self.assertIn('Llamado', evento['mensaje'])
 
     def test_marcar_enviado(self):
         e = self._evento_pendiente()
@@ -213,19 +232,19 @@ class EventoViewsTests(TestCase):
     def test_calendario_muestra_evento_del_mes(self):
         self.client.login(username='admin', password='pass1234')
         e = EventoAgenda.objects.create(
-            titulo='Visita calendario', tipo='mediciones',
+            titulo='Medición calendario', tipo='mediciones',
             fecha_evento=date(2026, 7, 15), hora_envio=time(9, 0),
         )
         e.destinatarios.add(self.num)
         resp = self.client.get(reverse('agenda:calendario'), {'anio': 2026, 'mes': 7})
-        self.assertContains(resp, 'Visita calendario')
+        self.assertContains(resp, 'Medición calendario')
 
     def test_crear_evento(self):
         self.client.login(username='admin', password='pass1234')
         resp = self.client.post(reverse('agenda:crear'), {
             'titulo': 'Medición obra', 'descripcion': 'Medir aberturas', 'tipo': 'mediciones',
             'fecha_evento': '2026-06-20', 'hora_envio': '09:00', 'anticipacion_dias': 0,
-            'recurrencia': 'ninguna', 'destinatarios': [self.num.pk], 'activo': 'on',
+            'destinatarios': [self.num.pk], 'activo': 'on',
         })
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(EventoAgenda.objects.filter(titulo='Medición obra').exists())
@@ -233,10 +252,10 @@ class EventoViewsTests(TestCase):
     def test_crear_sin_destinatarios_falla(self):
         self.client.login(username='admin', password='pass1234')
         resp = self.client.post(reverse('agenda:crear'), {
-            'titulo': 'Sin dest', 'tipo': 'otro', 'fecha_evento': '2026-06-20',
-            'hora_envio': '09:00', 'anticipacion_dias': 0, 'recurrencia': 'ninguna', 'activo': 'on',
+            'titulo': 'Sin dest', 'tipo': 'pendientes', 'fecha_evento': '2026-06-20',
+            'hora_envio': '09:00', 'anticipacion_dias': 0, 'activo': 'on',
         })
-        self.assertEqual(resp.status_code, 200)  # vuelve al form con error
+        self.assertEqual(resp.status_code, 200)
         self.assertFalse(EventoAgenda.objects.filter(titulo='Sin dest').exists())
 
     def test_eliminar_evento(self):
