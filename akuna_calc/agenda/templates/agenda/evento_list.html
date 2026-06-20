@@ -39,7 +39,6 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Evento</th>
                         <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Próximo envío</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Recurrencia</th>
                         <th class="hidden lg:table-cell px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Destinatarios</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
@@ -74,7 +73,6 @@
                                 {% if prox %}{{ prox|date:"d/m/Y H:i" }}{% else %}<span class="text-slate-300">—</span>{% endif %}
                             {% endwith %}
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-600">{{ evento.get_recurrencia_display }}</td>
                         <td class="hidden lg:table-cell px-6 py-4 text-center text-sm text-slate-600">
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                                 <i class="fab fa-whatsapp text-green-500 mr-1"></i>{{ evento.destinatarios.count }}
@@ -105,7 +103,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="6" class="px-6 py-12 text-center">
                             <i class="fas fa-calendar-plus text-slate-200 text-5xl mb-3"></i>
                             <p class="text-slate-500 font-medium">No hay eventos agendados</p>
                             <p class="text-slate-400 text-sm mt-1">Creá un evento para programar recordatorios por WhatsApp</p>

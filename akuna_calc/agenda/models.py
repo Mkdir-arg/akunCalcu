@@ -1,4 +1,3 @@
-from calendar import monthrange
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -26,12 +25,6 @@ class EventoAgenda(models.Model):
         ('llamar', 'Llamar'),
         ('colocaciones', 'Colocaciones'),
     ]
-    RECURRENCIA_CHOICES = [
-        ('ninguna', 'Sin repetir'),
-        ('diaria', 'Diaria'),
-        ('semanal', 'Semanal'),
-        ('mensual', 'Mensual'),
-    ]
     ESTADO_CHOICES = [
         ('programado', 'Programado'),
         ('enviado', 'Enviado'),
@@ -50,9 +43,6 @@ class EventoAgenda(models.Model):
         verbose_name="Anticipación (días antes)",
         help_text="Avisar X días antes de la fecha. Solo aplica a eventos sin repetir.",
     )
-    recurrencia = models.CharField(
-        max_length=20, choices=RECURRENCIA_CHOICES, default='ninguna', verbose_name="Recurrencia",
-    )
     destinatarios = models.ManyToManyField(
         'gastos_diarios.NumeroAutorizado',
         related_name='eventos_agenda',
@@ -61,6 +51,10 @@ class EventoAgenda(models.Model):
     cliente = models.ForeignKey(
         'comercial.Cliente', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='eventos_agenda', verbose_name="Cliente",
+    )
+    colocador = models.ForeignKey(
+        'comercial.Cuenta', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='eventos_agenda', verbose_name="Colocador",
     )
     direccion = models.CharField(max_length=300, blank=True, verbose_name="Dirección")
     lat = models.FloatField(null=True, blank=True, verbose_name="Latitud")
@@ -98,67 +92,26 @@ class EventoAgenda(models.Model):
         """Fecha en que se envía el aviso de un evento sin repetir (con anticipación)."""
         return self.fecha_evento - timedelta(days=self.anticipacion_dias)
 
-    def _corresponde(self, fecha):
-        """Si un evento recurrente debe dispararse en la fecha dada."""
-        if fecha < self.fecha_evento:
-            return False
-        if self.recurrencia == 'diaria':
-            return True
-        if self.recurrencia == 'semanal':
-            return fecha.weekday() == self.fecha_evento.weekday()
-        if self.recurrencia == 'mensual':
-            ultimo_dia = monthrange(fecha.year, fecha.month)[1]
-            return fecha.day == min(self.fecha_evento.day, ultimo_dia)
-        return False
-
-    def _enviado_hoy(self, ahora):
-        if not self.ultimo_envio:
-            return False
-        return timezone.localtime(self.ultimo_envio).date() == ahora.date()
-
     def esta_pendiente(self, ahora=None):
         ahora = ahora or timezone.localtime()
-        if not self.activo or self.estado == 'cancelado':
+        if not self.activo or self.estado != 'programado':
             return False
-        if self.recurrencia == 'ninguna':
-            if self.estado != 'programado':
-                return False
-            return self._aware(self.fecha_recordatorio()) <= ahora
-        # Recurrente: corresponde hoy, ya pasó la hora y no se envió hoy
-        if not self._corresponde(ahora.date()):
-            return False
-        if self._aware(ahora.date()) > ahora:
-            return False
-        return not self._enviado_hoy(ahora)
+        return self._aware(self.fecha_recordatorio()) <= ahora
 
     def proximo_envio(self):
         """Próximo datetime de envío, para mostrar en el listado."""
-        ahora = timezone.localtime()
-        if self.recurrencia == 'ninguna':
-            if self.estado != 'programado':
-                return None
-            return self._aware(self.fecha_recordatorio())
-        for i in range(0, 366):
-            dia = ahora.date() + timedelta(days=i)
-            if not self._corresponde(dia):
-                continue
-            candidato = self._aware(dia)
-            if dia == ahora.date() and (self._enviado_hoy(ahora) or candidato <= ahora):
-                continue
-            return candidato
-        return None
+        if self.estado != 'programado':
+            return None
+        return self._aware(self.fecha_recordatorio())
 
     def ocurre_en(self, fecha):
         """Si el evento cae en la fecha dada (para mostrarlo en el calendario)."""
-        if self.recurrencia == 'ninguna':
-            return self.fecha_evento == fecha
-        return self._corresponde(fecha)
+        return self.fecha_evento == fecha
 
     def marcar_enviado(self, ahora=None):
         ahora = ahora or timezone.now()
         self.ultimo_envio = ahora
-        if self.recurrencia == 'ninguna':
-            self.estado = 'enviado'
+        self.estado = 'enviado'
         self.save(update_fields=['ultimo_envio', 'estado', 'updated_at'])
 
     def maps_url(self):

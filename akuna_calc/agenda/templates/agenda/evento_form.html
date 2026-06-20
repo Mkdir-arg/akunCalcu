@@ -36,10 +36,10 @@
                     {% if form.tipo.errors %}<p class="text-xs text-red-600 mt-1">{{ form.tipo.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div>
-                    <label for="{{ form.recurrencia.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Recurrencia</label>
-                    {{ form.recurrencia }}
-                    {% if form.recurrencia.errors %}<p class="text-xs text-red-600 mt-1">{{ form.recurrencia.errors.0 }}</p>{% endif %}
+                <div id="campo-colocador" class="hidden">
+                    <label for="{{ form.colocador.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Colocador</label>
+                    {{ form.colocador }}
+                    {% if form.colocador.errors %}<p class="text-xs text-red-600 mt-1">{{ form.colocador.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
@@ -129,9 +129,16 @@
     const mapaLink = document.getElementById('mapa-link');
     const status = document.getElementById('mapa-status');
 
+    const campoColocador = document.getElementById('campo-colocador');
+
     function toggleSeccion() {
         if (!tipo || !seccion) return;
         seccion.classList.toggle('hidden', !['mediciones', 'colocaciones'].includes(tipo.value));
+    }
+
+    function toggleColocador() {
+        if (!tipo || !campoColocador) return;
+        campoColocador.classList.toggle('hidden', tipo.value !== 'colocaciones');
     }
 
     function mostrarMapa(la, lo) {
@@ -183,15 +190,16 @@
     // Select2 (de base.html) dispara 'change' vía jQuery, no como evento nativo:
     // por eso enlazamos los selects con jQuery y dejamos lo demás en vanilla.
     if (window.jQuery) {
-        if (tipo) window.jQuery(tipo).on('change', toggleSeccion);
+        if (tipo) window.jQuery(tipo).on('change', function () { toggleSeccion(); toggleColocador(); });
         if (cliente) window.jQuery(cliente).on('change', autocompletarCliente);
     } else {
-        if (tipo) tipo.addEventListener('change', toggleSeccion);
+        if (tipo) tipo.addEventListener('change', function () { toggleSeccion(); toggleColocador(); });
         if (cliente) cliente.addEventListener('change', autocompletarCliente);
     }
     if (btnBuscar) btnBuscar.addEventListener('click', buscarDireccion);
 
     toggleSeccion();
+    toggleColocador();
     if (lat && lat.value && lng && lng.value) {
         mostrarMapa(lat.value, lng.value);
     }
