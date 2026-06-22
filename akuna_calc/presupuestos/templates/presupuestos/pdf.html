@@ -8,7 +8,11 @@
     <style>
         @page {
             size: A4;
-            margin: 0;
+            margin: 12mm 0 0;
+        }
+
+        @page :first {
+            margin-top: 0;
         }
 
         * {
@@ -80,11 +84,6 @@
             height: 32mm;
         }
 
-        .page-art-bottom {
-            bottom: 0;
-            height: 34mm;
-        }
-
         .page-pattern {
             position: absolute;
             top: 28mm;
@@ -110,7 +109,7 @@
 
         .brand-block {
             text-align: center;
-            margin: 6mm 0 16mm;
+            margin: 2mm 0 8mm;
         }
 
         .brand-logo {
@@ -305,10 +304,6 @@
             font-weight: 700;
         }
 
-        .page-end-spacer {
-            height: 28mm;
-        }
-
         @media print {
             body {
                 background: #ffffff;
@@ -409,13 +404,6 @@
             <svg viewBox="0 0 1000 180" preserveAspectRatio="none">
                 <path d="M0,0 H1000 V62 C835,120 630,112 430,88 C240,64 94,60 0,76 Z" fill="#175ab5"></path>
                 <path d="M0,0 H1000 V82 C848,144 648,138 444,112 C254,88 102,86 0,38 Z" fill="#0a3f78"></path>
-            </svg>
-        </div>
-
-        <div class="page-art page-art-bottom" aria-hidden="true">
-            <svg viewBox="0 0 1000 220" preserveAspectRatio="none">
-                <path d="M0,150 C176,100 350,154 520,186 C698,218 860,208 1000,164 V220 H0 Z" fill="#175ab5"></path>
-                <path d="M0,172 C204,126 384,182 570,204 C758,226 896,206 1000,150 V220 H0 Z" fill="#0a3f78"></path>
             </svg>
         </div>
 
@@ -554,8 +542,6 @@
                     </td>
                 </tr>
             </table>
-
-            <div class="page-end-spacer" aria-hidden="true"></div>
         </div>
     </div>
 </body>
