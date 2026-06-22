@@ -307,6 +307,8 @@
         @media print {
             body {
                 background: #ffffff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .no-print {
@@ -317,6 +319,16 @@
                 width: auto;
                 margin: 0;
                 box-shadow: none;
+                overflow: visible;
+            }
+
+            .items-table thead {
+                display: table-header-group;
+            }
+
+            .items-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
 
@@ -501,8 +513,6 @@
                         <p class="bottom-note"><strong>Forma de pago:</strong> {{ presupuesto.venta.get_forma_pago_display }}</p>
                         {% endif %}
                         <p class="bottom-note"><strong>Modalidad de seña:</strong> {{ presupuesto.get_modalidad_sena_display }}</p>
-                        <p class="bottom-note"><strong>Estado:</strong> {{ presupuesto.get_estado_display }}</p>
-                        <p class="bottom-note"><strong>Validez:</strong> hasta el {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
                     </td>
                     <td class="bottom-totals">
                         <table class="totals-table">
