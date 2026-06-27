@@ -348,6 +348,48 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
         self.assertEqual(res.status_code, 200)
 
+    def test_agregar_item_terciarizado_usa_precio_final_sin_marco(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        presupuesto.tipo_obra = 'obra_nueva'
+        presupuesto.save(update_fields=['tipo_obra'])
+
+        url = reverse('presupuestos:presupuestos-item-agregar', args=[presupuesto.pk])
+        with patch('presupuestos.views.Producto') as mock_prod:
+            mock_prod.objects.filter.return_value.exists.return_value = True
+            res = self.client.post(url, {
+                'producto_id': '72',
+                'precio_terciarizado': '15000',
+                'cantidad': '2',
+                'descripcion': 'Cortina Roller',
+            })
+
+        self.assertEqual(res.status_code, 302)
+        item = presupuesto.items.get()
+        self.assertEqual(float(item.precio_unitario), 15000.0)
+        self.assertEqual(item.ancho_mm, 0)
+        self.assertEqual(item.alto_mm, 0)
+        self.assertEqual(item.cantidad, 2)
+        self.assertEqual(item.resultado_json.get('tipo'), 'terciarizado')
+
+    def test_agregar_item_terciarizado_sin_precio_no_crea_item(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        presupuesto.tipo_obra = 'obra_nueva'
+        presupuesto.save(update_fields=['tipo_obra'])
+
+        url = reverse('presupuestos:presupuestos-item-agregar', args=[presupuesto.pk])
+        with patch('presupuestos.views.Producto') as mock_prod:
+            mock_prod.objects.filter.return_value.exists.return_value = True
+            res = self.client.post(url, {
+                'producto_id': '72', 'precio_terciarizado': '0', 'cantidad': '1',
+            })
+
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(presupuesto.items.count(), 0)
+
     def test_lista_anota_cantidad_de_items_por_presupuesto(self):
         self.client.login(username='viewuser', password='testpass')
         presupuesto = crear_presupuesto(self.user)

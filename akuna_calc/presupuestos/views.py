@@ -256,9 +256,9 @@ def agregar_item(request, pk):
             'vidrio_codigo': data.get('vidrio_codigo') or None,
             'interior_id': data.get('interior_id') and int(data['interior_id']),
             'tratamiento_id': data.get('tratamiento_id') and int(data['tratamiento_id']),
-            'ancho_mm': int(data.get('ancho_mm', 1200)),
-            'alto_mm': int(data.get('alto_mm', 1500)),
-            'margen_porcentaje': float(data.get('margen_porcentaje', 30)),
+            'ancho_mm': int(data.get('ancho_mm') or 1200),
+            'alto_mm': int(data.get('alto_mm') or 1500),
+            'margen_porcentaje': float(data.get('margen_porcentaje') or 30),
         }
 
         opcionales_raw = data.get('opcionales_json', '[]')
