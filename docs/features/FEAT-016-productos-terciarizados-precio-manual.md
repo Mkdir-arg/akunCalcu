@@ -6,36 +6,39 @@
 
 ## Descripción funcional
 
-Permite cargar productos que Akun **no fabrica** (terciarizados/externos, ej. cortinas roller) y cotizarlos con un **precio manual por m²**, en lugar de calcular el precio por fórmula (perfiles + vidrios + accesorios + mano de obra).
+Permite cargar productos que Akun **no fabrica** (terciarizados/externos, ej. cortinas roller). El producto se da de **alta solo con el flag "terciarizado" (sin precio)**. El **precio por m² se ingresa al cotizar**: cuando en el cotizador se selecciona un producto terciarizado, aparece un input "Precio por m²", y el cotizador calcula `área (m²) × ese precio` en lugar de despiezar por fórmula.
 
-Un producto marcado como terciarizado, al cotizarse, calcula: `área (m²) × precio_manual_m2`, y se le aplica el mismo margen del presupuesto que a los fabricados. No se despieza nada.
+El precio manual es el subtotal base; se le aplica el mismo margen del presupuesto que a los fabricados. No se despieza nada (perfiles/vidrios/accesorios/mano de obra).
 
 ## Criterios de aceptación (cumplidos)
 
-- [x] Un producto puede marcarse como **terciarizado** desde `/pricing/config/productos/<id>/editar/`.
-- [x] Un producto terciarizado tiene un **precio manual por m²** editable (obligatorio si está terciarizado).
-- [x] Al cotizar un terciarizado, el cotizador usa el precio manual y **no despieza** perfiles/vidrios/accesorios.
+- [x] Un producto puede marcarse como **terciarizado** desde `/pricing/config/productos/nuevo/` (o editar), **sin cargar precio**.
+- [x] En el cotizador, al seleccionar un producto terciarizado aparece un input **"Precio por m²"**.
+- [x] El cálculo usa ese precio (`área × precio_manual_m2`) y **no despieza** perfiles/vidrios/accesorios.
+- [x] Si el producto es terciarizado y no se ingresó precio, el cálculo devuelve error claro ("Indicá el precio por m²").
 - [x] Los productos fabricados se calculan por fórmula **igual que antes** (branch aislado, verificado por test).
-- [x] En la edición, el campo "Precio por m²" se muestra solo cuando "Terciarizado" está tildado (toggle JS).
 - [x] El desglose (modal en `presupuestos/detalle.html`) muestra la línea del producto terciarizado.
 
 ## Archivos involucrados
 
 | Archivo | Cambio |
 |---------|--------|
-| `pricing/models.py` | `Producto`: campos `terciarizado` (bool) y `precio_manual_m2` (decimal) |
-| `pricing/migrations/0003_producto_terciarizado.py` | NUEVO — `RunSQL` que agrega las columnas a la tabla legacy `productos` + `state_operations` |
-| `pricing/forms.py` | `ProductoForm`: 2 campos nuevos + validación (terciarizado exige precio) |
-| `pricing/services/calculator.py` | Branch en `calculate()` + método `_calcular_terciarizado` |
-| `pricing/templates/pricing/config/producto_form.html` | Toggle JS para mostrar el precio manual |
+| `pricing/models.py` | `Producto`: campo `terciarizado` (bool). El precio NO se guarda en el producto |
+| `pricing/migrations/0003_producto_terciarizado.py` | NUEVO — `RunSQL` que agrega la columna `terciarizado` a la tabla legacy `productos` + `state_operations` |
+| `pricing/forms.py` | `ProductoForm`: checkbox `terciarizado` (sin campo de precio) |
+| `pricing/templates/pricing/config/producto_form.html` | El checkbox se renderiza en el loop del form (sin toggle de precio) |
+| `pricing/catalog_views.py` | `ProductosListView` expone `terciarizado` para que el cotizador lo sepa |
+| `pricing/serializers.py` | `PricingCalculateSerializer` acepta `precio_manual_m2` (opcional) |
+| `pricing/services/calculator.py` | Branch en `calculate()` (si `producto.terciarizado`) + `_calcular_terciarizado` que usa el precio del payload (error si falta) |
+| `pricing/templates/pricing/cotizador.html` | Input "Precio por m²" visible solo si el producto elegido es terciarizado; se manda en el payload |
 | `presupuestos/templates/presupuestos/detalle.html` | Sección "Producto terciarizado" en el modal de desglose |
-| `pricing/tests.py` | 3 tests del cálculo terciarizado |
+| `pricing/tests.py` | 4 tests del cálculo terciarizado |
 
 ## Decisiones técnicas
 
-- **Persistencia en tabla legacy:** `Producto` es `managed=False`, así que Django no gestiona su esquema. Las columnas se agregan con una migración `RunSQL` (ALTER TABLE explícito) + `state_operations` para mantener alineado el estado de migraciones. Ver ADR.
-- **Precio manual = subtotal base:** el `precio_manual_m2 × m²` es el subtotal, al que se le aplica el margen del presupuesto igual que a los fabricados (integración uniforme). Para un precio final sin recargo, se cotiza con margen 0.
-- **Branch temprano y aislado** en `calculate()`: se corta apenas se resuelve el marco, antes de cualquier consulta de despiece, y solo si `producto.terciarizado` y `precio_manual_m2` están cargados → cero impacto en productos fabricados.
+- **El precio se ingresa al cotizar, no en el producto** (cambio de lógica respecto del primer diseño): el mismo producto terciarizado puede cotizarse a distintos precios sin reconfigurarlo. Por eso `precio_manual_m2` viaja en el payload de cotización (`PricingCalculateSerializer` → `configuracion`), no es un campo del modelo.
+- **Persistencia del flag en tabla legacy:** `Producto` es `managed=False`; la columna `terciarizado` se agrega con migración `RunSQL` + `state_operations`. Ver ADR-011.
+- **Branch temprano y aislado** en `calculate()`: se corta apenas se resuelve el marco, solo si `producto.terciarizado` → cero impacto en productos fabricados.
 
 ## Pendiente de verificación en deploy
 

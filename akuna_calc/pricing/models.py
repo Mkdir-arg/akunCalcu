@@ -62,11 +62,7 @@ class Producto(models.Model):
     horas_hombre = models.FloatField(db_column="horas_hombre", null=True, blank=True, default=0)
     terciarizado = models.BooleanField(
         db_column="terciarizado", default=False,
-        verbose_name="Producto terciarizado (precio manual)",
-    )
-    precio_manual_m2 = models.DecimalField(
-        db_column="precio_manual_m2", max_digits=12, decimal_places=2,
-        null=True, blank=True, verbose_name="Precio manual por m²",
+        verbose_name="Producto terciarizado (precio manual al cotizar)",
     )
 
     class Meta:

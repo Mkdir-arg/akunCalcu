@@ -116,7 +116,7 @@
 **Fecha**: 2026-06-27
 **Estado**: Activo
 
-**Contexto**: RF-015/FEAT-016 necesitó agregar columnas (`terciarizado`, `precio_manual_m2`) al modelo `Producto`, que mapea a la tabla legacy `productos` con `managed=False`. Django no gestiona el esquema de modelos `managed=False`, por lo que un `AddField` normal queda como no-op a nivel DDL y la columna nunca se crea en la base.
+**Contexto**: RF-015/FEAT-016 necesitó agregar la columna `terciarizado` al modelo `Producto`, que mapea a la tabla legacy `productos` con `managed=False`. Django no gestiona el esquema de modelos `managed=False`, por lo que un `AddField` normal queda como no-op a nivel DDL y la columna nunca se crea en la base.
 
 **Decisión**: Para agregar columnas a una tabla legacy `managed=False` se usa una migración con `migrations.RunSQL` que ejecuta el `ALTER TABLE ... ADD COLUMN` explícito (con `reverse_sql` para revertir), envolviendo los `migrations.AddField` correspondientes en `state_operations` para mantener alineado el estado de migraciones de Django con los campos del modelo. Los campos se agregan también al modelo con su `db_column`.
 

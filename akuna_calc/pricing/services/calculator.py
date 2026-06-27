@@ -60,9 +60,10 @@ class PriceCalculator:
 
         marco = self._get_marco(cleaned["marco_id"])
 
-        # Producto terciarizado (no fabricado): precio manual por m², sin despiece.
+        # Producto terciarizado (no fabricado): precio manual por m² ingresado
+        # al cotizar (no se guarda en el producto), sin despiece.
         producto = marco.producto
-        if getattr(producto, "terciarizado", False) and producto.precio_manual_m2:
+        if getattr(producto, "terciarizado", False):
             return self._calcular_terciarizado(producto, cleaned)
 
         hoja_id = cleaned.get("hoja_id")
@@ -333,11 +334,14 @@ class PriceCalculator:
     def _calcular_terciarizado(self, producto, cleaned: Dict[str, Any]) -> Dict[str, Any]:
         """Precio de un producto terciarizado: área (m²) × precio manual por m².
 
-        El precio manual es el subtotal base; se le aplica el mismo margen del
+        El precio manual lo ingresa el usuario al cotizar (no se guarda en el
+        producto). Es el subtotal base; se le aplica el mismo margen del
         presupuesto que a los fabricados. No se despiezan perfiles/vidrios/etc.
         """
+        precio_m2 = _to_float(cleaned.get("precio_manual_m2"))
+        if precio_m2 <= 0:
+            raise PricingError("Indicá el precio por m² para el producto terciarizado.")
         area_m2 = (cleaned["ancho_mm"] * cleaned["alto_mm"]) / 1_000_000
-        precio_m2 = _to_float(producto.precio_manual_m2)
         subtotal = round(area_m2 * precio_m2, 2)
         margen = round(subtotal * cleaned["margen_porcentaje"] / 100.0, 2)
         total = round(subtotal + margen, 2)
@@ -407,6 +411,7 @@ class PriceCalculator:
             "margen_porcentaje": margen,
             "rebaje_vidrio_mm": configuracion.get("rebaje_vidrio_mm", 0),
             "opcionales": configuracion.get("opcionales", []),
+            "precio_manual_m2": configuracion.get("precio_manual_m2"),
         }
 
         cantidad_hojas = configuracion.get("cantidad_hojas", 1)

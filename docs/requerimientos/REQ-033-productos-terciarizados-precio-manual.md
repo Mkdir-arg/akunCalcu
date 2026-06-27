@@ -14,12 +14,14 @@ Hoy el precio de un producto se calcula íntegramente por fórmula (perfiles + v
 
 ## Criterios de Aceptación
 
-- [ ] Un producto puede marcarse como **terciarizado** (no fabricado) desde su edición en `/pricing/config/productos/<id>/editar/`.
-- [ ] Un producto terciarizado tiene un **precio manual** editable.
-- [ ] Al cotizar un producto terciarizado, el cotizador **usa el precio manual** en lugar del cálculo por fórmula (no intenta despiezar perfiles/vidrios/accesorios).
-- [ ] Los productos NO terciarizados se siguen calculando por fórmula **exactamente igual que hoy** (sin cambios de comportamiento).
-- [ ] En la edición, los campos de fórmula/despiece se ocultan o se vuelven irrelevantes cuando el producto es terciarizado (UX clara).
-- [x] **Unidad del precio manual: precio por m²** (decidido con el usuario, 2026-06-27). El cotizador calcula `precio_manual_m2 × m²` del ítem, escalando con las medidas, consistente con el resto del cotizador.
+- [x] Un producto puede marcarse como **terciarizado** (no fabricado) desde `/pricing/config/productos/nuevo/` (o editar), **sin cargar precio**.
+- [x] El **precio por m² se ingresa al cotizar** (no se guarda en el producto): al seleccionar un terciarizado en el cotizador aparece el input de precio.
+- [x] Al cotizar un producto terciarizado, el cotizador **usa ese precio** (`área × precio/m²`) en lugar del cálculo por fórmula (no despieza).
+- [x] Si falta el precio en un terciarizado, el cálculo devuelve error claro.
+- [x] Los productos NO terciarizados se siguen calculando por fórmula **exactamente igual que hoy**.
+- [x] **Unidad del precio: por m²** (decidido con el usuario, 2026-06-27), escala con las medidas del ítem.
+
+> **Cambio de lógica (2026-06-27):** originalmente el precio se guardaba en el producto; se cambió para que el producto se dé de alta **sin precio** y el precio se ingrese al **momento de cotizar**.
 
 ## Fuera de alcance
 

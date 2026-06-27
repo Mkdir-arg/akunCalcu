@@ -16,9 +16,9 @@
 
 ## 2026-06-27 — Productos terciarizados con precio manual (REQ-033 / FEAT-016)
 
-**User Story:** Como administrador de pricing, quiero marcar ciertos productos como terciarizados (no fabricados, ej. cortinas roller) y asignarles un precio manual por m², para que el cotizador use ese precio en lugar de calcularlo por fórmula.
-**Archivos modificados:** `akuna_calc/pricing/models.py`, `forms.py`, `services/calculator.py`, `templates/pricing/config/producto_form.html`, `tests.py`, `presupuestos/templates/presupuestos/detalle.html`, migración `0003_producto_terciarizado.py`.
-**Descripción:** Se agregaron los campos `terciarizado` y `precio_manual_m2` a `Producto` (tabla legacy, migración RunSQL — ADR-011). El cotizador, al resolver el marco, si el producto es terciarizado calcula `área × precio_manual_m2` (con margen del presupuesto) y saltea el despiece. Branch aislado para no afectar productos fabricados. El desglose muestra la línea del terciarizado. La migración queda pendiente de verificación en Docker/prod.
+**User Story:** Como administrador de pricing, quiero marcar ciertos productos como terciarizados (no fabricados, ej. cortinas roller) sin cargarles precio, e ingresar el precio por m² al cotizarlos, para que el cotizador use ese precio en lugar de calcularlo por fórmula.
+**Archivos modificados:** `akuna_calc/pricing/models.py`, `forms.py`, `serializers.py`, `catalog_views.py`, `services/calculator.py`, `templates/pricing/config/producto_form.html`, `templates/pricing/cotizador.html`, `tests.py`, `presupuestos/templates/presupuestos/detalle.html`, migración `0003_producto_terciarizado.py`.
+**Descripción:** Se agregó el flag `terciarizado` a `Producto` (tabla legacy, migración RunSQL — ADR-011). El producto se da de alta sin precio; el precio por m² se ingresa al cotizar (input en el cotizador cuando el producto elegido es terciarizado, viaja en el payload). El calculator, si el producto es terciarizado, calcula `área × precio_manual_m2` (con margen) y saltea el despiece; error si falta el precio. Branch aislado (productos fabricados sin cambios). La migración queda pendiente de verificación en Docker/prod.
 
 ## 2026-06-27 — Fixes RF-006/013/016/018 y verificación RF-005/RF-008-seguridad
 

@@ -30,7 +30,7 @@ class ProductosListView(APIView):
         qs = Producto.objects.exclude(bloqueado='Si')
         if linea_id:
             qs = qs.filter(linea_id=linea_id)
-        productos = qs.values('id', 'descripcion', 'linea_id')
+        productos = qs.values('id', 'descripcion', 'linea_id', 'terciarizado')
         return Response(list(productos))
 
 
