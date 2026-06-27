@@ -25,11 +25,13 @@ class LineaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas', 'horas_hombre']
+        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas', 'horas_hombre', 'terciarizado', 'precio_manual_m2']
         labels = {
             'descripcion': 'Nombre',
             'cantidad_hojas': 'Cantidad de Hojas',
             'horas_hombre': 'Horas Hombre',
+            'terciarizado': 'Producto terciarizado (precio manual)',
+            'precio_manual_m2': 'Precio manual por m²',
         }
         widgets = {
             'extrusora': forms.Select(attrs={'class': _select_class}),
@@ -37,8 +39,16 @@ class ProductoForm(forms.ModelForm):
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'cantidad_hojas': forms.NumberInput(attrs={'class': _input_class, 'value': '1'}),
             'horas_hombre': forms.NumberInput(attrs={'class': _input_class, 'step': '0.1', 'value': '0'}),
+            'terciarizado': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 focus:ring-blue-500', 'id': 'id_terciarizado'}),
+            'precio_manual_m2': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01', 'id': 'id_precio_manual_m2'}),
         }
-    
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('terciarizado') and not cleaned_data.get('precio_manual_m2'):
+            self.add_error('precio_manual_m2', 'Indicá el precio por m² para un producto terciarizado.')
+        return cleaned_data
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.extrusora:

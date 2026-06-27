@@ -63,11 +63,12 @@ https://akun.pythonanywhere.com/comercial/reportes/cobranzas/
 Observaciones
 Visualización separada.
 Estado
-Desplegado
+Implementado (verificado por tests)
 Que se hizo
 Se implemento un filtro en dolares y se agrego la visualizacion
 Observaciones
 Esta perfecto, tengo que revisar con los papeles si efectivamente es asi 
+Verificacion (2026-06-27): filtro USD (moneda_cobranza) + visualizacion confirmados por la suite ReporteCobranzasTest (6 tests OK), incluyendo total_usd, filtro solo-USD y seña inicial en USD. Ver FIX-003. Pendiente solo la validacion del usuario con los papeles (de negocio, no de codigo).
 
  Nuevo filtro Moneda : 
 RF-006
@@ -111,7 +112,9 @@ https://akun.pythonanywhere.com/presupuestos/
 Observaciones
 Definir permisos por usuario.
 Estado
-Pendiente
+Implementado (verificado por tests)
+Que se hizo
+Cubierto por la app security + features previas: Auditoría = modelo AuditLog (acciones CREATE/UPDATE/DELETE/LOGIN, IP, cambios JSON) + AuditMiddleware. Backups automáticos = FEAT-012 (modelo Backup + workflow n8n diario a Google Drive). Control de eliminación = eliminación lógica (deleted_at) en los modelos + registro de DELETE en AuditLog. Permisos por usuario = FEAT-009 (REQ-019). Verificación (2026-06-27): suite security OK (9 tests).
 
  
 RF-008

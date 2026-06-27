@@ -77,6 +77,16 @@ document.addEventListener('DOMContentLoaded', function() {
             cargarLineas(this.value);
         });
     }
+
+    // Mostrar "Precio por m²" solo si el producto es terciarizado.
+    const terciarizadoCheck = document.getElementById('id_terciarizado');
+    const precioManualInput = document.getElementById('id_precio_manual_m2');
+    if (terciarizadoCheck && precioManualInput) {
+        const precioWrapper = precioManualInput.closest('div');
+        const togglePrecio = () => { precioWrapper.style.display = terciarizadoCheck.checked ? '' : 'none'; };
+        togglePrecio();
+        terciarizadoCheck.addEventListener('change', togglePrecio);
+    }
 });
 </script>
 {% endblock %}

@@ -59,6 +59,12 @@ class PriceCalculator:
         cleaned = self._validate_config(configuracion)
 
         marco = self._get_marco(cleaned["marco_id"])
+
+        # Producto terciarizado (no fabricado): precio manual por m², sin despiece.
+        producto = marco.producto
+        if getattr(producto, "terciarizado", False) and producto.precio_manual_m2:
+            return self._calcular_terciarizado(producto, cleaned)
+
         hoja_id = cleaned.get("hoja_id")
         interior_id = cleaned.get("interior_id")
         
@@ -321,6 +327,46 @@ class PriceCalculator:
                 "total_tratamiento": round(total_tratamiento, 2),
                 "total_mano_obra": round(total_mano_obra, 2),
                 "total_opcionales": round(total_opcionales, 2),
+            },
+        }
+
+    def _calcular_terciarizado(self, producto, cleaned: Dict[str, Any]) -> Dict[str, Any]:
+        """Precio de un producto terciarizado: área (m²) × precio manual por m².
+
+        El precio manual es el subtotal base; se le aplica el mismo margen del
+        presupuesto que a los fabricados. No se despiezan perfiles/vidrios/etc.
+        """
+        area_m2 = (cleaned["ancho_mm"] * cleaned["alto_mm"]) / 1_000_000
+        precio_m2 = _to_float(producto.precio_manual_m2)
+        subtotal = round(area_m2 * precio_m2, 2)
+        margen = round(subtotal * cleaned["margen_porcentaje"] / 100.0, 2)
+        total = round(subtotal + margen, 2)
+        return {
+            "precio_total": total,
+            "subtotal": subtotal,
+            "margen": margen,
+            "desglose": {
+                "terciarizado": {
+                    "descripcion": producto.descripcion,
+                    "area_m2": round(area_m2, 4),
+                    "precio_m2": precio_m2,
+                    "precio_total": subtotal,
+                },
+                "perfiles": [],
+                "accesorios": [],
+                "vidrios": None,
+                "tratamiento": None,
+                "mano_obra": None,
+                "opcionales": None,
+            },
+            "resumen": {
+                "total_perfiles": 0.0,
+                "total_accesorios": 0.0,
+                "total_vidrios": 0.0,
+                "total_tratamiento": 0.0,
+                "total_mano_obra": 0.0,
+                "total_opcionales": 0.0,
+                "total_terciarizado": subtotal,
             },
         }
 
