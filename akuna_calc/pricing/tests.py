@@ -622,76 +622,12 @@ class VidrioReemplazarRelacionesTest(SimpleTestCase):
         self.assertIsNone(creados[99]['rebaje_alto'])
 
 
-class CalculatorTerciarizadoTest(SimpleTestCase):
-    """RF-015 / REQ-033: un producto terciarizado cotiza por precio manual/m²,
-    sin despiezar perfiles/vidrios/accesorios."""
+class ProductoTerciarizadoFlagTest(SimpleTestCase):
+    """RF-015 / REQ-033: el alta de producto expone el flag `terciarizado`
+    (sin precio: el precio final se ingresa al agregar el ítem al presupuesto)."""
 
-    def _calc(self):
-        from pricing.services.calculator import PriceCalculator
-        return PriceCalculator()
-
-    def test_terciarizado_usa_precio_manual_del_payload(self):
-        from pricing.services.calculator import PriceCalculator
-
-        # El producto NO guarda precio; el precio viene en el payload de cotización.
-        producto = SimpleNamespace(terciarizado=True, descripcion='Cortina Roller')
-        marco = SimpleNamespace(id=1, producto=producto)
-        with patch.object(PriceCalculator, '_get_marco', return_value=marco):
-            result = self._calc().calculate({
-                'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 2000,
-                'margen_porcentaje': 0, 'precio_manual_m2': 5000,
-            })
-
-        # 1m × 2m = 2 m² × $5000 = $10000
-        self.assertEqual(result['subtotal'], 10000.0)
-        self.assertEqual(result['precio_total'], 10000.0)
-        self.assertIn('terciarizado', result['desglose'])
-        self.assertEqual(result['desglose']['terciarizado']['area_m2'], 2.0)
-        self.assertEqual(result['desglose']['terciarizado']['precio_m2'], 5000.0)
-        self.assertEqual(result['desglose']['perfiles'], [])
-        self.assertIsNone(result['desglose']['vidrios'])
-
-    def test_terciarizado_aplica_margen_del_presupuesto(self):
-        from pricing.services.calculator import PriceCalculator
-
-        producto = SimpleNamespace(terciarizado=True, descripcion='X')
-        marco = SimpleNamespace(id=1, producto=producto)
-        with patch.object(PriceCalculator, '_get_marco', return_value=marco):
-            result = self._calc().calculate({
-                'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 1000,
-                'margen_porcentaje': 50, 'precio_manual_m2': 1000,
-            })
-
-        # 1 m² × $1000 = $1000 subtotal; +50% = $1500
-        self.assertEqual(result['subtotal'], 1000.0)
-        self.assertEqual(result['margen'], 500.0)
-        self.assertEqual(result['precio_total'], 1500.0)
-
-    def test_terciarizado_sin_precio_lanza_error(self):
-        from pricing.services.calculator import PriceCalculator, PricingError
-
-        producto = SimpleNamespace(terciarizado=True, descripcion='Sin precio')
-        marco = SimpleNamespace(id=1, producto=producto)
-        with patch.object(PriceCalculator, '_get_marco', return_value=marco):
-            with self.assertRaises(PricingError):
-                self._calc().calculate({
-                    'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 1000, 'margen_porcentaje': 0,
-                })
-
-    def test_producto_fabricado_no_toma_el_branch_terciarizado(self):
-        from pricing.services.calculator import PriceCalculator
-
-        producto = SimpleNamespace(terciarizado=False, precio_manual_m2=None, descripcion='Fabricado')
-        marco = SimpleNamespace(id=1, producto=producto)
-        with patch.object(PriceCalculator, '_get_marco', return_value=marco), \
-             patch.object(PriceCalculator, '_calcular_terciarizado') as spy:
-            try:
-                # El cálculo normal sigue su curso (y eventualmente consulta la
-                # DB, que en SimpleTestCase no está disponible); lo único que
-                # importa es que NO se haya tomado el branch terciarizado.
-                self._calc().calculate({
-                    'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 1000, 'margen_porcentaje': 0,
-                })
-            except Exception:
-                pass
-            spy.assert_not_called()
+    def test_producto_form_incluye_flag_terciarizado_sin_precio(self):
+        from pricing.forms import ProductoForm
+        fields = ProductoForm.Meta.fields
+        self.assertIn('terciarizado', fields)
+        self.assertNotIn('precio_manual_m2', fields)

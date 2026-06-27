@@ -679,14 +679,6 @@ function verDetalleItem(resultado, descripcion) {
     const d = resultado.desglose;
     const r = resultado.resumen || {};
 
-    // Producto terciarizado (precio manual por m²)
-    if (d.terciarizado) {
-        html += buildSection('Producto terciarizado', 'fa-tag', 'indigo', r.total_terciarizado, [
-            '<div class="flex justify-between font-medium"><span>' + (d.terciarizado.descripcion || 'Producto') + '</span><span class="text-indigo-600">$' + fmt(d.terciarizado.precio_total) + '</span></div>' +
-            '<div class="text-xs text-gray-500 mt-0.5">' + d.terciarizado.area_m2 + 'm2 x $' + fmt(d.terciarizado.precio_m2) + '/m2</div>'
-        ]);
-    }
-
     if (d.perfiles && d.perfiles.length > 0) {
         html += buildSection('Perfiles', 'fa-ruler', 'blue', r.total_perfiles, d.perfiles.map(i =>
             '<div class="flex justify-between font-medium"><span>' + i.codigo + ' - ' + i.descripcion + '</span><span class="text-blue-600">$' + fmt(i.precio_total) + '</span></div>' +

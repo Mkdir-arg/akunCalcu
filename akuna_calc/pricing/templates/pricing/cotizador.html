@@ -201,7 +201,6 @@ const Cotizador = () => {
     tratamiento_id: null,
     margen_porcentaje: 30,
     opcionales: [],
-    precio_manual_m2: null,
   });
 
   const [extrusoras, setExtrusoras] = useState([]);
@@ -346,25 +345,12 @@ const Cotizador = () => {
             placeholder={config.extrusora_id ? "Selecciona una línea" : "Primero selecciona una extrusora"} />
 
           <Select label="Producto" options={productos} value={config.producto_id}
-            onChange={(id) => setConfig({ ...config, producto_id: id, marco_id: null, hoja_id: null, interior_id: null, precio_manual_m2: null })}
+            onChange={(id) => setConfig({ ...config, producto_id: id, marco_id: null, hoja_id: null, interior_id: null })}
             placeholder={config.linea_id ? "Selecciona un producto" : "Primero selecciona una línea"} />
 
           <Select label="Marco" options={marcos} value={config.marco_id}
             onChange={(id) => setConfig({ ...config, marco_id: id, hoja_id: null, interior_id: null })}
             placeholder={config.producto_id ? "Selecciona un marco" : "Primero selecciona un producto"} />
-
-          {productos.find(p => p.id === config.producto_id)?.terciarizado && (
-            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
-              <label className="block text-sm font-medium text-indigo-800 mb-1">
-                <i className="fas fa-tag mr-2"></i>Precio por m² (producto terciarizado)
-              </label>
-              <input type="number" step="0.01" value={config.precio_manual_m2 || ''}
-                onChange={(e) => setConfig({ ...config, precio_manual_m2: e.target.value === '' ? null : parseFloat(e.target.value) })}
-                placeholder="Ingresá el precio por m²"
-                className="w-full px-3 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <p className="text-xs text-indigo-600 mt-1">Este producto no se fabrica: el precio se calcula como m² × este valor.</p>
-            </div>
-          )}
 
           <Select label="Hoja (Opcional)" options={hojas} value={config.hoja_id}
             onChange={(id) => setConfig({ ...config, hoja_id: id, vidrio_codigo: null, interior_id: null })}

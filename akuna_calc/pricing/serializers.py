@@ -22,7 +22,6 @@ class PricingCalculateSerializer(serializers.Serializer):
     tratamiento_id = serializers.IntegerField(required=False, allow_null=True)
     margen_porcentaje = serializers.FloatField(required=False, default=0.0)
     rebaje_vidrio_mm = serializers.IntegerField(required=False, default=0)
-    precio_manual_m2 = serializers.FloatField(required=False, allow_null=True)
     cantidad_hojas = serializers.IntegerField(required=False, min_value=1)
     opcionales = serializers.ListField(child=serializers.DictField(), required=False, default=list)
 
