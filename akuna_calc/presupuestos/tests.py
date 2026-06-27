@@ -485,7 +485,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertNotContains(res, 'Ventana cocina en línea Modena de Aluar')
         self.assertNotContains(res, 'Subtotal del ítem')
         self.assertNotContains(res, 'Cada ítem se describe con la configuración seleccionada')
-        self.assertNotContains(res, 'Observaciones')
+        self.assertContains(res, 'El presente presupuesto incluye flete y colocación.')
 
     def test_pdf_no_muestra_detalle_recargo_obra_nueva(self):
         self.client.login(username='viewuser', password='testpass')
