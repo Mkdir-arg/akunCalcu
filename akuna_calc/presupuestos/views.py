@@ -20,6 +20,7 @@ from xhtml2pdf import pisa
 from core.navigation import append_return_to, resolve_return_url
 from comercial.models import _formatear_cuit
 from pricing.services.calculator import calcular_precio, PricingError
+from pricing.models import Producto
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm
@@ -214,6 +215,38 @@ def agregar_item(request, pk):
             messages.success(request, f'Ítem "{item.descripcion}" agregado.')
             return redirect('presupuestos:presupuestos-detalle', pk=pk)
         
+        # Producto terciarizado: precio final manual, sin marco ni despiece.
+        producto_id_raw = request.POST.get('producto_id')
+        if producto_id_raw and Producto.objects.filter(pk=producto_id_raw, terciarizado=True).exists():
+            descripcion = request.POST.get('descripcion', '').strip() or 'Producto terciarizado'
+            cantidad = max(1, int(request.POST.get('cantidad', 1)))
+            try:
+                precio_unitario = float(request.POST.get('precio_terciarizado', 0) or 0)
+            except (TypeError, ValueError):
+                precio_unitario = 0
+            if precio_unitario <= 0:
+                messages.error(request, 'Ingresá el precio final del producto terciarizado.')
+                return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+            orden = presupuesto.items.count()
+            item = ItemPresupuesto.objects.create(
+                presupuesto=presupuesto,
+                descripcion=descripcion,
+                cantidad=cantidad,
+                ancho_mm=0,
+                alto_mm=0,
+                margen_porcentaje=0,
+                precio_unitario=precio_unitario,
+                resultado_json={
+                    'precio_unitario_base': precio_unitario,
+                    'tipo': 'terciarizado',
+                },
+                orden=orden,
+            )
+            presupuesto.recalcular_total()
+            messages.success(request, f'Ítem "{item.descripcion}" agregado.')
+            return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
         # Si es Aluminio, usar cotizador completo
         data = request.POST
         config = {
