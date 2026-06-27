@@ -24,6 +24,7 @@ _Se define en el sprint planning._
 | US-029 | Modalidad de seña en presupuestos | ✅ Completado | Implementado fuera de sprint activo; FEAT-013 |
 | US-030 | Confirmación antes de reemplazar accesorio en hoja configurator | ✅ Completado | Implementado fuera de sprint activo; FEAT-014 |
 | US-032 | Presupuestos PVC siempre en dólares | ✅ Completado | Implementado fuera de sprint activo; FEAT-015 |
+| US-033 | Productos terciarizados con precio manual | ✅ Completado | Implementado fuera de sprint activo; FEAT-016 (migración pendiente de verificar en prod) |
 
 ## Impedimentos
 

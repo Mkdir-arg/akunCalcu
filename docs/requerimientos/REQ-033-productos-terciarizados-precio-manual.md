@@ -1,6 +1,6 @@
 # REQ-033 — Productos terciarizados con precio manual
 
-**Estado:** En desarrollo
+**Estado:** Implementado
 **Fecha:** 2026-06-27
 **Origen:** RF-015 (Requerimientos Funcionales — prioridad media). Pedido del usuario para cargar productos que Akun no fabrica (ej. cortinas roller).
 
@@ -37,4 +37,4 @@ Hoy el precio de un producto se calcula íntegramente por fórmula (perfiles + v
 
 ## Derivó en
 
-_Pendiente._
+[FEAT-016](../features/FEAT-016-productos-terciarizados-precio-manual.md)

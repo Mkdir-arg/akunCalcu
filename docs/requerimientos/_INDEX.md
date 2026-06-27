@@ -52,4 +52,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-030](./REQ-030-confirmacion-reemplazo-accesorio-vidrio.md) | Confirmación modal antes de reemplazar accesorio o vidrio | En desarrollo | 2026-05-26 | — |
 | [REQ-031](./REQ-031-modulo-agenda-recordatorios.md) | Módulo de Agenda con recordatorios por WhatsApp | En desarrollo | 2026-06-07 | — |
 | [REQ-032](./REQ-032-presupuestos-pvc-en-dolares.md) | Presupuestos PVC siempre en dólares | Implementado | 2026-06-19 | FEAT-015 |
-| [REQ-033](./REQ-033-productos-terciarizados-precio-manual.md) | Productos terciarizados con precio manual | En desarrollo | 2026-06-27 | — |
+| [REQ-033](./REQ-033-productos-terciarizados-precio-manual.md) | Productos terciarizados con precio manual | Implementado | 2026-06-27 | FEAT-016 |
