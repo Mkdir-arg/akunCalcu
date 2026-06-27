@@ -22,6 +22,7 @@ from .models import (
     Perfil,
     Accesorio,
     Vidrio,
+    VidrioHoja,
     Tratamiento,
     DespieceAccesoriosMarco,
     DespieceAccesoriosHoja,
@@ -1214,6 +1215,33 @@ def _renombrar_codigo_vidrio(codigo_anterior, codigo_nuevo):
             cursor.execute('UPDATE despiece_perfiles_vidrios SET Idvidrio=%s WHERE Idvidrio=%s', [codigo_nuevo, codigo_anterior])
 
 
+def _reemplazar_relaciones_vidrio_hoja(vidrio, hoja_ids):
+    """Reescribe las relaciones vidrio↔hoja preservando los rebajes (fórmulas
+    de Ancho/Alto) ya cargados por hoja.
+
+    Sin esto, reguardar un vidrio (ej. FLOAT 6 MM) borraba las fórmulas de
+    todas sus hojas, porque el viejo delete()+bulk_create() recreaba las
+    relaciones con rebaje_ancho/rebaje_alto en NULL.
+    """
+    with transaction.atomic():
+        Vidrio.objects.select_for_update().get(pk=vidrio.pk)
+        rebajes_previos = {
+            r.hoja_id: (r.rebaje_ancho, r.rebaje_alto)
+            for r in VidrioHoja.objects.filter(vidrio=vidrio)
+        }
+        VidrioHoja.objects.filter(vidrio=vidrio).delete()
+        VidrioHoja.objects.bulk_create([
+            VidrioHoja(
+                vidrio=vidrio,
+                hoja_id=hoja_id,
+                rebaje_ancho=rebajes_previos.get(hoja_id, (None, None))[0],
+                rebaje_alto=rebajes_previos.get(hoja_id, (None, None))[1],
+            )
+            for hoja_id in hoja_ids
+        ])
+    return len(hoja_ids)
+
+
 @login_required
 @user_passes_test(is_staff)
 def vidrio_edit(request, pk):
@@ -1250,13 +1278,7 @@ def vidrio_edit(request, pk):
                 if hojas_invalidas:
                     return JsonResponse({'error': f'Hay hojas inválidas en la selección: {", ".join(str(h) for h in hojas_invalidas)}'}, status=400)
 
-                with transaction.atomic():
-                    Vidrio.objects.select_for_update().get(pk=obj.pk)
-                    VidrioHoja.objects.filter(vidrio=obj).delete()
-                    VidrioHoja.objects.bulk_create([
-                        VidrioHoja(vidrio=obj, hoja_id=hoja_id)
-                        for hoja_id in hoja_ids
-                    ])
+                _reemplazar_relaciones_vidrio_hoja(obj, hoja_ids)
                 return JsonResponse({'ok': True, 'guardadas': len(hoja_ids)})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
@@ -1286,12 +1308,7 @@ def vidrio_edit(request, pk):
                             if hoja_id not in hoja_ids_vistos:
                                 hoja_ids.append(hoja_id)
                                 hoja_ids_vistos.add(hoja_id)
-                    with transaction.atomic():
-                        VidrioHoja.objects.filter(vidrio=obj).delete()
-                        VidrioHoja.objects.bulk_create([
-                            VidrioHoja(vidrio=obj, hoja_id=hoja_id)
-                            for hoja_id in hoja_ids
-                        ])
+                    _reemplazar_relaciones_vidrio_hoja(obj, hoja_ids)
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las relaciones de hojas: {str(e)}')
             messages.success(request, 'Vidrio actualizado correctamente.')

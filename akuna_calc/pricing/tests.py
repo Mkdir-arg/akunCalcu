@@ -562,6 +562,66 @@ class VidrioRenombrarCodigoTest(SimpleTestCase):
             self.assertEqual(p, ['DVH-1', 'dvh 1'])
 
 
+class VidrioReemplazarRelacionesTest(SimpleTestCase):
+    """FIX: reguardar un vidrio (ej. FLOAT 6 MM) no debe borrar las fórmulas
+    de Ancho/Alto (rebaje_ancho/rebaje_alto) ya cargadas por hoja."""
+
+    def test_preserva_rebajes_de_las_hojas_que_se_conservan(self):
+        vidrio = SimpleNamespace(pk='FLOAT 6 MM', codigo='FLOAT 6 MM')
+        relaciones_previas = [
+            SimpleNamespace(hoja_id=10, rebaje_ancho='Ancho-149', rebaje_alto='Alto-50'),
+            SimpleNamespace(hoja_id=20, rebaje_ancho='(Ancho-149)/2', rebaje_alto='Alto-60'),
+        ]
+        creados = {}
+
+        with patch('pricing.config_views.transaction.atomic'), \
+             patch('pricing.config_views.Vidrio') as mock_vidrio, \
+             patch('pricing.config_views.VidrioHoja') as mock_vh:
+            mock_vidrio.objects.select_for_update.return_value.get.return_value = vidrio
+            filter_result = MagicMock()
+            filter_result.__iter__.return_value = iter(relaciones_previas)
+            mock_vh.objects.filter.return_value = filter_result
+
+            def _fake_vidriohoja(**kwargs):
+                creados[kwargs['hoja_id']] = kwargs
+                return kwargs
+            mock_vh.side_effect = _fake_vidriohoja
+
+            config_views._reemplazar_relaciones_vidrio_hoja(vidrio, [10, 20])
+
+        # Las hojas 10 y 20 conservan sus rebajes; no se pierden.
+        self.assertEqual(creados[10]['rebaje_ancho'], 'Ancho-149')
+        self.assertEqual(creados[10]['rebaje_alto'], 'Alto-50')
+        self.assertEqual(creados[20]['rebaje_ancho'], '(Ancho-149)/2')
+        self.assertEqual(creados[20]['rebaje_alto'], 'Alto-60')
+
+    def test_hoja_nueva_arranca_sin_rebaje(self):
+        vidrio = SimpleNamespace(pk='FLOAT 6 MM', codigo='FLOAT 6 MM')
+        relaciones_previas = [
+            SimpleNamespace(hoja_id=10, rebaje_ancho='Ancho-149', rebaje_alto='Alto-50'),
+        ]
+        creados = {}
+
+        with patch('pricing.config_views.transaction.atomic'), \
+             patch('pricing.config_views.Vidrio') as mock_vidrio, \
+             patch('pricing.config_views.VidrioHoja') as mock_vh:
+            mock_vidrio.objects.select_for_update.return_value.get.return_value = vidrio
+            filter_result = MagicMock()
+            filter_result.__iter__.return_value = iter(relaciones_previas)
+            mock_vh.objects.filter.return_value = filter_result
+
+            def _fake_vidriohoja(**kwargs):
+                creados[kwargs['hoja_id']] = kwargs
+                return kwargs
+            mock_vh.side_effect = _fake_vidriohoja
+
+            config_views._reemplazar_relaciones_vidrio_hoja(vidrio, [10, 99])
+
+        self.assertEqual(creados[10]['rebaje_ancho'], 'Ancho-149')
+        self.assertIsNone(creados[99]['rebaje_ancho'])
+        self.assertIsNone(creados[99]['rebaje_alto'])
+
+
 class CalculatorTerciarizadoTest(SimpleTestCase):
     """RF-015 / REQ-033: un producto terciarizado cotiza por precio manual/m²,
     sin despiezar perfiles/vidrios/accesorios."""
