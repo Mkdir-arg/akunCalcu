@@ -537,3 +537,26 @@ class PerfilesBulkUpdateViewTest(SimpleTestCase):
         filtered_qs.update.assert_called_once_with(precio_kg=123.45)
         mock_success.assert_called_once_with(request, 'Se actualizaron 2 perfiles correctamente.')
         mock_redirect.assert_called_once_with('config-perfiles')
+
+
+class VidrioRenombrarCodigoTest(SimpleTestCase):
+    """RF-018: renombrar el código (PK) de un vidrio debe repuntar todas sus
+    referencias (vidrio_hojas y despiece_perfiles_vidrios) en una transacción."""
+
+    def test_renombrar_codigo_repunta_las_tres_tablas(self):
+        cursor = MagicMock()
+        with patch('pricing.config_views.connection') as mock_conn, \
+             patch('pricing.config_views.transaction'):
+            mock_conn.cursor.return_value.__enter__.return_value = cursor
+            config_views._renombrar_codigo_vidrio('dvh 1', 'DVH-1')
+
+        queries = [c.args[0] for c in cursor.execute.call_args_list]
+        params = [c.args[1] for c in cursor.execute.call_args_list]
+
+        self.assertEqual(len(queries), 3)
+        self.assertTrue(any('vidrios' in q and 'CODIGO' in q for q in queries))
+        self.assertTrue(any('vidrio_hojas' in q for q in queries))
+        self.assertTrue(any('despiece_perfiles_vidrios' in q for q in queries))
+        # Cada UPDATE usa (codigo_nuevo, codigo_anterior) como parámetros.
+        for p in params:
+            self.assertEqual(p, ['DVH-1', 'dvh 1'])

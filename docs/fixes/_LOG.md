@@ -22,6 +22,50 @@
 
 ## Fixes registrados
 
+### FIX-012 — Permitir editar el código (nombre) de un vidrio — RF-018
+**Fecha**: 2026-06-27
+**Reportado por**: Usuario (RF-018)
+**Severidad**: Baja (mejora operativa)
+**Feature afectada**: Módulo pricing / configuración de vidrios
+
+**Síntoma**: No se podía cambiar el código con el que fue cargado un vidrio (el identificador que figura en la lista y la URL, ej. "dvh 1"); para estandarizar nombres había que eliminar el vidrio y volver a crearlo. La descripción y el precio ya eran editables; el código no.
+**Causa raíz**: El código es la PK del modelo `Vidrio` (tabla legacy `managed=False`) y `VidrioEditForm` lo excluía a propósito. Renombrar una PK no se puede hacer con `obj.save()` (Django insertaría una fila nueva) y, además, las tablas que la referencian (`vidrio_hojas.vidrio_codigo` y `despiece_perfiles_vidrios.Idvidrio`) usan FK sin constraint en base, por lo que la base no cascadea el cambio.
+**Solución**: Se agregó el helper `_renombrar_codigo_vidrio()` que, dentro de una transacción, actualiza por SQL crudo parametrizado las tres tablas (`vidrios`, `vidrio_hojas`, `despiece_perfiles_vidrios`). `vidrio_edit` ahora lee `codigo_nuevo` del POST, valida que el nuevo código no exista ya y ejecuta el rename. El template de edición incluye un input "Código" con aviso de que el cambio actualiza también las relaciones. Test que verifica el repunte de las tres tablas con los parámetros correctos.
+**Archivos modificados**: `akuna_calc/pricing/config_views.py`, `akuna_calc/pricing/templates/pricing/config/vidrio_form.html`, `akuna_calc/pricing/tests.py`
+
+### FIX-011 — Detalle de reporte de proveedores: quitar línea de fecha repetitiva — RF-016
+**Fecha**: 2026-06-27
+**Reportado por**: Usuario (RF-016)
+**Severidad**: Baja (mejora UX)
+**Feature afectada**: Módulo comercial / detalle del reporte de proveedores
+
+**Síntoma**: En el detalle del reporte de proveedores, el listado de movimientos mostraba una fila separadora "Fecha: dd-mm-aaaa" antes de cada grupo de fecha, información redundante porque cada fila ya muestra la fecha en su propia columna (más las columnas Año y Mes).
+**Causa raíz**: El template usaba un bloque `{% ifchanged movimiento.fecha %}` que insertaba una fila a todo el ancho con la fecha, duplicando el dato de la columna "Fecha".
+**Solución**: Se eliminó el bloque separador `{% ifchanged %}` y se ajustó el subtítulo del asiento ("Cada fecha agrupa sus registros" ya no aplica). La fecha sigue visible en la columna de cada movimiento. Test que verifica la ausencia de la fila "Fecha:" y la presencia de la fecha por fila.
+**Archivos modificados**: `akuna_calc/comercial/templates/comercial/reportes/reporte_proveedor_detalle.html`, `akuna_calc/comercial/tests.py`
+
+### FIX-010 — Filtro por dirección del cliente en el listado de ventas — RF-013
+**Fecha**: 2026-06-27
+**Reportado por**: Usuario (RF-013)
+**Severidad**: Baja (mejora operativa, no bug)
+**Feature afectada**: Módulo comercial / listado de ventas
+
+**Síntoma**: No se podía filtrar/buscar ventas por la dirección del cliente; el buscador general (`q`) solo cubría pedido, cliente y factura.
+**Causa raíz**: `ventas_list` no contemplaba un filtro por `cliente.direccion` (sí tenía uno análogo para `razon_social`).
+**Solución**: Se agregó el parámetro `direccion` a `ventas_list` con `filter(cliente__direccion__icontains=...)` y se sumó al contexto. En el template se agregó el input "Dirección" al panel de filtros, se incluyó en las condiciones de panel abierto/badge y se propagó a los 7 links de paginación y ordenamiento para que el filtro persista. Se mantienen intactos todos los filtros existentes.
+**Archivos modificados**: `akuna_calc/comercial/views.py`, `akuna_calc/comercial/templates/comercial/ventas/list.html`, `akuna_calc/comercial/tests.py`
+
+### FIX-009 — Reporte de proveedores oculta proveedores desactivados (sus pagos "no impactan") — RF-006
+**Fecha**: 2026-06-27
+**Reportado por**: Usuario (RF-006)
+**Severidad**: Alta
+**Feature afectada**: Módulo comercial / reporte de proveedores
+
+**Síntoma**: Pagos/gastos cargados a un proveedor "no impactaban" en el reporte de proveedores: el proveedor y todos sus movimientos desaparecían del listado, y su detalle devolvía 404. Continuación del síntoma de [FIX-002], pero por una causa distinta.
+**Causa raíz**: El cálculo de la cuenta corriente (`construir_cuenta_corriente_proveedor`) era correcto — verificado con tests existentes y un nuevo test de reproducción end-to-end (compra + seña + pago en pesos + pago en USD). El problema estaba en la **visibilidad**: `reportes_proveedores`, `reporte_proveedor_detalle`, `exportar_reporte_proveedores_excel` y el dropdown de `ReporteProveedorForm` filtraban por `activo=True`. Al desactivar un proveedor (que conserva sus compras/pagos), quedaba totalmente fuera del reporte aunque tuviera saldo.
+**Solución**: Las cuatro consultas ahora incluyen proveedores inactivos **que conserven movimientos** (`annotate(Exists(Compra no eliminada)) + filter(Q(activo=True) | Q(tiene_movimientos=True))`), sin listar los inactivos vacíos. El detalle y la exportación dejan de exigir `activo=True` (siguen excluyendo `deleted_at`). El label "Cuenta activa" del detalle pasó a ser dinámico ("Cuenta inactiva" cuando corresponde). Se agregaron 4 tests de regresión.
+**Archivos modificados**: `akuna_calc/comercial/views.py`, `akuna_calc/comercial/forms.py`, `akuna_calc/comercial/templates/comercial/reportes/reporte_proveedor_detalle.html`, `akuna_calc/comercial/tests.py`
+
 ### FIX-006 — Fórmulas de perfiles de hojas/marcos se corrompen o no persisten con autoguardado concurrente
 **Fecha**: 2026-06-12
 **Reportado por**: Usuario + Romina

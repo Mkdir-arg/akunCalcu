@@ -902,6 +902,163 @@ class ComprasProveedorTest(TestCase):
         )
         self.assertIn('cuenta_proveedor_', response['Content-Disposition'])
 
+    def test_reporte_proveedor_desde_cero_refleja_compra_sena_y_pagos_pesos_y_usd(self):
+        """RF-006: un proveedor creado desde cero con compra + seña + pagos en
+        pesos y en dólares debe reflejar todos los movimientos en el reporte."""
+        nuevo = Cuenta.objects.create(nombre='Proveedor RF006', tipo_cuenta=self.tipo_proveedor)
+        compra = Compra.objects.create(
+            numero_pedido='RF006-OC',
+            cuenta=nuevo,
+            fecha_pago='2026-06-01',
+            valor_total=Decimal('10000'),
+            sena=Decimal('2000'),
+            forma_pago_sena='efectivo',
+            created_by=self.user,
+        )
+
+        # Pago en pesos a través de la vista real de carga de pagos.
+        self.client_http.post(reverse('comercial:registrar_pago_compra', args=[compra.pk]), {
+            'monto': '3000',
+            'fecha_pago': '2026-06-05',
+            'forma_pago': 'transferencia',
+            'con_factura': 'true',
+        })
+        # Pago en dólares: 2 USD x 1000 = 2000 pesos.
+        self.client_http.post(reverse('comercial:registrar_pago_compra', args=[compra.pk]), {
+            'monto': '',
+            'fecha_pago': '2026-06-10',
+            'forma_pago': 'efectivo',
+            'con_factura': 'true',
+            'pago_en_dolares': 'true',
+            'monto_usd': '2',
+            'cotizacion_usd': '1000',
+        })
+
+        response = self.client_http.get(reverse('comercial:reportes_proveedores'), {
+            'proveedor': nuevo.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        resumen = response.context['resumen_proveedores'][0]
+        self.assertEqual(resumen['total_compras'], Decimal('10000'))
+        self.assertEqual(resumen['total_senas'], Decimal('2000'))
+        self.assertEqual(resumen['total_pagos'], Decimal('5000'))
+        self.assertEqual(resumen['saldo_actual'], Decimal('3000'))
+        tipos = [m['tipo'] for m in resumen['movimientos']]
+        self.assertEqual(tipos.count('compra'), 1)
+        self.assertEqual(tipos.count('sena'), 1)
+        self.assertEqual(tipos.count('pago'), 2)
+
+    def test_reporte_proveedores_incluye_proveedor_inactivo_con_movimientos(self):
+        """RF-006: un proveedor desactivado que conserva compras/pagos debe
+        seguir apareciendo en el reporte (antes desaparecía por activo=True)."""
+        compra = Compra.objects.create(
+            numero_pedido='RF006-INACT',
+            cuenta=self.proveedor,
+            fecha_pago='2026-06-01',
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        PagoCompra.objects.create(
+            compra=compra, monto=Decimal('400'), fecha_pago='2026-06-02',
+            forma_pago='efectivo', con_factura=True, created_by=self.user,
+        )
+        compra.save()
+        # Un proveedor inactivo y SIN movimientos no debe aparecer.
+        Cuenta.objects.create(
+            nombre='Proveedor Vacio', tipo_cuenta=self.tipo_proveedor, activo=False,
+        )
+        self.proveedor.activo = False
+        self.proveedor.save()
+
+        response = self.client_http.get(reverse('comercial:reportes_proveedores'))
+        self.assertEqual(response.status_code, 200)
+        nombres = [c['proveedor'].nombre for c in response.context['resumen_proveedores']]
+        self.assertIn('Proveedor Uno', nombres)
+        self.assertNotIn('Proveedor Vacio', nombres)
+        resumen = next(
+            c for c in response.context['resumen_proveedores']
+            if c['proveedor'].pk == self.proveedor.pk
+        )
+        self.assertEqual(resumen['total_pagos'], Decimal('400'))
+        self.assertEqual(resumen['saldo_actual'], Decimal('600'))
+
+    def test_reporte_proveedor_detalle_accesible_para_proveedor_inactivo(self):
+        """RF-006: el detalle de un proveedor inactivo debe seguir accesible
+        (antes devolvía 404 y sus pagos quedaban ocultos)."""
+        compra = Compra.objects.create(
+            numero_pedido='RF006-DET',
+            cuenta=self.proveedor,
+            fecha_pago='2026-06-01',
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        PagoCompra.objects.create(
+            compra=compra, monto=Decimal('250'), fecha_pago='2026-06-02',
+            forma_pago='efectivo', con_factura=True, created_by=self.user,
+        )
+        compra.save()
+        self.proveedor.activo = False
+        self.proveedor.save()
+
+        response = self.client_http.get(
+            reverse('comercial:reporte_proveedor_detalle', args=[self.proveedor.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cuenta inactiva')
+        self.assertEqual(
+            response.context['cuenta_corriente']['saldo_actual'], Decimal('750'),
+        )
+
+    def test_reporte_proveedor_detalle_sin_linea_de_fecha_repetida(self):
+        """RF-016: el detalle no debe renderizar la fila separadora 'Fecha:'
+        (redundante), pero sí la fecha en la columna de cada movimiento."""
+        compra = Compra.objects.create(
+            numero_pedido='RF016-OC',
+            cuenta=self.proveedor,
+            fecha_pago='2026-06-15',
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        PagoCompra.objects.create(
+            compra=compra, monto=Decimal('400'), fecha_pago='2026-06-15',
+            forma_pago='efectivo', con_factura=True, created_by=self.user,
+        )
+        compra.save()
+
+        response = self.client_http.get(
+            reverse('comercial:reporte_proveedor_detalle', args=[self.proveedor.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        # La fila separadora redundante ya no existe.
+        self.assertNotContains(response, 'Fecha:')
+        # La fecha sigue visible en la columna por fila (formato d/m/Y).
+        self.assertContains(response, '15/06/2026')
+
+    def test_filtro_dropdown_permite_proveedor_inactivo_con_movimientos(self):
+        """RF-006: el selector del reporte debe ofrecer (y aceptar) proveedores
+        inactivos que conserven movimientos."""
+        Compra.objects.create(
+            numero_pedido='RF006-FILTRO',
+            cuenta=self.proveedor,
+            fecha_pago='2026-06-01',
+            valor_total=Decimal('1000'),
+            sena=Decimal('0'),
+            created_by=self.user,
+        )
+        self.proveedor.activo = False
+        self.proveedor.save()
+
+        response = self.client_http.get(reverse('comercial:reportes_proveedores'), {
+            'proveedor': self.proveedor.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].is_valid())
+        self.assertEqual(response.context['proveedor_filtro'], self.proveedor)
+        self.assertEqual(len(response.context['resumen_proveedores']), 1)
+
 
 class ReportesVentasTest(TestCase):
     def setUp(self):
@@ -1134,6 +1291,54 @@ class VentasListFacturasTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Venta USD')
         self.assertContains(response, 'Seña USD')
+
+
+class VentasListDireccionFilterTest(TestCase):
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        self.user = User.objects.create_user(username='ventasdir', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.user, permisos=['comercial.ventas'])
+        self.client_http = Client()
+        self.client_http.login(username='ventasdir', password='testpass')
+        self.cliente_centro = Cliente.objects.create(
+            nombre='Carlos', apellido='Centro',
+            condicion_iva='CF', direccion='Av. San Martín 1200', localidad='CABA',
+        )
+        self.cliente_norte = Cliente.objects.create(
+            nombre='Diana', apellido='Norte',
+            condicion_iva='CF', direccion='Calle Belgrano 45', localidad='CABA',
+        )
+        self.venta_centro = Venta.objects.create(
+            numero_pedido='DIR-CENTRO', cliente=self.cliente_centro,
+            valor_total=Decimal('1000'), sena=Decimal('0'),
+        )
+        self.venta_norte = Venta.objects.create(
+            numero_pedido='DIR-NORTE', cliente=self.cliente_norte,
+            valor_total=Decimal('2000'), sena=Decimal('0'),
+        )
+
+    def test_filtra_ventas_por_direccion_del_cliente(self):
+        response = self.client_http.get(reverse('comercial:ventas_list'), {'direccion': 'San Martín'})
+        self.assertEqual(response.status_code, 200)
+        pedidos = [v.numero_pedido for v in response.context['ventas']]
+        self.assertIn('DIR-CENTRO', pedidos)
+        self.assertNotIn('DIR-NORTE', pedidos)
+        self.assertEqual(response.context['direccion'], 'San Martín')
+
+    def test_filtro_direccion_no_distingue_mayusculas(self):
+        response = self.client_http.get(reverse('comercial:ventas_list'), {'direccion': 'belgrano'})
+        self.assertEqual(response.status_code, 200)
+        pedidos = [v.numero_pedido for v in response.context['ventas']]
+        self.assertIn('DIR-NORTE', pedidos)
+        self.assertNotIn('DIR-CENTRO', pedidos)
+
+    def test_sin_filtro_direccion_muestra_todas(self):
+        response = self.client_http.get(reverse('comercial:ventas_list'))
+        self.assertEqual(response.status_code, 200)
+        pedidos = [v.numero_pedido for v in response.context['ventas']]
+        self.assertIn('DIR-CENTRO', pedidos)
+        self.assertIn('DIR-NORTE', pedidos)
 
 
 class ReporteCobranzasTest(TestCase):

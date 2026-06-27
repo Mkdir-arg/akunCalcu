@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django import forms
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto
 
 
@@ -421,8 +421,13 @@ class ReporteProveedorForm(forms.Form):
     proveedor = forms.ModelChoiceField(
         queryset=Cuenta.objects.filter(
             deleted_at__isnull=True,
-            activo=True,
             tipo_cuenta__tipo='proveedores',
+        ).annotate(
+            tiene_movimientos=Exists(
+                Compra.objects.filter(cuenta=OuterRef('pk'), deleted_at__isnull=True)
+            )
+        ).filter(
+            Q(activo=True) | Q(tiene_movimientos=True)
         ).select_related('tipo_cuenta').order_by('nombre'),
         required=False,
         empty_label='Todos los proveedores',

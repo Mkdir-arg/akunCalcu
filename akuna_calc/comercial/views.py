@@ -285,6 +285,7 @@ def ventas_list(request):
     con_factura = request.GET.get('con_factura', '')
     buscar = request.GET.get('q', '')
     razon_social = request.GET.get('razon_social', '')
+    direccion = request.GET.get('direccion', '')
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     tipo_fecha = request.GET.get('tipo_fecha', 'pago')
@@ -311,6 +312,9 @@ def ventas_list(request):
 
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
+
+    if direccion:
+        ventas = ventas.filter(cliente__direccion__icontains=direccion)
 
     if fecha_desde or fecha_hasta:
         # El filtro por fecha considera tanto la fecha de la venta como la de
@@ -373,6 +377,7 @@ def ventas_list(request):
         'filtro_con_saldo': con_saldo,
         'buscar': buscar,
         'razon_social': razon_social,
+        'direccion': direccion,
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
         'tipo_fecha': tipo_fecha,
@@ -2253,11 +2258,20 @@ def reportes_gastos(request):
 
 @login_required
 def reportes_proveedores(request):
+    from django.db.models import Exists, OuterRef, Q
+
     form = ReporteProveedorForm(request.GET or None)
+    # Incluir también proveedores desactivados que conserven movimientos, para
+    # que sus compras y pagos no desaparezcan del reporte al ser dados de baja.
     proveedores = Cuenta.objects.filter(
         deleted_at__isnull=True,
-        activo=True,
         tipo_cuenta__tipo='proveedores',
+    ).annotate(
+        tiene_movimientos=Exists(
+            Compra.objects.filter(cuenta=OuterRef('pk'), deleted_at__isnull=True)
+        )
+    ).filter(
+        Q(activo=True) | Q(tiene_movimientos=True)
     ).select_related('tipo_cuenta').order_by('nombre')
 
     proveedor_filtro = None
@@ -2283,7 +2297,6 @@ def reporte_proveedor_detalle(request, pk):
     proveedor = get_object_or_404(
         Cuenta.objects.filter(
             deleted_at__isnull=True,
-            activo=True,
             tipo_cuenta__tipo='proveedores',
         ).select_related('tipo_cuenta'),
         pk=pk,
@@ -2307,7 +2320,6 @@ def exportar_reporte_proveedores_excel(request):
     proveedor = get_object_or_404(
         Cuenta.objects.filter(
             deleted_at__isnull=True,
-            activo=True,
             tipo_cuenta__tipo='proveedores',
         ).select_related('tipo_cuenta'),
         pk=proveedor_id,

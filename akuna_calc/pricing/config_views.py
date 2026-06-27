@@ -1200,6 +1200,20 @@ def vidrio_create(request):
     return render(request, 'pricing/config/vidrio_form.html', {'form': form, 'titulo': 'Nuevo Vidrio', 'cancel_url': 'config-vidrios'})
 
 
+def _renombrar_codigo_vidrio(codigo_anterior, codigo_nuevo):
+    """Renombra la PK (código) de un vidrio repuntando todas sus referencias.
+
+    El código es PK de una tabla legacy (managed=False) y las tablas que lo
+    referencian usan FK sin constraint en base, por lo que la base no cascadea:
+    hay que actualizar cada tabla manualmente dentro de una transacción.
+    """
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute('UPDATE vidrios SET CODIGO=%s WHERE CODIGO=%s', [codigo_nuevo, codigo_anterior])
+            cursor.execute('UPDATE vidrio_hojas SET vidrio_codigo=%s WHERE vidrio_codigo=%s', [codigo_nuevo, codigo_anterior])
+            cursor.execute('UPDATE despiece_perfiles_vidrios SET Idvidrio=%s WHERE Idvidrio=%s', [codigo_nuevo, codigo_anterior])
+
+
 @login_required
 @user_passes_test(is_staff)
 def vidrio_edit(request, pk):
@@ -1249,6 +1263,16 @@ def vidrio_edit(request, pk):
 
         if form.is_valid():
             form.save()
+
+            # Renombrar el código (PK) si cambió, repuntando sus referencias.
+            codigo_nuevo = (request.POST.get('codigo_nuevo') or '').strip()
+            if codigo_nuevo and codigo_nuevo != obj.codigo:
+                if Vidrio.objects.filter(pk=codigo_nuevo).exists():
+                    messages.error(request, f'Ya existe un vidrio con el código "{codigo_nuevo}". No se renombró.')
+                    return redirect('config-vidrio-edit', pk=obj.codigo)
+                _renombrar_codigo_vidrio(obj.codigo, codigo_nuevo)
+                obj = Vidrio.objects.get(pk=codigo_nuevo)
+
             # Guardar relaciones de hojas
             hoja_ids_raw = request.POST.getlist('hoja')
             if hoja_ids_raw:
