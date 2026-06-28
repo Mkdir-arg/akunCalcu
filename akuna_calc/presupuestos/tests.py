@@ -104,12 +104,63 @@ class PresupuestoModelTest(TestCase):
         self.assertEqual(p.modalidad_sena, '50_50')
         self.assertEqual(p.get_modalidad_sena_display(), '50% adelanto / 50% saldo')
 
+    def test_validez_dias_default(self):
+        p = crear_presupuesto(self.user)
+        self.assertEqual(p.validez_dias, 30)
+
+    def test_aplicar_validez_dias_recalcula_fecha_expiracion(self):
+        p = crear_presupuesto(self.user)
+        p.validez_dias = 15
+        p.save(update_fields=['validez_dias'])
+        p.aplicar_validez_dias()
+        p.refresh_from_db()
+        self.assertEqual(p.fecha_expiracion, p.created_at.date() + timedelta(days=15))
+
     def test_es_pvc(self):
         aluminio = crear_presupuesto(self.user)
         pvc = crear_presupuesto_pvc(self.user)
 
         self.assertFalse(aluminio.es_pvc())
         self.assertTrue(pvc.es_pvc())
+
+    def test_incluye_flete_colocacion_default_false(self):
+        p = crear_presupuesto(self.user)
+        self.assertFalse(p.incluye_flete)
+        self.assertFalse(p.incluye_colocacion)
+
+    def test_observaciones_pdf_ambos(self):
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.incluye_colocacion = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye flete y colocación.',
+        )
+
+    def test_observaciones_pdf_solo_flete(self):
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.incluye_colocacion = False
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye flete.',
+        )
+
+    def test_observaciones_pdf_solo_colocacion(self):
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = False
+        p.incluye_colocacion = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye colocación.',
+        )
+
+    def test_observaciones_pdf_ninguno(self):
+        p = crear_presupuesto(self.user)
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto no incluye flete ni colocación.',
+        )
 
     def test_totales_usd_sin_cotizacion_son_none(self):
         p = crear_presupuesto(self.user)
@@ -372,6 +423,22 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get('/presupuestos/', {'sort': 'no_existe', 'dir': 'asc'})
         self.assertEqual(res.status_code, 200)
 
+    def test_config_obra_validez_dias_actualiza_vencimiento(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        url = reverse('presupuestos:presupuestos-configuracion-obra', args=[p.pk])
+        res = self.client.post(url, {
+            'tipo_obra': 'obra_nueva',
+            'modalidad_sena': '50_50',
+            'recargo_obra_nueva': '0',
+            'validez_dias': '45',
+        })
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.validez_dias, 45)
+        self.assertEqual(p.fecha_expiracion, p.created_at.date() + timedelta(days=45))
+
     def test_agregar_item_terciarizado_usa_precio_final_sin_marco(self):
         from django.urls import reverse
         self.client.login(username='viewuser', password='testpass')
@@ -591,6 +658,9 @@ class PresupuestosViewsTest(TestCase):
     def test_pdf_autenticado_muestra_descripcion_y_resumen_tecnico(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.incluye_colocacion = True
+        p.save(update_fields=['incluye_flete', 'incluye_colocacion'])
         ItemPresupuesto.objects.create(
             presupuesto=p,
             descripcion='Ventana cocina',
@@ -811,6 +881,51 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 302)
         p.refresh_from_db()
         self.assertEqual(p.modalidad_sena, '70_30')
+
+    def test_actualizar_configuracion_obra_guarda_flete_y_colocacion(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {
+                'tipo_obra': 'obra_nueva',
+                'modalidad_sena': '50_50',
+                'recargo_obra_nueva': '0',
+                'incluye_flete': 'on',
+                'incluye_colocacion': 'on',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertTrue(p.incluye_flete)
+        self.assertTrue(p.incluye_colocacion)
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye flete y colocación.',
+        )
+
+    def test_actualizar_configuracion_obra_destilda_flete_y_colocacion(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.incluye_colocacion = True
+        p.save(update_fields=['incluye_flete', 'incluye_colocacion'])
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {
+                'tipo_obra': 'obra_nueva',
+                'modalidad_sena': '50_50',
+                'recargo_obra_nueva': '0',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertFalse(p.incluye_flete)
+        self.assertFalse(p.incluye_colocacion)
 
 
 class PresupuestoPvcUsdViewsTest(TestCase):

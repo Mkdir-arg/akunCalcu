@@ -45,13 +45,16 @@ class PresupuestoForm(forms.ModelForm):
 class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['tipo_obra', 'modalidad_sena', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva']
+        fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion']
         widgets = {
             'tipo_obra': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'validez_dias': forms.NumberInput(attrs={'min': '1', 'step': '1', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'modalidad_sena': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_obra_nueva': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_renovacion_unitario': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'aplicar_iva': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'incluye_flete': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'incluye_colocacion': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +63,7 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
         self.fields['tipo_obra'].empty_label = None
         self.fields['tipo_obra'].widget.choices = [('', 'Seleccionar...'), *Presupuesto.TIPO_OBRA_CHOICES]
         self.fields['modalidad_sena'].required = True
+        self.fields['validez_dias'].required = False
         self.fields['recargo_obra_nueva'].required = False
         self.fields['recargo_renovacion_unitario'].required = False
 
@@ -68,6 +72,12 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
         tipo_obra = cleaned_data.get('tipo_obra')
         recargo_obra_nueva = cleaned_data.get('recargo_obra_nueva')
         recargo_renovacion_unitario = cleaned_data.get('recargo_renovacion_unitario')
+
+        validez = cleaned_data.get('validez_dias')
+        if validez in (None, ''):
+            cleaned_data['validez_dias'] = 30
+        elif validez < 1:
+            self.add_error('validez_dias', 'La validez debe ser de al menos 1 día.')
 
         if not tipo_obra:
             raise forms.ValidationError('Debes seleccionar obra nueva o renovación antes de agregar ítems.')

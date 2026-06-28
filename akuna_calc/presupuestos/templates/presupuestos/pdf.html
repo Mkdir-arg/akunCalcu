@@ -448,7 +448,7 @@
                 </tr>
                 <tr>
                     <td class="summary-cell"><span class="summary-label">Condición IVA:</span> {{ presupuesto.cliente.get_condicion_iva_display }}</td>
-                    <td class="summary-cell right"><span class="summary-label">Válido hasta:</span> {{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</td>
+                    <td class="summary-cell right"><span class="summary-label">Validez:</span> {{ presupuesto.validez_dias }} día{{ presupuesto.validez_dias|pluralize:"s" }} (hasta {{ presupuesto.fecha_expiracion|date:"d/m/Y" }})</td>
                 </tr>
                 <tr>
                     <td class="summary-cell" colspan="2"><span class="summary-label">Modalidad de seña:</span> {{ presupuesto.get_modalidad_sena_display }}</td>
@@ -545,7 +545,7 @@
 
             <div class="divider-line"></div>
 
-            <p class="bottom-note"><strong>Observaciones:</strong> El presente presupuesto incluye flete y colocación.</p>
+            <p class="bottom-note"><strong>Observaciones:</strong> {{ presupuesto.get_observaciones_pdf }}</p>
         </div>
     </div>
 </body>

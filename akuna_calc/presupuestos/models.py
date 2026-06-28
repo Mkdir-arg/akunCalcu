@@ -43,6 +43,7 @@ class Presupuesto(models.Model):
         verbose_name='Cliente',
     )
     fecha_expiracion = models.DateField(verbose_name='Fecha de expiración')
+    validez_dias = models.PositiveIntegerField(default=30, verbose_name='Validez (días)')
     estado = models.CharField(
         max_length=20,
         choices=ESTADO_CHOICES,
@@ -84,6 +85,14 @@ class Presupuesto(models.Model):
     aplicar_iva = models.BooleanField(
         default=False,
         verbose_name='Aplicar IVA 21%',
+    )
+    incluye_flete = models.BooleanField(
+        default=False,
+        verbose_name='Incluye flete',
+    )
+    incluye_colocacion = models.BooleanField(
+        default=False,
+        verbose_name='Incluye colocación',
     )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total')
     cotizacion_usd = models.DecimalField(
@@ -148,6 +157,17 @@ class Presupuesto(models.Model):
     def esta_eliminado(self):
         return self.deleted_at is not None
 
+    def get_observaciones_pdf(self):
+        if self.incluye_flete and self.incluye_colocacion:
+            inclusiones = 'incluye flete y colocación'
+        elif self.incluye_flete:
+            inclusiones = 'incluye flete'
+        elif self.incluye_colocacion:
+            inclusiones = 'incluye colocación'
+        else:
+            inclusiones = 'no incluye flete ni colocación'
+        return f'El presente presupuesto {inclusiones}.'
+
     def get_total_items(self):
         return sum((item.precio_total for item in self.items.all()), Decimal('0'))
 
@@ -177,6 +197,17 @@ class Presupuesto(models.Model):
         recargo_unitario = self.recargo_renovacion_unitario if self.tipo_obra == 'renovacion' else Decimal('0')
         for item in self.items.all():
             item.aplicar_recargo_renovacion(recargo_unitario)
+
+    def aplicar_validez_dias(self):
+        """Recalcula la fecha de vencimiento a partir de la validez en días.
+
+        La validez (en días) maneja la fecha de expiración: se cuenta desde la
+        fecha de creación del presupuesto. Se persiste el cambio.
+        """
+        from datetime import timedelta
+        base = (self.created_at or timezone.now()).date()
+        self.fecha_expiracion = base + timedelta(days=self.validez_dias or 30)
+        self.save(update_fields=['fecha_expiracion'])
 
     def get_subtotal_sin_iva(self):
         return self.get_total_items() + self.get_recargo_obra_nueva_aplicado()

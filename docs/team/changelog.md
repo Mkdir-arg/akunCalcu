@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-06-29 — Flete y colocación como checkboxes que varían la observación del PDF (FEAT-017)
+
+**User Story:** Como vendedor, quiero tildar si el presupuesto incluye flete y/o colocación desde "Configuración de obra", para que la observación del PDF refleje exactamente lo acordado en lugar de un texto fijo.
+**Archivos modificados:** `akuna_calc/presupuestos/models.py`, `forms.py`, `templates/presupuestos/detalle.html`, `templates/presupuestos/pdf.html`, `tests.py`, migración `0008_presupuesto_incluye_flete_colocacion.py`.
+**Descripción:** Se agregaron los campos booleanos `incluye_flete` e `incluye_colocacion` (default False) al modelo `Presupuesto`, expuestos como checkboxes en el panel "Configuración de obra". El método `get_observaciones_pdf()` arma el texto de Observaciones del PDF según las 4 combinaciones (antes era fijo: "incluye flete y colocación"). Sin impacto en precios. Migración `0008` pendiente de correr en Docker/Railway.
+
 ## 2026-06-27 — Productos terciarizados con precio manual (REQ-033 / FEAT-016)
 
 **User Story:** Como administrador de pricing, quiero marcar ciertos productos como terciarizados (no fabricados, ej. cortinas roller) sin cargarles precio, e ingresar el precio por m² al cotizarlos, para que el cotizador use ese precio en lugar de calcularlo por fórmula.

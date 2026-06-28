@@ -367,6 +367,12 @@
                             {{ configuracion_form.modalidad_sena }}
                             {% if configuracion_form.modalidad_sena.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
                         </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.validez_dias.label }}</label>
+                            {{ configuracion_form.validez_dias }}
+                            <p class="text-xs text-slate-400 mt-1">Cuántos días es válido el presupuesto. Define la fecha de vencimiento que se muestra en el PDF.</p>
+                            {% if configuracion_form.validez_dias.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.validez_dias.errors.0 }}</p>{% endif %}
+                        </div>
                         <div id="recargo-obra-nueva-field">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
@@ -386,6 +392,17 @@
                             </label>
                             <p class="text-xs text-slate-400 mt-1 ml-6">En el PDF se mostrará el IVA como renglón separado, esté o no incluido en el total.</p>
                             {% if configuracion_form.aplicar_iva.errors %}<p class="text-red-600 text-xs mt-1 ml-6">{{ configuracion_form.aplicar_iva.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div class="border-t pt-3 space-y-2">
+                            <label class="flex items-center cursor-pointer">
+                                {{ configuracion_form.incluye_flete }}
+                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.incluye_flete.label }}</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                {{ configuracion_form.incluye_colocacion }}
+                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.incluye_colocacion.label }}</span>
+                            </label>
+                            <p class="text-xs text-slate-400 mt-1 ml-6">Definen el texto de Observaciones en el PDF (flete y/o colocación).</p>
                         </div>
                     </div>
                     <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-semibold text-sm transition-colors">
@@ -416,6 +433,14 @@
                         <span class="font-semibold text-slate-800 text-right">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }}</span>
                     </div>
                     {% endif %}
+                    <div class="flex justify-between gap-3">
+                        <span class="text-slate-500">Flete</span>
+                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.incluye_flete %}Incluido{% else %}No incluido{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <span class="text-slate-500">Colocación</span>
+                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.incluye_colocacion %}Incluida{% else %}No incluida{% endif %}</span>
+                    </div>
                 </div>
                 {% endif %}
             </div>

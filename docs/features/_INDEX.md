@@ -22,6 +22,8 @@
 | [FEAT-014](./FEAT-014-confirmacion-reemplazo-accesorio-hoja.md) | Confirmación antes de reemplazar accesorio en hoja configurator | Implementado | 2026-05-26 | — |
 | [FEAT-015](./FEAT-015-presupuestos-pvc-en-dolares.md) | Presupuestos PVC siempre en dólares | Implementado | 2026-06-19 | — |
 | [FEAT-016](./FEAT-016-productos-terciarizados-precio-manual.md) | Productos terciarizados con precio manual | Implementado | 2026-06-27 | — |
+| [FEAT-017](./FEAT-017-flete-colocacion-checkboxes-pdf.md) | Flete y colocación como checkboxes que varían la observación del PDF | Implementado | 2026-06-29 | — |
+| [FEAT-018](./FEAT-018-validez-dias-presupuesto.md) | Validez del presupuesto en días (maneja vencimiento + PDF) | Implementado | 2026-06-29 | — |
 
 ---
 

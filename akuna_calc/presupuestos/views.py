@@ -312,6 +312,7 @@ def actualizar_configuracion_obra(request, pk):
     configuracion_form = PresupuestoConfiguracionObraForm(request.POST, instance=presupuesto)
     if configuracion_form.is_valid():
         presupuesto = configuracion_form.save()
+        presupuesto.aplicar_validez_dias()
         presupuesto.actualizar_items_por_configuracion()
         presupuesto.recalcular_total()
         messages.success(request, 'Configuración de obra actualizada.')
