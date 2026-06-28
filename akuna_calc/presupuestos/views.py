@@ -103,21 +103,7 @@ def lista(request):
             Q(cliente__razon_social__icontains=cliente_q)
         )
 
-    sort_fields = {
-        'numero': ('numero',),
-        'cliente': ('cliente__nombre', 'cliente__apellido', 'cliente__razon_social'),
-        'items': ('item_count',),
-        'estado': ('estado',),
-        'vencimiento': ('fecha_expiracion',),
-        'total': ('total',),
-    }
-    sort = request.GET.get('sort', '')
-    direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
-    if sort in sort_fields:
-        prefix = '-' if direction == 'desc' else ''
-        qs = qs.order_by(*[f'{prefix}{campo}' for campo in sort_fields[sort]])
-    else:
-        qs = qs.order_by('-created_at')
+    qs = qs.order_by('-created_at')
 
     return render(request, 'presupuestos/lista.html', {
         'presupuestos': qs,
@@ -125,8 +111,6 @@ def lista(request):
         'cliente_q': cliente_q,
         'estados': Presupuesto.ESTADO_CHOICES,
         'kpis': kpis,
-        'sort': sort,
-        'dir': direction,
     })
 
 

@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-013 — Lista de presupuestos: quitar orden por columnas, fijar orden por más nuevo y agregar columna de creación
+**Fecha**: 2026-06-29
+**Reportado por**: Usuario
+**Severidad**: Baja (mejora de UX)
+**Feature afectada**: Módulo `presupuestos` — listado `/presupuestos/`
+
+**Síntoma**: Al tocar los títulos de las columnas la tabla se reordenaba (`?sort=...&dir=...`). El usuario quería un orden fijo (el presupuesto más nuevo arriba) y ver la fecha de creación de cada presupuesto.
+**Causa raíz**: La vista `lista` implementaba ordenamiento dinámico por columna y el template renderizaba los headers como links con íconos de orden. No existía columna de fecha de creación.
+**Solución**: Se quitó la lógica de `sort_fields`/`sort`/`dir` de la vista; ahora el queryset siempre ordena por `-created_at` (más nuevo arriba). Los headers pasaron a texto plano (sin links ni íconos). Se agregó la columna "Creacion" con `created_at|date:"d/m/Y"` entre Estado y Vencimiento (`colspan` del estado vacío 7 → 8). Tests: reemplazo de los tests de orden por columna por uno de orden por defecto + uno que verifica que parámetros de orden se ignoran sin romper.
+**Archivos modificados**: `akuna_calc/presupuestos/views.py`, `akuna_calc/presupuestos/templates/presupuestos/lista.html`, `akuna_calc/presupuestos/tests.py`
+
 ### FIX-012 — Permitir editar el código (nombre) de un vidrio — RF-018
 **Fecha**: 2026-06-27
 **Reportado por**: Usuario (RF-018)

@@ -98,12 +98,13 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=numero&dir={% if sort == 'numero' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center gap-1 hover:text-slate-200">Numero {% if sort == 'numero' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=cliente&dir={% if sort == 'cliente' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center gap-1 hover:text-slate-200">Cliente {% if sort == 'cliente' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=items&dir={% if sort == 'items' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center justify-center gap-1 hover:text-slate-200">Items {% if sort == 'items' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center justify-center gap-1 hover:text-slate-200">Estado {% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=vencimiento&dir={% if sort == 'vencimiento' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center gap-1 hover:text-slate-200">Vencimiento {% if sort == 'vencimiento' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=total&dir={% if sort == 'total' and dir == 'asc' %}desc{% else %}asc{% endif %}&estado={{ estado_actual }}&cliente={{ cliente_q }}" class="inline-flex items-center justify-end gap-1 hover:text-slate-200">Total {% if sort == 'total' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% else %}<i class="fas fa-sort text-slate-500"></i>{% endif %}</a></th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Numero</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Items</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Creacion</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Vencimiento</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Total</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -134,6 +135,7 @@
                                 <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelado</span>
                             {% endif %}
                         </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ p.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ p.fecha_expiracion|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4 text-sm font-bold text-slate-800 text-right">
                             {% if p.es_pvc %}
@@ -162,7 +164,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="8" class="px-6 py-12 text-center">
                             <i class="fas fa-file-invoice text-slate-300 text-4xl mb-3"></i>
                             <p class="text-slate-500 font-medium">No hay presupuestos</p>
                             <a href="{% url 'presupuestos:presupuestos-crear' %}" class="text-blue-600 hover:underline text-sm mt-1 inline-block">Crear el primero</a>

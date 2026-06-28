@@ -399,25 +399,23 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
         self.assertEqual(res.status_code, 200)
 
-    def test_lista_ordena_por_total_asc_y_desc(self):
+    def test_lista_ordena_mas_nuevo_arriba(self):
         self.client.login(username='viewuser', password='testpass')
-        p1 = crear_presupuesto(self.user)
-        p2 = crear_presupuesto(self.user)
-        Presupuesto.objects.filter(pk=p1.pk).update(total=100)
-        Presupuesto.objects.filter(pk=p2.pk).update(total=500)
+        viejo = crear_presupuesto(self.user)
+        nuevo = crear_presupuesto(self.user)
+        # created_at es auto_now_add: lo fijo a mano para que el orden sea determinístico.
+        Presupuesto.objects.filter(pk=viejo.pk).update(
+            created_at=timezone.now() - timedelta(days=2))
+        Presupuesto.objects.filter(pk=nuevo.pk).update(
+            created_at=timezone.now() - timedelta(days=1))
 
-        res = self.client.get('/presupuestos/', {'sort': 'total', 'dir': 'asc'})
+        res = self.client.get('/presupuestos/')
+
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.context['sort'], 'total')
-        self.assertEqual(res.context['dir'], 'asc')
-        ids_asc = [p.pk for p in res.context['presupuestos']]
-        self.assertLess(ids_asc.index(p1.pk), ids_asc.index(p2.pk))
+        ids = [p.pk for p in res.context['presupuestos']]
+        self.assertLess(ids.index(nuevo.pk), ids.index(viejo.pk))
 
-        res_desc = self.client.get('/presupuestos/', {'sort': 'total', 'dir': 'desc'})
-        ids_desc = [p.pk for p in res_desc.context['presupuestos']]
-        self.assertLess(ids_desc.index(p2.pk), ids_desc.index(p1.pk))
-
-    def test_lista_sort_invalido_no_rompe(self):
+    def test_lista_ignora_parametros_de_orden(self):
         self.client.login(username='viewuser', password='testpass')
         crear_presupuesto(self.user)
         res = self.client.get('/presupuestos/', {'sort': 'no_existe', 'dir': 'asc'})
