@@ -874,7 +874,7 @@ const FormularioPVC = () => {
 
             <button onClick={guardar} disabled={saving}
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center">
-                {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>Agregar al presupuesto</>}
+                {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
             </button>
         </div>
     );
@@ -1307,7 +1307,7 @@ const CotizadorModal = () => {
                 {esTerc ? (
                     <button onClick={guardarTerciarizado} disabled={saving || !precioTerc}
                         className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">
-                        {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Agregando...</> : <><i className="fas fa-plus mr-2"></i>Agregar al presupuesto</>}
+                        {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Agregando...</> : <><i className="fas fa-plus mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
                     </button>
                 ) : (
                     <button onClick={calcular} disabled={loading || !config.marco_id}
@@ -1414,7 +1414,7 @@ const CotizadorModal = () => {
 
                         <button onClick={guardar} disabled={saving}
                             className="mt-4 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all">
-                            {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>Agregar al presupuesto</>}
+                            {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
                         </button>
                     </>
                 ) : (
