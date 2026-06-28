@@ -168,6 +168,15 @@ class Presupuesto(models.Model):
             inclusiones = 'no incluye flete ni colocación'
         return f'El presente presupuesto {inclusiones}.'
 
+    def get_resumen_flete_colocacion(self):
+        if self.incluye_flete and self.incluye_colocacion:
+            return 'Flete y colocación'
+        if self.incluye_flete:
+            return 'Flete'
+        if self.incluye_colocacion:
+            return 'Colocación'
+        return 'Sin flete ni colocación'
+
     def get_total_items(self):
         return sum((item.precio_total for item in self.items.all()), Decimal('0'))
 

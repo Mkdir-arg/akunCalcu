@@ -162,6 +162,16 @@ class PresupuestoModelTest(TestCase):
             'El presente presupuesto no incluye flete ni colocación.',
         )
 
+    def test_resumen_flete_colocacion(self):
+        p = crear_presupuesto(self.user)
+        self.assertEqual(p.get_resumen_flete_colocacion(), 'Sin flete ni colocación')
+        p.incluye_flete = True
+        self.assertEqual(p.get_resumen_flete_colocacion(), 'Flete')
+        p.incluye_colocacion = True
+        self.assertEqual(p.get_resumen_flete_colocacion(), 'Flete y colocación')
+        p.incluye_flete = False
+        self.assertEqual(p.get_resumen_flete_colocacion(), 'Colocación')
+
     def test_totales_usd_sin_cotizacion_son_none(self):
         p = crear_presupuesto(self.user)
         p.total = Decimal('1000')

@@ -136,7 +136,10 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ p.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ p.fecha_expiracion|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            {{ p.fecha_expiracion|date:"d/m/Y" }}
+                            <span class="block text-xs text-slate-400 font-normal mt-1">{{ p.get_resumen_flete_colocacion }}</span>
+                        </td>
                         <td class="px-6 py-4 text-sm font-bold text-slate-800 text-right">
                             {% if p.es_pvc %}
                             US${{ p.get_total_usd|floatformat:2 }}
