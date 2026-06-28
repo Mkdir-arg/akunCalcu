@@ -157,6 +157,106 @@ def editar(request, pk):
     return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Editar Presupuesto', 'presupuesto': presupuesto, 'return_url': return_url})
 
 
+def _fields_item_desde_post(request, presupuesto):
+    """Construye los campos de un ItemPresupuesto desde el POST del cotizador.
+
+    Devuelve (fields, error). Si error != None, la validación falló y no se debe
+    guardar. Lo comparten agregar_item (crear) y editar_item (actualizar), para
+    que editar use exactamente la misma lógica de cálculo que agregar.
+    """
+    data = request.POST
+    descripcion = data.get('descripcion', '').strip()
+    try:
+        cantidad = max(1, int(data.get('cantidad', 1) or 1))
+    except (TypeError, ValueError):
+        cantidad = 1
+
+    # PVC: valor manual en dólares
+    if presupuesto.tipo_material == 'pvc':
+        if not presupuesto.tiene_cotizacion_usd():
+            return None, 'Configurá la cotización USD del presupuesto antes de agregar ítems.'
+        valor_usd = float(data.get('valor_usd', 0) or 0)
+        margen_porcentaje = float(data.get('margen_porcentaje', 30) or 30)
+        valor_base = valor_usd * float(presupuesto.cotizacion_usd)
+        precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
+        precio_unitario = precio_unitario_base
+        if presupuesto.tipo_obra == 'renovacion':
+            precio_unitario = precio_unitario_base + float(presupuesto.recargo_renovacion_unitario or 0)
+        return {
+            'descripcion': descripcion or 'Item sin descripción',
+            'cantidad': cantidad, 'ancho_mm': 0, 'alto_mm': 0,
+            'margen_porcentaje': margen_porcentaje, 'precio_unitario': precio_unitario,
+            'resultado_json': {
+                'precio_unitario_base': precio_unitario_base, 'valor_base': valor_base,
+                'valor_usd': valor_usd, 'margen': margen_porcentaje,
+                'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
+                'tipo': 'pvc_simple',
+            },
+        }, None
+
+    # Producto terciarizado: precio final manual, sin marco ni despiece
+    producto_id_raw = data.get('producto_id')
+    if producto_id_raw and Producto.objects.filter(pk=producto_id_raw, terciarizado=True).exists():
+        try:
+            precio_unitario = float(data.get('precio_terciarizado', 0) or 0)
+        except (TypeError, ValueError):
+            precio_unitario = 0
+        if precio_unitario <= 0:
+            return None, 'Ingresá el precio final del producto terciarizado.'
+        return {
+            'descripcion': descripcion or 'Producto terciarizado',
+            'cantidad': cantidad, 'ancho_mm': 0, 'alto_mm': 0,
+            'margen_porcentaje': 0, 'precio_unitario': precio_unitario,
+            'resultado_json': {
+                'precio_unitario_base': precio_unitario, 'tipo': 'terciarizado',
+                'producto_id': int(producto_id_raw),
+            },
+        }, None
+
+    # Aluminio: cotizador completo
+    config = {
+        'producto_id': data.get('producto_id') and int(data['producto_id']),
+        'marco_id': data.get('marco_id') and int(data['marco_id']),
+        'hoja_id': data.get('hoja_id') and int(data['hoja_id']),
+        'vidrio_codigo': data.get('vidrio_codigo') or None,
+        'interior_id': data.get('interior_id') and int(data['interior_id']),
+        'tratamiento_id': data.get('tratamiento_id') and int(data['tratamiento_id']),
+        'ancho_mm': int(data.get('ancho_mm') or 1200),
+        'alto_mm': int(data.get('alto_mm') or 1500),
+        'margen_porcentaje': float(data.get('margen_porcentaje') or 30),
+    }
+    try:
+        opcionales_list = json.loads(data.get('opcionales_json', '[]'))
+        if opcionales_list:
+            config['opcionales'] = opcionales_list
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    descripcion = descripcion or 'Abertura sin descripción'
+    try:
+        resultado = calcular_precio(config)
+    except PricingError as e:
+        return None, f'Error al calcular: {e}'
+
+    precio_unitario_base = resultado['precio_total']
+    resultado['precio_unitario_base'] = precio_unitario_base
+    resultado['recargo_renovacion_unitario_aplicado'] = 0
+    resultado['recargo_renovacion_total_aplicado'] = 0
+    precio_unitario = precio_unitario_base
+    if presupuesto.tipo_obra == 'renovacion':
+        recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
+        resultado['recargo_renovacion_unitario_aplicado'] = recargo_unitario
+        resultado['recargo_renovacion_total_aplicado'] = recargo_unitario * cantidad
+        precio_unitario = precio_unitario_base + recargo_unitario
+    resultado['snapshot_item'] = build_item_snapshot(config, descripcion, cantidad)
+    return {
+        'descripcion': descripcion, 'cantidad': cantidad,
+        'ancho_mm': config['ancho_mm'], 'alto_mm': config['alto_mm'],
+        'margen_porcentaje': config['margen_porcentaje'],
+        'precio_unitario': precio_unitario, 'resultado_json': resultado,
+    }, None
+
+
 @login_required
 def agregar_item(request, pk):
     presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
@@ -169,141 +269,16 @@ def agregar_item(request, pk):
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if request.method == 'POST':
-        # Si es PVC, usar formulario simple (siempre en dólares)
-        if presupuesto.tipo_material == 'pvc':
-            if not presupuesto.tiene_cotizacion_usd():
-                messages.error(request, 'Configurá la cotización USD del presupuesto antes de agregar ítems.')
-                return redirect('presupuestos:presupuestos-detalle', pk=pk)
-
-            descripcion = request.POST.get('descripcion', '').strip() or 'Item sin descripción'
-            cantidad = max(1, int(request.POST.get('cantidad', 1)))
-            valor_usd = float(request.POST.get('valor_usd', 0))
-            margen_porcentaje = float(request.POST.get('margen_porcentaje', 30))
-            valor_base = valor_usd * float(presupuesto.cotizacion_usd)
-
-            # Calcular precio con margen
-            precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
-            precio_unitario = precio_unitario_base
-
-            # Aplicar recargo de renovación si corresponde
-            if presupuesto.tipo_obra == 'renovacion':
-                recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
-                precio_unitario = precio_unitario_base + recargo_unitario
-
-            orden = presupuesto.items.count()
-            resultado_json = {
-                'precio_unitario_base': precio_unitario_base,
-                'valor_base': valor_base,
-                'valor_usd': valor_usd,
-                'margen': margen_porcentaje,
-                'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
-                'tipo': 'pvc_simple'
-            }
-
-            item = ItemPresupuesto.objects.create(
-                presupuesto=presupuesto,
-                descripcion=descripcion,
-                cantidad=cantidad,
-                ancho_mm=0,
-                alto_mm=0,
-                margen_porcentaje=margen_porcentaje,
-                precio_unitario=precio_unitario,
-                resultado_json=resultado_json,
-                orden=orden,
-            )
-            presupuesto.recalcular_total()
-            messages.success(request, f'Ítem "{item.descripcion}" agregado.')
+        fields, error = _fields_item_desde_post(request, presupuesto)
+        if error:
+            messages.error(request, error)
             return redirect('presupuestos:presupuestos-detalle', pk=pk)
-        
-        # Producto terciarizado: precio final manual, sin marco ni despiece.
-        producto_id_raw = request.POST.get('producto_id')
-        if producto_id_raw and Producto.objects.filter(pk=producto_id_raw, terciarizado=True).exists():
-            descripcion = request.POST.get('descripcion', '').strip() or 'Producto terciarizado'
-            cantidad = max(1, int(request.POST.get('cantidad', 1)))
-            try:
-                precio_unitario = float(request.POST.get('precio_terciarizado', 0) or 0)
-            except (TypeError, ValueError):
-                precio_unitario = 0
-            if precio_unitario <= 0:
-                messages.error(request, 'Ingresá el precio final del producto terciarizado.')
-                return redirect('presupuestos:presupuestos-detalle', pk=pk)
-
-            orden = presupuesto.items.count()
-            item = ItemPresupuesto.objects.create(
-                presupuesto=presupuesto,
-                descripcion=descripcion,
-                cantidad=cantidad,
-                ancho_mm=0,
-                alto_mm=0,
-                margen_porcentaje=0,
-                precio_unitario=precio_unitario,
-                resultado_json={
-                    'precio_unitario_base': precio_unitario,
-                    'tipo': 'terciarizado',
-                },
-                orden=orden,
-            )
-            presupuesto.recalcular_total()
-            messages.success(request, f'Ítem "{item.descripcion}" agregado.')
-            return redirect('presupuestos:presupuestos-detalle', pk=pk)
-
-        # Si es Aluminio, usar cotizador completo
-        data = request.POST
-        config = {
-            'producto_id': data.get('producto_id') and int(data['producto_id']),
-            'marco_id': data.get('marco_id') and int(data['marco_id']),
-            'hoja_id': data.get('hoja_id') and int(data['hoja_id']),
-            'vidrio_codigo': data.get('vidrio_codigo') or None,
-            'interior_id': data.get('interior_id') and int(data['interior_id']),
-            'tratamiento_id': data.get('tratamiento_id') and int(data['tratamiento_id']),
-            'ancho_mm': int(data.get('ancho_mm') or 1200),
-            'alto_mm': int(data.get('alto_mm') or 1500),
-            'margen_porcentaje': float(data.get('margen_porcentaje') or 30),
-        }
-
-        opcionales_raw = data.get('opcionales_json', '[]')
-        try:
-            opcionales_list = json.loads(opcionales_raw)
-            if opcionales_list:
-                config['opcionales'] = opcionales_list
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-        descripcion = data.get('descripcion', '').strip() or 'Abertura sin descripción'
-        cantidad = max(1, int(data.get('cantidad', 1)))
-
-        try:
-            resultado = calcular_precio(config)
-            precio_unitario_base = resultado['precio_total']
-            resultado['precio_unitario_base'] = precio_unitario_base
-            resultado['recargo_renovacion_unitario_aplicado'] = 0
-            resultado['recargo_renovacion_total_aplicado'] = 0
-            precio_unitario = precio_unitario_base
-
-            if presupuesto.tipo_obra == 'renovacion':
-                recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
-                resultado['recargo_renovacion_unitario_aplicado'] = recargo_unitario
-                resultado['recargo_renovacion_total_aplicado'] = recargo_unitario * cantidad
-                precio_unitario = precio_unitario_base + recargo_unitario
-
-            resultado['snapshot_item'] = build_item_snapshot(config, descripcion, cantidad)
-            orden = presupuesto.items.count()
-            item = ItemPresupuesto.objects.create(
-                presupuesto=presupuesto,
-                descripcion=descripcion,
-                cantidad=cantidad,
-                ancho_mm=config['ancho_mm'],
-                alto_mm=config['alto_mm'],
-                margen_porcentaje=config['margen_porcentaje'],
-                precio_unitario=precio_unitario,
-                resultado_json=resultado,
-                orden=orden,
-            )
-            presupuesto.recalcular_total()
-            messages.success(request, f'Ítem "{item.descripcion}" agregado.')
-            return redirect('presupuestos:presupuestos-detalle', pk=pk)
-        except PricingError as e:
-            messages.error(request, f'Error al calcular: {e}')
+        item = ItemPresupuesto.objects.create(
+            presupuesto=presupuesto, orden=presupuesto.items.count(), **fields,
+        )
+        presupuesto.recalcular_total()
+        messages.success(request, f'Ítem "{item.descripcion}" agregado.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
@@ -341,22 +316,13 @@ def editar_item(request, pk, ipk):
 
     item = get_object_or_404(ItemPresupuesto, pk=ipk, presupuesto=presupuesto)
 
-    descripcion = request.POST.get('descripcion', '').strip() or item.descripcion
-    try:
-        cantidad = max(1, int(request.POST.get('cantidad', item.cantidad)))
-    except (TypeError, ValueError):
-        cantidad = item.cantidad
-    try:
-        precio_unitario = float(request.POST.get('precio_unitario', item.precio_unitario) or 0)
-    except (TypeError, ValueError):
-        precio_unitario = 0
-    if precio_unitario <= 0:
-        messages.error(request, 'El precio unitario debe ser mayor a 0.')
+    fields, error = _fields_item_desde_post(request, presupuesto)
+    if error:
+        messages.error(request, error)
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
-    item.descripcion = descripcion
-    item.cantidad = cantidad
-    item.precio_unitario = precio_unitario
+    for campo, valor in fields.items():
+        setattr(item, campo, valor)
     item.save()  # recalcula precio_total = precio_unitario * cantidad
     presupuesto.recalcular_total()
     messages.success(request, f'Ítem "{item.descripcion}" actualizado.')

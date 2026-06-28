@@ -601,52 +601,20 @@ function confirmarEliminarItem(form, nombre) {
 }
 
 function editarItemBtn(btn) {
-    editarItem(btn.dataset.id, btn.dataset.desc, parseInt(btn.dataset.cant) || 1, parseFloat(btn.dataset.precio) || 0);
-}
-
-function editarItem(pk, descripcion, cantidad, precio) {
-    Swal.fire({
-        title: 'Editar ítem',
-        html:
-            '<input id="swal-desc" class="swal2-input" placeholder="Descripción">' +
-            '<input id="swal-cant" type="number" min="1" class="swal2-input" placeholder="Cantidad">' +
-            '<input id="swal-precio" type="number" step="0.01" min="0" class="swal2-input" placeholder="Precio unitario">',
-        didOpen: () => {
-            document.getElementById('swal-desc').value = descripcion;
-            document.getElementById('swal-cant').value = cantidad;
-            document.getElementById('swal-precio').value = precio;
-        },
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonColor: '#2563eb',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Guardar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => {
-            const desc = document.getElementById('swal-desc').value.trim();
-            const cant = parseInt(document.getElementById('swal-cant').value) || 0;
-            const prc = parseFloat(document.getElementById('swal-precio').value) || 0;
-            if (!desc) { Swal.showValidationMessage('La descripción es obligatoria'); return false; }
-            if (cant < 1) { Swal.showValidationMessage('La cantidad debe ser al menos 1'); return false; }
-            if (prc <= 0) { Swal.showValidationMessage('El precio debe ser mayor a 0'); return false; }
-            return { desc, cant, prc };
-        }
-    }).then((result) => {
-        if (!result.isConfirmed) return;
-        const v = result.value;
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.action = '/presupuestos/{{ presupuesto.pk }}/item/' + pk + '/editar/';
-        const campos = { csrfmiddlewaretoken: csrf, descripcion: v.desc, cantidad: v.cant, precio_unitario: v.prc };
-        for (const k in campos) {
-            const inp = document.createElement('input');
-            inp.type = 'hidden'; inp.name = k; inp.value = campos[k];
-            form.appendChild(inp);
-        }
-        document.body.appendChild(form);
-        form.submit();
-    });
+    const pk = btn.dataset.id;
+    let resultado = {};
+    try {
+        resultado = JSON.parse(document.getElementById('resultado-item-' + pk).textContent || '{}');
+    } catch (e) {}
+    if (typeof window.__cotizadorEditar === 'function') {
+        window.__cotizadorEditar({
+            itemId: pk,
+            descripcion: btn.dataset.desc,
+            cantidad: parseInt(btn.dataset.cant) || 1,
+            precio: parseFloat(btn.dataset.precio) || 0,
+            resultado: resultado,
+        });
+    }
 }
 
 function abrirModalItem() {
@@ -659,6 +627,7 @@ function abrirModalItem() {
         });
         return;
     }
+    if (typeof window.__cotizadorReset === 'function') window.__cotizadorReset();
     document.getElementById('modal-item').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -1076,6 +1045,7 @@ const CotizadorModal = () => {
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
     const [precioTerc, setPrecioTerc] = useState('');
+    const [editId, setEditId] = useState(null);
     const [extrusoras, setExtrusoras] = useState([]);
     const [lineas, setLineas] = useState([]);
     const [productos, setProductos] = useState([]);
@@ -1119,6 +1089,51 @@ const CotizadorModal = () => {
         } else { setInteriores([]); setVidrios([]); }
     }, [config.hoja_id]);
 
+    useEffect(() => {
+        // Puente JS↔React: editar un ítem abre este mismo modal pre-cargado.
+        window.__cotizadorEditar = (payload) => {
+            const rj = payload.resultado || {};
+            setEditId(payload.itemId);
+            setDescripcion(payload.descripcion || '');
+            setCantidad(payload.cantidad || 1);
+            setResult(null); setError(null);
+            if (rj.tipo === 'terciarizado') {
+                setPrecioTerc(payload.precio || '');
+                const pid = rj.producto_id || null;
+                if (pid) {
+                    fetch('/pricing/api/producto/' + pid + '/').then(r => r.json()).then(d => {
+                        setConfig(c => ({ ...c, extrusora_id: d.extrusora_id || null, linea_id: d.linea_id || null, producto_id: pid, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, opcionales: [] }));
+                    }).catch(() => setConfig(c => ({ ...c, producto_id: pid })));
+                }
+            } else {
+                const s = rj.snapshot_item || {};
+                setConfig(c => ({
+                    ...c,
+                    extrusora_id: (s.extrusora && s.extrusora.id) || null,
+                    linea_id: (s.linea && s.linea.id) || null,
+                    producto_id: (s.producto && s.producto.id) || null,
+                    marco_id: (s.marco && s.marco.id) || null,
+                    hoja_id: (s.hoja && s.hoja.id) || null,
+                    vidrio_codigo: (s.vidrio && s.vidrio.codigo) || null,
+                    interior_id: (s.interior && s.interior.id) || null,
+                    tratamiento_id: (s.tratamiento && s.tratamiento.id) || null,
+                    ancho_mm: s.ancho_mm || 1200,
+                    alto_mm: s.alto_mm || 1500,
+                    margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
+                    opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2 })),
+                }));
+            }
+            document.getElementById('modal-item').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+        window.__cotizadorReset = () => {
+            setEditId(null); setPrecioTerc(''); setResult(null); setError(null);
+            setDescripcion(''); setCantidad(1);
+            setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [] });
+        };
+        return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; } catch (e) {} };
+    }, []);
+
     const calcular = async () => {
         if (!config.marco_id) { setError('Selecciona un marco primero'); return; }
         setLoading(true); setError(null);
@@ -1150,7 +1165,7 @@ const CotizadorModal = () => {
         document.getElementById('f-descripcion').value = descripcion || `Abertura ${config.ancho_mm}x${config.alto_mm}mm`;
         document.getElementById('f-cantidad').value = cantidad;
         document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id })));
-        document.getElementById('item-save-form').submit();
+        enviarItemForm();
     };
 
     const guardarTerciarizado = () => {
@@ -1162,7 +1177,15 @@ const CotizadorModal = () => {
         document.getElementById('f-precio_terciarizado').value = precio;
         document.getElementById('f-descripcion').value = descripcion || 'Producto terciarizado';
         document.getElementById('f-cantidad').value = cantidad;
-        document.getElementById('item-save-form').submit();
+        enviarItemForm();
+    };
+
+    const enviarItemForm = () => {
+        const f = document.getElementById('item-save-form');
+        f.action = editId
+            ? '/presupuestos/{{ presupuesto.pk }}/item/' + editId + '/editar/'
+            : '/presupuestos/{{ presupuesto.pk }}/item/agregar/';
+        f.submit();
     };
 
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
