@@ -390,6 +390,47 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertEqual(presupuesto.items.count(), 0)
 
+    def test_editar_item_actualiza_descripcion_cantidad_y_precio(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        presupuesto.tipo_obra = 'obra_nueva'
+        presupuesto.save(update_fields=['tipo_obra'])
+        item = ItemPresupuesto.objects.create(
+            presupuesto=presupuesto, descripcion='Original', cantidad=1,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=0, precio_unitario=1000,
+            resultado_json={'tipo': 'terciarizado'},
+        )
+
+        url = reverse('presupuestos:presupuestos-item-editar', args=[presupuesto.pk, item.pk])
+        res = self.client.post(url, {'descripcion': 'Editado', 'cantidad': '3', 'precio_unitario': '2500'})
+
+        self.assertEqual(res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.descripcion, 'Editado')
+        self.assertEqual(item.cantidad, 3)
+        self.assertEqual(float(item.precio_unitario), 2500.0)
+        self.assertEqual(float(item.precio_total), 7500.0)  # 2500 x 3
+
+    def test_editar_item_precio_invalido_no_actualiza(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        presupuesto.tipo_obra = 'obra_nueva'
+        presupuesto.save(update_fields=['tipo_obra'])
+        item = ItemPresupuesto.objects.create(
+            presupuesto=presupuesto, descripcion='Original', cantidad=1,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=0, precio_unitario=1000,
+            resultado_json={},
+        )
+
+        url = reverse('presupuestos:presupuestos-item-editar', args=[presupuesto.pk, item.pk])
+        res = self.client.post(url, {'descripcion': 'X', 'cantidad': '1', 'precio_unitario': '0'})
+
+        self.assertEqual(res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.descripcion, 'Original')
+
     def test_lista_anota_cantidad_de_items_por_presupuesto(self):
         self.client.login(username='viewuser', password='testpass')
         presupuesto = crear_presupuesto(self.user)

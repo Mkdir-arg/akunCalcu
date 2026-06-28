@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/eliminar/', views.eliminar, name='presupuestos-eliminar'),
     path('<int:pk>/configuracion-obra/', views.actualizar_configuracion_obra, name='presupuestos-configuracion-obra'),
     path('<int:pk>/item/agregar/', views.agregar_item, name='presupuestos-item-agregar'),
+    path('<int:pk>/item/<int:ipk>/editar/', views.editar_item, name='presupuestos-item-editar'),
     path('<int:pk>/item/<int:ipk>/eliminar/', views.eliminar_item, name='presupuestos-item-eliminar'),
     path('<int:pk>/comentar/', views.comentar, name='presupuestos-comentar'),
     path('<int:pk>/estado/', views.cambiar_estado, name='presupuestos-estado'),

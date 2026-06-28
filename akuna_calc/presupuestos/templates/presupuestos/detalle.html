@@ -194,6 +194,12 @@
                                 <i class="fas fa-list-ul text-sm"></i>
                             </button>
                             {% if not presupuesto.esta_bloqueado %}
+                            <button type="button"
+                                data-id="{{ item.pk }}" data-desc="{{ item.descripcion }}" data-cant="{{ item.cantidad }}" data-precio="{{ item.precio_unitario|stringformat:'f' }}"
+                                onclick="editarItemBtn(this)"
+                                class="shrink-0 text-gray-300 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50" title="Editar">
+                                <i class="fas fa-pen text-sm"></i>
+                            </button>
                             <form method="post" action="{% url 'presupuestos:presupuestos-item-eliminar' presupuesto.pk item.pk %}" class="shrink-0">
                                 {% csrf_token %}
                                 <button type="button" onclick="confirmarEliminarItem(this.form, '{{ item.descripcion|escapejs }}')"
@@ -591,6 +597,55 @@ function confirmarEliminarItem(form, nombre) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) form.submit();
+    });
+}
+
+function editarItemBtn(btn) {
+    editarItem(btn.dataset.id, btn.dataset.desc, parseInt(btn.dataset.cant) || 1, parseFloat(btn.dataset.precio) || 0);
+}
+
+function editarItem(pk, descripcion, cantidad, precio) {
+    Swal.fire({
+        title: 'Editar ítem',
+        html:
+            '<input id="swal-desc" class="swal2-input" placeholder="Descripción">' +
+            '<input id="swal-cant" type="number" min="1" class="swal2-input" placeholder="Cantidad">' +
+            '<input id="swal-precio" type="number" step="0.01" min="0" class="swal2-input" placeholder="Precio unitario">',
+        didOpen: () => {
+            document.getElementById('swal-desc').value = descripcion;
+            document.getElementById('swal-cant').value = cantidad;
+            document.getElementById('swal-precio').value = precio;
+        },
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const desc = document.getElementById('swal-desc').value.trim();
+            const cant = parseInt(document.getElementById('swal-cant').value) || 0;
+            const prc = parseFloat(document.getElementById('swal-precio').value) || 0;
+            if (!desc) { Swal.showValidationMessage('La descripción es obligatoria'); return false; }
+            if (cant < 1) { Swal.showValidationMessage('La cantidad debe ser al menos 1'); return false; }
+            if (prc <= 0) { Swal.showValidationMessage('El precio debe ser mayor a 0'); return false; }
+            return { desc, cant, prc };
+        }
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        const v = result.value;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/presupuestos/{{ presupuesto.pk }}/item/' + pk + '/editar/';
+        const campos = { csrfmiddlewaretoken: csrf, descripcion: v.desc, cantidad: v.cant, precio_unitario: v.prc };
+        for (const k in campos) {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = k; inp.value = campos[k];
+            form.appendChild(inp);
+        }
+        document.body.appendChild(form);
+        form.submit();
     });
 }
 

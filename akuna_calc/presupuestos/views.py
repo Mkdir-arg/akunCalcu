@@ -333,6 +333,38 @@ def actualizar_configuracion_obra(request, pk):
 
 @login_required
 @require_POST
+def editar_item(request, pk, ipk):
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
+    if presupuesto.esta_bloqueado():
+        messages.error(request, 'No se puede modificar un presupuesto confirmado o cancelado.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    item = get_object_or_404(ItemPresupuesto, pk=ipk, presupuesto=presupuesto)
+
+    descripcion = request.POST.get('descripcion', '').strip() or item.descripcion
+    try:
+        cantidad = max(1, int(request.POST.get('cantidad', item.cantidad)))
+    except (TypeError, ValueError):
+        cantidad = item.cantidad
+    try:
+        precio_unitario = float(request.POST.get('precio_unitario', item.precio_unitario) or 0)
+    except (TypeError, ValueError):
+        precio_unitario = 0
+    if precio_unitario <= 0:
+        messages.error(request, 'El precio unitario debe ser mayor a 0.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    item.descripcion = descripcion
+    item.cantidad = cantidad
+    item.precio_unitario = precio_unitario
+    item.save()  # recalcula precio_total = precio_unitario * cantidad
+    presupuesto.recalcular_total()
+    messages.success(request, f'Ítem "{item.descripcion}" actualizado.')
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+@login_required
+@require_POST
 def eliminar_item(request, pk, ipk):
     presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
     if presupuesto.esta_bloqueado():
