@@ -348,6 +348,30 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
         self.assertEqual(res.status_code, 200)
 
+    def test_lista_ordena_por_total_asc_y_desc(self):
+        self.client.login(username='viewuser', password='testpass')
+        p1 = crear_presupuesto(self.user)
+        p2 = crear_presupuesto(self.user)
+        Presupuesto.objects.filter(pk=p1.pk).update(total=100)
+        Presupuesto.objects.filter(pk=p2.pk).update(total=500)
+
+        res = self.client.get('/presupuestos/', {'sort': 'total', 'dir': 'asc'})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['sort'], 'total')
+        self.assertEqual(res.context['dir'], 'asc')
+        ids_asc = [p.pk for p in res.context['presupuestos']]
+        self.assertLess(ids_asc.index(p1.pk), ids_asc.index(p2.pk))
+
+        res_desc = self.client.get('/presupuestos/', {'sort': 'total', 'dir': 'desc'})
+        ids_desc = [p.pk for p in res_desc.context['presupuestos']]
+        self.assertLess(ids_desc.index(p2.pk), ids_desc.index(p1.pk))
+
+    def test_lista_sort_invalido_no_rompe(self):
+        self.client.login(username='viewuser', password='testpass')
+        crear_presupuesto(self.user)
+        res = self.client.get('/presupuestos/', {'sort': 'no_existe', 'dir': 'asc'})
+        self.assertEqual(res.status_code, 200)
+
     def test_agregar_item_terciarizado_usa_precio_final_sin_marco(self):
         from django.urls import reverse
         self.client.login(username='viewuser', password='testpass')
