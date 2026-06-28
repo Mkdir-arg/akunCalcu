@@ -653,6 +653,15 @@ class PresupuestosViewsTest(TestCase):
         self.assertContains(res, 'Datos de la empresa')
         self.assertContains(res, 'Concepto')
 
+    def test_pdf_incluye_numeracion_de_paginas(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+        self.assertEqual(res.status_code, 200)
+        # Numeración X/Y vía margin-box @bottom-right (CSS paged media).
+        self.assertContains(res, 'counter(page) "/" counter(pages)')
+        self.assertContains(res, '@bottom-right')
+
     def test_pdf_autenticado_muestra_descripcion_y_resumen_tecnico(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)

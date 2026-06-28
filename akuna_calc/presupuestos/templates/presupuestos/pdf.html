@@ -8,11 +8,27 @@
     <style>
         @page {
             size: A4;
-            margin: 12mm 0 0;
+            margin: 12mm 0 12mm;
+            @bottom-right {
+                content: counter(page) "/" counter(pages);
+                font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+                font-size: 9px;
+                color: #6b7280;
+                padding-right: 10mm;
+                padding-bottom: 4mm;
+            }
         }
 
         @page :first {
             margin-top: 0;
+            @bottom-right {
+                content: counter(page) "/" counter(pages);
+                font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+                font-size: 9px;
+                color: #6b7280;
+                padding-right: 10mm;
+                padding-bottom: 4mm;
+            }
         }
 
         * {
