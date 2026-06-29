@@ -314,17 +314,19 @@ document.addEventListener('DOMContentLoaded', function() {
     resetSelect(productoSelect, true);
     {% endif %}
 
-    if (extrusoraSelect) {
-        extrusoraSelect.addEventListener('change', function() {
-            cargarLineas(this.value);
-        });
+    // Select2 dispara 'change' vía jQuery .trigger(): addEventListener nativo no lo capta.
+    // Bindeamos con jQuery para reaccionar a la selección hecha en el widget de Select2.
+    function onChange(el, handler) {
+        if (!el) return;
+        if (window.jQuery) {
+            window.jQuery(el).on('change', handler);
+        } else {
+            el.addEventListener('change', handler);
+        }
     }
 
-    if (lineaSelect) {
-        lineaSelect.addEventListener('change', function() {
-            cargarProductos(this.value);
-        });
-    }
+    onChange(extrusoraSelect, function() { cargarLineas(this.value); });
+    onChange(lineaSelect, function() { cargarProductos(this.value); });
 });
 
 let accesorioIndex = 0;

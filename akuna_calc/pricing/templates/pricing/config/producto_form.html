@@ -87,9 +87,14 @@ document.addEventListener('DOMContentLoaded', function() {
     resetSelect(lineaSelect, true);
     {% endif %}
 
-    extrusoraSelect.addEventListener('change', function() {
-        cargarLineas(this.value);
-    });
+    // Select2 (base.html lo aplica a todos los <select>) dispara el evento 'change'
+    // vía jQuery .trigger(), que NO ejecuta los listeners addEventListener nativos.
+    // Por eso bindeamos con jQuery: capta tanto el change nativo como el de Select2.
+    if (window.jQuery) {
+        window.jQuery(extrusoraSelect).on('change', function() { cargarLineas(this.value); });
+    } else {
+        extrusoraSelect.addEventListener('change', function() { cargarLineas(this.value); });
+    }
 });
 </script>
 {% endblock %}
