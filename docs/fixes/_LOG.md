@@ -22,6 +22,18 @@
 
 ## Fixes registrados
 
+### FIX-014 — No se puede cargar un producto: el select de Línea queda bloqueado/vacío para cualquier extrusora
+**Fecha**: 2026-06-29
+**Reportado por**: Romina (vía Matu)
+**Severidad**: Alta (bloquea el alta de productos en producción)
+**Feature afectada**: Módulo `pricing` — alta/edición de productos (`/pricing/config/productos/nuevo/`)
+
+**Síntoma**: Al crear un producto, después de elegir la extrusora el desplegable de **Línea** quedaba bloqueado/vacío y no dejaba seleccionar — con **cualquier** extrusora (no solo "terciarizado"). Antes funcionaba.
+**Causa raíz**: `base.html` aplica **Select2** a todos los `<select>`. El JS de `producto_form.html` rellenaba la Línea manipulando el `<select>` **nativo** (`innerHTML` + `disabled`) pero **nunca refrescaba el widget de Select2**, que seguía mostrando el estado viejo (vacío/deshabilitado). Los forms hermanos (`marco_form.html`, `hoja_form.html`) sí refrescan Select2 con `reinitAkunSelect2` — por eso esos funcionaban y el de productos no.
+**Solución**: Se agregó `syncSelect2()` (usa `window.reinitAkunSelect2`, el mismo helper de base.html que usan marco/hoja) y se llama después de cada `resetSelect`/`populateSelect` de la Línea, además de al habilitarla en modo edición. Así el widget de Select2 se reconstruye desde el `<select>` nativo (opciones + estado disabled). Cambio solo de template/JS, sin tocar modelos ni vistas.
+**Archivos modificados**: `akuna_calc/pricing/templates/pricing/config/producto_form.html`
+**Nota**: Para productos **terciarizados**, la extrusora "terciarizado" debe tener al menos una **línea** para que aparezca en el select (y para que el producto se vea luego en el cotizador, que navega extrusora → línea → producto). Este fix desbloquea el alta con cualquier extrusora; si "terciarizado" no tiene línea, hay que crearle una (pendiente FEAT-016).
+
 ### FIX-013 — Lista de presupuestos: quitar orden por columnas, fijar orden por más nuevo y agregar columna de creación
 **Fecha**: 2026-06-29
 **Reportado por**: Usuario

@@ -34,11 +34,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     const extrusoraSelect = document.getElementById('id_extrusora');
     const lineaSelect = document.getElementById('id_linea');
+    if (!extrusoraSelect || !lineaSelect) return;
     const emptyOption = '<option value="">---------</option>';
+
+    // El <select> de Línea está envuelto por Select2 (base.html lo aplica a todos
+    // los <select>). Al rellenar la Línea por JS modificamos el <select> nativo, pero
+    // el widget de Select2 no se entera: hay que reconstruirlo o queda vacío/bloqueado.
+    function syncSelect2(selectEl) {
+        if (typeof window.reinitAkunSelect2 === 'function') {
+            window.reinitAkunSelect2(selectEl);
+        }
+    }
 
     function resetSelect(selectEl, disabled = true) {
         selectEl.innerHTML = emptyOption;
         selectEl.disabled = disabled;
+        syncSelect2(selectEl);
     }
 
     function populateSelect(selectEl, items, textKey, selectedId) {
@@ -51,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectEl.appendChild(option);
         });
         selectEl.disabled = items.length === 0;
+        syncSelect2(selectEl);
     }
 
     async function cargarLineas(extrusoraId, selectedLineaId) {
@@ -66,17 +78,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     {% if object %}
     // Modo edición: linea ya está server-rendered con el valor correcto, solo habilitarla
-    if (lineaSelect.options.length > 1) lineaSelect.disabled = false;
+    if (lineaSelect.options.length > 1) {
+        lineaSelect.disabled = false;
+        syncSelect2(lineaSelect);
+    }
     {% else %}
     // Modo creación: deshabilitar linea hasta que se seleccione extrusora
     resetSelect(lineaSelect, true);
     {% endif %}
 
-    if (extrusoraSelect) {
-        extrusoraSelect.addEventListener('change', function() {
-            cargarLineas(this.value);
-        });
-    }
+    extrusoraSelect.addEventListener('change', function() {
+        cargarLineas(this.value);
+    });
 });
 </script>
 {% endblock %}
