@@ -467,6 +467,9 @@
                     <td class="summary-cell right"><span class="summary-label">Validez:</span> {{ presupuesto.validez_dias }} día{{ presupuesto.validez_dias|pluralize:"s" }} (hasta {{ presupuesto.fecha_expiracion|date:"d/m/Y" }})</td>
                 </tr>
                 <tr>
+                    <td class="summary-cell" colspan="2"><span class="summary-label">Observaciones:</span> {{ presupuesto.get_observaciones_pdf }}</td>
+                </tr>
+                <tr>
                     <td class="summary-cell" colspan="2"><span class="summary-label">Modalidad de seña:</span> {{ presupuesto.get_modalidad_sena_display }}</td>
                 </tr>
                 {% if presupuesto.plazo_entrega_dias %}
@@ -564,9 +567,6 @@
                 </tr>
             </table>
 
-            <div class="divider-line"></div>
-
-            <p class="bottom-note"><strong>Observaciones:</strong> {{ presupuesto.get_observaciones_pdf }}</p>
         </div>
     </div>
 </body>
