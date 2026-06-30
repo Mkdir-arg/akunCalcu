@@ -333,9 +333,16 @@
 
             .sheet {
                 width: auto;
+                min-height: auto;
                 margin: 0;
                 box-shadow: none;
                 overflow: visible;
+            }
+
+            .bottom-grid {
+                margin-top: 24px;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
             .items-table thead {
@@ -467,15 +474,15 @@
                     <td class="summary-cell right"><span class="summary-label">Validez:</span> {{ presupuesto.validez_dias }} día{{ presupuesto.validez_dias|pluralize:"s" }} (hasta {{ presupuesto.fecha_expiracion|date:"d/m/Y" }})</td>
                 </tr>
                 <tr>
-                    <td class="summary-cell" colspan="2"><span class="summary-label">Observaciones:</span> {{ presupuesto.get_observaciones_pdf }}</td>
-                </tr>
-                <tr>
-                    <td class="summary-cell"><span class="summary-label">Modalidad de seña:</span> {{ presupuesto.get_modalidad_sena_display }}</td>
+                    <td class="summary-cell"><span class="summary-label">Observaciones:</span> {{ presupuesto.get_observaciones_pdf }}</td>
                     {% if presupuesto.plazo_entrega_dias %}
                     <td class="summary-cell right"><span class="summary-label">Plazo de entrega:</span> {{ presupuesto.plazo_entrega_dias }} día{{ presupuesto.plazo_entrega_dias|pluralize:"s" }}</td>
                     {% else %}
                     <td class="summary-cell"></td>
                     {% endif %}
+                </tr>
+                <tr>
+                    <td class="summary-cell" colspan="2"><span class="summary-label">Modalidad de seña:</span> {{ presupuesto.get_modalidad_sena_display }}</td>
                 </tr>
                 {% if presupuesto.es_pvc %}
                 <tr>
