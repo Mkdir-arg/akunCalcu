@@ -128,6 +128,10 @@ class PresupuestoModelTest(TestCase):
         self.assertFalse(p.incluye_flete)
         self.assertFalse(p.incluye_colocacion)
 
+    def test_plazo_entrega_dias_default_none(self):
+        p = crear_presupuesto(self.user)
+        self.assertIsNone(p.plazo_entrega_dias)
+
     def test_observaciones_pdf_ambos(self):
         p = crear_presupuesto(self.user)
         p.incluye_flete = True
@@ -943,6 +947,45 @@ class PresupuestosViewsTest(TestCase):
         p.refresh_from_db()
         self.assertFalse(p.incluye_flete)
         self.assertFalse(p.incluye_colocacion)
+
+    def test_actualizar_configuracion_obra_guarda_plazo_entrega(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {
+                'tipo_obra': 'obra_nueva',
+                'modalidad_sena': '50_50',
+                'recargo_obra_nueva': '0',
+                'plazo_entrega_dias': '30',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.plazo_entrega_dias, 30)
+
+    def test_pdf_muestra_plazo_entrega_si_esta_cargado(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.plazo_entrega_dias = 30
+        p.save(update_fields=['plazo_entrega_dias'])
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Plazo de entrega:')
+        self.assertContains(res, '30 días')
+
+    def test_pdf_no_muestra_plazo_entrega_si_vacio(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'Plazo de entrega:')
 
 
 class PresupuestoPvcUsdViewsTest(TestCase):

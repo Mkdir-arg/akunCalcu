@@ -45,10 +45,11 @@ class PresupuestoForm(forms.ModelForm):
 class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion']
+        fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'plazo_entrega_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion']
         widgets = {
             'tipo_obra': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'validez_dias': forms.NumberInput(attrs={'min': '1', 'step': '1', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'plazo_entrega_dias': forms.NumberInput(attrs={'min': '1', 'step': '1', 'placeholder': 'Ej: 30', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'modalidad_sena': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_obra_nueva': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'recargo_renovacion_unitario': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
@@ -64,6 +65,7 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
         self.fields['tipo_obra'].widget.choices = [('', 'Seleccionar...'), *Presupuesto.TIPO_OBRA_CHOICES]
         self.fields['modalidad_sena'].required = True
         self.fields['validez_dias'].required = False
+        self.fields['plazo_entrega_dias'].required = False
         self.fields['recargo_obra_nueva'].required = False
         self.fields['recargo_renovacion_unitario'].required = False
 

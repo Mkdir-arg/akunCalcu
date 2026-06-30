@@ -373,6 +373,12 @@
                             <p class="text-xs text-slate-400 mt-1">Cuántos días es válido el presupuesto. Define la fecha de vencimiento que se muestra en el PDF.</p>
                             {% if configuracion_form.validez_dias.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.validez_dias.errors.0 }}</p>{% endif %}
                         </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.plazo_entrega_dias.label }}</label>
+                            {{ configuracion_form.plazo_entrega_dias }}
+                            <p class="text-xs text-slate-400 mt-1">Plazo de entrega en días. Se muestra en el PDF. Dejar vacío si no aplica.</p>
+                            {% if configuracion_form.plazo_entrega_dias.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.plazo_entrega_dias.errors.0 }}</p>{% endif %}
+                        </div>
                         <div id="recargo-obra-nueva-field">
                             <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
@@ -440,6 +446,10 @@
                     <div class="flex justify-between gap-3">
                         <span class="text-slate-500">Colocación</span>
                         <span class="font-semibold text-slate-800 text-right">{% if presupuesto.incluye_colocacion %}Incluida{% else %}No incluida{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <span class="text-slate-500">Plazo de entrega</span>
+                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.plazo_entrega_dias %}{{ presupuesto.plazo_entrega_dias }} día{{ presupuesto.plazo_entrega_dias|pluralize:"s" }}{% else %}No especificado{% endif %}</span>
                     </div>
                 </div>
                 {% endif %}

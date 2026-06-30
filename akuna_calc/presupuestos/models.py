@@ -44,6 +44,11 @@ class Presupuesto(models.Model):
     )
     fecha_expiracion = models.DateField(verbose_name='Fecha de expiración')
     validez_dias = models.PositiveIntegerField(default=30, verbose_name='Validez (días)')
+    plazo_entrega_dias = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Plazo de entrega (días)',
+    )
     estado = models.CharField(
         max_length=20,
         choices=ESTADO_CHOICES,

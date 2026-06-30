@@ -14,6 +14,11 @@
 
 ---
 
+## 2026-06-29 — Plazo de entrega en presupuesto + segundo teléfono en el PDF
+
+**Archivos modificados:** `akuna_calc/presupuestos/models.py`, `forms.py`, `templates/presupuestos/detalle.html`, `templates/presupuestos/pdf.html`, `tests.py`, migración `0010_presupuesto_plazo_entrega_dias.py`.
+**Descripción:** Se agregó el campo `plazo_entrega_dias` (PositiveIntegerField, opcional) a `Presupuesto`, editable en el panel "Configuración de obra". En el PDF se muestra en la zona superior de descripciones como "Plazo de entrega: X días" (solo si está cargado). Además se sumó el segundo teléfono de Akun (11 2297-6877) al lado del existente (11 4448-2992) en los datos de la empresa del PDF. Migración `0010` pendiente de correr en Docker/Railway.
+
 ## 2026-06-29 — Flete y colocación como checkboxes que varían la observación del PDF (FEAT-017)
 
 **User Story:** Como vendedor, quiero tildar si el presupuesto incluye flete y/o colocación desde "Configuración de obra", para que la observación del PDF refleje exactamente lo acordado en lugar de un texto fijo.
