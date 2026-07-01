@@ -36,7 +36,30 @@ class EventoListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return EventoAgenda.objects.prefetch_related('destinatarios')
+        return (
+            EventoAgenda.objects
+            .select_related('cliente', 'tecnico', 'colocador')
+            .prefetch_related('destinatarios')
+        )
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Count, Q
+
+        ctx = super().get_context_data(**kwargs)
+        ctx['resumen'] = EventoAgenda.objects.aggregate(
+            total=Count('id'),
+            programados=Count('id', filter=Q(estado='programado', activo=True)),
+            enviados=Count('id', filter=Q(estado='enviado')),
+        )
+
+        ahora = timezone.localtime()
+        programados = EventoAgenda.objects.filter(estado='programado', activo=True)
+        futuros = sorted(
+            (e for e in programados if e.proximo_envio() and e.proximo_envio() >= ahora),
+            key=lambda e: e.proximo_envio(),
+        )
+        ctx['proximo'] = futuros[0] if futuros else None
+        return ctx
 
 
 class EventoCreateView(LoginRequiredMixin, CreateView):

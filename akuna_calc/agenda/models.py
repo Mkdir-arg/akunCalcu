@@ -108,6 +108,28 @@ class EventoAgenda(models.Model):
             return None
         return self._aware(self.fecha_recordatorio())
 
+    def proximo_envio_relativo(self, hoy=None):
+        """Etiqueta relativa del próximo envío para el listado.
+
+        Devuelve un dict {'texto', 'urgencia'} o None si el evento no está
+        programado. La urgencia ('vencido'|'hoy'|'pronto'|'normal') se usa
+        para colorear el badge en el template.
+        """
+        if self.estado != 'programado':
+            return None
+        hoy = hoy or timezone.localdate()
+        dias = (self.fecha_recordatorio() - hoy).days
+        hora = self.hora_envio.strftime('%H:%M')
+        if dias < 0:
+            return {'texto': 'Vencido', 'urgencia': 'vencido'}
+        if dias == 0:
+            return {'texto': f'Hoy {hora}', 'urgencia': 'hoy'}
+        if dias == 1:
+            return {'texto': f'Mañana {hora}', 'urgencia': 'pronto'}
+        if dias <= 7:
+            return {'texto': f'En {dias} días', 'urgencia': 'pronto'}
+        return {'texto': self.fecha_recordatorio().strftime('%d/%m/%Y'), 'urgencia': 'normal'}
+
     def ocurre_en(self, fecha):
         """Si el evento cae en la fecha dada (para mostrarlo en el calendario)."""
         return self.fecha_evento == fecha

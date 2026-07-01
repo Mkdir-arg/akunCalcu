@@ -76,6 +76,25 @@ class EventoAgendaModelTests(TestCase):
         self.assertTrue(e.ocurre_en(date(2026, 6, 10)))
         self.assertFalse(e.ocurre_en(date(2026, 6, 11)))
 
+    def test_proximo_envio_relativo_urgencias(self):
+        hoy = date(2026, 6, 10)
+        casos = [
+            (date(2026, 6, 10), 'hoy', 'Hoy'),
+            (date(2026, 6, 11), 'pronto', 'Mañana'),
+            (date(2026, 6, 15), 'pronto', 'En 5 días'),
+            (date(2026, 6, 5), 'vencido', 'Vencido'),
+            (date(2026, 6, 30), 'normal', '30/06/2026'),
+        ]
+        for fecha, urgencia, texto in casos:
+            e = EventoAgenda(titulo='E', fecha_evento=fecha, hora_envio=time(9, 0))
+            rel = e.proximo_envio_relativo(hoy=hoy)
+            self.assertEqual(rel['urgencia'], urgencia, fecha)
+            self.assertIn(texto, rel['texto'], fecha)
+
+    def test_proximo_envio_relativo_none_si_no_programado(self):
+        e = EventoAgenda(titulo='E', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), estado='enviado')
+        self.assertIsNone(e.proximo_envio_relativo(hoy=date(2026, 6, 10)))
+
 
 class EventoVisitaClienteTests(TestCase):
 
@@ -264,3 +283,27 @@ class EventoViewsTests(TestCase):
         resp = self.client.post(reverse('agenda:eliminar', args=[e.pk]))
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(EventoAgenda.objects.filter(pk=e.pk).exists())
+
+    def test_lista_context_resumen_y_proximo(self):
+        self.client.login(username='admin', password='pass1234')
+        futuro = timezone.localdate() + timedelta(days=5)
+        prog = EventoAgenda.objects.create(
+            titulo='Próximo aviso', fecha_evento=futuro, hora_envio=time(12, 0), estado='programado',
+        )
+        prog.destinatarios.add(self.num)
+        EventoAgenda.objects.create(
+            titulo='Ya enviado', fecha_evento=date(2026, 1, 1), hora_envio=time(9, 0), estado='enviado',
+        )
+        resp = self.client.get(reverse('agenda:lista'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['resumen']['total'], 2)
+        self.assertEqual(resp.context['resumen']['programados'], 1)
+        self.assertEqual(resp.context['resumen']['enviados'], 1)
+        self.assertEqual(resp.context['proximo'], prog)
+
+    def test_sidebar_resalta_agenda_en_subrutas(self):
+        from usuarios.access_control import build_sidebar_modules
+        for route in ('agenda:lista', 'agenda:calendario', 'agenda:crear'):
+            modules = build_sidebar_modules(self.user, route)
+            agenda_mod = next(m for m in modules if m['label'] == 'Agenda')
+            self.assertTrue(agenda_mod['active'], route)

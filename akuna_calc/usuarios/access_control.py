@@ -352,6 +352,20 @@ def build_permission_groups(selected_codes=None):
     return groups
 
 
+def _item_is_active(item, current_route_key):
+    """Un ítem del sidebar está activo si es la ruta exacta o una de sus subrutas.
+
+    Todas las subrutas de un módulo (crear/editar/calendario/etc.) se registran
+    en ROUTE_ACCESS_MAP contra el mismo access code, así que el ítem queda
+    resaltado en cualquier página del módulo, no solo en su listado.
+    """
+    if not current_route_key:
+        return False
+    if item['route_name'] == current_route_key:
+        return True
+    return item['code'] in ROUTE_ACCESS_MAP.get(current_route_key, [])
+
+
 def build_sidebar_modules(user, current_route_key=None):
     modules = []
     for module in ACCESS_MODULES:
@@ -368,7 +382,7 @@ def build_sidebar_modules(user, current_route_key=None):
                 'label': item['label'],
                 'route_name': item['route_name'],
                 'url': item_url,
-                'active': item['route_name'] == current_route_key,
+                'active': _item_is_active(item, current_route_key),
             })
         if not visible_items:
             continue
