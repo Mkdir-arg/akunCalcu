@@ -248,6 +248,11 @@ class EventoViewsTests(TestCase):
         self.client.login(username='admin', password='pass1234')
         self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 200)
 
+    def test_calendario_tiene_link_a_lista(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.get(reverse('agenda:calendario'))
+        self.assertContains(resp, 'href="{}"'.format(reverse('agenda:lista')))
+
     def test_calendario_muestra_evento_del_mes(self):
         self.client.login(username='admin', password='pass1234')
         e = EventoAgenda.objects.create(

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Sum, Count, Q
 from django.http import HttpResponse, JsonResponse
@@ -18,6 +19,7 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 
 from core.navigation import append_return_to, resolve_return_url
+from usuarios.access_control import get_access_profile, user_has_full_access
 from comercial.models import _formatear_cuit
 from pricing.services.calculator import calcular_precio, PricingError
 from pricing.models import Producto
@@ -68,6 +70,14 @@ def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form
     }
 
 
+def _puede_ver_creador(user):
+    """Ven el creador del presupuesto los super admin (acceso total) y el rol Administrativo."""
+    if user_has_full_access(user):
+        return True
+    profile = get_access_profile(user)
+    return bool(profile and profile.rol and profile.rol.codigo == 'administrativo')
+
+
 @login_required
 def lista(request):
     all_qs = Presupuesto.objects.filter(deleted_at__isnull=True)
@@ -89,10 +99,13 @@ def lista(request):
         'monto_confirmado': monto_confirmado,
     }
 
+    puede_ver_creador = _puede_ver_creador(request.user)
+
     qs = Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente', 'created_by').annotate(item_count=Count('items'))
 
     estado = request.GET.get('estado', '')
     cliente_q = request.GET.get('cliente', '')
+    creado_por = request.GET.get('creado_por', '') if puede_ver_creador else ''
 
     if estado:
         qs = qs.filter(estado=estado)
@@ -102,15 +115,26 @@ def lista(request):
             Q(cliente__apellido__icontains=cliente_q) |
             Q(cliente__razon_social__icontains=cliente_q)
         )
+    if creado_por.isdigit():
+        qs = qs.filter(created_by_id=int(creado_por))
 
     qs = qs.order_by('-created_at')
+
+    usuarios_creadores = []
+    if puede_ver_creador:
+        usuarios_creadores = User.objects.filter(
+            presupuestos_creados__deleted_at__isnull=True
+        ).distinct().order_by('first_name', 'last_name', 'username')
 
     return render(request, 'presupuestos/lista.html', {
         'presupuestos': qs,
         'estado_actual': estado,
         'cliente_q': cliente_q,
+        'creado_por_actual': creado_por,
         'estados': Presupuesto.ESTADO_CHOICES,
         'kpis': kpis,
+        'puede_ver_creador': puede_ver_creador,
+        'usuarios_creadores': usuarios_creadores,
     })
 
 

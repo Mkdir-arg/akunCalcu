@@ -1096,3 +1096,94 @@ class PresupuestoPvcUsdViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'US$500,00')
         self.assertContains(res, 'Cotización USD utilizada')
+
+
+class PresupuestoColumnaUsuarioTest(TestCase):
+    """Columna y filtro 'Creado por' visibles para el rol Administrativo y para super admin (acceso total)."""
+
+    def setUp(self):
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={
+                'nombre': 'Admin',
+                'descripcion': 'Acceso total para pruebas.',
+                'acceso_total': True,
+                'activo': True,
+            },
+        )
+        self.administrativo_role, _ = RolSistema.objects.get_or_create(
+            codigo='administrativo',
+            defaults={
+                'nombre': 'Administrativo',
+                'descripcion': 'Rol operativo para pruebas.',
+                'acceso_total': False,
+                'activo': True,
+            },
+        )
+        self.super_admin = User.objects.create_user('super', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.super_admin, rol=self.admin_role)
+
+        self.administrativo = User.objects.create_user(
+            'admin_user', password='testpass', first_name='Ana', last_name='Vendedora')
+        PerfilAccesoUsuario.objects.create(
+            usuario=self.administrativo, rol=self.administrativo_role, permisos=['presupuestos.view'])
+
+        self.sin_rol = User.objects.create_user('sinrol', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.sin_rol, permisos=['presupuestos.view'])
+
+        self.client = Client()
+
+    def test_administrativo_ve_columna_y_filtro(self):
+        self.client.login(username='admin_user', password='testpass')
+        crear_presupuesto(self.administrativo)
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context['puede_ver_creador'])
+        self.assertContains(res, 'Creado por')
+        self.assertContains(res, 'Ana Vendedora')
+
+    def test_super_admin_ve_columna_y_filtro(self):
+        self.client.login(username='super', password='testpass')
+        crear_presupuesto(self.administrativo)
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context['puede_ver_creador'])
+        self.assertContains(res, 'Creado por')
+
+    def test_usuario_sin_rol_no_ve_columna_ni_filtro(self):
+        self.client.login(username='sinrol', password='testpass')
+        crear_presupuesto(self.administrativo)
+
+        res = self.client.get('/presupuestos/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.context['puede_ver_creador'])
+        self.assertNotContains(res, 'Creado por')
+
+    def test_administrativo_filtra_por_creado_por(self):
+        self.client.login(username='admin_user', password='testpass')
+        p_admin_user = crear_presupuesto(self.administrativo)
+        p_super = crear_presupuesto(self.super_admin)
+
+        res = self.client.get('/presupuestos/', {'creado_por': self.administrativo.pk})
+
+        self.assertEqual(res.status_code, 200)
+        ids = [p.pk for p in res.context['presupuestos']]
+        self.assertIn(p_admin_user.pk, ids)
+        self.assertNotIn(p_super.pk, ids)
+
+    def test_usuario_sin_rol_ignora_filtro_creado_por(self):
+        self.client.login(username='sinrol', password='testpass')
+        p_admin_user = crear_presupuesto(self.administrativo)
+        p_super = crear_presupuesto(self.super_admin)
+
+        res = self.client.get('/presupuestos/', {'creado_por': self.administrativo.pk})
+
+        self.assertEqual(res.status_code, 200)
+        ids = [p.pk for p in res.context['presupuestos']]
+        self.assertIn(p_admin_user.pk, ids)
+        self.assertIn(p_super.pk, ids)

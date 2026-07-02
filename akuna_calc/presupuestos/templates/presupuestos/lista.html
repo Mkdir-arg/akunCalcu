@@ -83,6 +83,17 @@
                     {% endfor %}
                 </select>
             </div>
+            {% if puede_ver_creador %}
+            <div class="w-56">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Creado por</label>
+                <select name="creado_por" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos</option>
+                    {% for u in usuarios_creadores %}
+                    <option value="{{ u.pk }}" {% if u.pk|stringformat:"s" == creado_por_actual %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold">
                 <i class="fas fa-filter mr-1"></i>Filtrar
             </button>
@@ -103,6 +114,9 @@
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Items</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Creacion</th>
+                        {% if puede_ver_creador %}
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Usuario</th>
+                        {% endif %}
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Vencimiento</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Total</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
@@ -136,6 +150,9 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ p.created_at|date:"d/m/Y" }}</td>
+                        {% if puede_ver_creador %}
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ p.created_by.get_full_name|default:p.created_by.username }}</td>
+                        {% endif %}
                         <td class="px-6 py-4 text-sm text-slate-700">
                             {{ p.fecha_expiracion|date:"d/m/Y" }}
                             <span class="block text-xs text-slate-400 font-normal mt-1">{{ p.get_resumen_flete_colocacion }}</span>
@@ -167,7 +184,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
+                        <td colspan="{% if puede_ver_creador %}9{% else %}8{% endif %}" class="px-6 py-12 text-center">
                             <i class="fas fa-file-invoice text-slate-300 text-4xl mb-3"></i>
                             <p class="text-slate-500 font-medium">No hay presupuestos</p>
                             <a href="{% url 'presupuestos:presupuestos-crear' %}" class="text-blue-600 hover:underline text-sm mt-1 inline-block">Crear el primero</a>
