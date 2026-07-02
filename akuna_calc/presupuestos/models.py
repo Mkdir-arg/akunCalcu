@@ -113,6 +113,14 @@ class Presupuesto(models.Model):
         related_name='presupuestos_creados',
         verbose_name='Creado por',
     )
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='presupuestos_editados',
+        verbose_name='Editado por',
+    )
     venta = models.ForeignKey(
         'comercial.Venta',
         on_delete=models.SET_NULL,

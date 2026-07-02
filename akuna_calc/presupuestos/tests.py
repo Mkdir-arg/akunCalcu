@@ -1066,6 +1066,26 @@ class PresupuestoPvcUsdViewsTest(TestCase):
         self.assertEqual(item.precio_unitario, Decimal('650000'))
         self.assertEqual(item.get_precio_unitario_usd(), Decimal('650'))
 
+    def test_editar_item_pvc_actualiza_valores(self):
+        p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+        self.client.post(
+            f'/presupuestos/{p.pk}/item/agregar/',
+            {'descripcion': 'Ventana', 'cantidad': '1', 'valor_usd': '500', 'margen_porcentaje': '30'},
+        )
+        item = p.items.get()
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/item/{item.pk}/editar/',
+            {'descripcion': 'Ventana editada', 'cantidad': '2', 'valor_usd': '600', 'margen_porcentaje': '30'},
+        )
+
+        self.assertEqual(res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.descripcion, 'Ventana editada')
+        self.assertEqual(item.cantidad, 2)
+        self.assertEqual(item.precio_unitario, Decimal('780000'))
+        self.assertEqual(item.get_precio_unitario_usd(), Decimal('780'))
+
     def test_lista_muestra_badge_usd_para_presupuesto_pvc(self):
         crear_presupuesto_pvc(self.user)
 
@@ -1187,3 +1207,75 @@ class PresupuestoColumnaUsuarioTest(TestCase):
         ids = [p.pk for p in res.context['presupuestos']]
         self.assertIn(p_admin_user.pk, ids)
         self.assertIn(p_super.pk, ids)
+
+
+class PresupuestoUpdatedByTest(TestCase):
+    """Guarda quién editó (updated_by) solo en la edición de datos del presupuesto."""
+
+    def setUp(self):
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={
+                'nombre': 'Admin',
+                'descripcion': 'Acceso total para pruebas.',
+                'acceso_total': True,
+                'activo': True,
+            },
+        )
+        self.creador = User.objects.create_user('creador', password='testpass')
+        self.editor = User.objects.create_user(
+            'editor', password='testpass', first_name='Beto', last_name='Editor')
+        PerfilAccesoUsuario.objects.create(usuario=self.editor, rol=self.admin_role)
+        self.client = Client()
+
+    def test_editar_datos_guarda_updated_by(self):
+        self.client.login(username='editor', password='testpass')
+        p = crear_presupuesto(self.creador)
+        self.assertIsNone(p.updated_by)
+
+        res = self.client.post(f'/presupuestos/{p.pk}/editar/', {
+            'cliente': p.cliente.pk,
+            'tipo_material': 'aluminio',
+            'fecha_expiracion': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
+            'notas': 'editado',
+        })
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.updated_by, self.editor)
+        self.assertEqual(p.created_by, self.creador)
+
+    def test_config_obra_guarda_updated_by(self):
+        from django.urls import reverse
+        self.client.login(username='editor', password='testpass')
+        p = crear_presupuesto(self.creador)
+        url = reverse('presupuestos:presupuestos-configuracion-obra', args=[p.pk])
+
+        res = self.client.post(url, {
+            'tipo_obra': 'obra_nueva',
+            'modalidad_sena': '50_50',
+            'recargo_obra_nueva': '0',
+            'validez_dias': '30',
+        })
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.updated_by, self.editor)
+
+    def test_agregar_item_no_cambia_updated_by(self):
+        from django.urls import reverse
+        self.client.login(username='editor', password='testpass')
+        p = crear_presupuesto(self.creador)
+        p.tipo_obra = 'obra_nueva'
+        p.save(update_fields=['tipo_obra'])
+        url = reverse('presupuestos:presupuestos-item-agregar', args=[p.pk])
+
+        with patch('presupuestos.views.Producto') as mock_prod:
+            mock_prod.objects.filter.return_value.exists.return_value = True
+            self.client.post(url, {
+                'producto_id': '72', 'precio_terciarizado': '15000',
+                'cantidad': '1', 'descripcion': 'Cortina',
+            })
+
+        p.refresh_from_db()
+        self.assertIsNone(p.updated_by)

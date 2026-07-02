@@ -88,6 +88,19 @@
                         <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.created_at|date:"d/m/Y" }}</p>
                     </div>
                     <div>
+                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Creado por</p>
+                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.created_by.get_full_name|default:presupuesto.created_by.username }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Editado por</p>
+                        {% if presupuesto.updated_by %}
+                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.updated_by.get_full_name|default:presupuesto.updated_by.username }}</p>
+                        <p class="text-slate-400 text-xs">{{ presupuesto.updated_at|date:"d/m/Y H:i" }}</p>
+                        {% else %}
+                        <p class="text-slate-400 font-semibold mt-1">Sin ediciones</p>
+                        {% endif %}
+                    </div>
+                    <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Vencimiento</p>
                         <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
                     </div>
@@ -818,11 +831,12 @@ function buildSection(title, icon, color, total, items) {
 <script type="text/babel">
 (function() {
 'use strict';
-const { useState } = React;
+const { useState, useEffect } = React;
 
 const COTIZACION_USD = {{ presupuesto.cotizacion_usd|default:0|unlocalize }};
 
 const FormularioPVC = () => {
+    const [editId, setEditId] = useState(null);
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
     const [valorUsd, setValorUsd] = useState(0);
@@ -833,6 +847,26 @@ const FormularioPVC = () => {
     const precioConMargenUsd = valorUsd * (1 + margen / 100);
     const precioTotalUsd = precioConMargenUsd * cantidad;
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    useEffect(() => {
+        // Puente JS↔React: editar un ítem PVC abre este mismo modal pre-cargado.
+        window.__cotizadorEditar = (payload) => {
+            const rj = payload.resultado || {};
+            setEditId(payload.itemId);
+            setDescripcion(payload.descripcion || '');
+            setCantidad(payload.cantidad || 1);
+            setValorUsd(parseFloat(rj.valor_usd) || 0);
+            setMargen(rj.margen != null ? rj.margen : 30);
+            setSaving(false);
+            document.getElementById('modal-item').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+        window.__cotizadorReset = () => {
+            setEditId(null);
+            setDescripcion(''); setCantidad(1); setValorUsd(0); setMargen(30); setSaving(false);
+        };
+        return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; } catch (e) {} };
+    }, []);
 
     const guardar = () => {
         if (!descripcion.trim()) {
@@ -848,7 +882,11 @@ const FormularioPVC = () => {
         document.getElementById('f-pvc-cantidad').value = cantidad;
         document.getElementById('f-pvc-valor-usd').value = valorUsd.toFixed(2);
         document.getElementById('f-pvc-margen').value = margen;
-        document.getElementById('item-save-form-pvc').submit();
+        const f = document.getElementById('item-save-form-pvc');
+        f.action = editId
+            ? '/presupuestos/{{ presupuesto.pk }}/item/' + editId + '/editar/'
+            : '/presupuestos/{{ presupuesto.pk }}/item/agregar/';
+        f.submit();
     };
 
     if (!COTIZACION_USD) {
@@ -909,7 +947,7 @@ const FormularioPVC = () => {
 
             <button onClick={guardar} disabled={saving}
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center">
-                {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>Agregar al presupuesto</>}
+                {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
             </button>
         </div>
     );

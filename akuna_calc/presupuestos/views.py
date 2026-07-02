@@ -52,7 +52,7 @@ def _build_logo_data_url():
 
 
 def _get_detalle_queryset():
-    return Presupuesto.objects.select_related('cliente', 'created_by').prefetch_related('items', 'comentarios__autor')
+    return Presupuesto.objects.select_related('cliente', 'created_by', 'updated_by').prefetch_related('items', 'comentarios__autor')
 
 
 def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form=None):
@@ -175,7 +175,9 @@ def editar(request, pk):
     if request.method == 'POST':
         form = PresupuestoForm(request.POST, instance=presupuesto)
         if form.is_valid():
-            form.save()
+            presupuesto = form.save(commit=False)
+            presupuesto.updated_by = request.user
+            presupuesto.save()
             messages.success(request, 'Presupuesto actualizado.')
             return redirect(append_return_to(reverse('presupuestos:presupuestos-detalle', kwargs={'pk': pk}), return_url))
     else:
@@ -319,7 +321,9 @@ def actualizar_configuracion_obra(request, pk):
 
     configuracion_form = PresupuestoConfiguracionObraForm(request.POST, instance=presupuesto)
     if configuracion_form.is_valid():
-        presupuesto = configuracion_form.save()
+        presupuesto = configuracion_form.save(commit=False)
+        presupuesto.updated_by = request.user
+        presupuesto.save()
         presupuesto.aplicar_validez_dias()
         presupuesto.actualizar_items_por_configuracion()
         presupuesto.recalcular_total()
