@@ -127,6 +127,19 @@ class EventoVisitaClienteTests(TestCase):
         self.assertIn('Calle 123', msg)
         self.assertIn('google.com/maps', msg)
 
+    def test_mensaje_incluye_numero_pedido(self):
+        e = EventoAgenda.objects.create(
+            titulo='Medición Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            numero_pedido='1234',
+        )
+        self.assertIn('Pedido N° 1234', e.mensaje())
+
+    def test_mensaje_sin_numero_pedido_no_lo_menciona(self):
+        e = EventoAgenda.objects.create(
+            titulo='Medición Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+        )
+        self.assertNotIn('Pedido', e.mensaje())
+
     def test_cliente_info_sin_login_redirige(self):
         self.assertEqual(self.client.get(reverse('agenda:cliente_info', args=[self.cliente.pk])).status_code, 302)
 
@@ -272,6 +285,18 @@ class EventoViewsTests(TestCase):
         })
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(EventoAgenda.objects.filter(titulo='Medición obra').exists())
+
+    def test_crear_evento_con_numero_pedido(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.post(reverse('agenda:crear'), {
+            'titulo': 'Servicio técnico Gómez', 'tipo': 'servicio_tecnico', 'numero_pedido': 'P-0456',
+            'fecha_evento': '2026-06-20', 'hora_envio': '09:00', 'anticipacion_dias': 0,
+            'destinatarios': [self.num.pk], 'activo': 'on',
+        })
+        self.assertEqual(resp.status_code, 302)
+        e = EventoAgenda.objects.get(titulo='Servicio técnico Gómez')
+        self.assertEqual(e.numero_pedido, 'P-0456')
+        self.assertIn('Pedido N° P-0456', e.mensaje())
 
     def test_crear_sin_destinatarios_falla(self):
         self.client.login(username='admin', password='pass1234')

@@ -32,6 +32,7 @@ class EventoAgenda(models.Model):
     ]
 
     titulo = models.CharField(max_length=200, verbose_name="Título")
+    numero_pedido = models.CharField(max_length=50, blank=True, verbose_name="Número de pedido")
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
     tipo = models.CharField(
         max_length=20, choices=TIPO_CHOICES, default='pendientes', verbose_name="Tipo",
@@ -152,6 +153,8 @@ class EventoAgenda(models.Model):
     def mensaje(self):
         """Texto del recordatorio que se manda por WhatsApp."""
         partes = [f"🔔 {self.get_tipo_display()}: {self.titulo}"]
+        if self.numero_pedido:
+            partes.append(f"📦 Pedido N° {self.numero_pedido}")
         if self.descripcion:
             partes.append(self.descripcion)
         partes.append(f"📅 {self.fecha_evento.strftime('%d/%m/%Y')}")

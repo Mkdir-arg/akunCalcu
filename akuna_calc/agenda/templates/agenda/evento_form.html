@@ -18,10 +18,18 @@
             {% csrf_token %}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
+                <div id="campo-titulo" class="md:col-span-2">
                     <label for="{{ form.titulo.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Título <span class="text-red-500">*</span></label>
                     {{ form.titulo }}
                     {% if form.titulo.errors %}<p class="text-xs text-red-600 mt-1">{{ form.titulo.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Número de pedido (Mediciones, Servicio técnico, Llamar y Colocaciones) -->
+                <div id="campo-numero-pedido" class="hidden">
+                    <label for="{{ form.numero_pedido.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Número de pedido</label>
+                    {{ form.numero_pedido }}
+                    <p class="text-xs text-slate-500 mt-1">Se incluye en el recordatorio de WhatsApp.</p>
+                    {% if form.numero_pedido.errors %}<p class="text-xs text-red-600 mt-1">{{ form.numero_pedido.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div class="md:col-span-2">
@@ -137,6 +145,8 @@
 <script>
 (function () {
     const tipo          = document.getElementById('id_tipo');
+    const campoTitulo   = document.getElementById('campo-titulo');
+    const campoPedido   = document.getElementById('campo-numero-pedido');
     const campoTecnico  = document.getElementById('campo-tecnico');
     const campoColoc    = document.getElementById('campo-colocador');
     const secLlamar     = document.getElementById('seccion-llamar');
@@ -154,6 +164,9 @@
     function syncCampos() {
         if (!tipo) return;
         const v = tipo.value;
+        const conPedido = ['mediciones', 'servicio_tecnico', 'llamar', 'colocaciones'].includes(v);
+        if (campoPedido)   campoPedido.classList.toggle('hidden', !conPedido);
+        if (campoTitulo)   campoTitulo.classList.toggle('md:col-span-2', !conPedido);
         if (campoTecnico)  campoTecnico.classList.toggle('hidden',  v !== 'mediciones');
         if (campoColoc)    campoColoc.classList.toggle('hidden',    v !== 'colocaciones');
         if (secLlamar)     secLlamar.classList.toggle('hidden',     v !== 'llamar');

@@ -16,12 +16,13 @@ class EventoAgendaForm(forms.ModelForm):
     class Meta:
         model = EventoAgenda
         fields = [
-            'titulo', 'descripcion', 'tipo', 'fecha_evento', 'hora_envio',
+            'titulo', 'numero_pedido', 'descripcion', 'tipo', 'fecha_evento', 'hora_envio',
             'anticipacion_dias', 'destinatarios', 'activo',
             'tecnico', 'colocador', 'cliente', 'direccion', 'lat', 'lng',
         ]
         widgets = {
             'titulo': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'Ej: Colocación de ventana en obra Pérez'}),
+            'numero_pedido': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'Ej: 1234'}),
             'descripcion': forms.Textarea(attrs={'class': _INPUT, 'rows': 3, 'placeholder': 'Detalle del evento (opcional)'}),
             'tipo': forms.Select(attrs={'class': _INPUT, 'id': 'id_tipo'}),
             'fecha_evento': forms.DateInput(attrs={'class': _INPUT, 'type': 'date'}, format='%Y-%m-%d'),
