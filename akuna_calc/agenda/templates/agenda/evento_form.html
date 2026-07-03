@@ -130,11 +130,20 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <a href="{% url 'agenda:lista' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                    <i class="fas fa-save mr-2"></i>Guardar
-                </button>
+            <div class="flex justify-between items-center gap-3 mt-6 pt-4 border-t">
+                <div>
+                    {% if form.instance.pk %}
+                    <button type="button" onclick="confirmarEliminacion('{% url 'agenda:eliminar' form.instance.pk %}', '{{ form.instance.titulo|escapejs }}')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                        <i class="fas fa-trash mr-2"></i>Eliminar
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'agenda:calendario' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
+                    <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                        <i class="fas fa-save mr-2"></i>Guardar
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -143,6 +152,30 @@
 
 {% block extra_js %}
 <script>
+function confirmarEliminacion(url, nombre) {
+    Swal.fire({
+        title: '¿Eliminar evento?',
+        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
 (function () {
     const tipo          = document.getElementById('id_tipo');
     const campoTitulo   = document.getElementById('campo-titulo');

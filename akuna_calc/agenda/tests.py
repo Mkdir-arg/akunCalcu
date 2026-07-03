@@ -247,13 +247,6 @@ class EventoViewsTests(TestCase):
         self.user = User.objects.create_user(username='admin', password='pass1234', is_staff=True)
         self.num = NumeroAutorizado.objects.create(numero='5491155555555', activo=True)
 
-    def test_lista_sin_login_redirige(self):
-        self.assertEqual(self.client.get(reverse('agenda:lista')).status_code, 302)
-
-    def test_lista_con_login_200(self):
-        self.client.login(username='admin', password='pass1234')
-        self.assertEqual(self.client.get(reverse('agenda:lista')).status_code, 200)
-
     def test_calendario_sin_login_redirige(self):
         self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 302)
 
@@ -261,10 +254,8 @@ class EventoViewsTests(TestCase):
         self.client.login(username='admin', password='pass1234')
         self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 200)
 
-    def test_calendario_tiene_link_a_lista(self):
-        self.client.login(username='admin', password='pass1234')
-        resp = self.client.get(reverse('agenda:calendario'))
-        self.assertContains(resp, 'href="{}"'.format(reverse('agenda:lista')))
+    def test_calendario_es_la_raiz_de_agenda(self):
+        self.assertEqual(reverse('agenda:calendario'), '/agenda/')
 
     def test_calendario_muestra_evento_del_mes(self):
         self.client.login(username='admin', password='pass1234')
@@ -314,26 +305,9 @@ class EventoViewsTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(EventoAgenda.objects.filter(pk=e.pk).exists())
 
-    def test_lista_context_resumen_y_proximo(self):
-        self.client.login(username='admin', password='pass1234')
-        futuro = timezone.localdate() + timedelta(days=5)
-        prog = EventoAgenda.objects.create(
-            titulo='Próximo aviso', fecha_evento=futuro, hora_envio=time(12, 0), estado='programado',
-        )
-        prog.destinatarios.add(self.num)
-        EventoAgenda.objects.create(
-            titulo='Ya enviado', fecha_evento=date(2026, 1, 1), hora_envio=time(9, 0), estado='enviado',
-        )
-        resp = self.client.get(reverse('agenda:lista'))
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.context['resumen']['total'], 2)
-        self.assertEqual(resp.context['resumen']['programados'], 1)
-        self.assertEqual(resp.context['resumen']['enviados'], 1)
-        self.assertEqual(resp.context['proximo'], prog)
-
     def test_sidebar_resalta_agenda_en_subrutas(self):
         from usuarios.access_control import build_sidebar_modules
-        for route in ('agenda:lista', 'agenda:calendario', 'agenda:crear'):
+        for route in ('agenda:calendario', 'agenda:crear'):
             modules = build_sidebar_modules(self.user, route)
             agenda_mod = next(m for m in modules if m['label'] == 'Agenda')
             self.assertTrue(agenda_mod['active'], route)

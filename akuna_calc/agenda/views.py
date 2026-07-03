@@ -11,7 +11,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, UpdateView
 
 from .forms import EventoAgendaForm
 from .models import EventoAgenda
@@ -29,44 +29,11 @@ def _validar_token(request):
     return bool(secret) and token == secret
 
 
-class EventoListView(LoginRequiredMixin, ListView):
-    model = EventoAgenda
-    template_name = 'agenda/evento_list.html'
-    context_object_name = 'eventos'
-    paginate_by = 20
-
-    def get_queryset(self):
-        return (
-            EventoAgenda.objects
-            .select_related('cliente', 'tecnico', 'colocador')
-            .prefetch_related('destinatarios')
-        )
-
-    def get_context_data(self, **kwargs):
-        from django.db.models import Count, Q
-
-        ctx = super().get_context_data(**kwargs)
-        ctx['resumen'] = EventoAgenda.objects.aggregate(
-            total=Count('id'),
-            programados=Count('id', filter=Q(estado='programado', activo=True)),
-            enviados=Count('id', filter=Q(estado='enviado')),
-        )
-
-        ahora = timezone.localtime()
-        programados = EventoAgenda.objects.filter(estado='programado', activo=True)
-        futuros = sorted(
-            (e for e in programados if e.proximo_envio() and e.proximo_envio() >= ahora),
-            key=lambda e: e.proximo_envio(),
-        )
-        ctx['proximo'] = futuros[0] if futuros else None
-        return ctx
-
-
 class EventoCreateView(LoginRequiredMixin, CreateView):
     model = EventoAgenda
     form_class = EventoAgendaForm
     template_name = 'agenda/evento_form.html'
-    success_url = reverse_lazy('agenda:lista')
+    success_url = reverse_lazy('agenda:calendario')
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -83,7 +50,7 @@ class EventoUpdateView(LoginRequiredMixin, UpdateView):
     model = EventoAgenda
     form_class = EventoAgendaForm
     template_name = 'agenda/evento_form.html'
-    success_url = reverse_lazy('agenda:lista')
+    success_url = reverse_lazy('agenda:calendario')
 
     def form_valid(self, form):
         messages.success(self.request, "Evento actualizado correctamente.")
@@ -97,7 +64,7 @@ class EventoUpdateView(LoginRequiredMixin, UpdateView):
 
 class EventoDeleteView(LoginRequiredMixin, DeleteView):
     model = EventoAgenda
-    success_url = reverse_lazy('agenda:lista')
+    success_url = reverse_lazy('agenda:calendario')
 
     def form_valid(self, form):
         messages.success(self.request, "Evento eliminado.")

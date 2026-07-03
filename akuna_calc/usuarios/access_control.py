@@ -51,7 +51,7 @@ ACCESS_MODULES = [
         'icon': 'fas fa-calendar-alt',
         'dropdown': False,
         'items': [
-            {'code': 'agenda.view', 'label': 'Agenda', 'route_name': 'agenda:lista'},
+            {'code': 'agenda.view', 'label': 'Agenda', 'route_name': 'agenda:calendario'},
         ],
     },
     {

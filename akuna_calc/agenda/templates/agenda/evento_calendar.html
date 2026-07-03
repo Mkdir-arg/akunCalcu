@@ -15,15 +15,6 @@
             <p class="text-slate-500 font-medium mt-1">Vista de calendario</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            <!-- Toggle Lista / Calendario -->
-            <div class="inline-flex items-center bg-slate-100 rounded-2xl p-1">
-                <a href="{% url 'agenda:lista' %}" class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:text-slate-800 transition-colors">
-                    <i class="fas fa-list mr-1.5"></i>Lista
-                </a>
-                <span class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-xl bg-white text-blue-600 shadow-sm">
-                    <i class="fas fa-calendar mr-1.5"></i>Calendario
-                </span>
-            </div>
             <!-- Selector de escala -->
             <div class="inline-flex rounded-xl overflow-hidden border border-gray-300">
                 <a href="?escala=dia{% if escala == 'dia' %}&fecha={{ fecha_dia }}{% elif escala == 'semana' %}&fecha={{ lunes }}{% endif %}"
