@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-015 — Error 403 CSRF al guardar formularios que quedaron abiertos un rato
+**Fecha**: 2026-07-06
+**Reportado por**: Matias
+**Severidad**: Media (bloquea el guardado y confunde al usuario, sin pérdida de datos del sistema)
+**Feature afectada**: Transversal — sesiones/CSRF (`settings.py`); reportado en `/agenda/41/editar/`
+
+**Síntoma**: Al guardar un formulario aparecía "Prohibido (403) — La verificación CSRF ha fallado. Solicitud abortada." En logs: `Forbidden (CSRF token from POST incorrect.)`.
+**Causa raíz**: `SESSION_COOKIE_AGE = 3600` con expiración fija: la sesión vencía 1 hora después del login aunque el usuario siguiera activo. Al expirar (o al reloguear en otra pestaña, que rota el token CSRF), cualquier formulario ya abierto quedaba con token viejo y el POST fallaba con 403.
+**Solución**: `SESSION_SAVE_EVERY_REQUEST = True` (la sesión se renueva con cada request, expira solo tras inactividad real) y `SESSION_COOKIE_AGE` de 1 h → 8 h (jornada laboral).
+**Archivos modificados**: `akuna_calc/akuna_calc/settings.py`
+
 ### FIX-014 — No se puede cargar un producto: el select de Línea queda bloqueado/vacío para cualquier extrusora
 **Fecha**: 2026-06-29
 **Reportado por**: Romina (vía Matu)

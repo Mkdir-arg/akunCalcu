@@ -186,7 +186,8 @@ LOGOUT_REDIRECT_URL = 'login'
 SESSION_COOKIE_SECURE = not DEBUG  # Solo HTTPS en producción
 SESSION_COOKIE_HTTPONLY = True  # No accesible desde JavaScript
 SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF
-SESSION_COOKIE_AGE = 3600  # 1 hora
+SESSION_COOKIE_AGE = 28800  # 8 horas (jornada laboral)
+SESSION_SAVE_EVERY_REQUEST = True  # Renueva la sesión con cada request: expira solo tras 8h de inactividad
 
 # Seguridad de CSRF
 CSRF_COOKIE_SECURE = not DEBUG  # Solo HTTPS en producción
