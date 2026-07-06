@@ -1,5 +1,13 @@
 # Environment variables
 .env
+.n8n.env
+
+# Backups de base de datos (no versionar dumps con datos reales)
+backup_*.sql
+akuna_calc/backups/*.sql
+
+# Previews temporales de PDF
+akuna_calc/tmp_pdf_preview/
 
 # Python
 __pycache__/
