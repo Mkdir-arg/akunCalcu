@@ -14,11 +14,11 @@
 
 ---
 
-## 2026-07-07 — Cotizador para rellenar la abertura en la Orden de Fabricación (FEAT-023)
+## 2026-07-07 — "Agregar orden" abre el cotizador y crea la orden precargada (FEAT-023)
 
-**Pedido:** "Llevar el pop up de cotización a órdenes."
-**Archivos modificados:** `akuna_calc/plantillas/templates/plantillas/orden_form.html`, `plantillas/tests.py`.
-**Descripción:** En la edición de la orden, botón "Cargar desde cotizador" que abre un modal con selectores en cascada (Extrusora→Línea→Producto→Marco→Hoja→Vidrio + Color) alimentados por las APIs de catálogo de `pricing`; al confirmar completa Tipo de abertura, Línea, Color, Tipo de vidrio, Modelo de hoja y Cantidad de hojas de la orden. Sin precios (la orden no lleva monto). Modal liviano en JS vanilla (no se reusó el React del cotizador de presupuestos por su acoplamiento a pricing/precios); selects `no-select2`. Sin cambios de modelo ni migraciones. Tests: 22 OK en plantillas.
+**Pedido:** "Cuando tocás Agregar orden se tiene que ver el pop up del cotizador."
+**Archivos modificados:** `akuna_calc/plantillas/views.py` (`orden_create` `@require_POST` + campos de abertura), `templates/plantillas/pedido_detail.html` (botón abre modal + cotizador React con precio + form oculto), `templates/plantillas/orden_form.html` (revertido el modal liviano previo), `plantillas/tests.py`.
+**Descripción:** El botón "Agregar orden" del detalle del pedido abre un popup de cotizador (selectores en cascada Extrusora→Línea→Producto→Marco→Hoja→Vidrio + Color, medidas, margen, cantidad y cálculo de precio de referencia con vista previa). Al "Crear orden de fabricación" se crea la orden con la abertura precargada (Tipo/Línea/Color/Vidrio/Modelo/Cantidad de hojas) y redirige a su edición; el precio se muestra pero NO se guarda en la orden. Componente React propio y autocontenido (no se reusó el de presupuestos, atado a PVC/terciarizado/opcionales/edición) que reusa las APIs de catálogo y de cálculo de `pricing`; presupuestos intacto. Sin modelo ni migraciones. Tests: 23 OK en plantillas. (Reinterpretación de la primera versión, que ponía el cotizador en la pantalla de edición.)
 
 ## 2026-07-07 — Orden de Fabricación: PDF A4 corporativo + datos de contacto en Configuración — Etapa 2 (REQ-035 / FEAT-022)
 

@@ -28,7 +28,7 @@
 | [FEAT-020](./FEAT-020-eliminar-modulo-despiece.md) | Eliminación del módulo de despiece y transformación de Pedidos de Fábrica | Implementado | 2026-07-07 | — |
 | [FEAT-021](./FEAT-021-ordenes-de-fabricacion-etapa1.md) | Órdenes de Fabricación dentro del pedido — Etapa 1 (modelo + generación + edición) | Implementado | 2026-07-07 | — |
 | [FEAT-022](./FEAT-022-orden-fabricacion-pdf.md) | Orden de Fabricación — Etapa 2 (PDF A4 corporativo + datos de contacto en Configuración) | Implementado | 2026-07-07 | — |
-| [FEAT-023](./FEAT-023-cotizador-en-orden-fabricacion.md) | Cotizador para rellenar la abertura en la Orden de Fabricación | Implementado | 2026-07-07 | — |
+| [FEAT-023](./FEAT-023-cotizador-en-orden-fabricacion.md) | "Agregar orden" abre el cotizador y crea la orden precargada | Implementado | 2026-07-07 | — |
 
 ---
 

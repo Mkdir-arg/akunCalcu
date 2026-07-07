@@ -265,15 +265,33 @@ class OrdenFabricacionViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Orden de fabricación N° 0001')
 
-    def test_orden_edit_incluye_cotizador(self):
-        orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)
-
-        response = self.client.get(f'/plantillas/ordenes/{orden.pk}/editar/')
+    def test_pedido_detail_incluye_cotizador(self):
+        response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Cargar desde cotizador')
-        self.assertContains(response, 'modal-cotizador')
+        self.assertContains(response, 'abrirCotizadorOrden')
+        self.assertContains(response, 'orden-cotizador-root')
         self.assertContains(response, '/pricing/api/pricing/')
+        self.assertContains(response, 'orden-create-form')
+
+    def test_orden_create_precarga_abertura_desde_cotizador(self):
+        response = self.client.post(f'/plantillas/pedidos/{self.pedido.pk}/ordenes/crear/', {
+            'tipo_abertura': 'Ventana corrediza',
+            'linea': 'MODENA',
+            'color': 'Blanco',
+            'tipo_vidrio': '4+9+4',
+            'modelo_hoja': 'Hoja A',
+            'cantidad_hojas': '2',
+        })
+
+        orden = self.pedido.ordenes.get()
+        self.assertRedirects(response, f'/plantillas/ordenes/{orden.pk}/editar/')
+        self.assertEqual(orden.tipo_abertura, 'Ventana corrediza')
+        self.assertEqual(orden.linea, 'MODENA')
+        self.assertEqual(orden.color, 'Blanco')
+        self.assertEqual(orden.tipo_vidrio, '4+9+4')
+        self.assertEqual(orden.modelo_hoja, 'Hoja A')
+        self.assertEqual(orden.cantidad_hojas, '2')
 
     def test_orden_edit_guarda_campos_y_medidas(self):
         orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)

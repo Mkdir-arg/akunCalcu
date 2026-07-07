@@ -117,14 +117,22 @@ def _guardar_medidas(orden, request):
 
 
 @login_required
+@require_POST
 def orden_create(request, pedido_pk):
-    """Alta manual de una orden de fabricación dentro de un pedido."""
+    """Alta de una orden de fabricación dentro de un pedido.
+
+    Los datos de la abertura (opcionales) llegan desde el popup del cotizador y
+    precargan la orden; si no vienen, la orden nace en blanco para completar a mano.
+    """
     pedido = get_object_or_404(PedidoFabrica, pk=pedido_pk)
+    campos_abertura = ('tipo_abertura', 'linea', 'color', 'tipo_vidrio', 'modelo_hoja', 'cantidad_hojas')
+    datos = {campo: (request.POST.get(campo) or '').strip() for campo in campos_abertura}
     orden = OrdenFabricacion.objects.create(
         pedido=pedido,
         numero=OrdenFabricacion.generar_numero(),
         orden=pedido.ordenes.count() + 1,
         cliente_nombre=pedido.cliente,
+        **datos,
     )
     messages.success(request, f'Orden {orden.numero_formateado} creada. Completá el detalle.')
     return redirect('plantillas:orden_edit', pk=orden.pk)

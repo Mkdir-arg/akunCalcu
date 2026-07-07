@@ -64,12 +64,9 @@
 <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <h2 class="text-xl font-bold text-slate-800">Órdenes de fabricación</h2>
-        <form method="post" action="{% url 'plantillas:orden_create' pedido.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">
-                <i class="fas fa-plus mr-2"></i>Agregar orden
-            </button>
-        </form>
+        <button type="button" onclick="abrirCotizadorOrden()" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">
+            <i class="fas fa-plus mr-2"></i>Agregar orden
+        </button>
     </div>
 
     <div class="overflow-x-auto">
@@ -120,10 +117,50 @@
         </table>
     </div>
 </div>
+
+<!-- ===== MODAL COTIZADOR (crea la orden con la abertura precargada) ===== -->
+<div id="modal-orden" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarCotizadorOrden()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-calculator mr-2 text-blue-600"></i>Nueva orden de fabricación</h2>
+                <button type="button" onclick="cerrarCotizadorOrden()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-6">
+                <div id="orden-cotizador-root"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="orden-create-form" method="post" action="{% url 'plantillas:orden_create' pedido.pk %}" style="display:none">
+    {% csrf_token %}
+    <input type="hidden" name="tipo_abertura" id="oc-tipo_abertura">
+    <input type="hidden" name="linea" id="oc-linea">
+    <input type="hidden" name="color" id="oc-color">
+    <input type="hidden" name="tipo_vidrio" id="oc-tipo_vidrio">
+    <input type="hidden" name="modelo_hoja" id="oc-modelo_hoja">
+    <input type="hidden" name="cantidad_hojas" id="oc-cantidad_hojas">
+</form>
 {% endblock %}
 
 {% block extra_js %}
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <script>
+function abrirCotizadorOrden() {
+    document.getElementById('modal-orden').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function cerrarCotizadorOrden() {
+    document.getElementById('modal-orden').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 function confirmarEliminarOrden(url, numero) {
     Swal.fire({
         title: '¿Eliminar orden?',
@@ -145,5 +182,186 @@ function confirmarEliminarOrden(url, numero) {
         form.submit();
     });
 }
+</script>
+
+<script type="text/babel">
+(function () {
+'use strict';
+const { useState, useEffect } = React;
+const API = '/pricing/api/pricing/';
+const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const Sel = ({ label, options, value, onChange, disabled, valueKey = 'id', labelKey, placeholder }) => (
+    <div>
+        <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{label}</label>
+        <select value={value || ''} disabled={disabled}
+            onChange={e => onChange(e.target.value || null)}
+            className="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100">
+            <option value="">{placeholder || 'Seleccionar...'}</option>
+            {(options || []).map(o => <option key={o[valueKey]} value={o[valueKey]}>{o[labelKey]}</option>)}
+        </select>
+    </div>
+);
+
+const CotizadorOrden = () => {
+    const [config, setConfig] = useState({
+        extrusora_id: null, linea_id: null, producto_id: null, marco_id: null,
+        hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null,
+        ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30,
+    });
+    const [cantidad, setCantidad] = useState(1);
+    const [extrusoras, setExtrusoras] = useState([]);
+    const [lineas, setLineas] = useState([]);
+    const [productos, setProductos] = useState([]);
+    const [marcos, setMarcos] = useState([]);
+    const [hojas, setHojas] = useState([]);
+    const [vidrios, setVidrios] = useState([]);
+    const [tratamientos, setTratamientos] = useState([]);
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetch(API + 'extrusoras/').then(r => r.json()).then(setExtrusoras).catch(() => {});
+        fetch(API + 'tratamientos/').then(r => r.json()).then(setTratamientos).catch(() => {});
+    }, []);
+    useEffect(() => {
+        if (config.extrusora_id) fetch(API + 'lineas/?extrusora_id=' + config.extrusora_id).then(r => r.json()).then(setLineas).catch(() => {});
+        else setLineas([]);
+    }, [config.extrusora_id]);
+    useEffect(() => {
+        if (config.linea_id) fetch(API + 'productos/?linea_id=' + config.linea_id).then(r => r.json()).then(setProductos).catch(() => {});
+        else setProductos([]);
+    }, [config.linea_id]);
+    useEffect(() => {
+        if (config.producto_id) fetch(API + 'marcos/?producto_id=' + config.producto_id).then(r => r.json()).then(setMarcos).catch(() => {});
+        else setMarcos([]);
+    }, [config.producto_id]);
+    useEffect(() => {
+        if (config.marco_id) fetch(API + 'hojas/?marco_id=' + config.marco_id).then(r => r.json()).then(setHojas).catch(() => {});
+        else setHojas([]);
+    }, [config.marco_id]);
+    useEffect(() => {
+        if (config.hoja_id) fetch(API + 'vidrios/?hoja_id=' + config.hoja_id).then(r => r.json()).then(setVidrios).catch(() => {});
+        else setVidrios([]);
+    }, [config.hoja_id]);
+
+    const set = (k, v, reset = {}) => setConfig(c => ({ ...c, [k]: v, ...reset }));
+
+    const calcular = async () => {
+        if (!config.marco_id) { setError('Seleccioná un marco para calcular el precio.'); return; }
+        setLoading(true); setError(null);
+        try {
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const res = await fetch(API + 'calculate/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ ...config, opcionales: [] }),
+            });
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || e.error || 'Error al calcular'); }
+            setResult(await res.json());
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
+    };
+
+    const crearOrden = () => {
+        const prod = productos.find(p => String(p.id) === String(config.producto_id));
+        const linea = lineas.find(l => String(l.id) === String(config.linea_id));
+        const trat = tratamientos.find(t => String(t.id) === String(config.tratamiento_id));
+        const hoja = hojas.find(h => String(h.id) === String(config.hoja_id));
+        const vidrio = vidrios.find(v => String(v.codigo) === String(config.vidrio_codigo));
+        const put = (id, val) => { document.getElementById(id).value = val || ''; };
+        put('oc-tipo_abertura', prod ? prod.descripcion : '');
+        put('oc-linea', linea ? linea.nombre : '');
+        put('oc-color', trat ? trat.descripcion : '');
+        put('oc-tipo_vidrio', vidrio ? vidrio.descripcion : '');
+        put('oc-modelo_hoja', hoja ? hoja.descripcion : '');
+        put('oc-cantidad_hojas', hoja && hoja.cantidad != null ? hoja.cantidad : '');
+        setSaving(true);
+        document.getElementById('orden-create-form').submit();
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <p className="text-sm text-slate-500 mb-3">Configurá la abertura y, si querés, calculá el precio de referencia. Al crear la orden se cargan Tipo de abertura, Línea, Color, Vidrio, Modelo y Cantidad de hojas (el precio no se guarda en la orden).</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id} labelKey="nombre"
+                        onChange={v => set('extrusora_id', v, { linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null })} />
+                    <Sel label="Línea" options={lineas} value={config.linea_id} labelKey="nombre" disabled={!config.extrusora_id}
+                        onChange={v => set('linea_id', v, { producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null })}
+                        placeholder={config.extrusora_id ? 'Seleccionar...' : 'Primero extrusora'} />
+                    <Sel label="Producto (tipo de abertura)" options={productos} value={config.producto_id} labelKey="descripcion" disabled={!config.linea_id}
+                        onChange={v => set('producto_id', v, { marco_id: null, hoja_id: null, vidrio_codigo: null })}
+                        placeholder={config.linea_id ? 'Seleccionar...' : 'Primero línea'} />
+                    <Sel label="Marco" options={marcos} value={config.marco_id} labelKey="descripcion" disabled={!config.producto_id}
+                        onChange={v => set('marco_id', v, { hoja_id: null, vidrio_codigo: null })}
+                        placeholder={config.producto_id ? 'Seleccionar...' : 'Primero producto'} />
+                    <Sel label="Modelo de hoja" options={hojas} value={config.hoja_id} labelKey="descripcion" disabled={!config.marco_id}
+                        onChange={v => set('hoja_id', v, { vidrio_codigo: null })}
+                        placeholder={config.marco_id ? 'Seleccionar...' : 'Primero marco'} />
+                    <Sel label="Vidrio" options={vidrios} value={config.vidrio_codigo} valueKey="codigo" labelKey="descripcion" disabled={!config.hoja_id}
+                        onChange={v => set('vidrio_codigo', v)} placeholder={config.hoja_id ? 'Seleccionar...' : 'Primero hoja'} />
+                    <Sel label="Color / Terminación" options={tratamientos} value={config.tratamiento_id} labelKey="descripcion"
+                        onChange={v => set('tratamiento_id', v)} placeholder="Sin terminación" />
+                </div>
+
+                <div className="grid grid-cols-4 gap-3 mt-2">
+                    {[['Ancho (mm)', 'ancho_mm'], ['Alto (mm)', 'alto_mm'], ['Margen (%)', 'margen_porcentaje']].map(([lbl, key]) => (
+                        <div key={key}>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{lbl}</label>
+                            <input type="number" value={config[key]}
+                                onChange={e => setConfig(c => ({ ...c, [key]: parseFloat(e.target.value) || 0 }))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                    ))}
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Cantidad</label>
+                        <input type="number" min="1" value={cantidad}
+                            onChange={e => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                </div>
+
+                {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
+
+                <button onClick={calcular} disabled={loading || !config.marco_id}
+                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">
+                    {loading ? <><i className="fas fa-spinner fa-spin mr-2"></i>Calculando...</> : <><i className="fas fa-calculator mr-2"></i>Calcular precio</>}
+                </button>
+            </div>
+
+            <div className="flex flex-col">
+                {result ? (
+                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
+                        <p className="text-sm opacity-80 mb-1">Precio unitario (referencia)</p>
+                        <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>
+                        {cantidad > 1 && <p className="text-sm opacity-80 mt-2">x {cantidad} = <strong>${fmt(result.precio_total * cantidad)}</strong></p>}
+                        <div className="flex gap-4 mt-2 text-sm opacity-80">
+                            <span>Subtotal: ${fmt(result.subtotal)}</span>
+                            <span>Margen ({config.margen_porcentaje}%): ${fmt(result.margen)}</span>
+                        </div>
+                        <p className="text-xs opacity-70 mt-3"><i className="fas fa-info-circle mr-1"></i>El precio es solo de referencia; no se guarda en la orden.</p>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center py-12 text-slate-300">
+                        <i className="fas fa-calculator text-6xl mb-4"></i>
+                        <p className="font-semibold text-slate-400">Configurá y calculá</p>
+                        <p className="text-sm mt-1">El precio de referencia aparece acá</p>
+                    </div>
+                )}
+
+                <button onClick={crearOrden} disabled={saving}
+                    className="mt-auto w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all">
+                    {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Creando...</> : <><i className="fas fa-plus mr-2"></i>Crear orden de fabricación</>}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+ReactDOM.createRoot(document.getElementById('orden-cotizador-root')).render(<CotizadorOrden />);
+})();
 </script>
 {% endblock %}
