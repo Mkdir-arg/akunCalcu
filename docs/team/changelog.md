@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-07 — Cotizador para rellenar la abertura en la Orden de Fabricación (FEAT-023)
+
+**Pedido:** "Llevar el pop up de cotización a órdenes."
+**Archivos modificados:** `akuna_calc/plantillas/templates/plantillas/orden_form.html`, `plantillas/tests.py`.
+**Descripción:** En la edición de la orden, botón "Cargar desde cotizador" que abre un modal con selectores en cascada (Extrusora→Línea→Producto→Marco→Hoja→Vidrio + Color) alimentados por las APIs de catálogo de `pricing`; al confirmar completa Tipo de abertura, Línea, Color, Tipo de vidrio, Modelo de hoja y Cantidad de hojas de la orden. Sin precios (la orden no lleva monto). Modal liviano en JS vanilla (no se reusó el React del cotizador de presupuestos por su acoplamiento a pricing/precios); selects `no-select2`. Sin cambios de modelo ni migraciones. Tests: 22 OK en plantillas.
+
 ## 2026-07-07 — Orden de Fabricación: PDF A4 corporativo + datos de contacto en Configuración — Etapa 2 (REQ-035 / FEAT-022)
 
 **User Story:** Como responsable de fábrica, quiero imprimir cada orden de fabricación como PDF A4 con el diseño de Akun, para reemplazar la planilla papel.

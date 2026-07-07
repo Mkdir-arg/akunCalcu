@@ -28,6 +28,7 @@
 | [FEAT-020](./FEAT-020-eliminar-modulo-despiece.md) | Eliminación del módulo de despiece y transformación de Pedidos de Fábrica | Implementado | 2026-07-07 | — |
 | [FEAT-021](./FEAT-021-ordenes-de-fabricacion-etapa1.md) | Órdenes de Fabricación dentro del pedido — Etapa 1 (modelo + generación + edición) | Implementado | 2026-07-07 | — |
 | [FEAT-022](./FEAT-022-orden-fabricacion-pdf.md) | Orden de Fabricación — Etapa 2 (PDF A4 corporativo + datos de contacto en Configuración) | Implementado | 2026-07-07 | — |
+| [FEAT-023](./FEAT-023-cotizador-en-orden-fabricacion.md) | Cotizador para rellenar la abertura en la Orden de Fabricación | Implementado | 2026-07-07 | — |
 
 ---
 
@@ -39,7 +40,7 @@
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011 | 2026-05-17 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
 | `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019 | 2026-07-07 |
-| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022 | 2026-07-07 |
+| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023 | 2026-07-07 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020 | 2026-07-07 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |

@@ -75,7 +75,12 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h2 class="text-lg font-bold text-slate-800 mb-4">Detalle de la abertura</h2>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <h2 class="text-lg font-bold text-slate-800">Detalle de la abertura</h2>
+                    <button type="button" onclick="abrirCotizador()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm">
+                        <i class="fas fa-calculator mr-2"></i>Cargar desde cotizador
+                    </button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de abertura</label>
@@ -236,6 +241,61 @@
         </div>
     </div>
 </form>
+
+<!-- ===== MODAL COTIZADOR (rellena la abertura, sin precios) ===== -->
+<div id="modal-cotizador" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60" onclick="cerrarCotizador()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" data-select2-dropdown-parent>
+            <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
+                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-calculator mr-2 text-blue-600"></i>Cargar abertura desde el cotizador</h2>
+                <button type="button" onclick="cerrarCotizador()" class="text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-6">
+                <p class="text-sm text-slate-500 mb-4">Elegí la configuración; al confirmar se completan Tipo de abertura, Línea, Color, Tipo de vidrio, Modelo de hoja y Cantidad de hojas. No modifica precios.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Extrusora</label>
+                        <select id="cot-extrusora" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Línea</label>
+                        <select id="cot-linea" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Producto (tipo de abertura)</label>
+                        <select id="cot-producto" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Marco</label>
+                        <select id="cot-marco" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Modelo de hoja</label>
+                        <select id="cot-hoja" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Vidrio</label>
+                        <select id="cot-vidrio" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Color / Terminación</label>
+                        <select id="cot-tratamiento" class="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Seleccionar...</option></select>
+                    </div>
+                </div>
+                <p id="cot-error" class="text-sm text-red-600 mt-3 hidden"></p>
+            </div>
+            <div class="flex justify-end gap-3 px-6 py-4 border-t shrink-0">
+                <button type="button" onclick="cerrarCotizador()" class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded-xl font-semibold text-sm">Cancelar</button>
+                <button type="button" onclick="usarCotizacion()" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-xl font-semibold text-sm">
+                    <i class="fas fa-check mr-2"></i>Usar selección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -266,5 +326,100 @@ function agregarFilaMedida() {
 document.addEventListener('DOMContentLoaded', function () {
     if (!document.querySelectorAll('#medidas-body .fila-medida').length) agregarFilaMedida();
 });
+
+// -- Cotizador: carga en cascada del catálogo y rellena la abertura --
+(function () {
+    const API = '/pricing/api/pricing/';
+    const $ = (id) => document.getElementById(id);
+    // Mapa: cada select guarda el texto elegido en dataset.label para copiarlo luego.
+    function llenar(sel, items, valueKey, labelKey) {
+        sel.innerHTML = '<option value="">Seleccionar...</option>';
+        (items || []).forEach(function (it) {
+            const opt = document.createElement('option');
+            opt.value = it[valueKey];
+            opt.textContent = it[labelKey];
+            opt.dataset.label = it[labelKey];
+            if (it.cantidad != null) opt.dataset.cantidad = it.cantidad;
+            sel.appendChild(opt);
+        });
+    }
+    function reset(sel) { sel.innerHTML = '<option value="">Seleccionar...</option>'; }
+    function traer(url) {
+        return fetch(url).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+    }
+    function mostrarError(msg) {
+        const e = $('cot-error');
+        if (!msg) { e.classList.add('hidden'); return; }
+        e.textContent = msg; e.classList.remove('hidden');
+    }
+
+    window.abrirCotizador = function () {
+        mostrarError('');
+        $('modal-cotizador').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (!$('cot-extrusora').dataset.cargado) {
+            traer(API + 'extrusoras/').then(function (d) {
+                llenar($('cot-extrusora'), d, 'id', 'nombre');
+                $('cot-extrusora').dataset.cargado = '1';
+            });
+            traer(API + 'tratamientos/').then(function (d) { llenar($('cot-tratamiento'), d, 'id', 'descripcion'); });
+        }
+    };
+    window.cerrarCotizador = function () {
+        $('modal-cotizador').classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    $('cot-extrusora').addEventListener('change', function () {
+        reset($('cot-linea')); reset($('cot-producto')); reset($('cot-marco')); reset($('cot-hoja')); reset($('cot-vidrio'));
+        if (!this.value) return;
+        traer(API + 'lineas/?extrusora_id=' + this.value).then(function (d) { llenar($('cot-linea'), d, 'id', 'nombre'); });
+    });
+    $('cot-linea').addEventListener('change', function () {
+        reset($('cot-producto')); reset($('cot-marco')); reset($('cot-hoja')); reset($('cot-vidrio'));
+        if (!this.value) return;
+        traer(API + 'productos/?linea_id=' + this.value).then(function (d) { llenar($('cot-producto'), d, 'id', 'descripcion'); });
+    });
+    $('cot-producto').addEventListener('change', function () {
+        reset($('cot-marco')); reset($('cot-hoja')); reset($('cot-vidrio'));
+        if (!this.value) return;
+        traer(API + 'marcos/?producto_id=' + this.value).then(function (d) { llenar($('cot-marco'), d, 'id', 'descripcion'); });
+    });
+    $('cot-marco').addEventListener('change', function () {
+        reset($('cot-hoja')); reset($('cot-vidrio'));
+        if (!this.value) return;
+        traer(API + 'hojas/?marco_id=' + this.value).then(function (d) { llenar($('cot-hoja'), d, 'id', 'descripcion'); });
+    });
+    $('cot-hoja').addEventListener('change', function () {
+        reset($('cot-vidrio'));
+        if (!this.value) return;
+        traer(API + 'vidrios/?hoja_id=' + this.value).then(function (d) { llenar($('cot-vidrio'), d, 'codigo', 'descripcion'); });
+    });
+
+    function sel(id) {
+        const s = $(id);
+        const o = s.options[s.selectedIndex];
+        return o && o.value ? o : null;
+    }
+
+    window.usarCotizacion = function () {
+        const prod = sel('cot-producto');
+        if (!prod) { mostrarError('Elegí al menos un producto (tipo de abertura).'); return; }
+        const linea = sel('cot-linea'), color = sel('cot-tratamiento'), hoja = sel('cot-hoja'), vidrio = sel('cot-vidrio');
+        const asignar = function (fieldId, label) {
+            const f = $(fieldId);
+            if (f && label != null) f.value = label;
+        };
+        asignar('id_tipo_abertura', prod.dataset.label);
+        if (linea) asignar('id_linea', linea.dataset.label);
+        if (color) asignar('id_color', color.dataset.label);
+        if (hoja) {
+            asignar('id_modelo_hoja', hoja.dataset.label);
+            if (hoja.dataset.cantidad) asignar('id_cantidad_hojas', hoja.dataset.cantidad);
+        }
+        if (vidrio) asignar('id_tipo_vidrio', vidrio.dataset.label);
+        cerrarCotizador();
+    };
+})();
 </script>
 {% endblock %}

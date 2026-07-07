@@ -265,6 +265,16 @@ class OrdenFabricacionViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Orden de fabricación N° 0001')
 
+    def test_orden_edit_incluye_cotizador(self):
+        orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)
+
+        response = self.client.get(f'/plantillas/ordenes/{orden.pk}/editar/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cargar desde cotizador')
+        self.assertContains(response, 'modal-cotizador')
+        self.assertContains(response, '/pricing/api/pricing/')
+
     def test_orden_edit_guarda_campos_y_medidas(self):
         orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)
 
