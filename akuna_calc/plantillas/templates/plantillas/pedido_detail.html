@@ -144,6 +144,9 @@
     <input type="hidden" name="tipo_vidrio" id="oc-tipo_vidrio">
     <input type="hidden" name="modelo_hoja" id="oc-modelo_hoja">
     <input type="hidden" name="cantidad_hojas" id="oc-cantidad_hojas">
+    <input type="hidden" name="mosquitero" id="oc-mosquitero">
+    <input type="hidden" name="mosquitero_modelo" id="oc-mosquitero_modelo">
+    <input type="hidden" name="premarco" id="oc-premarco">
 </form>
 {% endblock %}
 
@@ -203,11 +206,69 @@ const Sel = ({ label, options, value, onChange, disabled, valueKey = 'id', label
     </div>
 );
 
+const OpcionalesModal = ({ opcionales, onSelect }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const filtered = opcionales.filter(opt => (opt.codigo + ' ' + opt.nombre).toLowerCase().includes(search.toLowerCase()));
+    return (
+        <>
+            <button type="button" onClick={() => setIsOpen(true)}
+                className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition flex items-center justify-center text-sm font-semibold">
+                <i className="fas fa-plus mr-2"></i>Agregar Opcional
+            </button>
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsOpen(false)} />
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="p-5 border-b">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-lg font-bold text-slate-800"><i className="fas fa-plus-circle mr-2 text-blue-600"></i>Seleccionar Opcional</h3>
+                                    <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl"><i className="fas fa-times"></i></button>
+                                </div>
+                                <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                                    placeholder="Buscar por código o nombre..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div className="overflow-y-auto max-h-96 p-5">
+                                {filtered.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-400"><i className="fas fa-search text-4xl mb-3 opacity-50"></i><p>No se encontraron opcionales</p></div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {filtered.map(opcional => (
+                                            <button key={opcional.id} onClick={() => { onSelect(opcional); setIsOpen(false); setSearch(''); }}
+                                                className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="font-medium text-gray-900">{opcional.codigo} - {opcional.nombre}</div>
+                                                        <div className="text-sm text-gray-500 mt-1">
+                                                            {opcional.tipo === 'mosquitero'
+                                                                ? <span><i className="fas fa-dollar-sign mr-1"></i>${(opcional.precio_m2 || 0).toLocaleString('es-AR')}/m2</span>
+                                                                : <span><i className="fas fa-calculator mr-1"></i>Calculado por fórmulas</span>}
+                                                        </div>
+                                                    </div>
+                                                    <span className={'px-3 py-1 rounded-full text-xs font-medium ' + (opcional.tipo === 'mosquitero' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800')}>
+                                                        {opcional.tipo === 'mosquitero' ? 'Mosquitero' : (opcional.tipo === 'premarco' ? 'Premarco' : 'Otro')}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+        </>
+    );
+};
+
 const CotizadorOrden = () => {
     const [config, setConfig] = useState({
         extrusora_id: null, linea_id: null, producto_id: null, marco_id: null,
         hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null,
-        ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30,
+        ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [],
     });
     const [cantidad, setCantidad] = useState(1);
     const [extrusoras, setExtrusoras] = useState([]);
@@ -217,6 +278,7 @@ const CotizadorOrden = () => {
     const [hojas, setHojas] = useState([]);
     const [vidrios, setVidrios] = useState([]);
     const [tratamientos, setTratamientos] = useState([]);
+    const [opcionalesDisp, setOpcionalesDisp] = useState([]);
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -235,8 +297,10 @@ const CotizadorOrden = () => {
         else setProductos([]);
     }, [config.linea_id]);
     useEffect(() => {
-        if (config.producto_id) fetch(API + 'marcos/?producto_id=' + config.producto_id).then(r => r.json()).then(setMarcos).catch(() => {});
-        else setMarcos([]);
+        if (config.producto_id) {
+            fetch(API + 'marcos/?producto_id=' + config.producto_id).then(r => r.json()).then(setMarcos).catch(() => {});
+            fetch(API + 'opcionales/?producto_id=' + config.producto_id).then(r => r.json()).then(setOpcionalesDisp).catch(() => {});
+        } else { setMarcos([]); setOpcionalesDisp([]); }
     }, [config.producto_id]);
     useEffect(() => {
         if (config.marco_id) fetch(API + 'hojas/?marco_id=' + config.marco_id).then(r => r.json()).then(setHojas).catch(() => {});
@@ -257,7 +321,7 @@ const CotizadorOrden = () => {
             const res = await fetch(API + 'calculate/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify({ ...config, opcionales: [] }),
+                body: JSON.stringify(config),
             });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || e.error || 'Error al calcular'); }
             setResult(await res.json());
@@ -271,6 +335,8 @@ const CotizadorOrden = () => {
         const trat = tratamientos.find(t => String(t.id) === String(config.tratamiento_id));
         const hoja = hojas.find(h => String(h.id) === String(config.hoja_id));
         const vidrio = vidrios.find(v => String(v.codigo) === String(config.vidrio_codigo));
+        const mosquiteros = config.opcionales.filter(o => o.tipo === 'mosquitero');
+        const premarcos = config.opcionales.filter(o => o.tipo === 'premarco');
         const put = (id, val) => { document.getElementById(id).value = val || ''; };
         put('oc-tipo_abertura', prod ? prod.descripcion : '');
         put('oc-linea', linea ? linea.nombre : '');
@@ -278,6 +344,9 @@ const CotizadorOrden = () => {
         put('oc-tipo_vidrio', vidrio ? vidrio.descripcion : '');
         put('oc-modelo_hoja', hoja ? hoja.descripcion : '');
         put('oc-cantidad_hojas', hoja && hoja.cantidad != null ? hoja.cantidad : '');
+        put('oc-mosquitero', mosquiteros.length ? 'SI' : '');
+        put('oc-mosquitero_modelo', mosquiteros.map(o => o.nombre).join(', '));
+        put('oc-premarco', premarcos.length ? 'SI' : '');
         setSaving(true);
         document.getElementById('orden-create-form').submit();
     };
@@ -285,7 +354,6 @@ const CotizadorOrden = () => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-                <p className="text-sm text-slate-500 mb-3">Configurá la abertura y, si querés, calculá el precio de referencia. Al crear la orden se cargan Tipo de abertura, Línea, Color, Vidrio, Modelo y Cantidad de hojas (el precio no se guarda en la orden).</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id} labelKey="nombre"
                         onChange={v => set('extrusora_id', v, { linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null })} />
@@ -323,6 +391,38 @@ const CotizadorOrden = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
                     </div>
                 </div>
+
+                {config.producto_id && opcionalesDisp.length > 0 && (
+                    <div className="mt-4 border-t pt-4">
+                        <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
+                            <i className="fas fa-plus-circle mr-1 text-blue-600"></i>Opcionales
+                        </label>
+                        {config.opcionales.length > 0 && (
+                            <div className="mb-2 space-y-1.5">
+                                {config.opcionales.map((opc, idx) => (
+                                    <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-medium text-sm text-gray-800">{opc.codigo} - {opc.nombre}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {opc.tipo === 'mosquitero' ? ('$' + (opc.precio_m2 || 0).toLocaleString('es-AR') + '/m2') : 'Calculado por fórmulas'}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setConfig(c => ({ ...c, opcionales: c.opcionales.filter((_, i) => i !== idx) }))}
+                                            className="text-red-500 hover:text-red-700 p-1.5" title="Quitar">
+                                            <i className="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <OpcionalesModal opcionales={opcionalesDisp}
+                            onSelect={opcional => {
+                                if (!config.opcionales.find(o => o.id === opcional.id)) {
+                                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, opcional] }));
+                                }
+                            }} />
+                    </div>
+                )}
 
                 {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
 

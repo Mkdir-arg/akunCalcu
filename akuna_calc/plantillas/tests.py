@@ -282,6 +282,9 @@ class OrdenFabricacionViewsTest(TestCase):
             'tipo_vidrio': '4+9+4',
             'modelo_hoja': 'Hoja A',
             'cantidad_hojas': '2',
+            'mosquitero': 'SI',
+            'mosquitero_modelo': 'MOSQ-01 - Mosquitero estándar',
+            'premarco': 'SI',
         })
 
         orden = self.pedido.ordenes.get()
@@ -292,6 +295,9 @@ class OrdenFabricacionViewsTest(TestCase):
         self.assertEqual(orden.tipo_vidrio, '4+9+4')
         self.assertEqual(orden.modelo_hoja, 'Hoja A')
         self.assertEqual(orden.cantidad_hojas, '2')
+        self.assertEqual(orden.mosquitero, 'SI')
+        self.assertEqual(orden.mosquitero_modelo, 'MOSQ-01 - Mosquitero estándar')
+        self.assertEqual(orden.premarco, 'SI')
 
     def test_orden_edit_guarda_campos_y_medidas(self):
         orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)

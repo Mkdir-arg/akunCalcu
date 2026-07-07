@@ -125,7 +125,8 @@ def orden_create(request, pedido_pk):
     precargan la orden; si no vienen, la orden nace en blanco para completar a mano.
     """
     pedido = get_object_or_404(PedidoFabrica, pk=pedido_pk)
-    campos_abertura = ('tipo_abertura', 'linea', 'color', 'tipo_vidrio', 'modelo_hoja', 'cantidad_hojas')
+    campos_abertura = ('tipo_abertura', 'linea', 'color', 'tipo_vidrio', 'modelo_hoja', 'cantidad_hojas',
+                       'mosquitero', 'mosquitero_modelo', 'premarco')
     datos = {campo: (request.POST.get(campo) or '').strip() for campo in campos_abertura}
     orden = OrdenFabricacion.objects.create(
         pedido=pedido,

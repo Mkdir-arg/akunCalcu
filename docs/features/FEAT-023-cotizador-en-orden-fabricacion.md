@@ -18,6 +18,10 @@ Al presionar **"Crear orden de fabricación"** se crea la orden con la abertura 
 | Tipo de vidrio | Vidrio (descripción) |
 | Modelo de hoja | Hoja (descripción) |
 | Cantidad de hojas | Hoja (campo `cantidad`) |
+| Mosquitero / Modelo de mosquitero | Opcional tipo mosquitero (→ "SI" + nombre) |
+| Premarco | Opcional tipo premarco (→ "SI") |
+
+El popup incluye la sección de **Opcionales** (mismo selector buscable que el cotizador de presupuestos: mosquitero/premarco/otros), que impactan en el precio de referencia calculado y, al crear la orden, precargan los campos Mosquitero/Premarco.
 
 El **precio calculado es solo de referencia y NO se guarda en la orden** (la orden de fabricación no lleva monto). Tras crear, redirige a la edición de la orden para completar el resto de los campos (SI/NO, medidas, nota). Si se crea sin seleccionar nada, la orden nace en blanco para cargar a mano.
 
