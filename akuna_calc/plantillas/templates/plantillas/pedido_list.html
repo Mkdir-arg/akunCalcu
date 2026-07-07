@@ -16,7 +16,7 @@
                 <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                 <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
@@ -27,7 +27,13 @@
                 <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap font-medium text-gray-900">{{ pedido.numero }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-600">{{ pedido.cliente }}</td>
                 <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ pedido.fecha|date:"d/m/Y" }}</td>
-                <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ pedido.items.count }} items</td>
+                <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {% if pedido.presupuesto %}
+                    <a href="{% url 'presupuestos:presupuestos-detalle' pedido.presupuesto.pk %}" class="text-blue-600 hover:text-blue-800">{{ pedido.presupuesto.numero }}</a>
+                    {% else %}
+                    <span class="text-gray-400">Manual</span>
+                    {% endif %}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     {% if pedido.estado == 'BORRADOR' %}
                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Borrador</span>

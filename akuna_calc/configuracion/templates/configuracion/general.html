@@ -19,11 +19,28 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-2xl font-bold text-blue-600">${{ valor_hora_hombre|floatformat:2 }}</span>
-                    <a href="{% url 'configuracion-hora-hombre' %}" 
+                    <a href="{% url 'configuracion-hora-hombre' %}"
                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Editar
                     </a>
                 </div>
+            </div>
+
+            <div class="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <h3 class="font-semibold text-gray-800">Datos de contacto de la empresa</h3>
+                    <p class="text-sm text-gray-600">Se usan en el pie de la Orden de Fabricación (PDF)</p>
+                    <div class="text-sm text-gray-700 mt-2 space-y-0.5">
+                        <p><span class="font-medium">{{ datos_empresa.empresa_nombre }}</span></p>
+                        <p>{{ datos_empresa.empresa_direccion }}</p>
+                        <p>{{ datos_empresa.empresa_telefonos }}</p>
+                        <p>{{ datos_empresa.empresa_web }}</p>
+                    </div>
+                </div>
+                <a href="{% url 'configuracion-datos-empresa' %}"
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shrink-0">
+                    Editar
+                </a>
             </div>
         </div>
     </div>

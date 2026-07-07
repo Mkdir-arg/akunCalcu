@@ -251,6 +251,18 @@ class Presupuesto(models.Model):
     def get_total_usd(self):
         return self._convertir_a_usd(self.total)
 
+    def get_porcentaje_sena(self):
+        return Decimal('0.70') if self.modalidad_sena == '70_30' else Decimal('0.50')
+
+    def get_sena_sugerida(self):
+        return (self.total * self.get_porcentaje_sena()).quantize(Decimal('0.01'))
+
+    def get_sena_sugerida_usd(self):
+        sugerida_usd = self._convertir_a_usd(self.get_sena_sugerida())
+        if sugerida_usd is None:
+            return None
+        return sugerida_usd.quantize(Decimal('0.01'))
+
     def recalcular_total(self):
         subtotal = self.get_subtotal_sin_iva()
         iva = self.get_iva()

@@ -1,281 +1,149 @@
 {% extends 'plantillas/base_plantillas.html' %}
-{% load plantillas_tags %}
 
 {% block plantillas_content %}
-<style>
-.excel-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 13px;
-}
-.excel-table th {
-    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #dee2e6;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-.excel-table td {
-    border: 1px solid #dee2e6;
-    background: white;
-}
-.excel-table td.calculado {
-    background: #d1fae5;
-    font-weight: 600;
-    color: #065f46;
-}
-.excel-table input, .excel-table select {
-    border: none;
-    background: transparent;
-    width: 100%;
-    padding: 4px;
-    font-size: 13px;
-}
-.excel-table input:focus, .excel-table select:focus {
-    outline: 2px solid #3b82f6;
-    background: #eff6ff;
-}
-.cuadro-card {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.3s;
-}
-.cuadro-card:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-</style>
-
-<div class="mb-4">
+<div class="mb-6">
     <a href="{% url 'plantillas:pedido_list' %}" class="text-blue-600 hover:text-blue-800 font-medium">
-        <i class="fas fa-arrow-left mr-2"></i>Volver a pedidos
+        <i class="fas fa-arrow-left mr-1"></i>Volver a pedidos
     </a>
 </div>
 
-<!-- Header del Pedido -->
-<div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 mb-6 text-white">
-    <div class="flex justify-between items-start">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Pedido {{ pedido.numero }}</h1>
+        <p class="text-slate-500 font-medium mt-1">{{ pedido.cliente }}</p>
+    </div>
+    <span class="px-3 py-1 rounded-full text-sm font-semibold
+        {% if pedido.estado == 'BORRADOR' %}bg-gray-100 text-gray-700
+        {% elif pedido.estado == 'EN_PROCESO' %}bg-blue-100 text-blue-700
+        {% elif pedido.estado == 'COMPLETADO' %}bg-green-100 text-green-700
+        {% else %}bg-red-100 text-red-700{% endif %}">
+        {{ pedido.get_estado_display }}
+    </span>
+</div>
+
+<div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+    <h2 class="text-xl font-bold text-slate-800 mb-4">Datos del pedido</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
-            <div class="flex items-center gap-3 mb-2">
-                <i class="fas fa-file-invoice text-3xl"></i>
-                <h1 class="text-3xl font-bold">{{ pedido.numero }}</h1>
-            </div>
-            <div class="space-y-1 text-blue-100">
-                <p class="text-lg"><i class="fas fa-user mr-2"></i>{{ pedido.cliente }}</p>
-                <p class="text-sm"><i class="fas fa-calendar mr-2"></i>{{ pedido.fecha|date:"d/m/Y" }}</p>
-                <p class="text-sm"><i class="fas fa-layer-group mr-2"></i>{{ items|length }} item{{ items|length|pluralize }}</p>
-            </div>
+            <span class="text-slate-500">Fecha</span>
+            <p class="font-semibold text-slate-800">{{ pedido.fecha|date:"d/m/Y" }}</p>
         </div>
-        <div class="text-right">
-            <span class="px-4 py-2 rounded-lg text-sm font-bold shadow-lg
-                {% if pedido.estado == 'BORRADOR' %}bg-white text-gray-800
-                {% elif pedido.estado == 'EN_PROCESO' %}bg-yellow-400 text-yellow-900
-                {% elif pedido.estado == 'COMPLETADO' %}bg-green-400 text-green-900
-                {% else %}bg-red-400 text-red-900{% endif %}">
-                {{ pedido.get_estado_display|upper }}
-            </span>
+        <div>
+            <span class="text-slate-500">Creado por</span>
+            <p class="font-semibold text-slate-800">
+                {% if pedido.usuario %}{{ pedido.usuario.get_full_name|default:pedido.usuario.username }}{% else %}—{% endif %}
+            </p>
+        </div>
+        {% if pedido.presupuesto %}
+        <div>
+            <span class="text-slate-500">Presupuesto de origen</span>
+            <p class="font-semibold">
+                <a href="{% url 'presupuestos:presupuestos-detalle' pedido.presupuesto.pk %}" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-file-invoice mr-1"></i>{{ pedido.presupuesto.numero }}
+                </a>
+            </p>
+        </div>
+        {% if pedido.presupuesto.venta %}
+        <div>
+            <span class="text-slate-500">Venta asociada</span>
+            <p class="font-semibold">
+                <a href="{% url 'comercial:venta_detail' pedido.presupuesto.venta.pk %}" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-dollar-sign mr-1"></i>Venta {{ pedido.presupuesto.venta.numero_pedido }}
+                </a>
+            </p>
+        </div>
+        {% endif %}
+        {% endif %}
+        <div class="md:col-span-2">
+            <span class="text-slate-500">Observaciones</span>
+            <p class="font-semibold text-slate-800">{{ pedido.observaciones|default:"—"|linebreaksbr }}</p>
         </div>
     </div>
 </div>
 
-<!-- Agregar Plantilla -->
-<div class="bg-white rounded-xl shadow-md p-6 mb-6">
-    <h3 class="text-lg font-bold text-gray-800 mb-4">
-        <i class="fas fa-plus-circle text-green-600 mr-2"></i>Agregar Plantilla al Pedido
-    </h3>
-    <form method="post" action="{% url 'plantillas:pedido_add_item' pedido.pk %}" class="flex gap-3">
-        {% csrf_token %}
-        <select name="plantilla_id" required class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-            <option value="">Seleccione una plantilla...</option>
-            {% for plantilla in plantillas_activas %}
-            <option value="{{ plantilla.pk }}">{{ plantilla.nombre }} ({{ plantilla.campos.count }} campos)</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold shadow-md transition-all">
-            <i class="fas fa-plus mr-2"></i>Agregar
-        </button>
-    </form>
-</div>
-
-<!-- Cuadros (Items) -->
-{% for item in items %}
-<div class="cuadro-card bg-white rounded-xl mb-6 overflow-hidden">
-    <!-- Header del Cuadro -->
-    <div class="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4 flex flex-wrap justify-between items-center gap-2">
-        <div class="flex items-center gap-4">
-            <div class="bg-white rounded-lg px-3 py-1">
-                <span class="text-gray-800 font-bold text-sm">#{{{ item.orden }}</span>
-            </div>
-            <h3 class="text-xl font-bold text-white">{{ item.plantilla.nombre }}</h3>
-            <span class="px-3 py-1 rounded-full text-xs font-bold
-                {% if item.estado == 'OK' %}bg-green-400 text-green-900
-                {% elif item.estado == 'ERROR' %}bg-red-400 text-red-900
-                {% else %}bg-yellow-400 text-yellow-900{% endif %}">
-                {% if item.estado == 'OK' %}✅ CALCULADO
-                {% elif item.estado == 'ERROR' %}⚠️ CON ERRORES
-                {% else %}⏳ PENDIENTE{% endif %}
-            </span>
-        </div>
-        <div class="flex gap-2">
-            <button type="submit" form="form-{{ item.pk }}" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow-lg transition-all">
-                <i class="fas fa-calculator mr-2"></i>CALCULAR
-            </button>
-            <a href="{% url 'plantillas:pedido_item_add_fila' item.pk %}" 
-               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all" 
-               title="Agregar fila">
-                <i class="fas fa-plus"></i>
-            </a>
-            <a href="{% url 'plantillas:pedido_item_delete' item.pk %}" 
-               onclick="return confirm('¿Eliminar este cuadro completo?')" 
-               class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all"
-               title="Eliminar cuadro">
-                <i class="fas fa-trash"></i>
-            </a>
-        </div>
-    </div>
-
-    <!-- Grilla Excel -->
-    <div class="overflow-x-auto">
-        <form method="post" action="{% url 'plantillas:pedido_item_calcular' item.pk %}" id="form-{{ item.pk }}">
+<div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+        <h2 class="text-xl font-bold text-slate-800">Órdenes de fabricación</h2>
+        <form method="post" action="{% url 'plantillas:orden_create' pedido.pk %}">
             {% csrf_token %}
-            <table class="excel-table w-full">
-                <thead>
-                    <tr>
-                        {% for campo in item.plantilla.campos.all %}
-                        <th class="px-3 py-3 text-left text-xs uppercase whitespace-nowrap min-w-[120px]">
-                            <div class="font-bold text-gray-700">{{ campo.nombre_visible }}</div>
-                            {% if campo.unidad %}
-                            <div class="text-gray-500 font-normal text-[10px] mt-1">({{ campo.unidad }})</div>
-                            {% endif %}
-                            {% if campo.modo == 'CALCULADO' %}
-                            <div class="text-green-600 text-[10px] mt-1">⚙️ AUTO</div>
-                            {% endif %}
-                        </th>
-                        {% endfor %}
-                        <th class="px-3 py-3 text-left text-xs uppercase whitespace-nowrap min-w-[200px]">
-                            <div class="font-bold text-gray-700">OBSERVACIONES</div>
-                        </th>
-                        <th class="px-3 py-3 text-left text-xs uppercase whitespace-nowrap min-w-[80px]">
-                            <div class="font-bold text-gray-700">CANT</div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fila in item.filas.all %}
-                    <tr class="hover:bg-gray-50">
-                        {% for campo in item.plantilla.campos.all %}
-                        <td class="px-3 py-2 {% if campo.modo == 'CALCULADO' %}calculado{% endif %}">
-                            {% if campo.modo == 'MANUAL' %}
-                                {% if campo.tipo == 'number' %}
-                                <input type="text" inputmode="decimal" name="fila_{{ fila.pk }}_{{ campo.clave }}" 
-                                       value="{{ fila.inputs|get_item:campo.clave }}"
-                                       placeholder="{{ campo.ayuda|default:'0' }}"
-                                       {% if campo.requerido %}required{% endif %}>
-                                {% elif campo.tipo == 'select' %}
-                                <select name="fila_{{ fila.pk }}_{{ campo.clave }}">
-                                    <option value="">-</option>
-                                    {% for opcion in campo.opciones|split:'|' %}
-                                    <option value="{{ opcion }}" {% if fila.inputs|get_item:campo.clave == opcion %}selected{% endif %}>{{ opcion }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% elif campo.tipo == 'bool' %}
-                                <label class="flex items-center justify-center cursor-pointer">
-                                    <input type="checkbox" name="fila_{{ fila.pk }}_{{ campo.clave }}" {% if fila.inputs|get_item:campo.clave %}checked{% endif %} class="w-5 h-5">
-                                </label>
-                                {% else %}
-                                <input type="text" name="fila_{{ fila.pk }}_{{ campo.clave }}" 
-                                       value="{{ fila.inputs|get_item:campo.clave }}">
-                                {% endif %}
-                            {% else %}
-                                <div class="text-center font-mono text-base">
-                                    {% if fila.outputs|get_item:campo.clave %}
-                                        {{ fila.outputs|get_item:campo.clave|floatformat:2 }}
-                                    {% elif fila.errores|get_item:campo.clave %}
-                                        <span class="text-red-600 font-bold">ERROR</span>
-                                    {% else %}
-                                        <span class="text-gray-400">—</span>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                        </td>
-                        {% endfor %}
-                        <td class="px-3 py-2">
-                            <input type="text" name="fila_{{ fila.pk }}_obs" value="{{ fila.obs }}" placeholder="Observaciones...">
-                        </td>
-                        <td class="px-3 py-2">
-                            <div class="flex items-center gap-2">
-                                <input type="number" name="fila_{{ fila.pk }}_cantidad" value="{{ fila.cantidad }}" min="1" class="text-center font-bold flex-1">
-                                {% if item.filas.count > 1 %}
-                                <a href="{% url 'plantillas:pedido_fila_delete' fila.pk %}" 
-                                   onclick="return confirm('¿Eliminar esta fila?')" 
-                                   class="text-red-600 hover:text-red-800"
-                                   title="Eliminar fila">
-                                    <i class="fas fa-times-circle"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">
+                <i class="fas fa-plus mr-2"></i>Agregar orden
+            </button>
         </form>
     </div>
 
-    <!-- Errores -->
-    {% if item.errores %}
-    <div class="bg-red-50 border-t-4 border-red-500 px-6 py-4">
-        <div class="flex items-start">
-            <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3 mt-1"></i>
-            <div class="flex-1">
-                <p class="text-sm font-bold text-red-800 mb-2">Errores detectados:</p>
-                <ul class="text-sm text-red-700 space-y-1">
-                    {% for campo, error in item.errores.items %}
-                    <li class="flex items-start">
-                        <span class="text-red-500 mr-2">•</span>
-                        <span><strong class="font-semibold">{{ campo }}</strong>: {{ error }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">N° Orden</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Abertura</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Medidas</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for orden in ordenes %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ orden.numero_formateado }}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">
+                        {{ orden.tipo_abertura|default:"—" }}
+                        {% if orden.linea %}<span class="text-slate-400">· {{ orden.linea }}</span>{% endif %}
+                        {% if orden.color %}<span class="text-slate-400">· {{ orden.color }}</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-slate-600">
+                        {% for medida in orden.medidas.all %}{{ medida.cantidad }}× {{ medida.medida|default:"s/medida" }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="{% url 'plantillas:orden_pdf' orden.pk %}" target="_blank" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Imprimir PDF">
+                                <i class="fas fa-print"></i>
+                            </a>
+                            <a href="{% url 'plantillas:orden_edit' orden.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" onclick="confirmarEliminarOrden('{% url 'plantillas:orden_delete' orden.pk %}', '{{ orden.numero_formateado }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-8 text-center">
+                        <i class="fas fa-clipboard-list text-slate-300 text-4xl mb-2"></i>
+                        <p class="text-slate-500 font-medium">Este pedido no tiene órdenes de fabricación.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    {% endif %}
 </div>
-{% empty %}
-<div class="bg-white rounded-xl shadow-lg p-16 text-center">
-    <i class="fas fa-inbox text-gray-300 text-8xl mb-6"></i>
-    <h3 class="text-2xl font-bold text-gray-700 mb-2">No hay items en este pedido</h3>
-    <p class="text-gray-500 mb-6">Agrega una plantilla usando el selector de arriba para comenzar</p>
-    <div class="inline-block bg-blue-50 border-2 border-blue-200 rounded-lg px-6 py-3">
-        <p class="text-sm text-blue-700">
-            <i class="fas fa-lightbulb mr-2"></i>
-            <strong>Tip:</strong> Puedes agregar la misma plantilla varias veces
-        </p>
-    </div>
-</div>
-{% endfor %}
+{% endblock %}
 
+{% block extra_js %}
 <script>
-// Auto-submit con Enter
-document.querySelectorAll('form[id^="form-"]').forEach(form => {
-    form.querySelectorAll('input:not([type="checkbox"]):not([type="submit"])').forEach(input => {
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                form.querySelector('button[type="submit"]').click();
-            }
-        });
+function confirmarEliminarOrden(url, numero) {
+    Swal.fire({
+        title: '¿Eliminar orden?',
+        html: '<p>¿Eliminar la orden <strong>N° ' + numero + '</strong>?</p><p class="text-sm text-red-600 mt-2">Esta acción no se puede deshacer.</p>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrf) form.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf.value + '">';
+        document.body.appendChild(form);
+        form.submit();
     });
-});
-
-// Highlight al focus
-document.querySelectorAll('.excel-table input, .excel-table select').forEach(el => {
-    el.addEventListener('focus', function() {
-        this.closest('td').style.boxShadow = '0 0 0 2px #3b82f6 inset';
-    });
-    el.addEventListener('blur', function() {
-        this.closest('td').style.boxShadow = '';
-    });
-});
+}
 </script>
 {% endblock %}

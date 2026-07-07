@@ -8,7 +8,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta, date
 
-from comercial.models import Cliente
+from comercial.models import Cliente, Venta
+from plantillas.models import PedidoFabrica
 from usuarios.models import PerfilAccesoUsuario, RolSistema
 from .forms import PresupuestoForm
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
@@ -1279,3 +1280,251 @@ class PresupuestoUpdatedByTest(TestCase):
 
         p.refresh_from_db()
         self.assertIsNone(p.updated_by)
+
+
+class ConfirmarPresupuestoTest(TestCase):
+    """Confirmar un presupuesto exige la seña y genera venta + pedido de fábrica (REQ-034)."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('confirmauser', password='testpass')
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={
+                'nombre': 'Admin',
+                'descripcion': 'Acceso total para pruebas.',
+                'acceso_total': True,
+                'activo': True,
+            },
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
+        self.client = Client()
+        self.client.login(username='confirmauser', password='testpass')
+
+    def _presupuesto_con_total(self, total=Decimal('100000'), pvc=False, cotizacion=Decimal('1000')):
+        if pvc:
+            p = crear_presupuesto_pvc(self.user, cotizacion_usd=cotizacion)
+        else:
+            p = crear_presupuesto(self.user)
+        Presupuesto.objects.filter(pk=p.pk).update(total=total)
+        p.refresh_from_db()
+        return p
+
+    def _confirmar(self, presupuesto, sena=None):
+        data = {'estado': 'confirmado'}
+        if sena is not None:
+            data['sena'] = sena
+        return self.client.post(f'/presupuestos/{presupuesto.pk}/estado/', data)
+
+    def test_get_sena_sugerida_segun_modalidad(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        self.assertEqual(p.get_sena_sugerida(), Decimal('50000.00'))
+        p.modalidad_sena = '70_30'
+        self.assertEqual(p.get_sena_sugerida(), Decimal('70000.00'))
+
+    def test_get_sena_sugerida_usd(self):
+        p = self._presupuesto_con_total(Decimal('500000'), pvc=True, cotizacion=Decimal('1000'))
+        self.assertEqual(p.get_sena_sugerida_usd(), Decimal('250.00'))
+
+    def test_confirmar_aluminio_genera_venta_y_pedido(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+
+        res = self._confirmar(p, '50000')
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        venta = p.venta
+        self.assertIsNotNone(venta)
+        self.assertEqual(venta.cliente, p.cliente)
+        self.assertEqual(venta.numero_pedido, p.numero)
+        self.assertEqual(venta.valor_total, Decimal('100000'))
+        self.assertEqual(venta.sena, Decimal('50000.00'))
+        self.assertEqual(venta.saldo, Decimal('50000.00'))
+        self.assertFalse(venta.venta_en_dolares)
+        self.assertEqual(venta.estado, 'pendiente')
+        pedido = p.pedidos_fabrica.get()
+        self.assertEqual(pedido.numero, 'PF-0001')
+        self.assertEqual(pedido.cliente, p.cliente.get_nombre_completo())
+        self.assertEqual(pedido.estado, 'BORRADOR')
+        self.assertEqual(pedido.usuario, self.user)
+        self.assertIn(p.numero, pedido.observaciones)
+
+    def test_confirmar_pvc_genera_venta_en_dolares(self):
+        p = self._presupuesto_con_total(Decimal('500000'), pvc=True, cotizacion=Decimal('1000'))
+
+        res = self._confirmar(p, '250')
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        venta = p.venta
+        self.assertTrue(venta.venta_en_dolares)
+        self.assertEqual(venta.valor_total, Decimal('500000'))
+        self.assertEqual(venta.valor_total_usd, Decimal('500.00'))
+        self.assertEqual(venta.cotizacion_usd, Decimal('1000'))
+        self.assertTrue(venta.sena_en_dolares)
+        self.assertEqual(venta.sena_usd, Decimal('250.00'))
+        self.assertEqual(venta.cotizacion_sena_usd, Decimal('1000'))
+        self.assertEqual(venta.sena, Decimal('250000.00'))
+        self.assertEqual(venta.saldo, Decimal('250000.00'))
+
+    def test_confirmar_sin_sena_no_cambia_nada(self):
+        p = self._presupuesto_con_total()
+
+        res = self._confirmar(p)
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertIsNone(p.venta)
+        self.assertEqual(Venta.objects.count(), 0)
+        self.assertEqual(PedidoFabrica.objects.count(), 0)
+
+    def test_confirmar_con_sena_cero_rechaza(self):
+        p = self._presupuesto_con_total()
+
+        self._confirmar(p, '0')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_con_sena_mayor_al_total_rechaza(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+
+        self._confirmar(p, '150000')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_pvc_sin_cotizacion_rechaza(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        Presupuesto.objects.filter(pk=p.pk).update(tipo_material='pvc', cotizacion_usd=None)
+        p.refresh_from_db()
+
+        self._confirmar(p, '100')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_sin_items_rechaza(self):
+        p = self._presupuesto_con_total(Decimal('0'))
+
+        self._confirmar(p, '1000')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_dos_veces_no_duplica(self):
+        p = self._presupuesto_con_total()
+        self._confirmar(p, '50000')
+
+        self._confirmar(p, '50000')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        self.assertEqual(Venta.objects.count(), 1)
+        self.assertEqual(PedidoFabrica.objects.count(), 1)
+
+    def test_cambiar_a_enviado_no_requiere_sena(self):
+        p = self._presupuesto_con_total()
+
+        res = self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'enviado'})
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'enviado')
+        self.assertEqual(Venta.objects.count(), 0)
+        self.assertEqual(PedidoFabrica.objects.count(), 0)
+
+    def test_numero_pedido_fabrica_evita_colision(self):
+        PedidoFabrica.objects.create(numero='PF-0002', cliente='Otro cliente')
+        p = self._presupuesto_con_total()
+
+        self._confirmar(p, '1000')
+
+        pedido = p.pedidos_fabrica.get()
+        self.assertEqual(pedido.numero, 'PF-0003')
+
+    def test_sena_acepta_coma_decimal(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+
+        self._confirmar(p, '50000,50')
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        self.assertEqual(p.venta.sena, Decimal('50000.50'))
+
+    def test_detalle_confirmado_muestra_links_generados(self):
+        p = self._presupuesto_con_total()
+        self._confirmar(p, '50000')
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Generado al confirmar')
+        self.assertContains(res, 'PF-0001')
+
+    def _crear_item(self, presupuesto, **snapshot):
+        return ItemPresupuesto.objects.create(
+            presupuesto=presupuesto,
+            descripcion=snapshot.pop('descripcion', 'Ventana'),
+            cantidad=snapshot.pop('cantidad', 1),
+            ancho_mm=snapshot.pop('ancho_mm', 1200),
+            alto_mm=snapshot.pop('alto_mm', 1500),
+            margen_porcentaje=30,
+            precio_unitario=Decimal('50000'),
+            resultado_json={'snapshot_item': snapshot} if snapshot else {},
+        )
+
+    def test_confirmar_genera_una_orden_por_item(self):
+        p = crear_presupuesto(self.user)
+        p.plazo_entrega_dias = 15
+        p.save(update_fields=['plazo_entrega_dias'])
+        self._crear_item(p, descripcion='V1', producto={'descripcion': 'BANDEROLA'},
+                         linea={'nombre': 'MODENA'}, tratamiento={'descripcion': 'BLANCO'},
+                         vidrio={'descripcion': '4+9+4'}, cantidad=2, ancho_mm=1200, alto_mm=1500)
+        self._crear_item(p, descripcion='V2', cantidad=1)
+        p.recalcular_total()
+
+        self._confirmar(p, '10000')
+
+        pedido = p.pedidos_fabrica.get()
+        self.assertEqual(pedido.ordenes.count(), 2)
+
+    def test_orden_generada_precarga_datos_del_item_y_cliente(self):
+        p = crear_presupuesto(self.user)
+        p.plazo_entrega_dias = 20
+        p.save(update_fields=['plazo_entrega_dias'])
+        self._crear_item(p, descripcion='V1', producto={'descripcion': 'BANDEROLA'},
+                         linea={'nombre': 'MODENA'}, tratamiento={'descripcion': 'BLANCO'},
+                         vidrio={'descripcion': '4+9+4'}, cantidad=3, ancho_mm=1200, alto_mm=1500)
+        p.recalcular_total()
+
+        self._confirmar(p, '10000')
+
+        orden = p.pedidos_fabrica.get().ordenes.get()
+        self.assertEqual(orden.numero, 1)
+        self.assertEqual(orden.tipo_abertura, 'BANDEROLA')
+        self.assertEqual(orden.linea, 'MODENA')
+        self.assertEqual(orden.color, 'BLANCO')
+        self.assertEqual(orden.tipo_vidrio, '4+9+4')
+        self.assertEqual(orden.cliente_nombre, p.cliente.get_nombre_completo())
+        self.assertEqual(orden.fecha_comprometida, date.today() + timedelta(days=20))
+        medida = orden.medidas.get()
+        self.assertEqual(medida.cantidad, 3)
+        self.assertEqual(medida.medida, '1200 x 1500')
+
+    def test_confirmar_sin_snapshot_precarga_descripcion(self):
+        p = crear_presupuesto(self.user)
+        self._crear_item(p, descripcion='Cortina roller', cantidad=1, ancho_mm=0, alto_mm=0)
+        p.recalcular_total()
+
+        self._confirmar(p, '5000')
+
+        orden = p.pedidos_fabrica.get().ordenes.get()
+        self.assertEqual(orden.tipo_abertura, 'Cortina roller')
+        self.assertEqual(orden.medidas.get().medida, '')

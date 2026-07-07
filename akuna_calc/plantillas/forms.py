@@ -2,64 +2,39 @@ from django import forms
 
 from pricing.models import Linea
 
-from .models import ProductoPlantilla, CampoPlantilla, OpcionalFabrica, FormulaOpcional
-from .services.formula_engine import FormulaEngine
+from .models import OpcionalFabrica, OrdenFabricacion
 
 
-class ProductoPlantillaForm(forms.ModelForm):
+_INPUT = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+
+
+class OrdenFabricacionForm(forms.ModelForm):
     class Meta:
-        model = ProductoPlantilla
-        fields = ['nombre', 'descripcion', 'activo']
+        model = OrdenFabricacion
+        fields = [
+            'fecha_comprometida', 'atendido_por', 'medicion_por',
+            'cliente_nombre', 'cliente_domicilio', 'cliente_piso', 'cliente_depto',
+            'cliente_localidad', 'cliente_mail', 'cliente_telefono',
+            'tipo_abertura', 'linea', 'color',
+            'mosquitero', 'mosquitero_modelo', 'travesano', 'tipo_marco', 'marco_desarmado',
+            'umbral_transitable', 'premarco', 'guia_persiana', 'tipo_guia', 'tapacinta',
+            'lado', 'modelo_hoja', 'travesano_divisor', 'altura_travesano', 'cantidad_hojas',
+            'tipo_vidrio', 'contramarco', 'modelo_contramarco', 'tipo_trabajo', 'altura_trabajo',
+            'estructura', 'nota',
+        ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'rows': 3}),
-        }
-
-
-class CampoPlantillaForm(forms.ModelForm):
-    class Meta:
-        model = CampoPlantilla
-        fields = ['nombre_visible', 'clave', 'tipo', 'unidad', 'modo', 'requerido', 'orden', 'formula', 'ayuda', 'opciones']
-        widgets = {
-            'nombre_visible': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'clave': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'ANCHO, ALTO, umb_dintel'}),
-            'tipo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'unidad': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'modo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'orden': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'formula': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg font-mono', 'rows': 2, 'placeholder': 'ANCHO - 42'}),
-            'ayuda': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
-            'opciones': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'BALCON|VENTANA|PUERTA'}),
+            'fecha_comprometida': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': _INPUT}),
+            'estructura': forms.Textarea(attrs={'rows': 2, 'class': _INPUT}),
+            'nota': forms.Textarea(attrs={'rows': 6, 'class': _INPUT}),
         }
 
     def __init__(self, *args, **kwargs):
-        self.plantilla = kwargs.pop('plantilla', None)
         super().__init__(*args, **kwargs)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        modo = cleaned_data.get('modo')
-        formula = cleaned_data.get('formula')
-        clave = cleaned_data.get('clave')
-
-        if modo == 'CALCULADO':
-            if not formula:
-                raise forms.ValidationError({'formula': 'Los campos calculados requieren una fórmula'})
-            
-            # Validar solo sintaxis (strict=False permite variables futuras)
-            valid, error = FormulaEngine.validate_formula(formula, set(), strict=False)
-            if not valid:
-                raise forms.ValidationError({'formula': error})
-
-        # Validar clave única
-        if self.plantilla and clave:
-            existing = self.plantilla.campos.filter(clave=clave)
-            if self.instance.pk:
-                existing = existing.exclude(pk=self.instance.pk)
-            if existing.exists():
-                raise forms.ValidationError({'clave': 'Ya existe un campo con esta clave'})
-
-        return cleaned_data
+        self.fields['fecha_comprometida'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        for name, field in self.fields.items():
+            field.required = False
+            if name not in self.Meta.widgets:
+                field.widget.attrs.setdefault('class', _INPUT)
 
 
 class OpcionalFabricaForm(forms.ModelForm):

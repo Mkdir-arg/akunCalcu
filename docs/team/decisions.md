@@ -124,6 +124,30 @@
 
 ---
 
+## ADR-013: Eliminación del módulo de despiece de `plantillas`
+**Fecha**: 2026-07-07
+**Estado**: Activo
+
+**Contexto**: La app `plantillas` nació como calculadora de despiece (medidas de corte): plantillas configurables, motor de fórmulas propio (Shunting Yard con MIN/MAX/IF/unidades), pantalla Calcular, Historial y pedidos con ítems de despiece. El módulo quedó obsoleto sin uso operativo, y Pedidos de Fábrica pasa a ser el contenedor de las Órdenes de Fabricación (REQ-035). En la misma app conviven los **Opcionales de Fábrica**, que NO son despiece: los consume el cotizador de `pricing` (mosquitero/premarco) para los presupuestos de aluminio.
+
+**Decisión**: Se eliminó el mundo despiece completo — modelos `ProductoPlantilla`/`CampoPlantilla`/`CalculoEjecucion`/`PedidoFabricaItem`/`PedidoFabricaFila` con sus datos (migración `0014`), 16 views, 8 templates, `formula_engine`, `seed_plantillas`, `templatetags` y los permisos `despiece.calcular/plantillas/historial`. Se conservó `PedidoFabrica` (cabecera + FK `presupuesto` de FEAT-019) y todo el mundo Opcionales. `/plantillas/` redirige a pedidos. El code de permiso `despiece.pedidos` se mantuvo para no invalidar roles guardados, y la app conserva el nombre `plantillas` (renombrarla implicaba migraciones invasivas sin beneficio funcional).
+
+**Consecuencias**: Los datos históricos del despiece se pierden al aplicar la migración (confirmado por el usuario). Toda funcionalidad futura de fábrica se construye sobre `PedidoFabrica` + Órdenes de Fabricación (REQ-035). El único motor de fórmulas vigente en el sistema es el del cotizador (`pricing/services/formula_parser.py`); el motor con MIN/MAX/IF ya no existe.
+
+---
+
+## ADR-012: Confirmar presupuesto crea Venta y PedidoFabrica programáticamente en una transacción
+**Fecha**: 2026-07-07
+**Estado**: Activo
+
+**Contexto**: REQ-034 pide que al confirmar un presupuesto se registre la seña cobrada y se generen automáticamente la venta (`comercial`) y el pedido de fábrica (`plantillas`). Existía la FK `Presupuesto.venta` (migración 0002) declarada pero nunca usada, y `PedidoFabrica` no tenía relación con presupuestos (su `cliente` es texto libre). Opciones: (a) redirigir al form de venta precargado y después al de pedido (dos pasos manuales), (b) crear ambos registros programáticamente en la view de cambio de estado, con un popup que capture la seña.
+
+**Decisión**: Se eligió (b). `cambiar_estado` deriva a `_procesar_confirmacion()` cuando el estado destino es `confirmado`: valida la seña (obligatoria, > 0, ≤ total; en USD si el presupuesto es PVC usando su cotización de cabecera — ADR-010 —, en pesos si es aluminio) y dentro de `transaction.atomic()` crea la Venta replicando la conversión del `VentaForm` (`ARS = USD × cotización`, quantize 0.01), crea el `PedidoFabrica` como cabecera sin ítems (número `PF-XXXX` buscando el primer libre) y setea `Presupuesto.venta` + estado. La seña viaja como campo extra en el mismo POST del formulario de estado (popup SweetAlert2 intercepta el submit); sin URLs nuevas. Se agregó la FK nullable `PedidoFabrica.presupuesto` (SET_NULL) para trazabilidad y navegación.
+
+**Consecuencias**: La confirmación es la única fuente de creación automática; la carga manual de ventas y pedidos sigue intacta. Los ítems del presupuesto NO se traducen al pedido de fábrica (las plantillas de despiece no mapean 1:1 con los ítems del cotizador): fábrica carga el despiece sobre la cabecera generada. La confirmación sigue siendo irreversible por UI: deshacerla implica borrar a mano la venta y el pedido en cada módulo. Si dos confirmaciones simultáneas chocaran en el número PF único, la transacción hace rollback completo (sin datos inconsistentes) y se reintenta.
+
+---
+
 ## ADR-010: Cotización USD de presupuestos PVC a nivel de cabecera
 **Fecha**: 2026-06-19
 **Estado**: Activo

@@ -78,14 +78,11 @@ ACCESS_MODULES = [
     },
     {
         'key': 'despiece',
-        'label': 'Despiece',
-        'icon': 'fas fa-drafting-compass',
-        'dropdown': True,
+        'label': 'Pedidos de Fábrica',
+        'icon': 'fas fa-clipboard-list',
+        'dropdown': False,
         'items': [
             {'code': 'despiece.pedidos', 'label': 'Pedidos de Fábrica', 'route_name': 'plantillas:pedido_list'},
-            {'code': 'despiece.calcular', 'label': 'Calcular', 'route_name': 'plantillas:calcular_index'},
-            {'code': 'despiece.plantillas', 'label': 'Configurar Plantillas', 'route_name': 'plantillas:plantilla_list'},
-            {'code': 'despiece.historial', 'label': 'Historial', 'route_name': 'plantillas:historial_calculos'},
         ],
     },
     {
@@ -222,9 +219,7 @@ _register_route('reportes.gastos', 'comercial:exportar_reporte_gastos_excel')
 _register_route('reportes.proveedores', 'comercial:reporte_proveedor_detalle', 'comercial:exportar_reporte_proveedores_excel')
 _register_route('reportes.general', 'comercial:exportar_reporte_general_excel')
 
-_register_route('despiece.plantillas', 'plantillas:plantilla_create', 'plantillas:plantilla_edit', 'plantillas:plantilla_toggle', 'plantillas:plantilla_campos', 'plantillas:campo_create', 'plantillas:campo_edit', 'plantillas:campo_delete', 'plantillas:plantilla_probar')
-_register_route('despiece.calcular', 'plantillas:calcular_ejecutar', 'plantillas:calcular_ajax')
-_register_route('despiece.pedidos', 'plantillas:pedido_create', 'plantillas:pedido_detail', 'plantillas:pedido_add_item', 'plantillas:pedido_item_calcular', 'plantillas:pedido_item_add_fila', 'plantillas:pedido_item_duplicate', 'plantillas:pedido_item_delete', 'plantillas:pedido_fila_delete')
+_register_route('despiece.pedidos', 'plantillas:index', 'plantillas:pedido_create', 'plantillas:pedido_detail', 'plantillas:orden_create', 'plantillas:orden_edit', 'plantillas:orden_delete', 'plantillas:orden_pdf')
 _register_route('fabrica.opcionales', 'plantillas:opcional_create', 'plantillas:opcional_edit', 'plantillas:opcional_delete', 'plantillas:opcional_formulas_guardar', 'plantillas:opcional_accesorios_guardar', 'plantillas:opcional_relaciones_guardar')
 
 _register_route('fabrica.extrusoras', 'config-extrusora-create', 'config-extrusora-edit', 'config-extrusora-delete', 'api-get-extrusoras')

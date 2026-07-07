@@ -1,4 +1,5 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from datetime import timedelta
 
 import base64
 import io
@@ -11,6 +12,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
@@ -20,7 +22,8 @@ from xhtml2pdf import pisa
 
 from core.navigation import append_return_to, resolve_return_url
 from usuarios.access_control import get_access_profile, user_has_full_access
-from comercial.models import _formatear_cuit
+from comercial.models import Venta, _formatear_cuit
+from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
 from pricing.services.calculator import calcular_precio, PricingError
 from pricing.models import Producto
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
@@ -388,6 +391,140 @@ def comentar(request, pk):
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
+def _generar_numero_pedido_fabrica():
+    n = PedidoFabrica.objects.count() + 1
+    while PedidoFabrica.objects.filter(numero=f'PF-{n:04d}').exists():
+        n += 1
+    return f'PF-{n:04d}'
+
+
+def _crear_venta_desde_presupuesto(presupuesto, sena):
+    observaciones = f'Generada automáticamente desde el presupuesto {presupuesto.numero}.'
+    if presupuesto.es_pvc():
+        cotizacion = presupuesto.cotizacion_usd
+        return Venta.objects.create(
+            numero_pedido=presupuesto.numero,
+            cliente=presupuesto.cliente,
+            valor_total=presupuesto.total,
+            venta_en_dolares=True,
+            valor_total_usd=presupuesto.get_total_usd().quantize(Decimal('0.01')),
+            cotizacion_usd=cotizacion,
+            sena=(sena * cotizacion).quantize(Decimal('0.01')),
+            sena_en_dolares=True,
+            sena_usd=sena,
+            cotizacion_sena_usd=cotizacion,
+            observaciones=observaciones,
+        )
+    return Venta.objects.create(
+        numero_pedido=presupuesto.numero,
+        cliente=presupuesto.cliente,
+        valor_total=presupuesto.total,
+        sena=sena,
+        observaciones=observaciones,
+    )
+
+
+def _snapshot_de_item(item):
+    resultado = item.resultado_json if isinstance(item.resultado_json, dict) else {}
+    snapshot = resultado.get('snapshot_item')
+    return snapshot if isinstance(snapshot, dict) else {}
+
+
+def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
+    """Crea una OrdenFabricacion precargada con los datos disponibles del ítem y el cliente."""
+    snapshot = _snapshot_de_item(item)
+    cliente = presupuesto.cliente
+
+    fecha_comprometida = None
+    if presupuesto.plazo_entrega_dias:
+        fecha_comprometida = timezone.now().date() + timedelta(days=presupuesto.plazo_entrega_dias)
+
+    orden_fabricacion = OrdenFabricacion.objects.create(
+        pedido=pedido,
+        item_presupuesto=item,
+        numero=numero,
+        orden=orden,
+        fecha_comprometida=fecha_comprometida,
+        cliente_nombre=cliente.get_nombre_completo(),
+        cliente_domicilio=cliente.direccion or '',
+        cliente_localidad=cliente.localidad or '',
+        cliente_mail=cliente.email or '',
+        cliente_telefono=cliente.telefono or '',
+        tipo_abertura=(snapshot.get('producto') or {}).get('descripcion', '') or item.descripcion,
+        linea=(snapshot.get('linea') or {}).get('nombre', ''),
+        color=(snapshot.get('tratamiento') or {}).get('descripcion', ''),
+        tipo_vidrio=(snapshot.get('vidrio') or {}).get('descripcion', ''),
+    )
+
+    medida = ''
+    if item.ancho_mm and item.alto_mm:
+        medida = f'{item.ancho_mm} x {item.alto_mm}'
+    MedidaOrdenFabricacion.objects.create(
+        orden=orden_fabricacion,
+        item='1',
+        cantidad=item.cantidad or 1,
+        medida=medida,
+        orden_fila=1,
+    )
+    return orden_fabricacion
+
+
+def _procesar_confirmacion(request, presupuesto):
+    """Confirma el presupuesto generando la venta y el pedido de fábrica (todo o nada)."""
+    if presupuesto.venta_id:
+        messages.error(request, 'Este presupuesto ya tiene una venta generada.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    if presupuesto.total <= 0:
+        messages.error(request, 'No se puede confirmar un presupuesto sin ítems (total $0).')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    if presupuesto.es_pvc() and not presupuesto.tiene_cotizacion_usd():
+        messages.error(request, 'El presupuesto PVC no tiene cotización USD cargada. Cargala antes de confirmar.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    try:
+        sena = Decimal((request.POST.get('sena') or '').strip().replace(',', '.')).quantize(Decimal('0.01'))
+    except InvalidOperation:
+        messages.error(request, 'Para confirmar el presupuesto ingresá el monto de la seña.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    if sena <= 0:
+        messages.error(request, 'La seña debe ser mayor a 0.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    if presupuesto.es_pvc():
+        total_referencia = presupuesto.get_total_usd().quantize(Decimal('0.01'))
+    else:
+        total_referencia = presupuesto.total
+    if sena > total_referencia:
+        messages.error(request, 'La seña no puede superar el total del presupuesto.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+    with transaction.atomic():
+        venta = _crear_venta_desde_presupuesto(presupuesto, sena)
+        pedido = PedidoFabrica.objects.create(
+            numero=_generar_numero_pedido_fabrica(),
+            cliente=presupuesto.cliente.get_nombre_completo(),
+            observaciones=f'Generado automáticamente desde el presupuesto {presupuesto.numero}.',
+            usuario=request.user,
+            presupuesto=presupuesto,
+        )
+        numero_base = OrdenFabricacion.generar_numero()
+        for indice, item in enumerate(presupuesto.items.all()):
+            _crear_orden_desde_item(pedido, item, numero_base + indice, indice + 1, presupuesto)
+        presupuesto.venta = venta
+        presupuesto.estado = 'confirmado'
+        presupuesto.save(update_fields=['estado', 'venta'])
+
+    messages.success(
+        request,
+        f'Presupuesto confirmado. Se generaron la venta "{venta.numero_pedido}" '
+        f'y el pedido de fábrica {pedido.numero}.'
+    )
+    return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
+
 @login_required
 @require_POST
 def cambiar_estado(request, pk):
@@ -402,6 +539,9 @@ def cambiar_estado(request, pk):
     if presupuesto.esta_bloqueado():
         messages.error(request, 'No se puede cambiar el estado de un presupuesto confirmado o cancelado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    if nuevo_estado == 'confirmado':
+        return _procesar_confirmacion(request, presupuesto)
 
     presupuesto.estado = nuevo_estado
     presupuesto.save(update_fields=['estado'])

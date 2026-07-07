@@ -14,6 +14,30 @@
 
 ---
 
+## 2026-07-07 — Orden de Fabricación: PDF A4 corporativo + datos de contacto en Configuración — Etapa 2 (REQ-035 / FEAT-022)
+
+**User Story:** Como responsable de fábrica, quiero imprimir cada orden de fabricación como PDF A4 con el diseño de Akun, para reemplazar la planilla papel.
+**Archivos modificados:** `akuna_calc/plantillas/{views,urls,tests}.py` y templates (`orden_pdf.html` nuevo, botón PDF en `pedido_detail`/`orden_form`); `akuna_calc/configuracion/{models,forms,views,urls}.py` + `general.html` y `datos_empresa_form.html` (nuevo) + migración `0003_seed_datos_empresa.py`; `usuarios/access_control.py`.
+**Descripción:** PDF A4 de la orden (xhtml2pdf, ADR-006) fiel a la maqueta: encabezado con logo/N°/fechas, datos del cliente, detalle de la abertura, sección Detalle completa + Estructura, panel de NOTA, tabla de medidas, croquis cuadriculado (Interior/Arriba/Exterior, para dibujar a mano) y pie con datos de contacto + firmas. Los datos de contacto salen de `ConfiguracionGeneral` (claves `empresa_*`, sembradas por data migration y editables en Configuración → Datos de contacto, solo staff), sin hardcodear. Cierra el REQ-035. Se resolvieron dos límites de xhtml2pdf (columnas más angostas que su padding y `height:100%`) con layouts de una sola columna. Migración `configuracion/0003` pendiente en Docker/Railway. Tests: 116 OK.
+
+## 2026-07-07 — Órdenes de Fabricación dentro del pedido — Etapa 1 (REQ-035 / FEAT-021)
+
+**User Story:** Como responsable de fábrica, quiero que cada pedido contenga una orden de fabricación por cada ítem del presupuesto confirmado y poder editar su detalle, para reemplazar la planilla papel.
+**Archivos modificados:** `akuna_calc/plantillas/{models,forms,views,urls,admin,tests}.py`, migración `0015_ordenes_de_fabricacion.py`, `templates/plantillas/orden_form.html` (nuevo) y `pedido_detail.html`; `akuna_calc/presupuestos/{views,tests}.py`; `usuarios/access_control.py`.
+**Descripción:** Modelos `OrdenFabricacion` (todos los campos de la planilla + nuevo `Estructura`) y `MedidaOrdenFabricacion` (tabla de medidas). Al confirmar un presupuesto (FEAT-019) se genera una orden por ítem precargada desde el snapshot del cotizador (tipo/línea/color/vidrio) + cliente + fecha comprometida + fila de medida. Alta manual de órdenes dentro de cualquier pedido; pantalla de edición con filas de medidas dinámicas; listado en el detalle del pedido. Es la **Etapa 1 de 2** del REQ-035 — la Etapa 2 (PDF A4 corporativo + datos de contacto desde `ConfiguracionGeneral`) queda pendiente. Migración `0015` pendiente en Docker/Railway (solo agrega 2 tablas). Tests: 114 OK (10 nuevos).
+
+## 2026-07-07 — Eliminación del módulo de despiece; Pedidos de Fábrica queda solo (REQ-036 / FEAT-020)
+
+**User Story:** Como administrador del sistema, quiero eliminar los módulos obsoletos de despiece para sacar código muerto y dejar Pedidos de Fábrica como contenedor exclusivo de las futuras Órdenes de Fabricación (REQ-035).
+**Archivos modificados:** `akuna_calc/plantillas/{models,views,urls,forms,admin,tests}.py`, migración `0014_eliminar_modelos_despiece.py`, templates de `plantillas` (8 eliminados; `pedido_detail.html` reescrito, `pedido_list.html` con columna Presupuesto), `usuarios/access_control.py`. Eliminados: `services/formula_engine.py`, `management/commands/seed_plantillas.py`, `templatetags/`.
+**Descripción:** Se borraron los 5 modelos del despiece (`ProductoPlantilla`, `CampoPlantilla`, `CalculoEjecucion`, `PedidoFabricaItem`, `PedidoFabricaFila`) con sus datos, 16 views y sus URLs, el motor de fórmulas propio y los permisos de menú `despiece.calcular/plantillas/historial`. `/plantillas/` redirige a pedidos. Se conservaron intactos `PedidoFabrica` (con la FK a presupuesto de FEAT-019) y todo el mundo de Opcionales de Fábrica + ABMs del cotizador (frontera verificada: cero referencias cruzadas). Ver ADR-013. Migración `0014` pendiente en Docker/Railway — al aplicarla se pierden los datos históricos del despiece (confirmado por el usuario). Tests: 104 OK en plantillas+presupuestos; pricing solo con su baseline preexistente (verificado vía git stash).
+
+## 2026-07-07 — Confirmar presupuesto pide seña y genera venta + pedido de fábrica (REQ-034 / FEAT-019)
+
+**User Story:** Como vendedor, quiero que al confirmar un presupuesto el sistema me pida la seña cobrada y genere automáticamente la venta en Comercial y el pedido de fábrica en Plantillas, para no cargar los mismos datos tres veces y que todo quede vinculado desde el origen.
+**Archivos modificados:** `akuna_calc/plantillas/models.py` (+ migración `0013_pedidofabrica_presupuesto.py`), `akuna_calc/presupuestos/models.py`, `views.py`, `templates/presupuestos/detalle.html`, `tests.py`.
+**Descripción:** Al elegir "Confirmado" en el detalle del presupuesto, un popup SweetAlert2 pide la seña (precargada al 50% o 70% del total según `modalidad_sena`, editable; en USD si el presupuesto es PVC con su cotización de cabecera, en pesos si es aluminio; obligatoria > 0 y ≤ total). Al aceptar, en una transacción atómica se confirma el presupuesto, se crea la Venta en `comercial` (número de pedido = número del presupuesto, seña cargada, saldo autocalculado) y se crea la cabecera del Pedido de fábrica `PF-XXXX` en `plantillas` (sin ítems; el despiece lo carga fábrica). Se activó la FK `Presupuesto.venta` (inerte desde la migración 0002) y se agregó la FK nullable `PedidoFabrica.presupuesto`; el detalle confirmado muestra links a ambos registros. Sin URLs nuevas. Validación fuerte en servidor. Ver ADR-012. Migración `plantillas/0013` pendiente de correr en Docker/Railway. Tests: 98 OK (15 nuevos).
+
 ## 2026-06-29 — Plazo de entrega en presupuesto + segundo teléfono en el PDF
 
 **Archivos modificados:** `akuna_calc/presupuestos/models.py`, `forms.py`, `templates/presupuestos/detalle.html`, `templates/presupuestos/pdf.html`, `tests.py`, migración `0010_presupuesto_plazo_entrega_dias.py`.

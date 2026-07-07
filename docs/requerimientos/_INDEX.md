@@ -53,3 +53,6 @@ s# Requerimientos — AkunCalcu
 | [REQ-031](./REQ-031-modulo-agenda-recordatorios.md) | Módulo de Agenda con recordatorios por WhatsApp | En desarrollo | 2026-06-07 | — |
 | [REQ-032](./REQ-032-presupuestos-pvc-en-dolares.md) | Presupuestos PVC siempre en dólares | Implementado | 2026-06-19 | FEAT-015 |
 | [REQ-033](./REQ-033-productos-terciarizados-precio-manual.md) | Productos terciarizados con precio manual | Implementado | 2026-06-27 | FEAT-016 |
+| [REQ-034](./REQ-034-confirmacion-presupuesto-genera-venta-y-pedido.md) | Confirmación de presupuesto genera venta y pedido de fábrica | Implementado | 2026-07-07 | FEAT-019 |
+| [REQ-035](./REQ-035-ordenes-de-fabricacion-en-pedidos.md) | Órdenes de Fabricación dentro del pedido de fábrica (planilla digital + PDF A4) | Implementado | 2026-07-07 | FEAT-021 + FEAT-022 |
+| [REQ-036](./REQ-036-eliminar-modulo-despiece.md) | Eliminar módulo de despiece y transformar Pedidos de Fábrica (prerrequisito de REQ-035) | Implementado | 2026-07-07 | FEAT-020 |
