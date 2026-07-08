@@ -188,8 +188,9 @@ def orden_pdf(request, pk):
         'medidas': orden.medidas.all(),
         'empresa': ConfiguracionGeneral.get_datos_empresa(),
         'logo_url': _build_logo_data_url(),
-        'croquis_filas': range(11),
-        'croquis_cols': range(20),
+        'croquis_filas': range(13),
+        'croquis_cols': range(26),
+        'nota_lineas': range(16),
     })
 
     result = io.BytesIO()

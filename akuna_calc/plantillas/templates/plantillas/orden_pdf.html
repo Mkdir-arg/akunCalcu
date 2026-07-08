@@ -4,44 +4,60 @@
     <meta charset="UTF-8">
     <title>Orden de Fabricación {{ orden.numero_formateado }}</title>
     <style>
-        @page { size: A4 portrait; margin: 8mm; }
-        body { font-family: Arial, Helvetica, sans-serif; font-size: 9px; color: #1d1d1b; margin: 0; }
+        @page { size: A4 portrait; margin: 7mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #1d1d1b; margin: 0; line-height: 1.15; }
         table { border-collapse: collapse; width: 100%; }
-        .azul { color: #145ea7; }
-        .bar td { background: #145ea7; color: #fff; font-weight: bold; font-size: 9.5px; padding: 3px 6px; letter-spacing: .3px; }
-        .title { font-size: 20px; font-weight: bold; color: #145ea7; letter-spacing: .5px; }
 
+        /* Barras de sección azules */
+        .bar td { background: #145ea7; color: #fff; font-weight: bold; font-size: 8.5px; padding: 3px 6px; letter-spacing: .3px; }
+
+        /* Encabezado */
         .head { table-layout: fixed; }
         .head td { vertical-align: middle; }
-        .logo { width: 130px; }
-        .meta { border: 1px solid #145ea7; font-size: 8px; }
-        .meta td { padding: 3px 5px; border-bottom: 1px solid #cbd7e6; }
-        .meta .k { font-weight: bold; }
-        .meta .num { color: #145ea7; font-weight: bold; font-size: 13px; }
+        .logo { width: 120px; }
+        .title { font-size: 19px; font-weight: bold; color: #145ea7; letter-spacing: .5px; }
+        .meta { table-layout: fixed; border: 1px solid #145ea7; font-size: 7.5px; }
+        .meta td { padding: 3px 5px; border: 1px solid #cbd7e6; }
+        .meta .mk { background: #16457c; color: #fff; font-weight: bold; width: 56%; }
+        .meta .mkl { background: #eef3fa; color: #16457c; font-weight: bold; width: 56%; }
+        .meta .num { color: #145ea7; font-weight: bold; font-size: 12px; }
 
+        /* Filas de campos con etiqueta + línea */
         .fields td { padding: 3px 5px; vertical-align: bottom; }
         .lbl { font-weight: bold; white-space: nowrap; }
-        .val { border-bottom: 1px solid #9aa0a6; }
-        .box { border: 1px solid #145ea7; }
-        .gap { height: 5px; }
+        .val { border-bottom: 1px solid #9aa0a6; color: #145ea7; }
 
-        .detalle td { padding: 2px 5px; font-size: 8.5px; }
-        .detalle .lbl { font-weight: normal; }
-        .detalle .val { border-bottom: 1px solid #c8ccd0; }
+        .gap { height: 4px; }
+        .gap2 { height: 2px; }
+
+        /* Detalle de la abertura (dos columnas) */
+        .abertura td { padding: 3px 5px; vertical-align: bottom; }
+        .detalle { table-layout: fixed; }
+        .detalle td { padding: 1.5px 5px; font-size: 7.5px; vertical-align: bottom; }
+        .detalle .lbl { font-weight: normal; white-space: normal; }
+        .detalle .dv { border-bottom: 1px solid #c8ccd0; color: #145ea7; font-weight: bold; }
         .nota { border: 1px solid #145ea7; vertical-align: top; padding: 5px; }
-        .nota .nota-t { font-weight: bold; color: #145ea7; font-size: 9px; }
+        .nota .nt { font-weight: bold; color: #145ea7; font-size: 8px; }
+        .nota .ln { border-bottom: 1px solid #d7dbe0; height: 15px; }
 
-        .medidas th { background: #145ea7; color: #fff; border: 1px solid #145ea7; padding: 3px 5px; font-size: 8.5px; }
-        .medidas td { border: 1px solid #b9c2cf; padding: 3px 5px; height: 16px; font-size: 8.5px; }
+        /* Detalle de medidas */
+        .medidas { width: 100%; table-layout: fixed; }
+        .medidas th { background: #145ea7; color: #fff; border: 1px solid #145ea7; padding: 3px 4px; font-size: 7.5px; text-align: center; }
+        .medidas td { border: 1px solid #b9c2cf; padding: 3px 4px; height: 15px; font-size: 7.5px; text-align: center; }
+        .m-item { width: 9%; } .m-cant { width: 10%; } .m-med { width: 27%; } .m-obs { width: 38%; } .m-piso { width: 16%; }
 
+        /* Croquis */
         .croquis-grid { table-layout: fixed; }
-        .croquis-grid td { border: 1px solid #e2e2e2; height: 12px; padding: 0; }
-        .leyenda { border: 1px solid #145ea7; font-size: 8px; text-align: center; }
-        .leyenda td { padding: 4px 3px; }
+        .croquis-grid td { border: 1px solid #e6e6e6; height: 12px; padding: 0; }
+        .leyenda { border: 1px solid #145ea7; font-size: 7px; text-align: center; font-weight: bold; color: #16457c; }
+        .leyenda td { padding: 5px 3px; border-bottom: 1px solid #cbd7e6; }
+        .leyenda .arrow { color: #145ea7; }
 
-        .firmas td { border-top: 1px solid #1d1d1b; padding-top: 3px; text-align: center; font-size: 8.5px; font-weight: bold; }
-        .pie { border-top: 2px solid #145ea7; padding-top: 5px; font-size: 8.5px; color: #1d1d1b; }
-        .pie .emp { font-weight: bold; color: #145ea7; font-size: 10px; }
+        /* Pie */
+        .pie td { vertical-align: bottom; font-size: 8px; padding-top: 4px; }
+        .pie .emp { font-weight: bold; color: #145ea7; font-size: 9px; }
+        .pie .ct { color: #1d1d1b; }
+        .firmas td { border-top: 1px solid #1d1d1b; padding-top: 3px; text-align: center; font-size: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -49,30 +65,28 @@
     <!-- ENCABEZADO -->
     <table class="head">
         <tr>
-            <td style="width:32%;">
+            <td style="width:30%;">
                 {% if logo_url %}<img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">{% endif %}
             </td>
-            <td style="width:36%; text-align:center; vertical-align:middle;">
+            <td style="width:38%; text-align:center;">
                 <span class="title">ORDEN DE FABRICACIÓN</span>
             </td>
             <td style="width:32%;">
                 <table class="meta">
-                    <tr><td><span class="k">N° ORDEN:</span> <span class="num">{{ orden.numero_formateado }}</span></td></tr>
-                    <tr><td><span class="k">FECHA:</span> {{ orden.created_at|date:"d/m/Y" }}</td></tr>
-                    <tr><td><span class="k">FECHA COMPROMETIDA:</span> {{ orden.fecha_comprometida|date:"d/m/Y"|default:"—" }}</td></tr>
+                    <tr><td class="mk">N° ORDEN</td><td class="num" style="text-align:center;">{{ orden.numero_formateado }}</td></tr>
+                    <tr><td class="mkl">FECHA</td><td>{{ orden.created_at|date:"d/m/Y"|default:"___ / ___ / ___" }}</td></tr>
+                    <tr><td class="mkl">FECHA COMPROMETIDA</td><td>{{ orden.fecha_comprometida|date:"d/m/Y"|default:"___ / ___ / ___" }}</td></tr>
                 </table>
             </td>
         </tr>
     </table>
 
-    <div class="gap"></div>
-
     <table class="fields">
         <tr>
-            <td class="lbl" style="width:14%;">ATENDIDO POR:</td>
-            <td class="val" style="width:36%;">{{ orden.atendido_por }}</td>
-            <td style="width:2%;"></td>
-            <td class="lbl" style="width:24%;">MEDICIÓN REALIZADA POR:</td>
+            <td class="lbl" style="width:13%;">ATENDIDO POR:</td>
+            <td class="val" style="width:37%;">{{ orden.atendido_por }}</td>
+            <td style="width:3%;"></td>
+            <td class="lbl" style="width:23%;">MEDICIÓN REALIZADA POR:</td>
             <td class="val" style="width:24%;">{{ orden.medicion_por }}</td>
         </tr>
     </table>
@@ -83,16 +97,16 @@
     <table class="bar"><tr><td>DATOS DEL CLIENTE</td></tr></table>
     <table class="fields">
         <tr>
-            <td class="lbl" style="width:24%;">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
+            <td class="lbl" style="width:33%;">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
             <td class="val" colspan="5">{{ orden.cliente_nombre }}</td>
         </tr>
         <tr>
-            <td class="lbl">DOMICILIO:</td>
-            <td class="val" style="width:34%;">{{ orden.cliente_domicilio }}</td>
+            <td class="lbl" style="width:12%;">DOMICILIO:</td>
+            <td class="val" style="width:40%;">{{ orden.cliente_domicilio }}</td>
             <td class="lbl" style="width:7%;">PISO:</td>
             <td class="val" style="width:9%;">{{ orden.cliente_piso }}</td>
             <td class="lbl" style="width:9%;">DEPTO:</td>
-            <td class="val">{{ orden.cliente_depto }}</td>
+            <td class="val" style="width:23%;">{{ orden.cliente_depto }}</td>
         </tr>
         <tr>
             <td class="lbl">LOCALIDAD:</td>
@@ -108,45 +122,63 @@
 
     <div class="gap"></div>
 
-    <!-- DETALLE DE LA ABERTURA + NOTA -->
+    <!-- DETALLE DE LA ABERTURA -->
     <table class="bar"><tr><td>DETALLE DE LA ABERTURA</td></tr></table>
     <table>
         <tr>
-            <td style="width:62%; vertical-align:top; padding-right:6px;">
-                <table class="detalle">
-                    <tr><td class="lbl" style="width:52%;">¿QUÉ TIPO DE ABERTURA ES?</td><td class="val">{{ orden.tipo_abertura }}</td></tr>
+            <!-- Columna izquierda -->
+            <td style="width:63%; vertical-align:top; padding-right:6px;">
+                <table class="abertura">
+                    <tr><td class="lbl" style="width:47%;">¿QUÉ TIPO DE ABERTURA ES?</td><td class="val">{{ orden.tipo_abertura }}</td></tr>
                     <tr><td class="lbl">¿A QUÉ LÍNEA CORRESPONDE?</td><td class="val">{{ orden.linea }}</td></tr>
                     <tr><td class="lbl">¿DE QUÉ COLOR ES?</td><td class="val">{{ orden.color }}</td></tr>
                 </table>
 
-                <table class="bar" style="margin-top:4px;"><tr><td>DETALLE</td></tr></table>
+                <table class="bar" style="margin-top:3px;"><tr><td>DETALLE</td></tr></table>
                 <table class="detalle">
-                    <tr><td class="lbl" style="width:52%;">CON MOSQUITERO?</td><td class="val">{{ orden.mosquitero }}</td></tr>
-                    <tr><td class="lbl">EN CASO AFIRMATIVO, INDICAR MODELO:</td><td class="val">{{ orden.mosquitero_modelo }}</td></tr>
-                    <tr><td class="lbl">¿TRAVESAÑO?</td><td class="val">{{ orden.travesano }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ TIPO DE MARCO ES?</td><td class="val">{{ orden.tipo_marco }}</td></tr>
-                    <tr><td class="lbl">MARCO DESARMADO?</td><td class="val">{{ orden.marco_desarmado }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA UMBRAL TRANSITABLE?</td><td class="val">{{ orden.umbral_transitable }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA PREMARCO?</td><td class="val">{{ orden.premarco }}</td></tr>
-                    <tr><td class="lbl">¿CON GUÍA PARA PERSIANA?</td><td class="val">{{ orden.guia_persiana }}</td></tr>
-                    <tr><td class="lbl">EN CASO AFIRMATIVO, TIPO DE GUÍA:</td><td class="val">{{ orden.tipo_guia }}</td></tr>
-                    <tr><td class="lbl">¿CON TAPACINTA?</td><td class="val">{{ orden.tapacinta }}</td></tr>
-                    <tr><td class="lbl">¿DE QUÉ LADO?</td><td class="val">{{ orden.lado }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ MODELO DE HOJA ES?</td><td class="val">{{ orden.modelo_hoja }}</td></tr>
-                    <tr><td class="lbl">¿TRAVESAÑO DIVISOR?</td><td class="val">{{ orden.travesano_divisor }}</td></tr>
-                    <tr><td class="lbl">¿A QUÉ ALTURA?</td><td class="val">{{ orden.altura_travesano }}</td></tr>
-                    <tr><td class="lbl">CANTIDAD DE HOJAS:</td><td class="val">{{ orden.cantidad_hojas }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ VIDRIOS LLEVA?</td><td class="val">{{ orden.tipo_vidrio }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA CONTRAMARCO?</td><td class="val">{{ orden.contramarco }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ MODELO DE CONTRAMARCO ES?</td><td class="val">{{ orden.modelo_contramarco }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ TIPO DE TRABAJO ES?</td><td class="val">{{ orden.tipo_trabajo }}</td></tr>
-                    <tr><td class="lbl">¿A QUÉ ALTURA?</td><td class="val">{{ orden.altura_trabajo }}</td></tr>
-                    <tr><td class="lbl">ESTRUCTURA:</td><td class="val">{{ orden.estructura }}</td></tr>
+                    <colgroup>
+                        <col style="width:40%;"><col style="width:13%;"><col style="width:25%;"><col style="width:22%;">
+                    </colgroup>
+                    <tr><td class="lbl">CON MOSQUITERO?</td><td class="dv" colspan="3">{{ orden.mosquitero }}</td></tr>
+                    <tr><td class="lbl">EN CASO AFIRMATIVO, INDICAR MODELO:</td><td class="dv" colspan="3">{{ orden.mosquitero_modelo }}</td></tr>
+                    <tr><td class="lbl">¿TRAVESAÑO?</td><td class="dv" colspan="3">{{ orden.travesano }}</td></tr>
+                    <tr><td class="lbl">¿QUÉ TIPO DE MARCO ES?</td><td class="dv" colspan="3">{{ orden.tipo_marco }}</td></tr>
+                    <tr><td class="lbl">MARCO DESARMADO?</td><td class="dv" colspan="3">{{ orden.marco_desarmado }}</td></tr>
+                    <tr><td class="lbl">¿LLEVA UMBRAL TRANSITABLE?</td><td class="dv" colspan="3">{{ orden.umbral_transitable }}</td></tr>
+                    <tr><td class="lbl">¿LLEVA PREMARCO?</td><td class="dv" colspan="3">{{ orden.premarco }}</td></tr>
+                    <tr>
+                        <td class="lbl">¿CON GUÍA PARA PERSIANA?</td><td class="dv" style="width:13%;">{{ orden.guia_persiana }}</td>
+                        <td class="lbl" style="width:22%;">TIPO DE GUÍA:</td><td class="dv" style="width:23%;">{{ orden.tipo_guia }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">EN CASO AFIRMATIVO, INDICAR:</td><td class="dv">&nbsp;</td>
+                        <td class="lbl">¿CON TAPACINTA?</td><td class="dv">{{ orden.tapacinta }}</td>
+                    </tr>
+                    <tr><td class="lbl">¿DE QUÉ LADO?</td><td class="dv" colspan="3">{{ orden.lado }}</td></tr>
+                    <tr><td class="lbl">¿QUÉ MODELO DE HOJA ES?</td><td class="dv" colspan="3">{{ orden.modelo_hoja }}</td></tr>
+                    <tr><td class="lbl">¿TRAVESAÑO DIVISOR?</td><td class="dv" colspan="3">{{ orden.travesano_divisor }}</td></tr>
+                    <tr>
+                        <td class="lbl">¿A QUÉ ALTURA?</td><td class="dv">{{ orden.altura_travesano }}</td>
+                        <td class="lbl">CANTIDAD DE HOJAS?</td><td class="dv">{{ orden.cantidad_hojas }}</td>
+                    </tr>
+                    <tr><td class="lbl">¿QUÉ VIDRIOS LLEVA?</td><td class="dv" colspan="3">{{ orden.tipo_vidrio }}</td></tr>
+                    <tr><td class="lbl">¿LLEVA CONTRAMARCO?</td><td class="dv" colspan="3">{{ orden.contramarco }}</td></tr>
+                    <tr><td class="lbl">¿QUÉ MODELO DE CONTRAMARCO ES?</td><td class="dv" colspan="3">{{ orden.modelo_contramarco }}</td></tr>
+                    <tr><td class="lbl">¿QUÉ TIPO DE TRABAJO ES?</td><td class="dv" colspan="3">{{ orden.tipo_trabajo }}</td></tr>
+                    <tr><td class="lbl">¿A QUÉ ALTURA?</td><td class="dv" colspan="3">{{ orden.altura_trabajo }}</td></tr>
+                    <tr><td class="lbl">ESTRUCTURA:</td><td class="dv" colspan="3">{{ orden.estructura }}</td></tr>
                 </table>
             </td>
-            <td class="nota" style="width:38%;">
-                <div class="nota-t">NOTA</div>
-                {{ orden.nota|linebreaksbr }}
+            <!-- Columna derecha: NOTA -->
+            <td class="nota" style="width:37%;">
+                <div class="nt">NOTA:</div>
+                {% if orden.nota %}
+                    <div style="font-size:8px; padding-top:2px;">{{ orden.nota|linebreaksbr }}</div>
+                {% else %}
+                    <table style="margin-top:4px;">
+                        {% for _ in nota_lineas %}<tr><td class="ln"></td></tr>{% endfor %}
+                    </table>
+                {% endif %}
             </td>
         </tr>
     </table>
@@ -157,23 +189,23 @@
     <table class="bar"><tr><td>DETALLE DE MEDIDAS</td></tr></table>
     <table class="medidas">
         <tr>
-            <th style="width:10%;">ITEM</th>
-            <th style="width:10%;">CANT.</th>
-            <th style="width:28%;">MEDIDA</th>
-            <th style="width:36%;">OBSERVACIONES</th>
-            <th style="width:16%;">PISO / DEPTO.</th>
+            <th class="m-item">ITEM</th>
+            <th class="m-cant">CANT.</th>
+            <th class="m-med">MEDIDA</th>
+            <th class="m-obs">OBSERVACIONES</th>
+            <th class="m-piso">PISO / DEPTO.</th>
         </tr>
         {% for medida in medidas %}
         <tr>
-            <td>{{ medida.item }}</td>
-            <td>{{ medida.cantidad }}</td>
-            <td>{{ medida.medida }}</td>
-            <td>{{ medida.observaciones }}</td>
-            <td>{{ medida.piso_depto }}</td>
+            <td class="m-item">{{ medida.item }}</td>
+            <td class="m-cant">{{ medida.cantidad }}</td>
+            <td class="m-med">{{ medida.medida }}</td>
+            <td class="m-obs">{{ medida.observaciones }}</td>
+            <td class="m-piso">{{ medida.piso_depto }}</td>
         </tr>
         {% endfor %}
-        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>
-        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td class="m-item">&nbsp;</td><td class="m-cant"></td><td class="m-med"></td><td class="m-obs"></td><td class="m-piso"></td></tr>
+        <tr><td class="m-item">&nbsp;</td><td class="m-cant"></td><td class="m-med"></td><td class="m-obs"></td><td class="m-piso"></td></tr>
     </table>
 
     <div class="gap"></div>
@@ -182,11 +214,11 @@
     <table class="bar"><tr><td>CROQUIS / DIBUJO <span style="font-weight:normal;">(indicar medidas, sentidos de apertura, paños fijos, travesaños, etc.)</span></td></tr></table>
     <table>
         <tr>
-            <td style="width:70px; vertical-align:top; padding-right:4px;">
+            <td style="width:64px; vertical-align:top; padding-right:4px;">
                 <table class="leyenda">
                     <tr><td>INTERIOR</td></tr>
-                    <tr><td>&uarr;<br>ARRIBA</td></tr>
-                    <tr><td>EXTERIOR</td></tr>
+                    <tr><td class="arrow">&uarr;<br>ARRIBA</td></tr>
+                    <tr><td style="border-bottom:0;">EXTERIOR</td></tr>
                 </table>
             </td>
             <td style="vertical-align:top;">
@@ -200,25 +232,24 @@
     </table>
 
     <div class="gap"></div>
-    <div class="gap"></div>
 
     <!-- PIE -->
-    <table>
+    <table class="pie">
         <tr>
-            <td style="width:52%; vertical-align:bottom;" class="pie">
+            <td style="width:50%;">
                 <div class="emp">{{ empresa.empresa_nombre }}</div>
-                <div>{{ empresa.empresa_direccion }}</div>
-                <div>{{ empresa.empresa_telefonos }}</div>
-                <div>{{ empresa.empresa_web }}</div>
+                <div class="ct">{{ empresa.empresa_direccion }}</div>
+                <div class="ct">{{ empresa.empresa_telefonos }}</div>
+                <div class="ct">{{ empresa.empresa_web }}</div>
             </td>
-            <td style="width:48%; vertical-align:bottom;">
+            <td style="width:50%;">
                 <table class="firmas">
                     <tr>
-                        <td style="width:33%;">PREPARÓ</td>
+                        <td style="width:32%;">PREPARÓ</td>
                         <td style="width:2%; border:0;"></td>
                         <td style="width:32%;">REVISÓ</td>
                         <td style="width:2%; border:0;"></td>
-                        <td style="width:31%;">PRODUCCIÓN</td>
+                        <td style="width:32%;">PRODUCCIÓN</td>
                     </tr>
                 </table>
             </td>
