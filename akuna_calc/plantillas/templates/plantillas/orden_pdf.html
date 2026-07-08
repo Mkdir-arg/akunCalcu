@@ -36,7 +36,7 @@
         .abertura .lbl { font-weight: bold; }
         .abertura .dv { border-bottom: 1px solid #9aa0a6; color: #145ea7; font-weight: bold; }
         .detalle { table-layout: fixed; }
-        .detalle td { padding: 2px 4px; font-size: 6.5px; vertical-align: bottom; }
+        .detalle td { padding: 1px 4px; font-size: 6.5px; vertical-align: bottom; }
         .detalle .lbl { font-weight: normal; white-space: normal; }
         .detalle .dv { border-bottom: 1px solid #c8ccd0; color: #145ea7; font-weight: bold; }
         .nota { border: 1px solid #145ea7; vertical-align: top; padding: 5px; }
@@ -130,10 +130,10 @@
 
     <!-- DETALLE DE LA ABERTURA -->
     <table class="bar"><tr><td>DETALLE DE LA ABERTURA</td></tr></table>
-    <table>
+    <table style="table-layout:fixed;">
         <tr>
             <!-- Columna izquierda -->
-            <td style="width:63%; vertical-align:top; padding-right:6px;">
+            <td style="width:340pt; vertical-align:top; padding-right:6px;">
                 <table class="abertura">
                     <colgroup><col style="width:47%;"><col style="width:18%;"><col style="width:17%;"><col style="width:18%;"></colgroup>
                     <tr><td class="lbl">¿QUÉ TIPO DE ABERTURA ES?</td><td class="dv" colspan="3">{{ orden.tipo_abertura }}</td></tr>
@@ -144,8 +144,8 @@
                 <table class="bar" style="margin-top:3px;"><tr><td>DETALLE</td></tr></table>
                 <table class="detalle">
                     <colgroup>
-                        <col style="width:44%;"><col style="width:6%;"><col style="width:6%;">
-                        <col style="width:26%;"><col style="width:6%;"><col style="width:6%;">
+                        <col style="width:150pt;"><col style="width:18pt;"><col style="width:18pt;">
+                        <col style="width:92pt;"><col style="width:24pt;"><col style="width:32pt;">
                     </colgroup>
                     <tr><td class="lbl">CON MOSQUITERO?</td><td class="dv" colspan="5">{{ orden.mosquitero }}</td></tr>
                     <tr><td class="lbl">EN CASO AFIRMATIVO, INDICAR MODELO:</td><td class="dv" colspan="5">{{ orden.mosquitero_modelo }}</td></tr>
