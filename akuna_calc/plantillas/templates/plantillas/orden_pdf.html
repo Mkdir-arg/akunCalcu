@@ -35,9 +35,9 @@
         .abertura td { padding: 3px 5px; vertical-align: bottom; font-size: 8px; }
         .abertura .lbl { font-weight: bold; }
         .abertura .dv { border-bottom: 1px solid #9aa0a6; color: #145ea7; font-weight: bold; }
-        .detalle { table-layout: fixed; }
-        .detalle td { padding: 2px 5px; font-size: 7px; vertical-align: bottom; }
-        .detalle .lbl2 { font-weight: normal; padding-left: 14px; color: #444; }
+        .drow { border-bottom: 1px solid #cdd2d8; font-size: 7px; padding: 2.5px 4px; }
+        .drow .dv { color: #145ea7; font-weight: bold; }
+        .drow.sub { padding-left: 16px; color: #555; }
         .detalle .lbl { font-weight: normal; white-space: normal; }
         .detalle .dv { border-bottom: 1px solid #c8ccd0; color: #145ea7; font-weight: bold; }
         .nota { border: 1px solid #145ea7; vertical-align: top; padding: 5px; }
@@ -143,32 +143,27 @@
                 </table>
 
                 <table class="bar" style="margin-top:3px;"><tr><td>DETALLE</td></tr></table>
-                <table class="detalle">
-                    <colgroup>
-                        <col style="width:46%;"><col style="width:18%;"><col style="width:18%;"><col style="width:18%;">
-                    </colgroup>
-                    <tr><td class="lbl">CON MOSQUITERO?</td><td class="dv" colspan="3">{{ orden.mosquitero }}</td></tr>
-                    <tr><td class="lbl2">En caso afirmativo, indicar modelo:</td><td class="dv" colspan="3">{{ orden.mosquitero_modelo }}</td></tr>
-                    <tr><td class="lbl">¿TRAVESAÑO?</td><td class="dv" colspan="3">{{ orden.travesano }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ TIPO DE MARCO ES?</td><td class="dv" colspan="3">{{ orden.tipo_marco }}</td></tr>
-                    <tr><td class="lbl">MARCO DESARMADO?</td><td class="dv" colspan="3">{{ orden.marco_desarmado }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA UMBRAL TRANSITABLE?</td><td class="dv" colspan="3">{{ orden.umbral_transitable }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA PREMARCO?</td><td class="dv" colspan="3">{{ orden.premarco }}</td></tr>
-                    <tr><td class="lbl">¿CON GUÍA PARA PERSIANA?</td><td class="dv" colspan="3">{{ orden.guia_persiana }}</td></tr>
-                    <tr><td class="lbl2">Tipo de guía:</td><td class="dv" colspan="3">{{ orden.tipo_guia }}</td></tr>
-                    <tr><td class="lbl">¿CON TAPACINTA?</td><td class="dv" colspan="3">{{ orden.tapacinta }}</td></tr>
-                    <tr><td class="lbl">¿DE QUÉ LADO?</td><td class="dv" colspan="3">{{ orden.lado }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ MODELO DE HOJA ES?</td><td class="dv" colspan="3">{{ orden.modelo_hoja }}</td></tr>
-                    <tr><td class="lbl">¿TRAVESAÑO DIVISOR?</td><td class="dv" colspan="3">{{ orden.travesano_divisor }}</td></tr>
-                    <tr><td class="lbl2">¿A qué altura?</td><td class="dv" colspan="3">{{ orden.altura_travesano }}</td></tr>
-                    <tr><td class="lbl">CANTIDAD DE HOJAS?</td><td class="dv" colspan="3">{{ orden.cantidad_hojas }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ VIDRIOS LLEVA?</td><td class="dv" colspan="3">{{ orden.tipo_vidrio }}</td></tr>
-                    <tr><td class="lbl">¿LLEVA CONTRAMARCO?</td><td class="dv" colspan="3">{{ orden.contramarco }}</td></tr>
-                    <tr><td class="lbl2">¿Qué modelo de contramarco es?</td><td class="dv" colspan="3">{{ orden.modelo_contramarco }}</td></tr>
-                    <tr><td class="lbl">¿QUÉ TIPO DE TRABAJO ES?</td><td class="dv" colspan="3">{{ orden.tipo_trabajo }}</td></tr>
-                    <tr><td class="lbl2">¿A qué altura?</td><td class="dv" colspan="3">{{ orden.altura_trabajo }}</td></tr>
-                    <tr><td class="lbl">ESTRUCTURA:</td><td class="dv" colspan="3">{{ orden.estructura }}</td></tr>
-                </table>
+                <div class="drow">CON MOSQUITERO? <span class="dv">{{ orden.mosquitero }}</span></div>
+                <div class="drow sub">En caso afirmativo, indicar modelo: <span class="dv">{{ orden.mosquitero_modelo }}</span></div>
+                <div class="drow">¿TRAVESAÑO? <span class="dv">{{ orden.travesano }}</span></div>
+                <div class="drow">¿QUÉ TIPO DE MARCO ES? <span class="dv">{{ orden.tipo_marco }}</span></div>
+                <div class="drow">MARCO DESARMADO? <span class="dv">{{ orden.marco_desarmado }}</span></div>
+                <div class="drow">¿LLEVA UMBRAL TRANSITABLE? <span class="dv">{{ orden.umbral_transitable }}</span></div>
+                <div class="drow">¿LLEVA PREMARCO? <span class="dv">{{ orden.premarco }}</span></div>
+                <div class="drow">¿CON GUÍA PARA PERSIANA? <span class="dv">{{ orden.guia_persiana }}</span></div>
+                <div class="drow sub">Tipo de guía: <span class="dv">{{ orden.tipo_guia }}</span></div>
+                <div class="drow">¿CON TAPACINTA? <span class="dv">{{ orden.tapacinta }}</span></div>
+                <div class="drow">¿DE QUÉ LADO? <span class="dv">{{ orden.lado }}</span></div>
+                <div class="drow">¿QUÉ MODELO DE HOJA ES? <span class="dv">{{ orden.modelo_hoja }}</span></div>
+                <div class="drow">¿TRAVESAÑO DIVISOR? <span class="dv">{{ orden.travesano_divisor }}</span></div>
+                <div class="drow sub">¿A qué altura? <span class="dv">{{ orden.altura_travesano }}</span></div>
+                <div class="drow">CANTIDAD DE HOJAS? <span class="dv">{{ orden.cantidad_hojas }}</span></div>
+                <div class="drow">¿QUÉ VIDRIOS LLEVA? <span class="dv">{{ orden.tipo_vidrio }}</span></div>
+                <div class="drow">¿LLEVA CONTRAMARCO? <span class="dv">{{ orden.contramarco }}</span></div>
+                <div class="drow sub">¿Qué modelo de contramarco es? <span class="dv">{{ orden.modelo_contramarco }}</span></div>
+                <div class="drow">¿QUÉ TIPO DE TRABAJO ES? <span class="dv">{{ orden.tipo_trabajo }}</span></div>
+                <div class="drow sub">¿A qué altura? <span class="dv">{{ orden.altura_trabajo }}</span></div>
+                <div class="drow">ESTRUCTURA: <span class="dv">{{ orden.estructura }}</span></div>
             </td>
             <!-- Columna derecha: NOTA -->
             <td class="nota" style="width:37%;">
