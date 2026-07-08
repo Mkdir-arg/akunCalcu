@@ -31,14 +31,15 @@
         .gap2 { height: 2px; }
 
         /* Detalle de la abertura (dos columnas) */
+        .abertura { table-layout: fixed; }
         .abertura td { padding: 3px 5px; vertical-align: bottom; }
         .detalle { table-layout: fixed; }
-        .detalle td { padding: 1.5px 5px; font-size: 7.5px; vertical-align: bottom; }
+        .detalle td { padding: 1.5px 5px; font-size: 7px; vertical-align: bottom; }
         .detalle .lbl { font-weight: normal; white-space: normal; }
         .detalle .dv { border-bottom: 1px solid #c8ccd0; color: #145ea7; font-weight: bold; }
         .nota { border: 1px solid #145ea7; vertical-align: top; padding: 5px; }
         .nota .nt { font-weight: bold; color: #145ea7; font-size: 8px; }
-        .nota .ln { border-bottom: 1px solid #d7dbe0; height: 15px; }
+        .nota .ln { border-bottom: 1px solid #d7dbe0; height: 13px; }
 
         /* Detalle de medidas */
         .medidas { width: 100%; table-layout: fixed; }
@@ -95,11 +96,13 @@
 
     <!-- DATOS DEL CLIENTE -->
     <table class="bar"><tr><td>DATOS DEL CLIENTE</td></tr></table>
-    <table class="fields">
+    <table class="fields" style="table-layout:fixed;">
         <tr>
-            <td class="lbl" style="width:33%;">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
-            <td class="val" colspan="5">{{ orden.cliente_nombre }}</td>
+            <td class="lbl" style="width:34%;">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
+            <td class="val">{{ orden.cliente_nombre }}</td>
         </tr>
+    </table>
+    <table class="fields" style="table-layout:fixed;">
         <tr>
             <td class="lbl" style="width:12%;">DOMICILIO:</td>
             <td class="val" style="width:40%;">{{ orden.cliente_domicilio }}</td>
@@ -129,7 +132,8 @@
             <!-- Columna izquierda -->
             <td style="width:63%; vertical-align:top; padding-right:6px;">
                 <table class="abertura">
-                    <tr><td class="lbl" style="width:47%;">¿QUÉ TIPO DE ABERTURA ES?</td><td class="val">{{ orden.tipo_abertura }}</td></tr>
+                    <colgroup><col style="width:47%;"><col style="width:53%;"></colgroup>
+                    <tr><td class="lbl">¿QUÉ TIPO DE ABERTURA ES?</td><td class="val">{{ orden.tipo_abertura }}</td></tr>
                     <tr><td class="lbl">¿A QUÉ LÍNEA CORRESPONDE?</td><td class="val">{{ orden.linea }}</td></tr>
                     <tr><td class="lbl">¿DE QUÉ COLOR ES?</td><td class="val">{{ orden.color }}</td></tr>
                 </table>
@@ -137,7 +141,7 @@
                 <table class="bar" style="margin-top:3px;"><tr><td>DETALLE</td></tr></table>
                 <table class="detalle">
                     <colgroup>
-                        <col style="width:40%;"><col style="width:13%;"><col style="width:25%;"><col style="width:22%;">
+                        <col style="width:38%;"><col style="width:12%;"><col style="width:28%;"><col style="width:22%;">
                     </colgroup>
                     <tr><td class="lbl">CON MOSQUITERO?</td><td class="dv" colspan="3">{{ orden.mosquitero }}</td></tr>
                     <tr><td class="lbl">EN CASO AFIRMATIVO, INDICAR MODELO:</td><td class="dv" colspan="3">{{ orden.mosquitero_modelo }}</td></tr>

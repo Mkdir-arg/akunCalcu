@@ -190,7 +190,7 @@ def orden_pdf(request, pk):
         'logo_url': _build_logo_data_url(),
         'croquis_filas': range(13),
         'croquis_cols': range(26),
-        'nota_lineas': range(16),
+        'nota_lineas': range(23),
     })
 
     result = io.BytesIO()
