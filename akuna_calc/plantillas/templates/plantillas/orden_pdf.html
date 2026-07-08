@@ -32,7 +32,9 @@
 
         /* Detalle de la abertura (dos columnas) */
         .abertura { table-layout: fixed; }
-        .abertura td { padding: 3px 5px; vertical-align: bottom; }
+        .abertura td { padding: 3px 5px; vertical-align: bottom; font-size: 8px; }
+        .abertura .lbl { font-weight: bold; }
+        .abertura .dv { border-bottom: 1px solid #9aa0a6; color: #145ea7; font-weight: bold; }
         .detalle { table-layout: fixed; }
         .detalle td { padding: 1.5px 5px; font-size: 7px; vertical-align: bottom; }
         .detalle .lbl { font-weight: normal; white-space: normal; }
@@ -97,9 +99,10 @@
     <!-- DATOS DEL CLIENTE -->
     <table class="bar"><tr><td>DATOS DEL CLIENTE</td></tr></table>
     <table class="fields" style="table-layout:fixed;">
+        <colgroup><col style="width:34%;"><col style="width:22%;"><col style="width:22%;"><col style="width:22%;"></colgroup>
         <tr>
-            <td class="lbl" style="width:34%;">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
-            <td class="val">{{ orden.cliente_nombre }}</td>
+            <td class="lbl">APELLIDO Y NOMBRE / RAZÓN SOCIAL:</td>
+            <td class="val" colspan="3">{{ orden.cliente_nombre }}</td>
         </tr>
     </table>
     <table class="fields" style="table-layout:fixed;">
@@ -132,9 +135,10 @@
             <!-- Columna izquierda -->
             <td style="width:63%; vertical-align:top; padding-right:6px;">
                 <table class="abertura">
-                    <tr><td class="lbl" style="width:47%;">¿QUÉ TIPO DE ABERTURA ES?</td><td class="val" style="width:53%;">{{ orden.tipo_abertura }}</td></tr>
-                    <tr><td class="lbl">¿A QUÉ LÍNEA CORRESPONDE?</td><td class="val">{{ orden.linea }}</td></tr>
-                    <tr><td class="lbl">¿DE QUÉ COLOR ES?</td><td class="val">{{ orden.color }}</td></tr>
+                    <colgroup><col style="width:47%;"><col style="width:18%;"><col style="width:17%;"><col style="width:18%;"></colgroup>
+                    <tr><td class="lbl">¿QUÉ TIPO DE ABERTURA ES?</td><td class="dv" colspan="3">{{ orden.tipo_abertura }}</td></tr>
+                    <tr><td class="lbl">¿A QUÉ LÍNEA CORRESPONDE?</td><td class="dv" colspan="3">{{ orden.linea }}</td></tr>
+                    <tr><td class="lbl">¿DE QUÉ COLOR ES?</td><td class="dv" colspan="3">{{ orden.color }}</td></tr>
                 </table>
 
                 <table class="bar" style="margin-top:3px;"><tr><td>DETALLE</td></tr></table>
