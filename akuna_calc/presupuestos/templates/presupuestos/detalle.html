@@ -62,6 +62,10 @@
                 class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-receipt mr-2"></i>Recibo
             </a>
+            <button onclick="comentarPresupuesto()"
+                class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
+                <i class="fas fa-comment-dots mr-2"></i>Comentario presupuesto
+            </button>
             <button onclick="confirmarEliminarPresupuesto()"
                 class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-trash mr-2"></i>Eliminar
@@ -570,6 +574,13 @@
     {% csrf_token %}
 </form>
 
+<!-- Formulario oculto para las Observaciones del presupuesto (salen en el PDF) -->
+<form id="form-comentar-presupuesto" method="post" action="{% url 'presupuestos:presupuestos-observaciones' presupuesto.pk %}" style="display:none">
+    {% csrf_token %}
+    <input type="hidden" name="notas" id="comentar-notas">
+</form>
+{{ presupuesto.notas|json_script:"presupuesto-notas-actuales" }}
+
 <!-- ===== MODAL AGREGAR ITEM ===== -->
 {% if not presupuesto.esta_bloqueado %}
 <div id="modal-item" class="fixed inset-0 z-50 hidden">
@@ -641,6 +652,28 @@
 {% block extra_js %}
 <script>
 // -- Modales y acciones --
+function comentarPresupuesto() {
+    let actuales = '';
+    try { actuales = JSON.parse(document.getElementById('presupuesto-notas-actuales').textContent) || ''; } catch (e) {}
+    Swal.fire({
+        title: 'Comentario del presupuesto',
+        text: 'Sale impreso en el presupuesto (Observaciones).',
+        input: 'textarea',
+        inputValue: actuales,
+        inputPlaceholder: 'Escribí el comentario que va a salir en el presupuesto...',
+        inputAttributes: { 'aria-label': 'Observaciones', maxlength: 2000 },
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-save mr-1"></i>Guardar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        document.getElementById('comentar-notas').value = (result.value || '').trim();
+        document.getElementById('form-comentar-presupuesto').submit();
+    });
+}
+
 function confirmarEliminarPresupuesto() {
     Swal.fire({
         title: '¿Eliminar presupuesto?',

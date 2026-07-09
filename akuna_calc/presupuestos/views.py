@@ -391,6 +391,18 @@ def comentar(request, pk):
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
+@login_required
+@require_POST
+def actualizar_notas(request, pk):
+    """Reemplaza las Observaciones del presupuesto (campo `notas`, que sale en el PDF)."""
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
+    presupuesto.notas = (request.POST.get('notas') or '').strip()
+    presupuesto.updated_by = request.user
+    presupuesto.save(update_fields=['notas', 'updated_by', 'updated_at'])
+    messages.success(request, 'Observaciones del presupuesto actualizadas.')
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
 def _generar_numero_pedido_fabrica():
     n = PedidoFabrica.objects.count() + 1
     while PedidoFabrica.objects.filter(numero=f'PF-{n:04d}').exists():

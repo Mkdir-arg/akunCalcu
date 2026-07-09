@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:pk>/item/<int:ipk>/editar/', views.editar_item, name='presupuestos-item-editar'),
     path('<int:pk>/item/<int:ipk>/eliminar/', views.eliminar_item, name='presupuestos-item-eliminar'),
     path('<int:pk>/comentar/', views.comentar, name='presupuestos-comentar'),
+    path('<int:pk>/observaciones/', views.actualizar_notas, name='presupuestos-observaciones'),
     path('<int:pk>/estado/', views.cambiar_estado, name='presupuestos-estado'),
     path('<int:pk>/recibo/', views.recibo, name='presupuestos-recibo'),
     path('<int:pk>/pdf/', views.pdf, name='presupuestos-pdf'),

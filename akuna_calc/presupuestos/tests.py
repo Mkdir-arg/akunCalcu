@@ -806,6 +806,61 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Recibo')
 
+    def test_detalle_muestra_boton_comentario(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Comentario presupuesto')
+        self.assertContains(res, 'comentarPresupuesto()')
+        self.assertContains(res, f'/presupuestos/{p.pk}/observaciones/')
+
+    def test_observaciones_reemplaza_notas_y_se_ve_en_detalle_y_pdf(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        p.notas = 'Texto viejo'
+        p.save(update_fields=['notas'])
+
+        res = self.client.post(f'/presupuestos/{p.pk}/observaciones/', {
+            'notas': 'Entregar en portería del edificio',
+        })
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.notas, 'Entregar en portería del edificio')
+        self.assertEqual(p.updated_by, self.user)
+
+        detalle = self.client.get(f'/presupuestos/{p.pk}/')
+        self.assertContains(detalle, 'Entregar en portería del edificio')
+
+        pdf = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+        self.assertContains(pdf, 'Entregar en portería del edificio')
+
+    def test_observaciones_requiere_login(self):
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(f'/presupuestos/{p.pk}/observaciones/', {'notas': 'x'})
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertNotEqual(p.notas, 'x')
+
+    def test_comentar_interno_crea_comentario_en_historial(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(f'/presupuestos/{p.pk}/comentar/', {
+            'texto': 'Nota interna: revisar stock',
+            'prioridad': 'importante',
+        })
+
+        self.assertEqual(res.status_code, 302)
+        comentario = p.comentarios.get()
+        self.assertEqual(comentario.texto, 'Nota interna: revisar stock')
+        self.assertEqual(comentario.autor, self.user)
+
     def test_detalle_muestra_modalidad_sena_en_configuracion(self):
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)

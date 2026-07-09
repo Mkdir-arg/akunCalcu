@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-08 — Botón "Comentario presupuesto" → Observaciones del PDF (FEAT-024)
+
+**Pedido:** "Un botón al lado de los otros que muestre un popup para comentar, y que el comentario se vea en el presupuesto." Aclarado por el usuario: debe salir **en el presupuesto impreso** (no en los comentarios internos), **reemplazando** el texto.
+**Archivos modificados:** `akuna_calc/presupuestos/views.py` (view `actualizar_notas`), `urls.py` (ruta `presupuestos-observaciones`), `templates/presupuestos/detalle.html`, `tests.py`.
+**Descripción:** Botón "Comentario presupuesto" en la fila de acciones del detalle que abre un popup SweetAlert2 precargado con las Observaciones actuales; al guardar postea a `presupuestos-observaciones` y **reemplaza** `Presupuesto.notas`, que sale impreso en el PDF como "Observaciones". Distinto del **Historial de comentarios interno** (`ComentarioPresupuesto`, endpoint `comentar`), que queda intacto. Sin modelo ni migración (`notas`/`updated_by` ya existían). Tests: 99 OK.
+
 ## 2026-07-07 — "Agregar orden" abre el cotizador y crea la orden precargada (FEAT-023)
 
 **Pedido:** "Cuando tocás Agregar orden se tiene que ver el pop up del cotizador."
