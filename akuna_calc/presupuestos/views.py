@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from datetime import timedelta
 
 import base64
@@ -410,28 +410,27 @@ def _generar_numero_pedido_fabrica():
     return f'PF-{n:04d}'
 
 
-def _crear_venta_desde_presupuesto(presupuesto, sena):
+def _crear_venta_desde_presupuesto(presupuesto):
+    """Crea la Venta al confirmar el presupuesto, SIN seña (saldo = total completo).
+
+    El pago inicial se registra después con 'Registrar pago', que captura factura,
+    forma de pago, etc. — datos que un monto suelto de seña no tiene.
+    """
     observaciones = f'Generada automáticamente desde el presupuesto {presupuesto.numero}.'
     if presupuesto.es_pvc():
-        cotizacion = presupuesto.cotizacion_usd
         return Venta.objects.create(
             numero_pedido=presupuesto.numero,
             cliente=presupuesto.cliente,
             valor_total=presupuesto.total,
             venta_en_dolares=True,
             valor_total_usd=presupuesto.get_total_usd().quantize(Decimal('0.01')),
-            cotizacion_usd=cotizacion,
-            sena=(sena * cotizacion).quantize(Decimal('0.01')),
-            sena_en_dolares=True,
-            sena_usd=sena,
-            cotizacion_sena_usd=cotizacion,
+            cotizacion_usd=presupuesto.cotizacion_usd,
             observaciones=observaciones,
         )
     return Venta.objects.create(
         numero_pedido=presupuesto.numero,
         cliente=presupuesto.cliente,
         valor_total=presupuesto.total,
-        sena=sena,
         observaciones=observaciones,
     )
 
@@ -495,26 +494,8 @@ def _procesar_confirmacion(request, presupuesto):
         messages.error(request, 'El presupuesto PVC no tiene cotización USD cargada. Cargala antes de confirmar.')
         return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
 
-    try:
-        sena = Decimal((request.POST.get('sena') or '').strip().replace(',', '.')).quantize(Decimal('0.01'))
-    except InvalidOperation:
-        messages.error(request, 'Para confirmar el presupuesto ingresá el monto de la seña.')
-        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
-
-    if sena <= 0:
-        messages.error(request, 'La seña debe ser mayor a 0.')
-        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
-
-    if presupuesto.es_pvc():
-        total_referencia = presupuesto.get_total_usd().quantize(Decimal('0.01'))
-    else:
-        total_referencia = presupuesto.total
-    if sena > total_referencia:
-        messages.error(request, 'La seña no puede superar el total del presupuesto.')
-        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
-
     with transaction.atomic():
-        venta = _crear_venta_desde_presupuesto(presupuesto, sena)
+        venta = _crear_venta_desde_presupuesto(presupuesto)
         pedido = PedidoFabrica.objects.create(
             numero=_generar_numero_pedido_fabrica(),
             cliente=presupuesto.cliente.get_nombre_completo(),
@@ -532,7 +513,7 @@ def _procesar_confirmacion(request, presupuesto):
     messages.success(
         request,
         f'Presupuesto confirmado. Se generaron la venta "{venta.numero_pedido}" '
-        f'y el pedido de fábrica {pedido.numero}.'
+        f'y el pedido de fábrica {pedido.numero}. Registrá el pago desde la venta.'
     )
     return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
 

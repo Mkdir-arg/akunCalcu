@@ -475,12 +475,7 @@
             {% if not presupuesto.esta_bloqueado %}
             <div class="bg-white rounded-2xl shadow-lg p-5">
                 <h3 class="font-bold text-slate-800 mb-3">Cambiar estado</h3>
-                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}"
-                      data-es-pvc="{% if presupuesto.es_pvc %}1{% else %}0{% endif %}"
-                      data-total="{{ presupuesto.total|floatformat:'2u' }}"
-                      data-total-usd="{{ presupuesto.get_total_usd|default_if_none:''|floatformat:'2u' }}"
-                      data-sena-sugerida="{% if presupuesto.es_pvc %}{{ presupuesto.get_sena_sugerida_usd|default_if_none:''|floatformat:'2u' }}{% else %}{{ presupuesto.get_sena_sugerida|floatformat:'2u' }}{% endif %}"
-                      data-porcentaje-sena="{% if presupuesto.modalidad_sena == '70_30' %}70{% else %}50{% endif %}">
+                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}">
                     {% csrf_token %}
                     <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
                         {% for value, label in presupuesto.ESTADO_CHOICES %}
@@ -754,61 +749,6 @@ document.addEventListener('DOMContentLoaded', syncCamposRecargo);
 if (window.jQuery) {
     window.jQuery(document).on('change', '#id_tipo_obra', syncCamposRecargo);
 }
-
-// -- Confirmar presupuesto: popup de seña (genera venta + pedido de fábrica) --
-(function () {
-    const formEstado = document.getElementById('form-cambiar-estado');
-    if (!formEstado) return;
-    formEstado.addEventListener('submit', function (e) {
-        const select = formEstado.querySelector('select[name="estado"]');
-        if (!select || select.value !== 'confirmado') return;
-        e.preventDefault();
-
-        const esPvc = formEstado.dataset.esPvc === '1';
-        const moneda = esPvc ? 'USD' : '$';
-        const total = parseFloat(esPvc ? formEstado.dataset.totalUsd : formEstado.dataset.total) || 0;
-        const totalFmt = total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        Swal.fire({
-            title: 'Confirmar presupuesto',
-            html: '<p class="mb-2">Total del presupuesto: <strong>' + moneda + ' ' + totalFmt + '</strong></p>' +
-                  '<p class="text-sm text-slate-500">Ingresá la seña cobrada en ' + (esPvc ? 'dólares' : 'pesos') +
-                  ' (sugerida: ' + formEstado.dataset.porcentajeSena + '% del total). Al confirmar se generan la venta y el pedido de fábrica.</p>',
-            icon: 'question',
-            input: 'number',
-            inputValue: formEstado.dataset.senaSugerida,
-            inputAttributes: { min: '0.01', step: '0.01' },
-            showCancelButton: true,
-            confirmButtonColor: '#3b82f6',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Confirmar presupuesto',
-            cancelButtonText: 'Cancelar',
-            preConfirm: (value) => {
-                const monto = parseFloat(value);
-                if (!value || isNaN(monto) || monto <= 0) {
-                    Swal.showValidationMessage('Ingresá una seña mayor a 0.');
-                    return false;
-                }
-                if (total > 0 && monto > total) {
-                    Swal.showValidationMessage('La seña no puede superar el total (' + moneda + ' ' + totalFmt + ').');
-                    return false;
-                }
-                return value;
-            }
-        }).then((result) => {
-            if (!result.isConfirmed) return;
-            let hidden = formEstado.querySelector('input[name="sena"]');
-            if (!hidden) {
-                hidden = document.createElement('input');
-                hidden.type = 'hidden';
-                hidden.name = 'sena';
-                formEstado.appendChild(hidden);
-            }
-            hidden.value = result.value;
-            formEstado.submit();
-        });
-    });
-})();
 
 function cerrarModalDesglose() {
     document.getElementById('modal-desglose').classList.add('hidden');

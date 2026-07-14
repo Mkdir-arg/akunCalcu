@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-08 — Confirmar presupuesto: se elimina el popup de seña (revisión de FEAT-019)
+
+**Pedido:** "Al confirmar se crean venta + pedido; hay que eliminar el popup de seña. Está bien que se registre la venta, pero no el pago inicial, porque con solo el monto faltan datos (factura, forma de pago…)."
+**Archivos modificados:** `akuna_calc/presupuestos/views.py` (`_procesar_confirmacion`, `_crear_venta_desde_presupuesto`), `templates/presupuestos/detalle.html` (se quitó el popup SweetAlert2 de seña y los `data-*`), `tests.py`.
+**Descripción:** Confirmar un presupuesto ahora es **directo** (elegir "Confirmado" + "Actualizar estado", sin popup). Crea la **Venta sin seña** (`sena=0`, saldo = total completo) + el Pedido de fábrica + las órdenes, igual que antes. La seña / primer pago se carga después con "Registrar pago" (que sí captura factura, forma de pago, retenciones, etc.). Para PVC la venta sigue quedando en dólares (`valor_total_usd`/`cotizacion_usd`) pero sin campos de seña. Se mantienen las validaciones de no-duplicar, total > 0 y PVC-con-cotización. Sin cambios de modelo ni migración. Tests: 120 OK (presupuestos+plantillas).
+
 ## 2026-07-08 — Botón "Comentario presupuesto" → Observaciones del PDF (FEAT-024)
 
 **Pedido:** "Un botón al lado de los otros que muestre un popup para comentar, y que el comentario se vea en el presupuesto." Aclarado por el usuario: debe salir **en el presupuesto impreso** (no en los comentarios internos), **reemplazando** el texto.

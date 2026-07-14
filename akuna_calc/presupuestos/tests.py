@@ -1338,7 +1338,7 @@ class PresupuestoUpdatedByTest(TestCase):
 
 
 class ConfirmarPresupuestoTest(TestCase):
-    """Confirmar un presupuesto exige la seña y genera venta + pedido de fábrica (REQ-034)."""
+    """Confirmar un presupuesto (directo, sin popup de seña) genera venta SIN seña + pedido de fábrica."""
 
     def setUp(self):
         self.user = User.objects.create_user('confirmauser', password='testpass')
@@ -1365,10 +1365,8 @@ class ConfirmarPresupuestoTest(TestCase):
         return p
 
     def _confirmar(self, presupuesto, sena=None):
-        data = {'estado': 'confirmado'}
-        if sena is not None:
-            data['sena'] = sena
-        return self.client.post(f'/presupuestos/{presupuesto.pk}/estado/', data)
+        # La confirmación es directa: ya no se pide seña. `sena` se ignora (compat).
+        return self.client.post(f'/presupuestos/{presupuesto.pk}/estado/', {'estado': 'confirmado'})
 
     def test_get_sena_sugerida_segun_modalidad(self):
         p = self._presupuesto_con_total(Decimal('100000'))
@@ -1393,8 +1391,8 @@ class ConfirmarPresupuestoTest(TestCase):
         self.assertEqual(venta.cliente, p.cliente)
         self.assertEqual(venta.numero_pedido, p.numero)
         self.assertEqual(venta.valor_total, Decimal('100000'))
-        self.assertEqual(venta.sena, Decimal('50000.00'))
-        self.assertEqual(venta.saldo, Decimal('50000.00'))
+        self.assertEqual(venta.sena, Decimal('0'))
+        self.assertEqual(venta.saldo, Decimal('100000'))
         self.assertFalse(venta.venta_en_dolares)
         self.assertEqual(venta.estado, 'pendiente')
         pedido = p.pedidos_fabrica.get()
@@ -1404,10 +1402,10 @@ class ConfirmarPresupuestoTest(TestCase):
         self.assertEqual(pedido.usuario, self.user)
         self.assertIn(p.numero, pedido.observaciones)
 
-    def test_confirmar_pvc_genera_venta_en_dolares(self):
+    def test_confirmar_pvc_genera_venta_en_dolares_sin_sena(self):
         p = self._presupuesto_con_total(Decimal('500000'), pvc=True, cotizacion=Decimal('1000'))
 
-        res = self._confirmar(p, '250')
+        res = self._confirmar(p)
 
         self.assertEqual(res.status_code, 302)
         p.refresh_from_db()
@@ -1417,41 +1415,8 @@ class ConfirmarPresupuestoTest(TestCase):
         self.assertEqual(venta.valor_total, Decimal('500000'))
         self.assertEqual(venta.valor_total_usd, Decimal('500.00'))
         self.assertEqual(venta.cotizacion_usd, Decimal('1000'))
-        self.assertTrue(venta.sena_en_dolares)
-        self.assertEqual(venta.sena_usd, Decimal('250.00'))
-        self.assertEqual(venta.cotizacion_sena_usd, Decimal('1000'))
-        self.assertEqual(venta.sena, Decimal('250000.00'))
-        self.assertEqual(venta.saldo, Decimal('250000.00'))
-
-    def test_confirmar_sin_sena_no_cambia_nada(self):
-        p = self._presupuesto_con_total()
-
-        res = self._confirmar(p)
-
-        self.assertEqual(res.status_code, 302)
-        p.refresh_from_db()
-        self.assertEqual(p.estado, 'borrador')
-        self.assertIsNone(p.venta)
-        self.assertEqual(Venta.objects.count(), 0)
-        self.assertEqual(PedidoFabrica.objects.count(), 0)
-
-    def test_confirmar_con_sena_cero_rechaza(self):
-        p = self._presupuesto_con_total()
-
-        self._confirmar(p, '0')
-
-        p.refresh_from_db()
-        self.assertEqual(p.estado, 'borrador')
-        self.assertEqual(Venta.objects.count(), 0)
-
-    def test_confirmar_con_sena_mayor_al_total_rechaza(self):
-        p = self._presupuesto_con_total(Decimal('100000'))
-
-        self._confirmar(p, '150000')
-
-        p.refresh_from_db()
-        self.assertEqual(p.estado, 'borrador')
-        self.assertEqual(Venta.objects.count(), 0)
+        self.assertEqual(venta.sena, Decimal('0'))
+        self.assertEqual(venta.saldo, Decimal('500000'))
 
     def test_confirmar_pvc_sin_cotizacion_rechaza(self):
         p = self._presupuesto_con_total(Decimal('100000'))
@@ -1504,14 +1469,25 @@ class ConfirmarPresupuestoTest(TestCase):
         pedido = p.pedidos_fabrica.get()
         self.assertEqual(pedido.numero, 'PF-0003')
 
-    def test_sena_acepta_coma_decimal(self):
+    def test_confirmar_no_pide_sena_venta_queda_sin_pago(self):
         p = self._presupuesto_con_total(Decimal('100000'))
 
-        self._confirmar(p, '50000,50')
+        self._confirmar(p)
 
         p.refresh_from_db()
         self.assertEqual(p.estado, 'confirmado')
-        self.assertEqual(p.venta.sena, Decimal('50000.50'))
+        self.assertEqual(p.venta.sena, Decimal('0'))
+        self.assertEqual(p.venta.saldo, Decimal('100000'))
+        self.assertEqual(p.venta.pagos.count(), 0)
+
+    def test_detalle_no_incluye_popup_de_sena(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'data-sena-sugerida')
+        self.assertNotContains(res, 'Ingresá la seña cobrada')
 
     def test_detalle_confirmado_muestra_links_generados(self):
         p = self._presupuesto_con_total()

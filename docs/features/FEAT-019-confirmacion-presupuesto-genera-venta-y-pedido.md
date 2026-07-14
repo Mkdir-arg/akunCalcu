@@ -4,6 +4,8 @@
 **Fecha:** 2026-07-07
 **Requerimiento:** [REQ-034](../requerimientos/REQ-034-confirmacion-presupuesto-genera-venta-y-pedido.md)
 
+> **Revisión 2026-07-08:** se **eliminó el popup de seña**. Confirmar ahora es directo y crea la **Venta sin seña** (saldo = total completo); la seña / primer pago se carga después con "Registrar pago" (que captura factura, forma de pago, etc.). El resto (Pedido de fábrica, órdenes, vínculo `venta`, PVC en USD) sigue igual. La descripción de abajo refleja la versión original con popup; ver changelog 2026-07-08.
+
 ## Descripción funcional
 
 Al cambiar el estado de un presupuesto a "Confirmado" desde su pantalla de detalle, un popup (SweetAlert2) pide el monto de la seña cobrada antes de ejecutar el cambio:
