@@ -56,3 +56,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-034](./REQ-034-confirmacion-presupuesto-genera-venta-y-pedido.md) | Confirmación de presupuesto genera venta y pedido de fábrica | Implementado | 2026-07-07 | FEAT-019 |
 | [REQ-035](./REQ-035-ordenes-de-fabricacion-en-pedidos.md) | Órdenes de Fabricación dentro del pedido de fábrica (planilla digital + PDF A4) | Implementado | 2026-07-07 | FEAT-021 + FEAT-022 |
 | [REQ-036](./REQ-036-eliminar-modulo-despiece.md) | Eliminar módulo de despiece y transformar Pedidos de Fábrica (prerrequisito de REQ-035) | Implementado | 2026-07-07 | FEAT-020 |
+| [REQ-037](./REQ-037-reparto-automatico-solicitudes-presupuesto.md) | Reparto automático de solicitudes de presupuesto por email (n8n + round-robin) | Implementado | 2026-07-18 | FEAT-025 |

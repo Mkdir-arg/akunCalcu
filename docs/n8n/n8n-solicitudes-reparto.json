@@ -1,0 +1,144 @@
+{
+  "name": "Solicitudes Presupuesto - Reparto AkunCalcu",
+  "nodes": [
+    {
+      "id": "gmail-trigger",
+      "name": "Nuevo mail",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [208, 304],
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "simple": true,
+        "filters": {},
+        "options": {}
+      },
+      "notes": "Adjuntar credencial Gmail OAuth2 de la casilla de la empresa. Opcional: filtrar por etiqueta/busqueda en 'filters' (ej. label del formulario web)."
+    },
+    {
+      "id": "ia",
+      "name": "IA Clasificar y Extraer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 304],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [ { role: 'system', content: 'Sos un asistente de una empresa de aberturas (Akuna). Analizas emails entrantes y determinas si son un PEDIDO DE PRESUPUESTO o COTIZACION de un cliente. Devolve SOLO un JSON con las claves: es_presupuesto (boolean), nombre_cliente (string), email (string), telefono (string), asunto (string), mensaje (string, resumen del pedido en 1-3 lineas). Si el email NO es un pedido de presupuesto, pone es_presupuesto=false y el resto vacio.' }, { role: 'user', content: 'Email entrante (JSON de Gmail): ' + JSON.stringify($json) } ] }) }}",
+        "options": {}
+      },
+      "credentials": { "openAiApi": { "id": "REEMPLAZAR_ID_CRED_OPENAI", "name": "OpenAI account" } }
+    },
+    {
+      "id": "parsear",
+      "name": "Parsear IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 304],
+      "parameters": {
+        "jsCode": "let r = {};\ntry { r = JSON.parse($json.choices[0].message.content); } catch (e) { r = { es_presupuesto: false }; }\nr.gmail_thread_id = ($('Nuevo mail').first().json.threadId) || ($('Nuevo mail').first().json.id) || '';\nreturn [{ json: r }];"
+      }
+    },
+    {
+      "id": "if-presupuesto",
+      "name": "Es Presupuesto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [860, 304],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond-pres",
+              "leftValue": "={{ $json.es_presupuesto ? 'si' : 'no' }}",
+              "rightValue": "si",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "crear",
+      "name": "Crear Solicitud",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 224],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.DJANGO_BASE_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/solicitudes/api/crear/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Bot-Secret", "value": "={{ $env.SOLICITUDES_BOT_SECRET || 'REEMPLAZAR_SOLICITUDES_BOT_SECRET' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ nombre_cliente: $json.nombre_cliente, email: $json.email, telefono: $json.telefono, asunto: $json.asunto, mensaje: $json.mensaje, gmail_thread_id: $json.gmail_thread_id }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "gmail-reenviar",
+      "name": "Reenviar al Vendedor",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1320, 128],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.vendedor ? $json.vendedor.email : '' }}",
+        "subject": "=Nuevo pedido de presupuesto: {{ $('Parsear IA').first().json.nombre_cliente || 'cliente' }}",
+        "emailType": "text",
+        "message": "={{ $('Parsear IA').first().json.mensaje }}\n\n---\nCliente: {{ $('Parsear IA').first().json.nombre_cliente }}\nEmail: {{ $('Parsear IA').first().json.email }}\nTelefono: {{ $('Parsear IA').first().json.telefono }}\n\n(Asignado automaticamente por AkunCalcu)",
+        "options": {}
+      },
+      "notes": "Adjuntar la misma credencial Gmail OAuth2 de la empresa. Envia un mail nuevo al vendedor asignado."
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp al Vendedor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 320],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution-api-production-874e.up.railway.app/message/sendTemplate/akuna-cloud",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_APIKEY || 'REEMPLAZAR_EVOLUTION_APIKEY' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.vendedor ? $json.vendedor.whatsapp : '', name: 'nueva_solicitud', language: 'es_AR', components: [{ type: 'body', parameters: [{ type: 'text', text: ($json.vendedor ? $json.vendedor.nombre : '') }, { type: 'text', text: (($('Parsear IA').first().json.nombre_cliente || '') + ' - ' + ($('Parsear IA').first().json.telefono || '')) }] }] }) }}",
+        "options": {}
+      },
+      "notes": "Requiere plantilla Meta aprobada 'nueva_solicitud' (es_AR) con 2 params: {{1}}=vendedor, {{2}}=cliente. Reemplazar EVOLUTION_APIKEY."
+    }
+  ],
+  "connections": {
+    "Nuevo mail": { "main": [[{ "node": "IA Clasificar y Extraer", "type": "main", "index": 0 }]] },
+    "IA Clasificar y Extraer": { "main": [[{ "node": "Parsear IA", "type": "main", "index": 0 }]] },
+    "Parsear IA": { "main": [[{ "node": "Es Presupuesto", "type": "main", "index": 0 }]] },
+    "Es Presupuesto": { "main": [[{ "node": "Crear Solicitud", "type": "main", "index": 0 }], []] },
+    "Crear Solicitud": { "main": [[{ "node": "Reenviar al Vendedor", "type": "main", "index": 0 }, { "node": "WhatsApp al Vendedor", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Argentina/Buenos_Aires" }
+}

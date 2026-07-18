@@ -1,0 +1,131 @@
+{
+  "name": "Solicitudes Presupuesto - Recordatorios AkunCalcu",
+  "nodes": [
+    {
+      "id": "schedule",
+      "name": "Cada 1 hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [208, 304],
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } }
+    },
+    {
+      "id": "obtener-recordatorios",
+      "name": "Obtener Recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [432, 304],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.DJANGO_BASE_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/solicitudes/api/recordatorios/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Bot-Secret", "value": "={{ $env.SOLICITUDES_BOT_SECRET || 'REEMPLAZAR_SOLICITUDES_BOT_SECRET' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "if-hay",
+      "name": "Hay Recordatorios",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 304],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond-hay",
+              "leftValue": "={{ $json.cantidad > 0 ? 'si' : 'no' }}",
+              "rightValue": "si",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "preparar-envios",
+      "name": "Preparar Envios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [864, 224],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst items = [];\nfor (const s of (data.solicitudes || [])) {\n  if (!s.whatsapp) continue;\n  let texto = (s.mensaje || '').replace(/\\s*\\n\\s*/g, ' · ').trim();\n  if (texto.length > 900) texto = texto.slice(0, 900) + '...';\n  items.push({ json: { number: s.whatsapp, texto, solicitud_id: s.id } });\n}\nreturn items;"
+      }
+    },
+    {
+      "id": "whatsapp-enviar",
+      "name": "WhatsApp Enviar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1088, 224],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolution-api-production-874e.up.railway.app/message/sendTemplate/akuna-cloud",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_APIKEY || 'REEMPLAZAR_EVOLUTION_APIKEY' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.number, name: 'recordatorio_solicitud', language: 'es_AR', components: [{ type: 'body', parameters: [{ type: 'text', text: $json.texto }] }] }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "recolectar-ids",
+      "name": "Recolectar IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1312, 224],
+      "parameters": {
+        "jsCode": "const ids = [...new Set($('Preparar Envios').all().map(i => i.json.solicitud_id).filter(Boolean))];\nreturn [{ json: { ids } }];"
+      }
+    },
+    {
+      "id": "marcar-recordatorio",
+      "name": "Marcar Recordatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 224],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.DJANGO_BASE_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/solicitudes/api/marcar-recordatorio/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Bot-Secret", "value": "={{ $env.SOLICITUDES_BOT_SECRET || 'REEMPLAZAR_SOLICITUDES_BOT_SECRET' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ids: $json.ids }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cada 1 hora": { "main": [[{ "node": "Obtener Recordatorios", "type": "main", "index": 0 }]] },
+    "Obtener Recordatorios": { "main": [[{ "node": "Hay Recordatorios", "type": "main", "index": 0 }]] },
+    "Hay Recordatorios": { "main": [[{ "node": "Preparar Envios", "type": "main", "index": 0 }], []] },
+    "Preparar Envios": { "main": [[{ "node": "WhatsApp Enviar", "type": "main", "index": 0 }]] },
+    "WhatsApp Enviar": { "main": [[{ "node": "Recolectar IDs", "type": "main", "index": 0 }]] },
+    "Recolectar IDs": { "main": [[{ "node": "Marcar Recordatorio", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Argentina/Buenos_Aires" }
+}

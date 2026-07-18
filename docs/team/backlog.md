@@ -24,6 +24,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-004 | Como vendedor, quiero que al registrar el último pago de una venta (saldo = $0) me aparezca un popup para cambiar el estado a "Colocado" | Pequeño ✅ |
 | US-005 | Como administrador, quiero agregar fórmulas de perfiles al configurar un Marco para definir automáticamente las dimensiones de los perfiles necesarios para fabricar ese marco | Mediano ✅ |
 | US-006 | Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar N ítems con la lógica del cotizador, dejar comentarios y generar un PDF para el cliente | Grande ✅ |
+| US-037 | Como responsable comercial, quiero que los pedidos de presupuesto que llegan por email se repartan automáticamente y por turnos entre los vendedores para que ninguno quede sin atender | Grande ✅ |
 
 ---
 

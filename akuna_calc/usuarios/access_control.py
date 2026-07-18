@@ -55,6 +55,15 @@ ACCESS_MODULES = [
         ],
     },
     {
+        'key': 'solicitudes',
+        'label': 'Solicitudes',
+        'icon': 'fas fa-inbox',
+        'dropdown': False,
+        'items': [
+            {'code': 'solicitudes.view', 'label': 'Solicitudes', 'route_name': 'solicitudes:lista'},
+        ],
+    },
+    {
         'key': 'reportes',
         'label': 'Reportes',
         'icon': 'fas fa-chart-bar',
@@ -160,6 +169,10 @@ PUBLIC_ROUTE_KEYS = {
     'pedidos:api_crear_borrador',
     'pedidos:api_confirmar',
     'security:backup_api_create',
+    'solicitudes:api_crear',
+    'solicitudes:api_recordatorios',
+    'solicitudes:api_marcar_recordatorio',
+    'solicitudes:api_marcar_contestada',
 }
 
 LEGACY_STAFF_ACCESS_CODES = {
@@ -248,6 +261,8 @@ _register_route('gastos_diarios.view', 'gastos_diarios:aprobar', 'gastos_diarios
 _register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gastos_diarios:numero_edit', 'gastos_diarios:numero_delete')
 
 _register_route('agenda.view', 'agenda:calendario', 'agenda:crear', 'agenda:editar', 'agenda:eliminar', 'agenda:cliente_info')
+
+_register_route('solicitudes.view', 'solicitudes:lista', 'solicitudes:marcar_contestada', 'solicitudes:reasignar')
 
 
 def normalize_access_codes(access_codes):

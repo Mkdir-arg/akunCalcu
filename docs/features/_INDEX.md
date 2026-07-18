@@ -30,6 +30,7 @@
 | [FEAT-022](./FEAT-022-orden-fabricacion-pdf.md) | Orden de Fabricación — Etapa 2 (PDF A4 corporativo + datos de contacto en Configuración) | Implementado | 2026-07-07 | — |
 | [FEAT-023](./FEAT-023-cotizador-en-orden-fabricacion.md) | "Agregar orden" abre el cotizador y crea la orden precargada | Implementado | 2026-07-07 | — |
 | [FEAT-024](./FEAT-024-boton-comentario-presupuesto.md) | Botón "Comentario presupuesto" (Observaciones que salen en el PDF) | Implementado | 2026-07-08 | — |
+| [FEAT-025](./FEAT-025-reparto-automatico-solicitudes-presupuesto.md) | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | Implementado | 2026-07-18 | — |
 
 ---
 
@@ -43,7 +44,8 @@
 | `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019 | 2026-07-07 |
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023 | 2026-07-07 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
-| `usuarios` | FEAT-009, FEAT-020 | 2026-07-07 |
+| `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
+| `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |
 | `security` | FEAT-011, FEAT-012 | 2026-05-24 |

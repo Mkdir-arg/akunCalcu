@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
+from gastos_diarios.models import NumeroAutorizado
+
 from .access_control import ACCESS_CODE_METADATA, build_permission_groups, get_access_profile, normalize_access_codes, requires_staff_flag
 from .models import RolSistema
 
@@ -25,6 +27,15 @@ class BaseUserAccessForm(forms.ModelForm):
         label='Permisos por módulo y opción',
         choices=(),
         widget=forms.CheckboxSelectMultiple,
+    )
+    numero_whatsapp = forms.ModelChoiceField(
+        queryset=NumeroAutorizado.objects.none(),
+        required=False,
+        empty_label='Sin número asignado',
+        label='Número de WhatsApp (avisos de solicitudes)',
+        widget=forms.Select(attrs={
+            'class': INPUT_CLASS,
+        }),
     )
 
     class Meta:
@@ -52,6 +63,9 @@ class BaseUserAccessForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         role_queryset = RolSistema.objects.filter(activo=True).order_by('nombre')
         self.fields['rol_sistema'].queryset = role_queryset
+        self.fields['numero_whatsapp'].queryset = NumeroAutorizado.objects.filter(
+            activo=True
+        ).order_by('nombre', 'numero')
         self.fields['access_codes'].choices = [
             (code, metadata['label']) for code, metadata in ACCESS_CODE_METADATA.items()
         ]
@@ -65,6 +79,9 @@ class BaseUserAccessForm(forms.ModelForm):
 
         if not self.is_bound:
             self.initial['rol_sistema'] = profile.rol_id if profile and profile.rol_id else None
+            self.initial['numero_whatsapp'] = (
+                profile.numero_whatsapp_id if profile and profile.numero_whatsapp_id else None
+            )
             self.initial['access_codes'] = initial_codes
 
         if self.is_bound:
@@ -97,6 +114,7 @@ class BaseUserAccessForm(forms.ModelForm):
 
         profile = get_access_profile(user, create=True)
         profile.rol = role
+        profile.numero_whatsapp = self.cleaned_data.get('numero_whatsapp')
         profile.permisos = normalized_codes
         profile.save()
 

@@ -71,6 +71,17 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div>
+                    <label for="{{ form.numero_whatsapp.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">{{ form.numero_whatsapp.label }}</label>
+                    {{ form.numero_whatsapp }}
+                    <p class="mt-2 text-xs text-slate-500">Si el usuario es vendedor, el bot le avisa por acá los pedidos de presupuesto asignados.</p>
+                    {% if form.numero_whatsapp.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.numero_whatsapp.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                 <div class="flex items-center gap-3">
                     {{ form.is_active }}

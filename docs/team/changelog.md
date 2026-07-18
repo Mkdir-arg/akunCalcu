@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-18 — Reparto automático de solicitudes de presupuesto (FEAT-025)
+
+**Pedido:** "Hoy llega un mail al mail de la empresa y a mano distribuyo los pedidos de presupuesto a los mail de los empleados; quiero automatizarlo con n8n." Definido: reparto **round-robin** entre usuarios con rol **vendedor** (tomando su Email), aviso por **WhatsApp + Gmail**, marcar contestada **manual y automático**, recordatorio **cada 1 hora**, casilla **Gmail/Workspace**.
+**Archivos:** app nueva `akuna_calc/solicitudes/` (models, services, views, forms, urls, admin, tests, template, migración 0001); `usuarios/models.py` (FK `numero_whatsapp`), `usuarios/forms.py` + `templates/usuarios/user_form.html`, `usuarios/access_control.py`, `usuarios/migrations/0004` y `0005` (seed rol vendedor); `security/middleware.py`; `akuna_calc/settings.py`, `akuna_calc/urls.py`, `.env.example`; `docs/n8n/n8n-solicitudes-presupuesto-workflow.md`.
+**Descripción:** n8n toma el mail (Gmail Trigger), lo clasifica/extrae con IA y hace `POST /solicitudes/api/crear/` (header `X-Bot-Secret` → env `SOLICITUDES_BOT_SECRET`). Django crea la `SolicitudPresupuesto`, la asigna al próximo vendedor por **round-robin** (puntero `ConfiguracionSolicitudes.ultimo_vendedor` tomado con `select_for_update`, ADR-014) y devuelve nombre/email/whatsapp para que n8n reenvíe el mail y avise por WhatsApp. El WhatsApp del vendedor reusa `NumeroAutorizado` vía FK en el perfil. Panel `/solicitudes/` con filtros, paginación, "Marcar contestada" (SweetAlert2) y "Reasignar". Recordatorio horario y "contestada" automática vía endpoints que consume un cron de n8n (idempotencia por `gmail_thread_id`). **Sin desplegar:** faltan correr migraciones (solicitudes/0001, usuarios/0004, usuarios/0005), setear `SOLICITUDES_BOT_SECRET` y conectar credenciales en n8n. Tests: 21 OK (solicitudes) + 88 OK sin regresiones (usuarios/agenda/gastos_diarios/security).
+
 ## 2026-07-08 — Confirmar presupuesto: se elimina el popup de seña (revisión de FEAT-019)
 
 **Pedido:** "Al confirmar se crean venta + pedido; hay que eliminar el popup de seña. Está bien que se registre la venta, pero no el pago inicial, porque con solo el monto faltan datos (factura, forma de pago…)."

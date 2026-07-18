@@ -124,6 +124,18 @@
 
 ---
 
+## ADR-014: Reparto round-robin de solicitudes decidido en Django, no en n8n
+**Fecha**: 2026-07-18
+**Estado**: Activo
+
+**Contexto**: FEAT-025 (REQ-037) automatiza el reparto de pedidos de presupuesto que llegan por email. n8n toma el mail y lo empuja a AkunCalcu. La decisión de "a qué vendedor le toca" (round-robin equitativo) podía vivir en n8n (guardando el puntero en una Data Table del propio n8n) o en Django (puntero en la base). Dos mails casi simultáneos podrían recibir el mismo vendedor si el puntero no se actualiza de forma atómica.
+
+**Decisión**: El round-robin lo resuelve Django. El puntero del último vendedor asignado se guarda en un singleton `ConfiguracionSolicitudes` (pk=1) y `asignar_siguiente_vendedor()` lo toma con `select_for_update()` dentro de `transaction.atomic`, de modo que dos solicitudes concurrentes no reciben el mismo vendedor. El pool son los usuarios con `perfil_acceso.rol.codigo == 'vendedor'` activos y con email cargado. n8n queda como transporte (Gmail → IA → HTTP), sin lógica de negocio. La autenticación del endpoint usa `X-Bot-Secret` con un secret dedicado `SOLICITUDES_BOT_SECRET`, y la creación es idempotente por `gmail_thread_id`.
+
+**Consecuencias**: El reparto es auditable y consistente aunque n8n reintente o se reinicie (el estado no vive en el filesystem efímero de n8n, a diferencia del incidente de credenciales del 02-03/07). El WhatsApp del vendedor reusa `NumeroAutorizado` (FK en el perfil) en lugar de duplicar números. El rol `vendedor` se siembra por migración porque no existía. Si el pool queda vacío, la solicitud entra en estado `sin_asignar` y se reasigna a mano desde el panel.
+
+---
+
 ## ADR-013: Eliminación del módulo de despiece de `plantillas`
 **Fecha**: 2026-07-07
 **Estado**: Activo

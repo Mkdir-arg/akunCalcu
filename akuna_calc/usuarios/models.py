@@ -31,6 +31,15 @@ class PerfilAccesoUsuario(models.Model):
 		blank=True,
 		related_name='perfiles_usuario',
 	)
+	numero_whatsapp = models.ForeignKey(
+		'gastos_diarios.NumeroAutorizado',
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name='usuarios_asignados',
+		verbose_name='Número de WhatsApp',
+		help_text='Número autorizado al que el bot le avisa las solicitudes asignadas.',
+	)
 	permisos = models.JSONField(default=list, blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)

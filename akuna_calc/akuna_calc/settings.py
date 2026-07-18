@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'configuracion',
     'gastos_diarios',
     'agenda',
+    'solicitudes',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,217 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Solicitudes de presupuesto{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="max-w-full mx-auto px-4 animate-fade-in">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-inbox text-blue-500 mr-2"></i>Solicitudes de presupuesto
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Pedidos que llegan por email, repartidos automáticamente entre los vendedores</p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-3 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                <select name="estado" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">Todos</option>
+                    {% for clave, etiqueta in estado_choices %}
+                    <option value="{{ clave }}" {% if estado_filter == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Vendedor</label>
+                <select name="vendedor" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">Todos</option>
+                    {% for v in vendedores %}
+                    <option value="{{ v.pk }}" {% if vendedor_filter == v.pk|stringformat:'s' %}selected{% endif %}>{{ v.get_full_name|default:v.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+                <i class="fas fa-filter mr-1"></i>Filtrar
+            </button>
+            <a href="{% url 'solicitudes:lista' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+                <i class="fas fa-times mr-1"></i>Limpiar
+            </a>
+        </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
+                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Asunto</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Vendedor</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Recibido</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for s in page_obj %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            <p class="font-semibold text-slate-800">{{ s.nombre_cliente|default:"Sin nombre" }}</p>
+                            {% if s.email %}<p class="text-xs text-slate-500"><i class="fas fa-envelope mr-1"></i>{{ s.email }}</p>{% endif %}
+                            {% if s.telefono %}<p class="text-xs text-slate-500"><i class="fas fa-phone mr-1"></i>{{ s.telefono }}</p>{% endif %}
+                        </td>
+                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-600">
+                            <p class="font-medium">{{ s.asunto|default:"—" }}</p>
+                            {% if s.mensaje %}
+                            <p class="text-xs text-slate-400 mt-1 truncate max-w-xs" title="{{ s.mensaje }}">{{ s.mensaje|truncatechars:70 }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            {% if s.vendedor %}
+                                <i class="fas fa-user-tie text-slate-400 mr-1"></i>{{ s.vendedor.get_full_name|default:s.vendedor.username }}
+                            {% else %}
+                                <span class="text-slate-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if s.estado == 'contestada' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Contestada
+                                </span>
+                            {% elif s.estado == 'sin_asignar' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Sin asignar
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                    <i class="fas fa-clock mr-1"></i>Asignada
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{{ s.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                {% if s.estado != 'contestada' %}
+                                <button onclick="marcarContestada('{% url 'solicitudes:marcar_contestada' s.pk %}', '{{ s.nombre_cliente|default:s.email|escapejs }}')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Marcar contestada">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if vendedores %}
+                                <button onclick="reasignar('{% url 'solicitudes:reasignar' s.pk %}')" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Reasignar">
+                                    <i class="fas fa-random"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <i class="fas fa-inbox text-slate-200 text-5xl mb-3"></i>
+                            <p class="text-slate-500 font-medium">No hay solicitudes</p>
+                            <p class="text-slate-400 text-sm mt-1">Cuando llegue un pedido de presupuesto por email va a aparecer acá</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="bg-slate-50 px-6 py-4 flex items-center justify-between">
+            <p class="text-sm text-slate-600">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} resultados)
+            </p>
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if vendedor_filter %}&vendedor={{ vendedor_filter }}{% endif %}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-1 rounded-lg text-sm font-semibold">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if vendedor_filter %}&vendedor={{ vendedor_filter }}{% endif %}" class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-3 py-1 rounded-lg text-sm font-semibold">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script id="vendedores-data" type="application/json">{% autoescape off %}{
+{% for v in vendedores %}"{{ v.pk }}": "{{ v.get_full_name|default:v.username|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}
+}{% endautoescape %}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const VENDEDORES = JSON.parse(document.getElementById('vendedores-data').textContent);
+
+function _postForm(url, campos) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    let inner = '';
+    if (csrfToken) {
+        inner += `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+    }
+    for (const [k, v] of Object.entries(campos || {})) {
+        inner += `<input type="hidden" name="${k}" value="${v}">`;
+    }
+    form.innerHTML = inner;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function marcarContestada(url, cliente) {
+    Swal.fire({
+        title: '¿Marcar como contestada?',
+        html: `<p>Solicitud de <strong>${cliente || 'este cliente'}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sí, contestada',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            _postForm(url, {});
+        }
+    });
+}
+
+function reasignar(url) {
+    Swal.fire({
+        title: 'Reasignar solicitud',
+        input: 'select',
+        inputOptions: VENDEDORES,
+        inputPlaceholder: 'Elegí un vendedor',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Reasignar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Seleccioná un vendedor';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            _postForm(url, {vendedor: result.value});
+        }
+    });
+}
+</script>
+{% endblock %}
