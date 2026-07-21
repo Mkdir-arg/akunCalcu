@@ -472,10 +472,10 @@
                 {% endif %}
             </div>
 
-            {% if not presupuesto.esta_bloqueado %}
+            {% if not presupuesto.esta_bloqueado or presupuesto.estado == 'confirmado' %}
             <div class="bg-white rounded-2xl shadow-lg p-5">
                 <h3 class="font-bold text-slate-800 mb-3">Cambiar estado</h3>
-                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}">
+                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}" data-estado-actual="{{ presupuesto.estado }}">
                     {% csrf_token %}
                     <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
                         {% for value, label in presupuesto.ESTADO_CHOICES %}
@@ -685,6 +685,32 @@ function confirmarEliminarPresupuesto() {
         }
     });
 }
+
+// Al cambiar el estado de un presupuesto CONFIRMADO, avisar que la venta y el
+// pedido de fábrica generados NO se borran (solo cambia la etiqueta de estado).
+(function () {
+    const form = document.getElementById('form-cambiar-estado');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        const estadoActual = form.dataset.estadoActual;
+        const select = form.querySelector('select[name="estado"]');
+        const destino = select ? select.value : '';
+        if (estadoActual !== 'confirmado' || destino === 'confirmado') return;
+        e.preventDefault();
+        Swal.fire({
+            icon: 'warning',
+            title: '¿Cambiar el estado de un presupuesto confirmado?',
+            html: 'La <strong>venta</strong> y el <strong>pedido de fábrica</strong> generados al confirmar <strong>seguirán existiendo</strong>. Si ya no corresponden, dalos de baja por separado.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cambiar estado',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#334155',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    });
+})();
 
 function confirmarEliminarItem(form, nombre) {
     Swal.fire({

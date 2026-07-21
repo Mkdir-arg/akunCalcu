@@ -529,11 +529,20 @@ def cambiar_estado(request, pk):
         messages.error(request, 'Estado inválido.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
-    if presupuesto.esta_bloqueado():
-        messages.error(request, 'No se puede cambiar el estado de un presupuesto confirmado o cancelado.')
+    # Un presupuesto cancelado sigue bloqueado; uno confirmado ahora SÍ puede
+    # cambiar de estado (solo se cambia la etiqueta; la venta y el pedido quedan).
+    if presupuesto.estado == 'cancelado':
+        messages.error(request, 'No se puede cambiar el estado de un presupuesto cancelado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
     if nuevo_estado == 'confirmado':
+        # Si ya tiene venta (se está re-confirmando tras des-confirmar), solo se
+        # re-marca el estado: la venta y el pedido ya existen, no se duplican.
+        if presupuesto.venta_id:
+            presupuesto.estado = 'confirmado'
+            presupuesto.save(update_fields=['estado'])
+            messages.success(request, 'Estado actualizado a "Confirmado".')
+            return redirect('presupuestos:presupuestos-detalle', pk=pk)
         return _procesar_confirmacion(request, presupuesto)
 
     presupuesto.estado = nuevo_estado

@@ -1449,6 +1449,56 @@ class ConfirmarPresupuestoTest(TestCase):
         self.assertEqual(Venta.objects.count(), 1)
         self.assertEqual(PedidoFabrica.objects.count(), 1)
 
+    def test_desconfirmar_solo_cambia_etiqueta_y_deja_venta_y_pedido(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        self._confirmar(p)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+
+        res = self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'enviado'})
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'enviado')
+        # La venta y el pedido siguen existiendo (solo cambió la etiqueta).
+        self.assertIsNotNone(p.venta_id)
+        self.assertEqual(Venta.objects.count(), 1)
+        self.assertEqual(PedidoFabrica.objects.count(), 1)
+
+    def test_reconfirmar_tras_desconfirmar_no_duplica_venta_ni_pedido(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        self._confirmar(p)
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'enviado'})
+
+        res = self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'confirmado'})
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        self.assertEqual(Venta.objects.count(), 1)
+        self.assertEqual(PedidoFabrica.objects.count(), 1)
+
+    def test_cancelado_sigue_bloqueado(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'cancelado'})
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'cancelado')
+
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'enviado'})
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'cancelado')
+
+    def test_panel_cambiar_estado_visible_en_confirmado(self):
+        p = self._presupuesto_con_total(Decimal('100000'))
+        self._confirmar(p)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'id="form-cambiar-estado"')
+        self.assertContains(res, 'data-estado-actual="confirmado"')
+
     def test_cambiar_a_enviado_no_requiere_sena(self):
         p = self._presupuesto_con_total()
 
