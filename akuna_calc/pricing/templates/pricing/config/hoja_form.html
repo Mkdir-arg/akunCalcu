@@ -26,6 +26,7 @@
             </div>
 
             {% if es_edicion %}
+            <input type="hidden" name="formulas_present" value="1">
             <div class="mt-8 border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-slate-800">Fórmulas de Perfiles</h2>
@@ -134,6 +135,11 @@
 </div>
 
 <script>
+// `cascadeReady` evita el falso positivo del guard de marco: en edición el cascade
+// resetea el marco y recién lo restaura tras varios fetch encadenados. Hasta que no
+// termine, marco.value === '' aunque la hoja sí tenga marco: no validamos en esa ventana.
+let cascadeReady = false;
+
 // Cascade: Extrusora → Línea → Producto → Marco
 document.addEventListener('DOMContentLoaded', function() {
     const extrusoraSelect = document.getElementById('id_extrusora');
@@ -200,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 productoSelect.value = _initProductoId;
                 cargarMarcos(_initProductoId, _initMarcoId).then(() => {
                     marcoSelect.value = _initMarcoId;
+                    cascadeReady = true;
                 });
             });
         });
@@ -209,6 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resetSelect(lineaSelect);
     resetSelect(productoSelect);
     resetSelect(marcoSelect);
+    cascadeReady = true;
     {% endif %}
 
     // Select2 dispara 'change' vía jQuery .trigger(): addEventListener nativo no lo capta.
@@ -313,7 +321,23 @@ function eliminarFormula(btn) {
 }
 
 // Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
-document.getElementById('hojaForm').addEventListener('submit', function() {
+document.getElementById('hojaForm').addEventListener('submit', function(e) {
+    // Sin marco el form es inválido y el server descarta TODO lo cargado
+    // (fórmulas, accesorios, vidrio). Frenamos acá para no perder esos datos.
+    const marcoSel = document.getElementById('id_marco');
+    if (cascadeReady && marcoSel && !marcoSel.value) {
+        e.preventDefault();
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Falta elegir el marco',
+                text: 'Seleccioná un marco antes de guardar para no perder las fórmulas y accesorios cargados.',
+            });
+        } else {
+            alert('Seleccioná un marco antes de guardar.');
+        }
+        return;
+    }
     document.querySelectorAll('#formulasBody tr').forEach((row, idx) => {
         row.querySelectorAll('[name]').forEach(input => {
             input.name = input.name.replace(/_\d+$/, '_' + idx);
@@ -379,8 +403,23 @@ fetch('/pricing/api/pricing/accesorios/?tipo=hoja')
         if (accesoriosIniciales.length > 0) {
             accesoriosIniciales.forEach(a => _agregarFilaAccesorio(a));
         }
+        // Marcar la sección como cargada RECIÉN tras renderizar las filas: si algo
+        // fallara al pintarlas, no se marca y el server conserva lo anterior (fail-safe).
+        // Con el fetch fallido va al .catch y tampoco se marca.
+        marcarSeccionPresente('accesorios_present');
     })
     .catch(e => console.error('Error cargando accesorios:', e));
+
+function marcarSeccionPresente(nombre) {
+    const form = document.getElementById('hojaForm');
+    if (form && !form.querySelector(`input[name="${nombre}"]`)) {
+        const h = document.createElement('input');
+        h.type = 'hidden';
+        h.name = nombre;
+        h.value = '1';
+        form.appendChild(h);
+    }
+}
 
 function agregarAccesorio() {
     _agregarFilaAccesorio({});

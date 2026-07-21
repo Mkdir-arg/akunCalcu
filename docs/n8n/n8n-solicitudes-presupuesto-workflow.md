@@ -15,9 +15,18 @@ Archivos importables:
 - [n8n-solicitudes-reparto.json](./n8n-solicitudes-reparto.json)
 - [n8n-solicitudes-recordatorios.json](./n8n-solicitudes-recordatorios.json)
 
-En la instancia de n8n ya quedó creado (inactivo) **"Solicitudes Presupuesto - Recordatorios
-AkunCalcu"** (id `LZZaucnhQhXZne8Y`). El de Reparto quedó para importar (la instancia estaba
-respondiendo intermitente al momento de crearlo).
+Estado en la instancia de n8n (2026-07-19):
+- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `m084JBbhguUD7OiE`) — credenciales
+  Gmail + OpenAI ya cableadas, gates `Es Presupuesto` + `Es Nueva`, y **filtro anti-loop** en el
+  Gmail Trigger (`q: -from:me -subject:"Nuevo pedido de presupuesto"`, para que el reenvío no
+  se levante como pedido nuevo). **Inactivo**: falta poner el toggle "Active" en ON (esta
+  versión de n8n no permite activar por API).
+- **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `LZZaucnhQhXZne8Y`) — **activo**.
+
+Ya NO hace falta importar los `.json` (quedan como backup). Pendiente para el flujo completo:
+setear `EVOLUTION_APIKEY` en el servicio n8n, aprobar las plantillas de Meta, y activar el
+workflow de Reparto. Nota: fijar `N8N_ENCRYPTION_KEY` en Railway o cada redeploy rompe las
+credenciales de n8n.
 
 ---
 
@@ -27,11 +36,15 @@ respondiendo intermitente al momento de crearlo).
 Nuevo mail (Gmail Trigger)
   → IA Clasificar y Extraer (OpenAI gpt-4o-mini, JSON)
   → Parsear IA (Code)
-  → Es Presupuesto? (IF)
-       └─ sí → Crear Solicitud (POST /solicitudes/api/crear/)
-                 ├─ Reenviar al Vendedor (Gmail: envía mail al vendedor asignado)
-                 └─ WhatsApp al Vendedor (Evolution sendTemplate 'nueva_solicitud')
+  → Es Presupuesto? (IF)  ──sí──▶ Crear Solicitud (POST /solicitudes/api/crear/)
+                                    → Es Nueva? (IF: duplicada=false)  ──sí──▶
+                                         ├─ Reenviar al Vendedor (Gmail)
+                                         └─ WhatsApp al Vendedor (Evolution sendTemplate 'nueva_solicitud')
 ```
+
+- **Es Presupuesto** descarta los mails que no son pedidos (spam/newsletters no crean solicitud).
+- **Es Nueva** usa el campo `duplicada` que devuelve la API: si el Gmail Trigger dispara de más,
+  la solicitud no se re-crea (idempotencia por `gmail_thread_id`) y el vendedor recibe **un solo** aviso.
 
 La IA recibe el email entero (JSON de Gmail) y devuelve:
 ```json

@@ -125,6 +125,44 @@ def _reemplazar_filas_despiece(model, parent_field, parent_obj, filas):
     return 0
 
 
+def _guardar_formulas_vidrio_hoja(hoja, relacion_ids, vidrio_codigos, rebaje_anchos, rebaje_altos):
+    """Persiste las fórmulas de rebaje (rebaje_ancho/rebaje_alto) por vidrio de una hoja.
+
+    Los cuatro parámetros son listas paralelas tal cual llegan del POST (una
+    entrada por fila renderizada). Para cada fila:
+    - si trae `relacion_id` y ese VidrioHoja existe, se actualiza esa fila;
+    - si no (relacion_id vacío, o desincronizado porque el vidrio se reguardó
+      en paralelo y cambió de PK, o vidrio atado solo por la FK legacy
+      `Vidrio.hoja_id` sin fila en `vidrio_hojas`), se crea/actualiza vía
+      `update_or_create`, para que la fórmula NUNCA se pierda en silencio.
+    """
+    relaciones_existentes = {
+        str(r.id): r for r in VidrioHoja.objects.filter(hoja_id=hoja.id)
+    }
+    guardadas = 0
+    for i, vidrio_codigo in enumerate(vidrio_codigos):
+        vidrio_codigo = (vidrio_codigo or '').strip()
+        if not vidrio_codigo:
+            continue
+        relacion_id = (relacion_ids[i] if i < len(relacion_ids) else '').strip()
+        rebaje_ancho = (rebaje_anchos[i] if i < len(rebaje_anchos) else '').strip()
+        rebaje_alto = (rebaje_altos[i] if i < len(rebaje_altos) else '').strip()
+
+        relacion = relaciones_existentes.get(relacion_id) if relacion_id else None
+        if relacion is not None:
+            relacion.rebaje_ancho = rebaje_ancho
+            relacion.rebaje_alto = rebaje_alto
+            relacion.save(update_fields=['rebaje_ancho', 'rebaje_alto'])
+        else:
+            VidrioHoja.objects.update_or_create(
+                hoja=hoja,
+                vidrio_id=vidrio_codigo,
+                defaults={'rebaje_ancho': rebaje_ancho, 'rebaje_alto': rebaje_alto},
+            )
+        guardadas += 1
+    return guardadas
+
+
 def _build_current_querystring(request, allowed_keys=None):
     query_items = []
     for key in allowed_keys or []:
@@ -542,8 +580,9 @@ def marco_edit(request, pk):
                 except Exception as e:
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
 
-            # Guardar accesorios
-            if 'accesorio_0' in request.POST:
+            # Guardar accesorios ('accesorios_present' marca que la sección cargó,
+            # así vaciarla persiste el borrado sin depender de que llegue accesorio_0).
+            if 'accesorios_present' in request.POST:
                 try:
                     filas = []
                     index = 0
@@ -850,8 +889,11 @@ def hoja_edit(request, pk):
         if form.is_valid():
             form.save()
             
-            # Guardar fórmulas
-            if 'perfil_0' in request.POST:
+            hubo_error = False
+
+            # Guardar fórmulas ('formulas_present' marca que la sección se envió:
+            # así vaciar todas las filas persiste el borrado en vez de ignorarse).
+            if 'formulas_present' in request.POST:
                 try:
                     filas = []
                     fila_incompleta = None
@@ -874,14 +916,17 @@ def hoja_edit(request, pk):
                             break
                         index += 1
                     if fila_incompleta:
+                        hubo_error = True
                         messages.warning(request, f'Fórmulas NO guardadas: la fila {fila_incompleta} está incompleta. Se conservaron las fórmulas anteriores.')
                     else:
                         _reemplazar_filas_despiece(DespiecePerfilesHoja, 'hoja', obj, filas)
                 except Exception as e:
+                    hubo_error = True
                     messages.warning(request, f'No se pudieron guardar las fórmulas: {str(e)}')
             
-            # Guardar accesorios
-            if 'accesorio_0' in request.POST:
+            # Guardar accesorios ('accesorios_present' marca que la sección cargó,
+            # así vaciarla persiste el borrado sin depender de que llegue accesorio_0).
+            if 'accesorios_present' in request.POST:
                 try:
                     filas = []
                     index = 0
@@ -898,40 +943,26 @@ def hoja_edit(request, pk):
                         index += 1
                     _reemplazar_filas_despiece(DespieceAccesoriosHoja, 'hoja', obj, filas)
                 except Exception as e:
+                    hubo_error = True
                     messages.warning(request, f'No se pudieron guardar los accesorios: {str(e)}')
 
             # Guardar fórmulas de vidrio
-            relacion_ids = request.POST.getlist('relacion_id')
             vidrio_codigos = request.POST.getlist('vidrio_codigo')
-            rebaje_anchos = request.POST.getlist('rebaje_ancho')
-            rebaje_altos = request.POST.getlist('rebaje_alto')
             if vidrio_codigos:
                 try:
-                    relaciones_existentes = {
-                        str(r.id): r
-                        for r in VidrioHoja.objects.filter(hoja_id=obj.id)
-                    }
-                    for i, vidrio_codigo in enumerate(vidrio_codigos):
-                        vidrio_codigo = vidrio_codigo.strip()
-                        if not vidrio_codigo:
-                            continue
-                        relacion_id = (relacion_ids[i] if i < len(relacion_ids) else '').strip()
-                        rebaje_ancho = (rebaje_anchos[i] if i < len(rebaje_anchos) else '').strip()
-                        rebaje_alto = (rebaje_altos[i] if i < len(rebaje_altos) else '').strip()
-                        if relacion_id:
-                            relacion = relaciones_existentes.get(relacion_id)
-                            if relacion:
-                                relacion.rebaje_ancho = rebaje_ancho
-                                relacion.rebaje_alto = rebaje_alto
-                                relacion.save(update_fields=['rebaje_ancho', 'rebaje_alto'])
-                        else:
-                            VidrioHoja.objects.filter(
-                                hoja=obj, vidrio_id=vidrio_codigo
-                            ).update(rebaje_ancho=rebaje_ancho, rebaje_alto=rebaje_alto)
+                    _guardar_formulas_vidrio_hoja(
+                        obj,
+                        request.POST.getlist('relacion_id'),
+                        vidrio_codigos,
+                        request.POST.getlist('rebaje_ancho'),
+                        request.POST.getlist('rebaje_alto'),
+                    )
                 except Exception as e:
+                    hubo_error = True
                     messages.warning(request, f'No se pudieron guardar las fórmulas de vidrio: {str(e)}')
 
-            messages.success(request, 'Hoja actualizada correctamente.')
+            if not hubo_error:
+                messages.success(request, 'Hoja actualizada correctamente.')
             return redirect('config-hojas')
     
     return render(request, 'pricing/config/hoja_form.html', {
@@ -1215,13 +1246,19 @@ def _renombrar_codigo_vidrio(codigo_anterior, codigo_nuevo):
             cursor.execute('UPDATE despiece_perfiles_vidrios SET Idvidrio=%s WHERE Idvidrio=%s', [codigo_nuevo, codigo_anterior])
 
 
-def _reemplazar_relaciones_vidrio_hoja(vidrio, hoja_ids):
+def _reemplazar_relaciones_vidrio_hoja(vidrio, hoja_ids, scope_hoja_ids=None):
     """Reescribe las relaciones vidrio↔hoja preservando los rebajes (fórmulas
     de Ancho/Alto) ya cargados por hoja.
 
     Sin esto, reguardar un vidrio (ej. FLOAT 6 MM) borraba las fórmulas de
     todas sus hojas, porque el viejo delete()+bulk_create() recreaba las
     relaciones con rebaje_ancho/rebaje_alto en NULL.
+
+    `scope_hoja_ids` acota qué relaciones se pueden reescribir: solo se borran
+    las relaciones cuya hoja está dentro de ese universo (o entre las nuevas
+    `hoja_ids`). Las relaciones a hojas fuera del universo —típicamente hojas
+    bloqueadas, que el form no puede ofrecer en el `<select>`— se preservan.
+    Con `scope_hoja_ids=None` se reescriben todas (comportamiento histórico).
     """
     with transaction.atomic():
         Vidrio.objects.select_for_update().get(pk=vidrio.pk)
@@ -1229,7 +1266,11 @@ def _reemplazar_relaciones_vidrio_hoja(vidrio, hoja_ids):
             r.hoja_id: (r.rebaje_ancho, r.rebaje_alto)
             for r in VidrioHoja.objects.filter(vidrio=vidrio)
         }
-        VidrioHoja.objects.filter(vidrio=vidrio).delete()
+        if scope_hoja_ids is None:
+            VidrioHoja.objects.filter(vidrio=vidrio).delete()
+        else:
+            ids_a_reemplazar = set(scope_hoja_ids) | set(hoja_ids)
+            VidrioHoja.objects.filter(vidrio=vidrio, hoja_id__in=ids_a_reemplazar).delete()
         VidrioHoja.objects.bulk_create([
             VidrioHoja(
                 vidrio=vidrio,
@@ -1284,34 +1325,48 @@ def vidrio_edit(request, pk):
                 return JsonResponse({'error': str(e)}, status=500)
 
         if form.is_valid():
+            # Validar el conflicto de código ANTES de persistir nada: si no,
+            # form.save() ya escribía descripción/precio y el return temprano
+            # descartaba las relaciones, dejando un guardado a medias.
+            codigo_nuevo = (request.POST.get('codigo_nuevo') or '').strip()
+            renombrar = bool(codigo_nuevo and codigo_nuevo != obj.codigo)
+            if renombrar and Vidrio.objects.filter(pk=codigo_nuevo).exists():
+                messages.error(request, f'Ya existe un vidrio con el código "{codigo_nuevo}". No se guardó nada.')
+                return redirect('config-vidrio-edit', pk=obj.codigo)
+
             form.save()
+            hubo_error = False
 
             # Renombrar el código (PK) si cambió, repuntando sus referencias.
-            codigo_nuevo = (request.POST.get('codigo_nuevo') or '').strip()
-            if codigo_nuevo and codigo_nuevo != obj.codigo:
-                if Vidrio.objects.filter(pk=codigo_nuevo).exists():
-                    messages.error(request, f'Ya existe un vidrio con el código "{codigo_nuevo}". No se renombró.')
-                    return redirect('config-vidrio-edit', pk=obj.codigo)
+            if renombrar:
                 _renombrar_codigo_vidrio(obj.codigo, codigo_nuevo)
                 obj = Vidrio.objects.get(pk=codigo_nuevo)
 
-            # Guardar relaciones de hojas
-            hoja_ids_raw = request.POST.getlist('hoja')
-            if hoja_ids_raw:
+            # Guardar relaciones de hojas. 'relaciones_hojas_enviadas' confirma que
+            # la sección vino en el POST, así quitar TODAS las filas desasocia de
+            # verdad (antes una lista vacía se confundía con "sección no enviada").
+            if 'relaciones_hojas_enviadas' in request.POST:
                 try:
                     hoja_ids = []
                     hoja_ids_vistos = set()
-                    for hoja_id_raw in hoja_ids_raw:
-                        hoja_id_raw = hoja_id_raw.strip()
+                    for hoja_id_raw in request.POST.getlist('hoja'):
+                        hoja_id_raw = (hoja_id_raw or '').strip()
                         if hoja_id_raw:
                             hoja_id = int(hoja_id_raw)
                             if hoja_id not in hoja_ids_vistos:
                                 hoja_ids.append(hoja_id)
                                 hoja_ids_vistos.add(hoja_id)
-                    _reemplazar_relaciones_vidrio_hoja(obj, hoja_ids)
+                    # Solo reescribimos relaciones a hojas que el form pudo ofrecer
+                    # (no bloqueadas); las relaciones a hojas bloqueadas se preservan.
+                    seleccionables = set(
+                        Hoja.objects.exclude(bloqueado='Si').values_list('id', flat=True)
+                    )
+                    _reemplazar_relaciones_vidrio_hoja(obj, hoja_ids, scope_hoja_ids=seleccionables)
                 except Exception as e:
+                    hubo_error = True
                     messages.warning(request, f'No se pudieron guardar las relaciones de hojas: {str(e)}')
-            messages.success(request, 'Vidrio actualizado correctamente.')
+            if not hubo_error:
+                messages.success(request, 'Vidrio actualizado correctamente.')
             return redirect('config-vidrios')
 
     return render(request, 'pricing/config/vidrio_form.html', {

@@ -211,9 +211,17 @@ function eliminarFormula(btn) {
 }
 
 
-// Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua
+// Re-numera índices a 0,1,2... antes del submit para garantizar secuencia continua.
+// Hay que renumerar AMBAS tablas: si no se renumeran los accesorios, borrar uno
+// del medio deja un hueco (accesorio_0, accesorio_2) y el server corta el while
+// en el hueco, perdiendo silenciosamente los accesorios siguientes.
 document.getElementById('marcoForm').addEventListener('submit', function() {
     document.querySelectorAll('#formulasTable tr').forEach((row, idx) => {
+        row.querySelectorAll('[name]').forEach(input => {
+            input.name = input.name.replace(/_\d+$/, '_' + idx);
+        });
+    });
+    document.querySelectorAll('#accesoriosTable tr').forEach((row, idx) => {
         row.querySelectorAll('[name]').forEach(input => {
             input.name = input.name.replace(/_\d+$/, '_' + idx);
         });
@@ -373,6 +381,16 @@ fetch('/pricing/api/pricing/accesorios/?tipo=marco')
         accesorios = data;
         if (accesoriosIniciales.length > 0) {
             accesoriosIniciales.forEach(a => _agregarFilaAccesorio(a));
+        }
+        // Marca la sección como cargada RECIÉN tras renderizar las filas: si algo
+        // fallara al pintarlas, no se marca y el server conserva lo anterior (fail-safe).
+        const form = document.getElementById('marcoForm');
+        if (form && !form.querySelector('input[name="accesorios_present"]')) {
+            const h = document.createElement('input');
+            h.type = 'hidden';
+            h.name = 'accesorios_present';
+            h.value = '1';
+            form.appendChild(h);
         }
     })
     .catch(e => console.error('Error cargando accesorios:', e));

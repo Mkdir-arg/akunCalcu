@@ -631,3 +631,172 @@ class ProductoTerciarizadoFlagTest(SimpleTestCase):
         fields = ProductoForm.Meta.fields
         self.assertIn('terciarizado', fields)
         self.assertNotIn('precio_manual_m2', fields)
+
+
+class GuardarFormulasVidrioHojaTest(SimpleTestCase):
+    """Auditoría de pérdida de datos: guardar las fórmulas de rebaje de vidrio
+    desde el form normal de la hoja NO debe perderse en silencio."""
+
+    def test_crea_relacion_si_no_existe(self):
+        """Vidrio atado solo por la FK legacy (sin fila VidrioHoja): antes el
+        .update() afectaba 0 filas y la fórmula se perdía. Ahora se crea."""
+        hoja = SimpleNamespace(id=5)
+        with patch('pricing.config_views.VidrioHoja') as mvh:
+            mvh.objects.filter.return_value = []
+            config_views._guardar_formulas_vidrio_hoja(
+                hoja, [''], ['V1'], ['(Ancho-149)/2'], ['Alto-50'])
+        mvh.objects.update_or_create.assert_called_once_with(
+            hoja=hoja, vidrio_id='V1',
+            defaults={'rebaje_ancho': '(Ancho-149)/2', 'rebaje_alto': 'Alto-50'})
+
+    def test_relacion_id_desincronizado_crea_via_update_or_create(self):
+        """relacion_id del HTML ya no existe (el vidrio se reguardó y cambió de
+        PK): antes se saltaba la fila; ahora cae a update_or_create."""
+        hoja = SimpleNamespace(id=5)
+        rel = MagicMock()
+        rel.id = 101
+        with patch('pricing.config_views.VidrioHoja') as mvh:
+            mvh.objects.filter.return_value = [rel]
+            config_views._guardar_formulas_vidrio_hoja(
+                hoja, ['100'], ['V1'], ['X'], ['Y'])
+        rel.save.assert_not_called()
+        mvh.objects.update_or_create.assert_called_once_with(
+            hoja=hoja, vidrio_id='V1', defaults={'rebaje_ancho': 'X', 'rebaje_alto': 'Y'})
+
+    def test_relacion_id_valido_actualiza_la_fila_existente(self):
+        hoja = SimpleNamespace(id=5)
+        rel = MagicMock()
+        rel.id = 100
+        with patch('pricing.config_views.VidrioHoja') as mvh:
+            mvh.objects.filter.return_value = [rel]
+            config_views._guardar_formulas_vidrio_hoja(
+                hoja, ['100'], ['V1'], ['X'], ['Y'])
+        self.assertEqual(rel.rebaje_ancho, 'X')
+        self.assertEqual(rel.rebaje_alto, 'Y')
+        rel.save.assert_called_once_with(update_fields=['rebaje_ancho', 'rebaje_alto'])
+        mvh.objects.update_or_create.assert_not_called()
+
+    def test_ignora_filas_sin_codigo_de_vidrio(self):
+        hoja = SimpleNamespace(id=5)
+        with patch('pricing.config_views.VidrioHoja') as mvh:
+            mvh.objects.filter.return_value = []
+            n = config_views._guardar_formulas_vidrio_hoja(hoja, [''], [''], [''], [''])
+        self.assertEqual(n, 0)
+        mvh.objects.update_or_create.assert_not_called()
+
+
+class ReemplazarRelacionesScopeTest(SimpleTestCase):
+    """Auditoría de pérdida de datos: al reescribir relaciones de un vidrio, las
+    relaciones a hojas fuera del universo editable (ej. hojas bloqueadas, que el
+    form no ofrece en el select) NO deben borrarse."""
+
+    def test_scope_preserva_relaciones_fuera_del_universo(self):
+        vidrio = SimpleNamespace(pk='V1', codigo='V1')
+        previas = [
+            SimpleNamespace(hoja_id=5, rebaje_ancho='A5', rebaje_alto='B5'),
+            SimpleNamespace(hoja_id=99, rebaje_ancho='A99', rebaje_alto='B99'),
+        ]
+        creados = {}
+        with patch('pricing.config_views.transaction.atomic'), \
+             patch('pricing.config_views.Vidrio') as mv, \
+             patch('pricing.config_views.VidrioHoja') as mvh:
+            mv.objects.select_for_update.return_value.get.return_value = vidrio
+            filter_result = MagicMock()
+            filter_result.__iter__.return_value = iter(previas)
+            mvh.objects.filter.return_value = filter_result
+
+            def _fake(**kwargs):
+                creados[kwargs['hoja_id']] = kwargs
+                return kwargs
+            mvh.side_effect = _fake
+
+            # scope = solo la hoja 5 (la 99 está bloqueada y no se puede editar)
+            config_views._reemplazar_relaciones_vidrio_hoja(vidrio, [5], scope_hoja_ids={5})
+
+        delete_calls = [c for c in mvh.objects.filter.call_args_list if 'hoja_id__in' in c.kwargs]
+        self.assertTrue(delete_calls, 'el borrado debe acotarse con hoja_id__in')
+        ids_borrados = set(delete_calls[0].kwargs['hoja_id__in'])
+        self.assertEqual(ids_borrados, {5})
+        self.assertNotIn(99, ids_borrados)
+        # la relación 5 se recrea preservando su rebaje
+        self.assertEqual(creados[5]['rebaje_ancho'], 'A5')
+        self.assertEqual(creados[5]['rebaje_alto'], 'B5')
+
+
+def _render_config_form(template, extra_context, path):
+    request = RequestFactory().get(path)
+    request.user = SimpleNamespace(username='tester', is_authenticated=False)
+    context = {
+        'sidebar_modules': [],
+        'user_role_label': 'Admin',
+        'user_access_summary': 'Acceso total',
+    }
+    context.update(extra_context)
+    return render_to_string(template, context, request=request)
+
+
+class HojaFormPerdidaDatosTemplateTest(SimpleTestCase):
+    def test_incluye_marcadores_de_seccion_y_guard_de_marco(self):
+        html = _render_config_form(
+            'pricing/config/hoja_form.html',
+            {
+                'titulo': 'Editar Hoja',
+                'form': forms.Form(),
+                'cancel_url': 'config-hojas',
+                'es_edicion': True,
+                'object': SimpleNamespace(id=67),
+                'hoja': None,
+                'formulas': [],
+                'accesorios_hoja': [],
+                'perfiles': [],
+                'perfiles_json': '[]',
+                'accesorios_hoja_json': '[]',
+                'vidrios_relacionados': [],
+            },
+            '/pricing/config/hojas/67/editar/',
+        )
+        # marcador de fórmulas (sección síncrona) presente
+        self.assertIn('name="formulas_present"', html)
+        # marcador de accesorios emitido por JS recién cuando el fetch resolvió
+        self.assertIn("marcarSeccionPresente('accesorios_present')", html)
+        # guard de submit: no dejar guardar sin marco (si no, se pierde todo)
+        self.assertIn('Falta elegir el marco', html)
+        self.assertIn("getElementById('id_marco')", html)
+        # el guard solo se activa tras el cascade (evita falso positivo al cargar)
+        self.assertIn('if (cascadeReady && marcoSel', html)
+
+
+class MarcoFormPerdidaDatosTemplateTest(SimpleTestCase):
+    def test_renumera_accesorios_y_marca_seccion(self):
+        html = _render_config_form(
+            'pricing/config/marco_form.html',
+            {
+                'titulo': 'Editar Marco',
+                'form': forms.Form(),
+                'formulas': [],
+                'object': SimpleNamespace(id=7, pk=7, producto=None),
+                'accesorios_marco_json': '[]',
+            },
+            '/pricing/config/marcos/7/editar/',
+        )
+        # el submit ahora renumera TAMBIÉN los accesorios (antes solo fórmulas)
+        self.assertIn("document.querySelectorAll('#accesoriosTable tr').forEach", html)
+        # marca la sección de accesorios como cargada para permitir vaciarla
+        self.assertIn("h.name = 'accesorios_present'", html)
+
+
+class VidrioFormPerdidaDatosTemplateTest(SimpleTestCase):
+    def test_incluye_marcador_de_relaciones(self):
+        html = _render_config_form(
+            'pricing/config/vidrio_form.html',
+            {
+                'titulo': 'Editar Vidrio',
+                'form': forms.Form(),
+                'cancel_url': 'config-vidrios',
+                'object': SimpleNamespace(codigo='V1'),
+                'relaciones': [],
+                'hojas': [],
+            },
+            '/pricing/config/vidrios/V1/editar/',
+        )
+        self.assertIn('name="relaciones_hojas_enviadas"', html)

@@ -10,10 +10,10 @@
       "parameters": {
         "pollTimes": { "item": [{ "mode": "everyMinute" }] },
         "simple": true,
-        "filters": {},
+        "filters": { "q": "-from:me -subject:\"Nuevo pedido de presupuesto\"" },
         "options": {}
       },
-      "notes": "Adjuntar credencial Gmail OAuth2 de la casilla de la empresa. Opcional: filtrar por etiqueta/busqueda en 'filters' (ej. label del formulario web)."
+      "notes": "Filtro anti-loop: ignora mails propios y los reenvios del flujo (asunto 'Nuevo pedido de presupuesto'). Adjuntar credencial Gmail OAuth2 de la casilla de la empresa."
     },
     {
       "id": "ia",
@@ -131,6 +131,29 @@
         "options": {}
       },
       "notes": "Requiere plantilla Meta aprobada 'nueva_solicitud' (es_AR) con 2 params: {{1}}=vendedor, {{2}}=cliente. Reemplazar EVOLUTION_APIKEY."
+    },
+    {
+      "id": "es-nueva",
+      "name": "Es Nueva",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1240, 340],
+      "notes": "Gate de idempotencia: solo notifica si la solicitud es nueva (duplicada=false). Evita avisos repetidos si el Gmail Trigger dispara de más.",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond-nueva",
+              "leftValue": "={{ $json.duplicada ? 'si' : 'no' }}",
+              "rightValue": "no",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -138,7 +161,8 @@
     "IA Clasificar y Extraer": { "main": [[{ "node": "Parsear IA", "type": "main", "index": 0 }]] },
     "Parsear IA": { "main": [[{ "node": "Es Presupuesto", "type": "main", "index": 0 }]] },
     "Es Presupuesto": { "main": [[{ "node": "Crear Solicitud", "type": "main", "index": 0 }], []] },
-    "Crear Solicitud": { "main": [[{ "node": "Reenviar al Vendedor", "type": "main", "index": 0 }, { "node": "WhatsApp al Vendedor", "type": "main", "index": 0 }]] }
+    "Crear Solicitud": { "main": [[{ "node": "Es Nueva", "type": "main", "index": 0 }]] },
+    "Es Nueva": { "main": [[{ "node": "Reenviar al Vendedor", "type": "main", "index": 0 }, { "node": "WhatsApp al Vendedor", "type": "main", "index": 0 }], []] }
   },
   "settings": { "executionOrder": "v1", "timezone": "America/Argentina/Buenos_Aires" }
 }
