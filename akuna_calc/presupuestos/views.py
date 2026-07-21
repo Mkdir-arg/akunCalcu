@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import timedelta
 
 import base64
@@ -81,6 +81,25 @@ def _puede_ver_creador(user):
     return bool(profile and profile.rol and profile.rol.codigo == 'administrativo')
 
 
+def _termino_a_decimal(texto):
+    """Convierte el término de búsqueda a Decimal si representa un monto.
+
+    Acepta formatos '100000', '100000,50' y '100.000,50' (miles con punto,
+    decimales con coma). Devuelve None si no es un número.
+    """
+    t = (texto or '').strip().replace(' ', '')
+    if not t:
+        return None
+    if '.' in t and ',' in t:
+        t = t.replace('.', '').replace(',', '.')
+    elif ',' in t:
+        t = t.replace(',', '.')
+    try:
+        return Decimal(t)
+    except InvalidOperation:
+        return None
+
+
 @login_required
 def lista(request):
     all_qs = Presupuesto.objects.filter(deleted_at__isnull=True)
@@ -107,17 +126,32 @@ def lista(request):
     qs = Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente', 'created_by').annotate(item_count=Count('items'))
 
     estado = request.GET.get('estado', '')
-    cliente_q = request.GET.get('cliente', '')
+    q = request.GET.get('q', '').strip()
     creado_por = request.GET.get('creado_por', '') if puede_ver_creador else ''
 
     if estado:
         qs = qs.filter(estado=estado)
-    if cliente_q:
-        qs = qs.filter(
-            Q(cliente__nombre__icontains=cliente_q) |
-            Q(cliente__apellido__icontains=cliente_q) |
-            Q(cliente__razon_social__icontains=cliente_q)
+    if q:
+        # Buscador único: matchea cualquier dato de la tabla.
+        filtros = (
+            Q(numero__icontains=q) |
+            Q(cliente__nombre__icontains=q) |
+            Q(cliente__apellido__icontains=q) |
+            Q(cliente__razon_social__icontains=q) |
+            Q(estado__icontains=q)
         )
+        # La columna Usuario/creador solo es visible (y buscable) con permiso.
+        if puede_ver_creador:
+            filtros |= (
+                Q(created_by__first_name__icontains=q) |
+                Q(created_by__last_name__icontains=q) |
+                Q(created_by__username__icontains=q)
+            )
+        # Total: solo si el término es un número.
+        monto = _termino_a_decimal(q)
+        if monto is not None:
+            filtros |= Q(total=monto)
+        qs = qs.filter(filtros)
     if creado_por.isdigit():
         qs = qs.filter(created_by_id=int(creado_por))
 
@@ -132,7 +166,7 @@ def lista(request):
     return render(request, 'presupuestos/lista.html', {
         'presupuestos': qs,
         'estado_actual': estado,
-        'cliente_q': cliente_q,
+        'q': q,
         'creado_por_actual': creado_por,
         'estados': Presupuesto.ESTADO_CHOICES,
         'kpis': kpis,
