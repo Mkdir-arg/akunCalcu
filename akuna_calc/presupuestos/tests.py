@@ -1609,3 +1609,65 @@ class ConfirmarPresupuestoTest(TestCase):
         orden = p.pedidos_fabrica.get().ordenes.get()
         self.assertEqual(orden.tipo_abertura, 'Cortina roller')
         self.assertEqual(orden.medidas.get().medida, '')
+
+
+class BuscadorPresupuestosTest(TestCase):
+    """El buscador único del listado matchea cualquier dato de la tabla:
+    número, cliente, estado, usuario (con permiso) y total."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('busca_admin', password='testpass')
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'x', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
+        self.client = Client()
+        self.client.login(username='busca_admin', password='testpass')
+
+    def _cliente(self, nombre, apellido='Test', razon_social=''):
+        return Cliente.objects.create(
+            nombre=nombre, apellido=apellido, razon_social=razon_social,
+            direccion='x', localidad='x', telefono='x', email='x@x.com',
+        )
+
+    def _ids(self, q):
+        res = self.client.get('/presupuestos/', {'q': q})
+        self.assertEqual(res.status_code, 200)
+        return [p.pk for p in res.context['presupuestos']]
+
+    def test_busca_por_numero(self):
+        p1 = crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
+        crear_presupuesto(self.user, cliente=self._cliente('Lopez'))
+        self.assertEqual(self._ids(p1.numero), [p1.pk])
+
+    def test_busca_por_cliente(self):
+        p1 = crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
+        p2 = crear_presupuesto(self.user, cliente=self._cliente('Lopez'))
+        ids = self._ids('garci')
+        self.assertIn(p1.pk, ids)
+        self.assertNotIn(p2.pk, ids)
+
+    def test_busca_por_razon_social(self):
+        p1 = crear_presupuesto(self.user, cliente=self._cliente('A', razon_social='Aberturas del Sur SA'))
+        crear_presupuesto(self.user, cliente=self._cliente('B'))
+        self.assertEqual(self._ids('aberturas del sur'), [p1.pk])
+
+    def test_busca_por_estado(self):
+        crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
+        p2 = crear_presupuesto(self.user, cliente=self._cliente('Lopez'))
+        Presupuesto.objects.filter(pk=p2.pk).update(estado='enviado')
+        self.assertEqual(self._ids('enviado'), [p2.pk])
+
+    def test_busca_por_total(self):
+        p1 = crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
+        p2 = crear_presupuesto(self.user, cliente=self._cliente('Lopez'))
+        Presupuesto.objects.filter(pk=p1.pk).update(total=Decimal('100000'))
+        Presupuesto.objects.filter(pk=p2.pk).update(total=Decimal('250000'))
+        self.assertEqual(self._ids('250000'), [p2.pk])
+
+    def test_busca_por_usuario_creador(self):
+        otro = User.objects.create_user('carlitos', password='x')
+        crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
+        p2 = crear_presupuesto(otro, cliente=self._cliente('Lopez'))
+        self.assertEqual(self._ids('carlitos'), [p2.pk])
