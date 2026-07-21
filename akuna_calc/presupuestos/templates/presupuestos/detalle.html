@@ -111,10 +111,10 @@
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Total</p>
                         {% if presupuesto.es_pvc %}
-                        <p class="text-blue-600 font-bold text-xl mt-1">US${{ presupuesto.get_total_usd|floatformat:2 }}</p>
-                        <p class="text-slate-400 text-xs">${{ presupuesto.total|floatformat:2 }}</p>
+                        <p class="text-blue-600 font-bold text-xl mt-1">US${{ presupuesto.get_total_usd|formato_numero }}</p>
+                        <p class="text-slate-400 text-xs">${{ presupuesto.total|formato_numero }}</p>
                         {% else %}
-                        <p class="text-blue-600 font-bold text-xl mt-1">${{ presupuesto.total|floatformat:2 }}</p>
+                        <p class="text-blue-600 font-bold text-xl mt-1">${{ presupuesto.total|formato_numero }}</p>
                         {% endif %}
                     </div>
                     <div>
@@ -125,7 +125,7 @@
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Cotización USD</p>
                         <p class="text-slate-800 font-semibold mt-1">
-                            <i class="fas fa-coins mr-1 text-blue-500"></i>${{ presupuesto.cotizacion_usd|floatformat:2 }}
+                            <i class="fas fa-coins mr-1 text-blue-500"></i>${{ presupuesto.cotizacion_usd|formato_numero }}
                         </p>
                     </div>
                     {% endif %}
@@ -133,15 +133,15 @@
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Recargo interno</p>
                         {% if presupuesto.tipo_obra == 'obra_nueva' %}
                             {% if presupuesto.es_pvc %}
-                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|floatformat:2 }}</p>
+                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</p>
                             {% else %}
-                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</p>
+                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</p>
                             {% endif %}
                         {% elif presupuesto.tipo_obra == 'renovacion' %}
                             {% if presupuesto.es_pvc %}
-                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_renovacion_unitario_usd|floatformat:2 }} por unidad</p>
+                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }} por unidad</p>
                             {% else %}
-                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }} por unidad</p>
+                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.recargo_renovacion_unitario|formato_numero }} por unidad</p>
                             {% endif %}
                         {% else %}
                         <p class="text-amber-600 font-semibold mt-1">Definir configuración</p>
@@ -193,14 +193,14 @@
                             </div>
                             <div class="text-right shrink-0">
                                 {% if presupuesto.es_pvc %}
-                                <p class="font-bold text-slate-800">US${{ item.get_precio_total_usd|floatformat:2 }}</p>
+                                <p class="font-bold text-slate-800">US${{ item.get_precio_total_usd|formato_numero }}</p>
                                 {% if item.cantidad > 1 %}
-                                <p class="text-xs text-slate-400">US${{ item.get_precio_unitario_usd|floatformat:2 }} c/u</p>
+                                <p class="text-xs text-slate-400">US${{ item.get_precio_unitario_usd|formato_numero }} c/u</p>
                                 {% endif %}
                                 {% else %}
-                                <p class="font-bold text-slate-800">${{ item.precio_total|floatformat:2 }}</p>
+                                <p class="font-bold text-slate-800">${{ item.precio_total|formato_numero }}</p>
                                 {% if item.cantidad > 1 %}
-                                <p class="text-xs text-slate-400">${{ item.precio_unitario|floatformat:2 }} c/u</p>
+                                <p class="text-xs text-slate-400">${{ item.precio_unitario|formato_numero }} c/u</p>
                                 {% endif %}
                                 {% endif %}
                             </div>
@@ -238,54 +238,54 @@
                     {% if presupuesto.es_pvc %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Subtotal ítems</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_total_items_usd|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_total_items_usd|formato_numero }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Recargo renovación incluido</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_total_renovacion_usd|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_total_renovacion_usd|formato_numero }}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_iva_usd|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_iva_usd|formato_numero }}</span>
                     </div>
                     {% endif %}
                     <div class="pt-2 border-t flex justify-between items-center">
                         <span class="font-bold text-slate-600">Total presupuesto</span>
-                        <span class="text-2xl font-bold text-blue-600">US${{ presupuesto.get_total_usd|floatformat:2 }}</span>
+                        <span class="text-2xl font-bold text-blue-600">US${{ presupuesto.get_total_usd|formato_numero }}</span>
                     </div>
                     {% else %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Subtotal ítems</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_total_items|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">${{ presupuesto.get_total_items|formato_numero }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">Recargo renovación incluido</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_total_renovacion|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_total_renovacion|formato_numero }}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-semibold text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_iva|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-700">${{ presupuesto.get_iva|formato_numero }}</span>
                     </div>
                     {% endif %}
                     <div class="pt-2 border-t flex justify-between items-center">
                         <span class="font-bold text-slate-600">Total presupuesto</span>
-                        <span class="text-2xl font-bold text-blue-600">${{ presupuesto.total|floatformat:2 }}</span>
+                        <span class="text-2xl font-bold text-blue-600">${{ presupuesto.total|formato_numero }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -448,12 +448,12 @@
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between gap-3">
                         <span class="text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
                     <div class="flex justify-between gap-3">
                         <span class="text-slate-500">Recargo unitario</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.recargo_renovacion_unitario|formato_numero }}</span>
                     </div>
                     {% endif %}
                     <div class="flex justify-between gap-3">
@@ -475,7 +475,7 @@
             {% if not presupuesto.esta_bloqueado or presupuesto.estado == 'confirmado' %}
             <div class="bg-white rounded-2xl shadow-lg p-5">
                 <h3 class="font-bold text-slate-800 mb-3">Cambiar estado</h3>
-                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}" data-estado-actual="{{ presupuesto.estado }}">
+                <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}" data-estado-actual="{{ presupuesto.estado }}" data-incluye-colocacion="{{ presupuesto.incluye_colocacion|yesno:'1,0' }}" data-monto-colocacion="{{ presupuesto.get_monto_colocacion|unlocalize }}">
                     {% csrf_token %}
                     <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
                         {% for value, label in presupuesto.ESTADO_CHOICES %}
@@ -535,27 +535,27 @@
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between">
                         <span class="text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
                     <div class="flex justify-between">
                         <span class="text-slate-500">Recargo por unidad</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.recargo_renovacion_unitario|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.recargo_renovacion_unitario|formato_numero }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Recargo acumulado</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_total_renovacion|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_total_renovacion|formato_numero }}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between">
                         <span class="text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_iva|floatformat:2 }}</span>
+                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_iva|formato_numero }}</span>
                     </div>
                     {% endif %}
                     <div class="border-t pt-2 mt-2 flex justify-between">
                         <span class="font-bold text-slate-700">Total</span>
-                        <span class="font-bold text-blue-600 text-lg">${{ presupuesto.total|floatformat:2 }}</span>
+                        <span class="font-bold text-blue-600 text-lg">${{ presupuesto.total|formato_numero }}</span>
                     </div>
                 </div>
             </div>
@@ -691,24 +691,60 @@ function confirmarEliminarPresupuesto() {
 (function () {
     const form = document.getElementById('form-cambiar-estado');
     if (!form) return;
+    const incluyeColocacion = form.dataset.incluyeColocacion === '1';
+    const montoColocacion = parseFloat(form.dataset.montoColocacion || '0') || 0;
+    const MIN_COLOCACION = 100000;
     form.addEventListener('submit', function (e) {
         const estadoActual = form.dataset.estadoActual;
         const select = form.querySelector('select[name="estado"]');
         const destino = select ? select.value : '';
-        if (estadoActual !== 'confirmado' || destino === 'confirmado') return;
-        e.preventDefault();
-        Swal.fire({
-            icon: 'warning',
-            title: '¿Cambiar el estado de un presupuesto confirmado?',
-            html: 'La <strong>venta</strong> y el <strong>pedido de fábrica</strong> generados al confirmar <strong>seguirán existiendo</strong>. Si ya no corresponden, dalos de baja por separado.',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cambiar estado',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#334155',
-            cancelButtonColor: '#6b7280'
-        }).then((result) => {
-            if (result.isConfirmed) form.submit();
-        });
+
+        // Confirmando: si incluye colocación, validar el monto.
+        if (destino === 'confirmado' && estadoActual !== 'confirmado' && incluyeColocacion) {
+            if (montoColocacion <= 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Falta el monto de colocación',
+                    text: 'El presupuesto incluye colocación pero el monto es $0. Cargalo antes de confirmar.',
+                });
+                return;
+            }
+            if (montoColocacion < MIN_COLOCACION) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Monto de colocación bajo',
+                    html: 'La colocación es <strong>$' + montoColocacion.toLocaleString('es-AR') + '</strong> (menos de $100.000). ¿Confirmar igual?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#334155',
+                    cancelButtonColor: '#6b7280'
+                }).then((result) => {
+                    if (result.isConfirmed) form.submit();
+                });
+                return;
+            }
+            return;
+        }
+
+        // Saliendo de "confirmado": avisar que la venta y el pedido quedan.
+        if (estadoActual === 'confirmado' && destino !== 'confirmado') {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Cambiar el estado de un presupuesto confirmado?',
+                html: 'La <strong>venta</strong> y el <strong>pedido de fábrica</strong> generados al confirmar <strong>seguirán existiendo</strong>. Si ya no corresponden, dalos de baja por separado.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cambiar estado',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#334155',
+                cancelButtonColor: '#6b7280'
+            }).then((result) => {
+                if (result.isConfirmed) form.submit();
+            });
+        }
     });
 })();
 

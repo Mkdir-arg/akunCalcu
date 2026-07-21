@@ -215,6 +215,18 @@ class Presupuesto(models.Model):
     def get_recargo_renovacion_unitario_usd(self):
         return self._convertir_a_usd(_decimal_or_zero(self.recargo_renovacion_unitario))
 
+    def get_monto_colocacion(self):
+        """Monto de colocación aplicable según el tipo de obra.
+
+        Obra nueva: el valor de colocación (recargo_obra_nueva).
+        Renovación: el recargo por unidad (recargo_renovacion_unitario).
+        """
+        if self.tipo_obra == 'obra_nueva':
+            return _decimal_or_zero(self.recargo_obra_nueva)
+        if self.tipo_obra == 'renovacion':
+            return _decimal_or_zero(self.recargo_renovacion_unitario)
+        return Decimal('0')
+
     def actualizar_items_por_configuracion(self):
         recargo_unitario = self.recargo_renovacion_unitario if self.tipo_obra == 'renovacion' else Decimal('0')
         for item in self.items.all():

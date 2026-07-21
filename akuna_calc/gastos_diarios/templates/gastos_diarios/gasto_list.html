@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Gastos Diarios{% endblock %}
 
@@ -79,7 +80,7 @@
                             </p>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-right text-sm font-bold text-slate-800">$ {{ gasto.monto|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-right text-sm font-bold text-slate-800">$ {{ gasto.monto|formato_numero }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-500">
                             <i class="fab fa-whatsapp text-green-500 mr-1"></i>{{ gasto.origen_nombre }}
                         </td>

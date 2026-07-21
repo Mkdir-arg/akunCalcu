@@ -524,6 +524,10 @@ def _procesar_confirmacion(request, presupuesto):
         messages.error(request, 'No se puede confirmar un presupuesto sin ítems (total $0).')
         return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
 
+    if presupuesto.incluye_colocacion and presupuesto.get_monto_colocacion() <= 0:
+        messages.error(request, 'El presupuesto incluye colocación pero el monto de colocación es $0. Cargalo antes de confirmar.')
+        return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
+
     if presupuesto.es_pvc() and not presupuesto.tiene_cotizacion_usd():
         messages.error(request, 'El presupuesto PVC no tiene cotización USD cargada. Cargala antes de confirmar.')
         return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)

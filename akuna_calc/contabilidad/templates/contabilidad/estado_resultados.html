@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -45,12 +46,12 @@
                 {% for cuenta in resultado.ingresos.cuentas %}
                 <div class="flex justify-between py-2 px-4 hover:bg-gray-50">
                     <span class="text-gray-700">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                    <span class="font-semibold text-green-600">${{ cuenta.get_saldo|floatformat:2 }}</span>
+                    <span class="font-semibold text-green-600">${{ cuenta.get_saldo|formato_numero }}</span>
                 </div>
                 {% endfor %}
                 <div class="flex justify-between py-3 px-4 bg-green-50 font-bold text-green-700 mt-2 rounded-lg">
                     <span>Total Ingresos</span>
-                    <span>${{ resultado.ingresos.total|floatformat:2 }}</span>
+                    <span>${{ resultado.ingresos.total|formato_numero }}</span>
                 </div>
             </div>
 
@@ -60,19 +61,19 @@
                 {% for cuenta in resultado.costos.cuentas %}
                 <div class="flex justify-between py-2 px-4 hover:bg-gray-50">
                     <span class="text-gray-700">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                    <span class="font-semibold text-red-600">${{ cuenta.get_saldo|floatformat:2 }}</span>
+                    <span class="font-semibold text-red-600">${{ cuenta.get_saldo|formato_numero }}</span>
                 </div>
                 {% endfor %}
                 <div class="flex justify-between py-3 px-4 bg-red-50 font-bold text-red-700 mt-2 rounded-lg">
                     <span>Total Costos</span>
-                    <span>${{ resultado.costos.total|floatformat:2 }}</span>
+                    <span>${{ resultado.costos.total|formato_numero }}</span>
                 </div>
             </div>
 
             <!-- Utilidad Bruta -->
             <div class="flex justify-between py-4 px-4 bg-blue-100 font-bold text-blue-800 text-lg rounded-lg">
                 <span>UTILIDAD BRUTA</span>
-                <span>${{ resultado.utilidad_bruta|floatformat:2 }}</span>
+                <span>${{ resultado.utilidad_bruta|formato_numero }}</span>
             </div>
 
             <!-- Gastos -->
@@ -81,19 +82,19 @@
                 {% for cuenta in resultado.gastos.cuentas %}
                 <div class="flex justify-between py-2 px-4 hover:bg-gray-50">
                     <span class="text-gray-700">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                    <span class="font-semibold text-orange-600">${{ cuenta.get_saldo|floatformat:2 }}</span>
+                    <span class="font-semibold text-orange-600">${{ cuenta.get_saldo|formato_numero }}</span>
                 </div>
                 {% endfor %}
                 <div class="flex justify-between py-3 px-4 bg-orange-50 font-bold text-orange-700 mt-2 rounded-lg">
                     <span>Total Gastos</span>
-                    <span>${{ resultado.gastos.total|floatformat:2 }}</span>
+                    <span>${{ resultado.gastos.total|formato_numero }}</span>
                 </div>
             </div>
 
             <!-- Resultado Neto -->
             <div class="flex justify-between py-4 px-4 {% if resultado.resultado_neto >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} font-bold text-xl rounded-lg border-2 {% if resultado.resultado_neto >= 0 %}border-green-300{% else %}border-red-300{% endif %}">
                 <span>RESULTADO NETO</span>
-                <span>${{ resultado.resultado_neto|floatformat:2 }}</span>
+                <span>${{ resultado.resultado_neto|formato_numero }}</span>
             </div>
         </div>
     </div>

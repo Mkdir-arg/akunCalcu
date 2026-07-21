@@ -1752,3 +1752,88 @@ class ColocacionPresupuestoTest(TestCase):
         from presupuestos.forms import PresupuestoConfiguracionObraForm
         form = PresupuestoConfiguracionObraForm()
         self.assertEqual(form.fields['recargo_obra_nueva'].label, 'Colocación')
+
+    # --- Requerimiento: colocación obligatoria al confirmar ---
+
+    def test_get_monto_colocacion_segun_tipo(self):
+        p = crear_presupuesto(self.user)
+        p.recargo_obra_nueva = Decimal('50000')
+        p.recargo_renovacion_unitario = Decimal('7000')
+        p.tipo_obra = 'obra_nueva'
+        p.save()
+        self.assertEqual(p.get_monto_colocacion(), Decimal('50000'))
+        p.tipo_obra = 'renovacion'
+        p.save()
+        self.assertEqual(p.get_monto_colocacion(), Decimal('7000'))
+
+    def _obra_nueva_para_confirmar(self, colocacion, incluye_colocacion=True):
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'obra_nueva'
+        p.incluye_colocacion = incluye_colocacion
+        p.recargo_obra_nueva = colocacion
+        p.save()
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana', cantidad=1,
+            ancho_mm=1000, alto_mm=1000, margen_porcentaje=30,
+            precio_unitario=Decimal('100000'), resultado_json={},
+        )
+        p.recalcular_total()
+        return p
+
+    def test_confirmar_bloqueado_si_incluye_colocacion_y_monto_cero(self):
+        p = self._obra_nueva_para_confirmar(Decimal('0'), incluye_colocacion=True)
+
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'confirmado'})
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')      # no se confirmó
+        self.assertIsNone(p.venta_id)
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_bloqueado_renovacion_incluye_colocacion_monto_cero(self):
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'renovacion'
+        p.incluye_colocacion = True
+        p.recargo_renovacion_unitario = Decimal('0')
+        p.save()
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana', cantidad=1,
+            ancho_mm=1000, alto_mm=1000, margen_porcentaje=30,
+            precio_unitario=Decimal('100000'), resultado_json={},
+        )
+        p.recalcular_total()
+
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'confirmado'})
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'borrador')
+        self.assertEqual(Venta.objects.count(), 0)
+
+    def test_confirmar_ok_con_colocacion_cargada(self):
+        p = self._obra_nueva_para_confirmar(Decimal('150000'), incluye_colocacion=True)
+
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'confirmado'})
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        self.assertIsNotNone(p.venta_id)
+
+    def test_confirmar_ok_sin_incluir_colocacion_aunque_monto_cero(self):
+        # Si NO incluye colocación, monto 0 no bloquea.
+        p = self._obra_nueva_para_confirmar(Decimal('0'), incluye_colocacion=False)
+
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'confirmado'})
+
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+
+    def test_detalle_expone_datos_y_alertas_de_colocacion(self):
+        p = self._obra_nueva_para_confirmar(Decimal('50000'), incluye_colocacion=True)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'data-incluye-colocacion="1"')
+        self.assertContains(res, 'data-monto-colocacion="50000')
+        self.assertContains(res, 'Falta el monto de colocación')  # JS: error si 0
+        self.assertContains(res, 'Monto de colocación bajo')       # JS: alerta si < 100.000

@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Configuración General{% endblock %}
 
@@ -18,7 +19,7 @@
                     <p class="text-sm text-gray-600">Costo por hora de mano de obra</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-2xl font-bold text-blue-600">${{ valor_hora_hombre|floatformat:2 }}</span>
+                    <span class="text-2xl font-bold text-blue-600">${{ valor_hora_hombre|formato_numero }}</span>
                     <a href="{% url 'configuracion-hora-hombre' %}"
                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Editar
