@@ -1675,6 +1675,16 @@ class BuscadorPresupuestosTest(TestCase):
         p2 = crear_presupuesto(otro, cliente=self._cliente('Lopez'))
         self.assertEqual(self._ids('carlitos'), [p2.pk])
 
+    def test_termino_a_decimal_descarta_no_finitos_y_gigantes(self):
+        # Evita el 500 en MySQL: inf/nan y montos fuera del rango de `total` -> None.
+        from presupuestos.views import _termino_a_decimal
+        self.assertIsNone(_termino_a_decimal('inf'))
+        self.assertIsNone(_termino_a_decimal('-inf'))
+        self.assertIsNone(_termino_a_decimal('nan'))
+        self.assertIsNone(_termino_a_decimal('9999999999999'))  # >= 1e12
+        self.assertEqual(_termino_a_decimal('100000'), Decimal('100000'))
+        self.assertEqual(_termino_a_decimal('100.000,50'), Decimal('100000.50'))
+
 
 class ColocacionPresupuestoTest(TestCase):
     """En obra nueva el 'recargo' es la Colocación: aparece como renglón bajo el

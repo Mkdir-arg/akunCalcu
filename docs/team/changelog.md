@@ -14,6 +14,30 @@
 
 ---
 
+## 2026-07-21 — Pricing: fin de la pérdida silenciosa de datos en config (FIX-016)
+
+**Pedido:** "Se pierden algunas Fórmulas de Vidrio en `/pricing/config/hojas/`: las cargamos y se borran, no sabemos por qué." Auditoría adversarial que encontró 10 puntos de pérdida silenciosa de datos.
+**Archivos modificados:** `akuna_calc/pricing/config_views.py`, `templates/pricing/config/{hoja_form,marco_form,vidrio_form}.html`, `pricing/tests.py`.
+**Descripción:** El bug reportado: al guardar por el botón normal, las fórmulas de rebaje de un vidrio atado solo por la FK legacy (`vidrios.Idhoja`, sin fila en `vidrio_hojas`) usaban `.update()` sobre 0 filas → no se persistían. Se resolvió con el helper `_guardar_formulas_vidrio_hoja` (usa `update_or_create`, también cubre `relacion_id` desincronizado). Se arreglaron además: marcadores de sección (`formulas_present`/`accesorios_present`/`relaciones_hojas_enviadas`) para que **vaciar** una sección persista el borrado; **`marco_edit`** renumera la tabla de accesorios en el submit (antes borrar uno del medio perdía los siguientes); mensaje de éxito **condicional** (no más "guardado OK" engañoso); `vidrio_edit` valida el código **antes** de `form.save()` (evita guardado parcial) y `_reemplazar_relaciones_vidrio_hoja` acepta `scope_hoja_ids` para preservar relaciones de hojas bloqueadas; guard de submit en `hoja_form` para no perder lo cargado si falta el marco (gateado por `cascadeReady`). Quedaron **fuera a pedido**: el editor de fórmulas de Marco (regex que pisa fórmulas complejas) y la deprecación de la FK legacy `Vidrio.hoja_id`. Revisado adversarialmente (2 agentes) — se detectó y corrigió una regresión del guard de marco. Sin migración. Detalle en FIX-016.
+
+## 2026-07-21 — Formato de números argentino + IVA del PDF de presupuestos (FIX-017)
+
+**Pedido:** "Que los montos usen los puntos y comas: `$1.459.951,02` en vez de `$1459951,02`."
+**Archivos modificados:** `presupuestos/templates/presupuestos/{detalle,lista}.html`, `facturacion/.../libro_iva_ventas.html`, `gastos_diarios/.../gasto_list.html`, `configuracion/.../general.html`, `contabilidad/.../{balance_general,estado_resultados}.html`, `presupuestos/views.py` (`pdf`), `presupuestos/tests.py`.
+**Descripción:** Se reemplazó `floatformat:2` por el filtro `formato_numero` (estilo AR) en los montos de los módulos activos (se agregó `{% load custom_filters %}` donde faltaba). **No se tocaron** los `floatformat` dentro de JavaScript de `comercial/reportes` (alimentan gráficos vía `parseFloat` y se romperían con puntos de miles). `contabilidad` no está en `INSTALLED_APPS` (inerte) — se formateó igual por si se activa. De paso se corrigió el PDF de presupuestos en pesos, que mostraba `IVA = 21% de solo los ítems` (ignoraba la colocación) y los números no cerraban → ahora usa `get_iva_desglosado()`. Sin migración. Tests: presupuestos 118 + facturacion/gastos/configuracion 46 OK.
+
+## 2026-07-21 — Presupuestos: Colocación en obra nueva (FEAT-026)
+
+**Pedido (Romina):** "Obra nueva = colocación (valor que ponen las chicas). Que aparezca debajo del subtotal el renglón 'Colocación', y que el IVA se calcule sobre subtotal + colocación. Renovación dejalo como está. Y cuando 'Incluye colocación' está tildado, el monto no puede ser 0; si es menor a $100.000, alertar antes de confirmar."
+**Archivos modificados:** `presupuestos/models.py` (`get_monto_colocacion`), `presupuestos/views.py` (`pdf`, `_procesar_confirmacion`), `presupuestos/forms.py` (label → "Colocación"), `templates/presupuestos/{pdf,detalle}.html`, `presupuestos/tests.py`.
+**Descripción:** En **obra nueva** el valor `recargo_obra_nueva` es la **Colocación**: se muestra como renglón bajo el Subtotal en el PDF y en el detalle (label "Colocación"), y el IVA es 21% de (subtotal + colocación). Renovación intacto. **Validación al confirmar**: si `incluye_colocacion` está tildado y el monto aplicable (`get_monto_colocacion()`: colocación en obra nueva / recargo por unidad en renovación) es 0, **se bloquea la confirmación** (server-side en `_procesar_confirmacion` + SweetAlert client-side); si el monto es **menor a $100.000**, alerta "¿confirmar igual?" antes de confirmar. Sin cambio de modelo ni migración. Tests: 118 OK.
+
+## 2026-07-21 — Presupuestos: cambiar estado desde Confirmado + buscador único (FEAT-027)
+
+**Pedido:** (1) "Que un presupuesto Confirmado pueda cambiar de estado." (2) "Que el buscador del listado busque cualquier cosa de la tabla, no solo el cliente."
+**Archivos modificados:** `presupuestos/views.py` (`cambiar_estado`, `lista`, helper `_termino_a_decimal`), `templates/presupuestos/{detalle,lista}.html`, `presupuestos/tests.py`.
+**Descripción:** (1) `cambiar_estado` ahora permite salir de "confirmado" (solo cambia la etiqueta; la Venta y el Pedido de fábrica generados **quedan** — se avisa con SweetAlert2); "cancelado" sigue bloqueado; re-confirmar (con venta ya creada) solo re-marca sin duplicar. (2) El filtro del listado pasó de `cliente` a un buscador único `q` que matchea número, cliente (nombre/apellido/razón social), estado, usuario creador (si tiene permiso) y total (si el término es numérico; helper `_termino_a_decimal` sanitiza inf/nan y montos fuera de rango para no romper en MySQL). Sin migración. Tests: 118 OK.
+
 ## 2026-07-18 — Reparto automático de solicitudes de presupuesto (FEAT-025)
 
 **Pedido:** "Hoy llega un mail al mail de la empresa y a mano distribuyo los pedidos de presupuesto a los mail de los empleados; quiero automatizarlo con n8n." Definido: reparto **round-robin** entre usuarios con rol **vendedor** (tomando su Email), aviso por **WhatsApp + Gmail**, marcar contestada **manual y automático**, recordatorio **cada 1 hora**, casilla **Gmail/Workspace**.

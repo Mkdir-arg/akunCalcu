@@ -95,9 +95,14 @@ def _termino_a_decimal(texto):
     elif ',' in t:
         t = t.replace(',', '.')
     try:
-        return Decimal(t)
+        d = Decimal(t)
     except InvalidOperation:
         return None
+    # Descartar no finitos (inf/nan) y montos fuera del rango del campo `total`
+    # (max_digits=14, 2 decimales → parte entera < 1e12): en MySQL romperían el lookup.
+    if not d.is_finite() or abs(d) >= Decimal('1000000000000'):
+        return None
+    return d
 
 
 @login_required

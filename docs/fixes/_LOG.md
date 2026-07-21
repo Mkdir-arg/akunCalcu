@@ -22,6 +22,29 @@
 
 ## Fixes registrados
 
+### FIX-017 — Formato de números argentino + IVA mal desglosado en el PDF de presupuestos
+**Fecha**: 2026-07-21
+**Reportado por**: Usuario
+**Severidad**: Media (UX + un desglose de IVA que no cerraba en el PDF)
+**Feature afectada**: Transversal (montos en varios módulos) + `presupuestos` (PDF)
+
+**Síntoma**: Los montos se mostraban sin separadores (`$1459951,02` en vez de `$1.459.951,02`). Además, el PDF de presupuestos en pesos mostraba `Subtotal = solo ítems` e `IVA = 21% de solo los ítems` (ignorando el recargo/colocación), por lo que Subtotal + IVA ≠ Total.
+**Causa raíz**: Los templates usaban `floatformat:2`, que con la localización es-AR pone coma decimal pero **no** separadores de miles. El PDF calculaba `pdf_iva = get_total_items() * 0.21` en vez de sobre el subtotal completo.
+**Solución**: Se reemplazó `floatformat:2` por el filtro `formato_numero` (`core/templatetags/custom_filters.py`, estilo `1.234.567,89`) en los montos de los módulos activos: `presupuestos` (detalle/lista), `facturacion` (libro IVA), `gastos_diarios`, `configuracion` (y `contabilidad`, que está inactivo). Se agregó `{% load custom_filters %}` donde faltaba. **No se tocaron** los `floatformat` dentro de JavaScript de `comercial/reportes` (alimentan gráficos con `parseFloat` y se romperían con puntos de miles). El PDF pasó a `pdf_iva = get_iva_desglosado()` (21% de subtotal + colocación). Tests: presupuestos 118 OK + facturacion/gastos/configuracion 46 OK.
+**Archivos modificados**: `akuna_calc/presupuestos/views.py`, `presupuestos/templates/presupuestos/{detalle,lista,pdf}.html`, `facturacion/templates/facturacion/libro_iva_ventas.html`, `gastos_diarios/templates/gastos_diarios/gasto_list.html`, `configuracion/templates/configuracion/general.html`, `contabilidad/templates/contabilidad/{balance_general,estado_resultados}.html`, `presupuestos/tests.py`
+
+### FIX-016 — Fórmulas de Vidrio (y otros datos) se pierden en silencio en /pricing/config
+**Fecha**: 2026-07-21
+**Reportado por**: Usuario (via /loop de análisis)
+**Severidad**: Alta (pérdida silenciosa de datos cargados)
+**Feature afectada**: Módulo `pricing` — configuración de hojas, marcos y vidrios
+
+**Síntoma**: En `/pricing/config/hojas/` se cargaban las "Fórmulas de Vidrio" (rebaje_ancho/rebaje_alto) y desaparecían al guardar, sin aviso ("las cargamos y se borran"). Solo en algunos registros.
+**Causa raíz**: En el guardado normal de `hoja_edit`, las filas de vidrio cuyo `relacion_id` venía vacío (vidrio atado solo por la FK legacy `vidrios.Idhoja`, sin fila en `vidrio_hojas`) se persistían con `VidrioHoja.objects.filter(...).update(...)`, que sobre 0 filas **no crea nada** y no lanza error → la fórmula se perdía en silencio. Una auditoría adversarial encontró 9 puntos más de la misma clase (vaciados que no persistían por guards del tipo `if 'perfil_0' in POST`, `marco_edit` que perdía accesorios al borrar uno del medio por índices no contiguos, mensaje de éxito incondicional, `relacion_id` desincronizado, guardado parcial al renombrar código de vidrio, wipe de relaciones a hojas bloqueadas).
+**Solución**: Helper `_guardar_formulas_vidrio_hoja` (usa `update_or_create` → crea la fila si falta; cubre `relacion_id` viejo). Marcadores de sección (`formulas_present`/`accesorios_present`/`relaciones_hojas_enviadas`, emitidos por JS recién cuando la sección cargó, para no borrar por una carrera de fetch) que permiten persistir un vaciado. `marco_form.html` renumera la tabla de accesorios en el submit. Mensaje de éxito condicional (`hubo_error`). `vidrio_edit` valida el código nuevo **antes** de `form.save()`; `_reemplazar_relaciones_vidrio_hoja(scope_hoja_ids=...)` preserva relaciones a hojas bloqueadas. Guard de submit en `hoja_form` (gateado por `cascadeReady` para no dar falso positivo durante el cascade). **Fuera de alcance (a pedido)**: el editor estructurado de fórmulas de Marco (regex que pisa fórmulas complejas con "Alto - 0") y la deprecación de la FK legacy `Vidrio.hoja_id`. Revisado por 2 agentes adversariales (se detectó y corrigió una regresión: el guard de marco daba falso positivo durante el cascade). Sin migración.
+**Archivos modificados**: `akuna_calc/pricing/config_views.py`, `pricing/templates/pricing/config/{hoja_form,marco_form,vidrio_form}.html`, `pricing/tests.py`
+**Pendiente**: la base de producción tiene 61 relaciones vidrio-hoja con rebaje NULL (datos ya perdidos antes del fix); el fix evita nuevas pérdidas pero no recupera las viejas.
+
 ### FIX-015 — Error 403 CSRF al guardar formularios que quedaron abiertos un rato
 **Fecha**: 2026-07-06
 **Reportado por**: Matias

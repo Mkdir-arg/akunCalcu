@@ -31,6 +31,8 @@
 | [FEAT-023](./FEAT-023-cotizador-en-orden-fabricacion.md) | "Agregar orden" abre el cotizador y crea la orden precargada | Implementado | 2026-07-07 | — |
 | [FEAT-024](./FEAT-024-boton-comentario-presupuesto.md) | Botón "Comentario presupuesto" (Observaciones que salen en el PDF) | Implementado | 2026-07-08 | — |
 | [FEAT-025](./FEAT-025-reparto-automatico-solicitudes-presupuesto.md) | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | Implementado | 2026-07-18 | — |
+| [FEAT-026](./FEAT-026-colocacion-obra-nueva-presupuestos.md) | Colocación en presupuestos de obra nueva (renglón en PDF + validación al confirmar) | Implementado | 2026-07-21 | — |
+| [FEAT-027](./FEAT-027-estado-confirmado-y-buscador-presupuestos.md) | Cambiar estado desde Confirmado + buscador único del listado de presupuestos | Implementado | 2026-07-21 | — |
 
 ---
 
@@ -41,7 +43,7 @@
 | `pedidos` | FEAT-001 | 2026-03-04 |
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011 | 2026-05-17 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
-| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019 | 2026-07-07 |
+| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019, FEAT-026, FEAT-027 | 2026-07-21 |
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023 | 2026-07-07 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
