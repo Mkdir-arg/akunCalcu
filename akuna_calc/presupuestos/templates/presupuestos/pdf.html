@@ -545,8 +545,14 @@
                             {% if presupuesto.es_pvc %}
                             <tr>
                                 <td class="totals-label totals-subtotal">Subtotal</td>
-                                <td class="totals-value">US${{ presupuesto.get_subtotal_sin_iva_usd|formato_numero }}</td>
+                                <td class="totals-value">US${{ presupuesto.get_total_items_usd|formato_numero }}</td>
                             </tr>
+                            {% if presupuesto.tipo_obra == 'obra_nueva' and presupuesto.get_recargo_obra_nueva_aplicado > 0 %}
+                            <tr>
+                                <td class="totals-label">Colocación</td>
+                                <td class="totals-value">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</td>
+                            </tr>
+                            {% endif %}
                             <tr>
                                 <td class="totals-label totals-iva">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
                                 <td class="totals-value">US${{ presupuesto.get_iva_usd|formato_numero }}</td>
@@ -560,6 +566,12 @@
                                 <td class="totals-label totals-subtotal">Subtotal</td>
                                 <td class="totals-value">${{ pdf_subtotal|formato_numero }}</td>
                             </tr>
+                            {% if presupuesto.tipo_obra == 'obra_nueva' and pdf_colocacion > 0 %}
+                            <tr>
+                                <td class="totals-label">Colocación</td>
+                                <td class="totals-value">${{ pdf_colocacion|formato_numero }}</td>
+                            </tr>
+                            {% endif %}
                             <tr>
                                 <td class="totals-label totals-iva">{% if presupuesto.aplicar_iva %}IVA incluido{% else %}IVA no incluido{% endif %} (21%)</td>
                                 <td class="totals-value">${{ pdf_iva|formato_numero }}</td>

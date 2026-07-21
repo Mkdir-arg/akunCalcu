@@ -714,7 +714,9 @@ class PresupuestosViewsTest(TestCase):
         self.assertNotContains(res, 'Cada ítem se describe con la configuración seleccionada')
         self.assertContains(res, 'El presente presupuesto incluye flete y colocación.')
 
-    def test_pdf_no_muestra_detalle_recargo_obra_nueva(self):
+    def test_pdf_obra_nueva_muestra_colocacion_como_renglon(self):
+        # Obra nueva: el recargo se muestra como renglón "Colocación" debajo del
+        # subtotal (antes NO se desglosaba; ahora sí, por pedido del negocio).
         self.client.login(username='viewuser', password='testpass')
         p = crear_presupuesto(self.user)
         p.tipo_obra = 'obra_nueva'
@@ -735,9 +737,10 @@ class PresupuestosViewsTest(TestCase):
         res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, '$400.000,00')
-        self.assertContains(res, '$350.000,00')
-        self.assertContains(res, '$73.500,00')
+        self.assertContains(res, '$350.000,00')   # subtotal (solo ítems)
+        self.assertContains(res, '$50.000,00')     # colocación
+        self.assertContains(res, '$400.000,00')    # total
+        self.assertContains(res, '<td class="totals-label">Colocación</td>')
         self.assertNotContains(res, 'Recargo obra nueva')
 
     def test_pdf_muestra_iva_cuando_aplica(self):
@@ -1671,3 +1674,81 @@ class BuscadorPresupuestosTest(TestCase):
         crear_presupuesto(self.user, cliente=self._cliente('Garcia'))
         p2 = crear_presupuesto(otro, cliente=self._cliente('Lopez'))
         self.assertEqual(self._ids('carlitos'), [p2.pk])
+
+
+class ColocacionPresupuestoTest(TestCase):
+    """En obra nueva el 'recargo' es la Colocación: aparece como renglón bajo el
+    subtotal en el PDF y el IVA se calcula sobre subtotal + colocación.
+    Renovación no cambia."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('coloc_admin', password='testpass')
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'x', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
+        self.client = Client()
+        self.client.login(username='coloc_admin', password='testpass')
+
+    def _presupuesto_obra_nueva(self, colocacion=Decimal('20000'), aplicar_iva=True):
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'obra_nueva'
+        p.recargo_obra_nueva = colocacion
+        p.aplicar_iva = aplicar_iva
+        p.save()
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana', cantidad=2,
+            ancho_mm=1200, alto_mm=1500, margen_porcentaje=30,
+            precio_unitario=Decimal('50000'), resultado_json={},
+        )
+        p.recalcular_total()
+        return p
+
+    def test_pdf_obra_nueva_muestra_colocacion(self):
+        p = self._presupuesto_obra_nueva()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['pdf_subtotal'], Decimal('100000'))   # solo ítems
+        self.assertEqual(res.context['pdf_colocacion'], Decimal('20000'))  # colocación
+        self.assertEqual(res.context['pdf_iva'], Decimal('25200.00'))      # 21% de 120000
+        self.assertContains(res, '<td class="totals-label">Colocación</td>')
+
+    def test_obra_nueva_iva_sobre_subtotal_mas_colocacion(self):
+        p = self._presupuesto_obra_nueva()
+        # 100000 ítems + 20000 colocación + 25200 IVA = 145200
+        self.assertEqual(p.total, Decimal('145200.00'))
+
+    def test_obra_nueva_sin_iva_muestra_iva_referencia_y_no_lo_suma(self):
+        p = self._presupuesto_obra_nueva(aplicar_iva=False)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        # El IVA se muestra como referencia (21% de subtotal + colocación) pero NO se suma al total.
+        self.assertEqual(res.context['pdf_iva'], Decimal('25200.00'))
+        self.assertContains(res, 'IVA no incluido (21%)')
+        self.assertEqual(p.total, Decimal('120000'))  # 100000 + 20000, sin IVA
+
+    def test_pdf_renovacion_no_muestra_colocacion(self):
+        p = crear_presupuesto(self.user)
+        p.tipo_obra = 'renovacion'
+        p.save()
+        ItemPresupuesto.objects.create(
+            presupuesto=p, descripcion='Ventana', cantidad=2,
+            ancho_mm=1200, alto_mm=1500, margen_porcentaje=30,
+            precio_unitario=Decimal('50000'), resultado_json={},
+        )
+        p.recalcular_total()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/pdf/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['pdf_colocacion'], Decimal('0'))
+        self.assertNotContains(res, '<td class="totals-label">Colocación</td>')
+
+    def test_form_config_obra_etiqueta_colocacion(self):
+        from presupuestos.forms import PresupuestoConfiguracionObraForm
+        form = PresupuestoConfiguracionObraForm()
+        self.assertEqual(form.fields['recargo_obra_nueva'].label, 'Colocación')

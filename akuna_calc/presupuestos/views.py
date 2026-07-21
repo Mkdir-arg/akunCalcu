@@ -648,11 +648,17 @@ def pdf(request, pk):
     )
     items_pdf = [build_pdf_item_context(item) for item in presupuesto.items.all()]
     pdf_subtotal = presupuesto.get_total_items()
-    pdf_iva = pdf_subtotal * Decimal('0.21')
+    # Colocación: en obra nueva es el valor que cargan las chicas. Se muestra como
+    # renglón aparte debajo del subtotal y el IVA se calcula sobre subtotal + colocación.
+    pdf_colocacion = presupuesto.get_recargo_obra_nueva_aplicado()
+    # IVA de referencia: siempre 21% de (subtotal + colocación). Se muestra como
+    # renglón esté o no incluido en el total (el label aclara "incluido/no incluido").
+    pdf_iva = presupuesto.get_iva_desglosado()
     return render(request, 'presupuestos/pdf.html', {
         'logo_url': _build_logo_data_url(),
         'presupuesto': presupuesto,
         'items_pdf': items_pdf,
         'pdf_subtotal': pdf_subtotal,
+        'pdf_colocacion': pdf_colocacion,
         'pdf_iva': pdf_iva,
     })

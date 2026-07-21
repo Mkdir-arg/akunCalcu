@@ -46,6 +46,10 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
         fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'plazo_entrega_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion']
+        labels = {
+            # En obra nueva este valor es la colocación (lo cargan las chicas).
+            'recargo_obra_nueva': 'Colocación',
+        }
         widgets = {
             'tipo_obra': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
             'validez_dias': forms.NumberInput(attrs={'min': '1', 'step': '1', 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'}),
@@ -86,7 +90,7 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
 
         if tipo_obra == 'obra_nueva':
             if recargo_obra_nueva is None:
-                self.add_error('recargo_obra_nueva', 'Ingresa el valor adicional de obra nueva.')
+                self.add_error('recargo_obra_nueva', 'Ingresá el valor de colocación.')
             cleaned_data['recargo_renovacion_unitario'] = 0
 
         if tipo_obra == 'renovacion':

@@ -242,7 +242,7 @@
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Recargo obra nueva</span>
+                        <span class="font-semibold text-slate-500">Colocación</span>
                         <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|floatformat:2 }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
@@ -268,7 +268,7 @@
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Recargo obra nueva</span>
+                        <span class="font-semibold text-slate-500">Colocación</span>
                         <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
@@ -447,7 +447,7 @@
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Recargo</span>
+                        <span class="text-slate-500">Colocación</span>
                         <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
@@ -534,7 +534,7 @@
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Recargo obra nueva</span>
+                        <span class="text-slate-500">Colocación</span>
                         <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_recargo_obra_nueva_aplicado|floatformat:2 }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
