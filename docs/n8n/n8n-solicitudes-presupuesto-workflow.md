@@ -15,12 +15,13 @@ Archivos importables:
 - [n8n-solicitudes-reparto.json](./n8n-solicitudes-reparto.json)
 - [n8n-solicitudes-recordatorios.json](./n8n-solicitudes-recordatorios.json)
 
-Estado en la instancia de n8n (2026-07-19):
-- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `m084JBbhguUD7OiE`) — credenciales
-  Gmail + OpenAI ya cableadas, gates `Es Presupuesto` + `Es Nueva`, y **filtro anti-loop** en el
-  Gmail Trigger (`q: -from:me -subject:"Nuevo pedido de presupuesto"`, para que el reenvío no
-  se levante como pedido nuevo). **Inactivo**: falta poner el toggle "Active" en ON (esta
-  versión de n8n no permite activar por API).
+Estado en la instancia de n8n (2026-07-23):
+- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `BC4WvFsUMr1lcgmB`) — credenciales
+  Gmail + OpenAI cableadas. Detecta **2 vías**: formulario web (determinístico) y mail directo
+  (IA). Gmail Trigger con `simple:false` (trae el cuerpo) y `q` que incluye el formulario y
+  descarta ruido. **Inactivo**: falta poner el toggle "Active" en ON (esta versión de n8n no
+  permite activar por API). ⚠️ El `.json` de backup quedó **desactualizado** (2 vías); la fuente
+  de verdad es el workflow vivo `BC4WvFsUMr1lcgmB`.
 - **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `M5N22elKbX2w6SMQ`) — corre
   **1 vez por día a las 08:00** y manda **un solo WhatsApp por vendedor** con el listado de
   todas sus solicitudes sin contestar. **Inactivo** (activar cuando esté todo listo).
@@ -35,26 +36,33 @@ credenciales de n8n.
 ## Workflow 1 — Reparto (principal)
 
 ```
-Nuevo mail (Gmail Trigger)
-  → IA Clasificar y Extraer (OpenAI gpt-4o-mini, JSON)
-  → Parsear IA (Code)
-  → Es Presupuesto? (IF)  ──sí──▶ Crear Solicitud (POST /solicitudes/api/crear/)
-                                    → Es Nueva? (IF: duplicada=false)  ──sí──▶
-                                         ├─ Reenviar al Vendedor (Gmail)
-                                         └─ WhatsApp al Vendedor (Evolution sendTemplate 'nueva_solicitud')
+Nuevo mail (Gmail Trigger, simple:false → trae el cuerpo)
+  → Extraer mail (Code: subject, from, body de texto plano, gmail_thread_id)
+  → ¿Es Formulario Web? (IF: asunto contiene "Nuevo formulario web")
+       ├─ SÍ → Parsear Formulario (Code, regex sobre los campos del form) ─┐
+       └─ NO → IA Clasificar y Extraer (OpenAI sobre el CUERPO) → Parsear IA → Es Presupuesto? ─┤(sí)
+                                                                                                 ▼
+                                                              Crear Solicitud (POST /solicitudes/api/crear/)
+                                                                → Es Nueva? (duplicada=false) ──sí──▶
+                                                                     ├─ Reenviar al Vendedor (Gmail)
+                                                                     └─ WhatsApp al Vendedor (sendTemplate 'nueva_solicitud')
 ```
 
-- **Es Presupuesto** descarta los mails que no son pedidos (spam/newsletters no crean solicitud).
-- **Es Nueva** usa el campo `duplicada` que devuelve la API: si el Gmail Trigger dispara de más,
-  la solicitud no se re-crea (idempotencia por `gmail_thread_id`) y el vendedor recibe **un solo** aviso.
+**Dos vías de entrada (ambas detectadas):**
+- **Formulario web**: llega desde la propia casilla (`from:me`) con asunto fijo *"Nuevo formulario
+  web"* y cuerpo con campos etiquetados (Nombre / E-mail / Teléfono / Barrio-Localidad / consulta).
+  Se parsea **determinísticamente** (sin depender de la IA → funciona aunque OpenAI falle).
+- **Mail directo del cliente** (texto libre): lo clasifica/extrae la **IA sobre el cuerpo completo**.
 
-La IA recibe el email entero (JSON de Gmail) y devuelve:
-```json
-{ "es_presupuesto": true, "nombre_cliente": "", "email": "", "telefono": "", "asunto": "", "mensaje": "" }
-```
-`Crear Solicitud` recibe la respuesta de AkunCalcu con el vendedor asignado
-(`vendedor.email`, `vendedor.whatsapp`, `vendedor.nombre`) y de ahí salen el reenvío y el
-WhatsApp.
+**Notas clave:**
+- El Gmail Trigger va en **`simple:false`** para traer el cuerpo (antes iba `simple:true` → solo
+  `snippet`, y por eso la IA no clasificaba bien).
+- El `q` **ya NO usa `-from:me`** (eso excluía al formulario, que viene de la propia casilla). El
+  anti-loop se mantiene con `-subject:"Nuevo pedido de presupuesto"` (el reenvío ya no vuelve al
+  inbox porque el email del vendedor está bien cargado).
+- **Es Nueva** usa `duplicada` (idempotencia por `gmail_thread_id`) → un solo aviso aunque el
+  trigger dispare de más. La API responde `vendedor{...}` + `solicitud{nombre_cliente,telefono,...}`
+  para que el reenvío/WhatsApp tengan los datos venga por la vía que venga.
 
 ## Workflow 2 — Recordatorios (resumen diario)
 

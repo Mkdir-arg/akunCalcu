@@ -36,6 +36,12 @@ def _payload_solicitud(solicitud, duplicada=False):
         'solicitud_id': solicitud.pk,
         'estado': solicitud.estado,
         'vendedor': vendedor_data,
+        'solicitud': {
+            'nombre_cliente': solicitud.nombre_cliente,
+            'telefono': solicitud.telefono,
+            'email': solicitud.email,
+            'asunto': solicitud.asunto,
+        },
         'mensaje_whatsapp': solicitud.mensaje_whatsapp(),
     }
 
