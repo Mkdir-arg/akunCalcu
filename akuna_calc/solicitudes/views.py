@@ -89,21 +89,30 @@ def api_crear(request):
 @csrf_exempt
 @require_POST
 def api_recordatorios(request):
-    """Devuelve las solicitudes sin contestar que necesitan recordatorio (>= 1h del
-    último aviso) con el WhatsApp del vendedor, para el cron horario de n8n."""
+    """Resumen diario: un ítem por vendedor con el listado (en una sola línea) de
+    todas sus solicitudes asignadas sin contestar, para que n8n mande UN WhatsApp
+    por vendedor. Lo dispara el cron diario de las 8:00."""
     if not _validar_token(request):
         return JsonResponse({'error': 'No autorizado'}, status=401)
 
+    grupos = {}
+    for solicitud in SolicitudPresupuesto.objects.pendientes():
+        grupos.setdefault(solicitud.vendedor_id, []).append(solicitud)
+
     data = []
-    for solicitud in SolicitudPresupuesto.objects.pendientes_recordatorio():
-        whatsapp = solicitud.numero_whatsapp_vendedor
+    for solicitudes in grupos.values():
+        primera = solicitudes[0]
+        whatsapp = primera.numero_whatsapp_vendedor
         if not whatsapp:
             continue
+        vendedor = primera.vendedor
+        listado = ' · '.join(s.resumen_corto() for s in solicitudes)
         data.append({
-            'id': solicitud.pk,
-            'vendedor': solicitud.vendedor.get_full_name() or solicitud.vendedor.username,
+            'vendedor': vendedor.get_full_name() or vendedor.username,
             'whatsapp': whatsapp,
-            'mensaje': solicitud.mensaje_recordatorio(),
+            'cantidad': len(solicitudes),
+            'mensaje': listado,
+            'ids': [s.pk for s in solicitudes],
         })
 
     return JsonResponse({'ok': True, 'solicitudes': data, 'cantidad': len(data)})
@@ -195,9 +204,17 @@ def solicitud_list(request):
 @login_required
 @require_POST
 def solicitud_marcar_contestada(request, pk):
+    from django.core.exceptions import PermissionDenied
+    from usuarios.access_control import user_has_access
     solicitud = get_object_or_404(SolicitudPresupuesto, pk=pk)
+    # El vendedor solo puede marcar sus propias solicitudes; el admin (solicitudes.view) cualquiera.
+    if solicitud.vendedor_id != request.user.id and not user_has_access(request.user, 'solicitudes.view'):
+        raise PermissionDenied
     solicitud.marcar_contestada()
     messages.success(request, "Solicitud marcada como contestada.")
+    next_url = request.POST.get('next', '')
+    if next_url.startswith('/'):
+        return redirect(next_url)
     return redirect('solicitudes:lista')
 
 

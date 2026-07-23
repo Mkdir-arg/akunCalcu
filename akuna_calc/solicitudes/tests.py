@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -139,29 +138,36 @@ class ApiCrearTests(BaseSolicitudesTest):
 
 
 class ApiRecordatoriosTests(BaseSolicitudesTest):
-    def test_recordatorio_solo_vencidos_con_whatsapp(self):
+    def test_resumen_agrupado_por_vendedor(self):
         numero = NumeroAutorizado.objects.create(numero='5491100000001')
         vendedor = self.crear_vendedor('v1', numero=numero)
-        vieja = SolicitudPresupuesto.objects.create(
-            nombre_cliente='Vieja', vendedor=vendedor,
-            fecha_asignacion=timezone.now() - timedelta(hours=2),
-        )
-        # reciente: no debería aparecer
+        SolicitudPresupuesto.objects.create(nombre_cliente='Juan', telefono='111', vendedor=vendedor)
+        SolicitudPresupuesto.objects.create(nombre_cliente='Ana', vendedor=vendedor)
+        # contestada: no entra en el resumen
         SolicitudPresupuesto.objects.create(
-            nombre_cliente='Nueva', vendedor=vendedor, fecha_asignacion=timezone.now(),
+            nombre_cliente='Vieja', vendedor=vendedor,
+            estado=SolicitudPresupuesto.ESTADO_CONTESTADA,
         )
         resp = self.api_post('solicitudes:api_recordatorios', {})
         data = resp.json()
-        self.assertEqual(data['cantidad'], 1)
-        self.assertEqual(data['solicitudes'][0]['id'], vieja.pk)
-        self.assertEqual(data['solicitudes'][0]['whatsapp'], '5491100000001')
+        self.assertEqual(data['cantidad'], 1)  # un solo item: un vendedor
+        item = data['solicitudes'][0]
+        self.assertEqual(item['cantidad'], 2)  # dos solicitudes en su listado
+        self.assertEqual(item['whatsapp'], '5491100000001')
+        self.assertIn('Juan (111)', item['mensaje'])
+        self.assertIn('Ana', item['mensaje'])
+        self.assertNotIn('\n', item['mensaje'])  # una sola linea (Meta no permite saltos)
+        self.assertEqual(len(item['ids']), 2)
+
+    def test_vendedor_sin_whatsapp_excluido(self):
+        vendedor = self.crear_vendedor('v1')  # sin numero de whatsapp
+        SolicitudPresupuesto.objects.create(nombre_cliente='X', vendedor=vendedor)
+        resp = self.api_post('solicitudes:api_recordatorios', {})
+        self.assertEqual(resp.json()['cantidad'], 0)
 
     def test_marcar_recordatorio(self):
         vendedor = self.crear_vendedor('v1')
-        s = SolicitudPresupuesto.objects.create(
-            nombre_cliente='X', vendedor=vendedor,
-            fecha_asignacion=timezone.now() - timedelta(hours=2),
-        )
+        s = SolicitudPresupuesto.objects.create(nombre_cliente='X', vendedor=vendedor)
         resp = self.api_post('solicitudes:api_marcar_recordatorio', {'ids': [s.pk]})
         self.assertEqual(resp.json()['marcados'], 1)
         s.refresh_from_db()
@@ -216,6 +222,33 @@ class PanelTests(BaseSolicitudesTest):
         self.assertEqual(resp.status_code, 302)
         s.refresh_from_db()
         self.assertEqual(s.vendedor, vendedor)
+        self.assertEqual(s.estado, SolicitudPresupuesto.ESTADO_ASIGNADA)
+
+
+class MarcarContestadaPermisosTests(BaseSolicitudesTest):
+    def _vendedor_dashboard(self, username):
+        user = User.objects.create_user(username=username, email=f'{username}@akun.com', password='x')
+        PerfilAccesoUsuario.objects.create(usuario=user, rol=self.rol_vendedor, permisos=['dashboard.view'])
+        return user
+
+    def test_vendedor_marca_su_solicitud(self):
+        v = self._vendedor_dashboard('v_own')
+        self.client.force_login(v)
+        s = SolicitudPresupuesto.objects.create(nombre_cliente='X', vendedor=v)
+        resp = self.client.post(reverse('solicitudes:marcar_contestada', args=[s.pk]), {'next': '/home/'})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.headers.get('Location'), '/home/')
+        s.refresh_from_db()
+        self.assertEqual(s.estado, SolicitudPresupuesto.ESTADO_CONTESTADA)
+
+    def test_vendedor_no_marca_solicitud_ajena(self):
+        v1 = self._vendedor_dashboard('v_uno')
+        v2 = self._vendedor_dashboard('v_dos')
+        self.client.force_login(v1)
+        s = SolicitudPresupuesto.objects.create(nombre_cliente='X', vendedor=v2)
+        resp = self.client.post(reverse('solicitudes:marcar_contestada', args=[s.pk]))
+        self.assertEqual(resp.status_code, 403)
+        s.refresh_from_db()
         self.assertEqual(s.estado, SolicitudPresupuesto.ESTADO_ASIGNADA)
 
 

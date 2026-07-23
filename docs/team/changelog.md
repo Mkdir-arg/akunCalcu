@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-23 — Bandeja del vendedor en el home + crear presupuesto desde la solicitud (FEAT-028)
+
+**Pedido:** "Si soy vendedor, en /home/ quiero ver una tabla con mis solicitudes asignadas, y esa tarea se relaciona a un presupuesto." Se pensó el flujo completo para no duplicar (solicitud → presupuesto → venta/pedido).
+**Archivos:** `presupuestos/models.py` (FK OneToOne `Presupuesto.solicitud` + migración `0012_presupuesto_solicitud`), `presupuestos/views.py` (`crear` acepta `?solicitud`/`?cliente`, vincula y cierra la solicitud), `presupuestos/templates/presupuestos/form.html`, `comercial/views.py` (`cliente_create` prellena por query params + `next`), `core/views.py` + `core/templates/core/home.html` (tabla "Mis solicitudes pendientes" para rol vendedor), `solicitudes/views.py` (`marcar_contestada` honra `next` + guard de propiedad), `usuarios/access_control.py` (marcar_contestada también con `dashboard.view`).
+**Descripción:** El vendedor ve en el home sus solicitudes asignadas sin atender. "Crear presupuesto" abre el alta precargada con los datos del pedido (elige Cliente existente o crea uno nuevo prellenado, sin duplicar); al guardar, el presupuesto queda vinculado (OneToOne) y la solicitud pasa a **contestada** (sale del home y del recordatorio). Se reusa el estado `contestada` (sin estado nuevo) y por eso **se dio de baja la detección de "contestada por email"** (WF3, nunca construido, redundante). Migración aditiva. Requiere asignar al rol Vendedor los accesos Dashboard + Presupuestos. Tests: 157 OK (solicitudes+presupuestos+core+comercial), sin regresiones.
+
 ## 2026-07-21 — Pricing: fin de la pérdida silenciosa de datos en config (FIX-016)
 
 **Pedido:** "Se pierden algunas Fórmulas de Vidrio en `/pricing/config/hojas/`: las cargamos y se borran, no sabemos por qué." Auditoría adversarial que encontró 10 puntos de pérdida silenciosa de datos.
@@ -37,6 +43,12 @@
 **Pedido:** (1) "Que un presupuesto Confirmado pueda cambiar de estado." (2) "Que el buscador del listado busque cualquier cosa de la tabla, no solo el cliente."
 **Archivos modificados:** `presupuestos/views.py` (`cambiar_estado`, `lista`, helper `_termino_a_decimal`), `templates/presupuestos/{detalle,lista}.html`, `presupuestos/tests.py`.
 **Descripción:** (1) `cambiar_estado` ahora permite salir de "confirmado" (solo cambia la etiqueta; la Venta y el Pedido de fábrica generados **quedan** — se avisa con SweetAlert2); "cancelado" sigue bloqueado; re-confirmar (con venta ya creada) solo re-marca sin duplicar. (2) El filtro del listado pasó de `cliente` a un buscador único `q` que matchea número, cliente (nombre/apellido/razón social), estado, usuario creador (si tiene permiso) y total (si el término es numérico; helper `_termino_a_decimal` sanitiza inf/nan y montos fuera de rango para no romper en MySQL). Sin migración. Tests: 118 OK.
+
+## 2026-07-19 — Recordatorio de solicitudes: resumen diario 8:00 (ajuste de FEAT-025)
+
+**Pedido:** el recordatorio por WhatsApp no debe ser cada hora ni un mensaje por solicitud, sino **1 vez por día a las 08:00** y **un solo mensaje por vendedor con el listado** de todas sus solicitudes sin contestar.
+**Archivos:** `solicitudes/models.py` (manager `pendientes()` reemplaza a `pendientes_recordatorio`; método `resumen_corto()`), `solicitudes/views.py` (`api_recordatorios` agrupa por vendedor y arma el listado en una sola línea), `solicitudes/tests.py`, `docs/n8n/*` (workflow Recordatorios recreado: cron `0 8 * * *`, un WhatsApp por vendedor). Sin migración (solo lógica).
+**Nota:** el listado va en una sola línea (`Cliente (tel) · …`) porque Meta no permite saltos de línea en params de plantilla. Requiere **deploy** del código (push → Railway) antes de reactivar el workflow. Tests: 22 OK (`solicitudes`).
 
 ## 2026-07-18 — Reparto automático de solicitudes de presupuesto (FEAT-025)
 

@@ -28,6 +28,23 @@ from core.navigation import RETURN_TO_PARAM, append_return_to
 from .models import Cliente, Venta, PagoVenta, TipoCuenta, Cuenta, Compra, PagoCompra, Recibo
 
 
+class ClienteCreatePrefillTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin_cli', 'a@a.com', 'x')
+        self.client.force_login(self.admin)
+
+    def test_prefill_desde_query(self):
+        resp = self.client.get(
+            reverse('comercial:cliente_create'),
+            {'nombre': 'Juan', 'telefono': '111', 'email': 'j@x.com'},
+        )
+        self.assertEqual(resp.status_code, 200)
+        initial = resp.context['form'].initial
+        self.assertEqual(initial.get('nombre'), 'Juan')
+        self.assertEqual(initial.get('telefono'), '111')
+        self.assertEqual(initial.get('email'), 'j@x.com')
+
+
 class ClienteDetailViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')

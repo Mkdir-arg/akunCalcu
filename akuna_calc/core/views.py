@@ -47,18 +47,33 @@ def index(request):
 @login_required
 def home(request):
     from comercial.models import Venta, Compra, Cliente
-    
+    from usuarios.access_control import get_access_profile
+    from solicitudes.models import SolicitudPresupuesto
+
     # Estadísticas comerciales
     total_ventas = Venta.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0')
     total_compras = Compra.objects.filter(deleted_at__isnull=True).aggregate(Sum('valor_total'))['valor_total__sum'] or Decimal('0')
     ventas_pendientes = Venta.objects.filter(deleted_at__isnull=True, estado='pendiente').count()
     clientes_count = Cliente.objects.filter(deleted_at__isnull=True).count()
-    
+
+    # Bandeja del vendedor: sus solicitudes de presupuesto sin atender.
+    perfil = get_access_profile(request.user)
+    es_vendedor = bool(perfil and perfil.rol and perfil.rol.codigo == 'vendedor')
+    mis_solicitudes = []
+    if es_vendedor:
+        mis_solicitudes = list(
+            SolicitudPresupuesto.objects
+            .filter(vendedor=request.user, estado=SolicitudPresupuesto.ESTADO_ASIGNADA)
+            .order_by('-fecha_recepcion')
+        )
+
     context = {
         'total_ventas': total_ventas,
         'total_compras': total_compras,
         'ventas_pendientes': ventas_pendientes,
         'clientes_count': clientes_count,
+        'es_vendedor': es_vendedor,
+        'mis_solicitudes': mis_solicitudes,
     }
-    
+
     return render(request, 'core/home.html', context)

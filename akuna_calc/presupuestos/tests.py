@@ -51,6 +51,45 @@ def crear_presupuesto_pvc(user, cliente=None, cotizacion_usd=Decimal('1000')):
     )
 
 
+class CrearPresupuestoDesdeSolicitudTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin_sol', 'a@a.com', 'x')
+        self.client.force_login(self.admin)
+        self.cliente = crear_cliente()
+        self.rol = RolSistema.objects.create(nombre='Vendedor', codigo='vendedor', activo=True)
+        self.vendedor = User.objects.create_user('vend_sol', 'vend@akun.com', 'x')
+        PerfilAccesoUsuario.objects.create(usuario=self.vendedor, rol=self.rol)
+
+    def _post_crear(self, extra=None):
+        from django.urls import reverse
+        data = {
+            'cliente': self.cliente.id,
+            'tipo_material': 'aluminio',
+            'fecha_expiracion': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
+            'notas': '',
+        }
+        if extra:
+            data.update(extra)
+        return self.client.post(reverse('presupuestos:presupuestos-crear'), data)
+
+    def test_vincula_y_cierra_solicitud(self):
+        from solicitudes.models import SolicitudPresupuesto
+        sol = SolicitudPresupuesto.objects.create(
+            nombre_cliente='Cli', vendedor=self.vendedor, estado='asignada',
+        )
+        resp = self._post_crear({'solicitud_id': sol.pk})
+        self.assertEqual(resp.status_code, 302)
+        pres = Presupuesto.objects.latest('id')
+        self.assertEqual(pres.solicitud_id, sol.pk)
+        sol.refresh_from_db()
+        self.assertEqual(sol.estado, SolicitudPresupuesto.ESTADO_CONTESTADA)
+
+    def test_sin_solicitud_no_rompe(self):
+        resp = self._post_crear()
+        self.assertEqual(resp.status_code, 302)
+        self.assertIsNone(Presupuesto.objects.latest('id').solicitud_id)
+
+
 class PresupuestoModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('testuser', password='testpass')

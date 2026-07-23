@@ -19,6 +19,59 @@
     </div>
 </div>
 
+{% if es_vendedor %}
+<!-- Bandeja del vendedor: mis solicitudes pendientes -->
+<div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+    {% csrf_token %}
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-slate-800"><i class="fas fa-inbox text-blue-500 mr-2"></i>Mis solicitudes pendientes</h2>
+        <span class="text-sm text-slate-500 font-medium">{{ mis_solicitudes|length }} sin atender</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
+                    <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Asunto</th>
+                    <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Recibido</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for s in mis_solicitudes %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 text-sm text-slate-700">
+                        <p class="font-semibold text-slate-800">{{ s.nombre_cliente|default:"Sin nombre" }}</p>
+                        {% if s.telefono %}<p class="text-xs text-slate-500"><i class="fas fa-phone mr-1"></i>{{ s.telefono }}</p>{% endif %}
+                        {% if s.email %}<p class="text-xs text-slate-500"><i class="fas fa-envelope mr-1"></i>{{ s.email }}</p>{% endif %}
+                    </td>
+                    <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-600">{{ s.asunto|default:"—"|truncatechars:60 }}</td>
+                    <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{{ s.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="{% url 'presupuestos:presupuestos-crear' %}?solicitud={{ s.pk }}" class="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-file-invoice-dollar mr-1"></i>Crear presupuesto
+                            </a>
+                            <button onclick="marcarContestada('{% url 'solicitudes:marcar_contestada' s.pk %}', '{{ s.nombre_cliente|default:s.email|escapejs }}')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-semibold" title="Marcar contestada">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-10 text-center">
+                        <i class="fas fa-check-circle text-emerald-300 text-4xl mb-2"></i>
+                        <p class="text-slate-500 font-medium">No tenés solicitudes pendientes</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 gap-6 mb-6">
     <!-- Stats removed -->
@@ -113,6 +166,31 @@
 </div>
 
 <script>
+function marcarContestada(url, cliente) {
+    Swal.fire({
+        title: '¿Marcar como contestada?',
+        html: `<p>Solicitud de <strong>${cliente || 'este cliente'}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sí, contestada',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+        let inner = '';
+        if (csrf) inner += `<input type="hidden" name="csrfmiddlewaretoken" value="${csrf.value}">`;
+        inner += `<input type="hidden" name="next" value="${window.location.pathname}">`;
+        form.innerHTML = inner;
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
 function mostrarCotizacionDolar() {
     Swal.fire({
         title: '<i class="fas fa-spinner fa-spin"></i> Cargando cotizaciones...',

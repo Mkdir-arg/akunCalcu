@@ -834,6 +834,11 @@ def clientes_list(request):
 @login_required
 def cliente_create(request):
     return_url = _clientes_return_url(request)
+    # 'next' permite volver a un flujo (ej. crear presupuesto desde una solicitud) con el
+    # cliente recién creado ya seleccionado. Solo se acepta si es una URL interna.
+    next_url = request.GET.get('next', '')
+    if not next_url.startswith('/'):
+        next_url = ''
     if request.method == 'POST':
         form = ClienteForm(request.POST)
         if form.is_valid():
@@ -850,6 +855,9 @@ def cliente_create(request):
                 })
             
             messages.success(request, 'Cliente creado exitosamente.')
+            if next_url:
+                sep = '&' if '?' in next_url else '?'
+                return redirect(f'{next_url}{sep}cliente={cliente.id}')
             return redirect(return_url)
         else:
             # Si es AJAX y hay errores
@@ -859,7 +867,11 @@ def cliente_create(request):
                     'errors': form.errors
                 }, status=400)
     else:
-        form = ClienteForm()
+        prefill = {
+            campo: request.GET.get(campo, '').strip()
+            for campo in ('nombre', 'apellido', 'telefono', 'email')
+        }
+        form = ClienteForm(initial={k: v for k, v in prefill.items() if v})
     return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Nuevo Cliente', 'return_url': return_url})
 
 

@@ -3,11 +3,12 @@
   "nodes": [
     {
       "id": "schedule",
-      "name": "Cada 1 hora",
+      "name": "Todos los dias 8:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [208, 304],
-      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } }
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] } },
+      "notes": "Una vez por dia a las 08:00 (timezone America/Argentina/Buenos_Aires)."
     },
     {
       "id": "obtener-recordatorios",
@@ -59,8 +60,9 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [864, 224],
+      "notes": "Un item por vendedor (Django ya agrupa). texto = listado en una sola linea.",
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst items = [];\nfor (const s of (data.solicitudes || [])) {\n  if (!s.whatsapp) continue;\n  let texto = (s.mensaje || '').replace(/\\s*\\n\\s*/g, ' · ').trim();\n  if (texto.length > 900) texto = texto.slice(0, 900) + '...';\n  items.push({ json: { number: s.whatsapp, texto, solicitud_id: s.id } });\n}\nreturn items;"
+        "jsCode": "const data = $input.first().json;\nconst items = [];\nfor (const g of (data.solicitudes || [])) {\n  if (!g.whatsapp) continue;\n  let texto = (g.mensaje || '').replace(/\\s*\\n\\s*/g, ' · ').trim();\n  if (texto.length > 900) texto = texto.slice(0, 900) + '...';\n  items.push({ json: { number: g.whatsapp, texto, ids: g.ids || [] } });\n}\nreturn items;"
       }
     },
     {
@@ -93,7 +95,7 @@
       "typeVersion": 2,
       "position": [1312, 224],
       "parameters": {
-        "jsCode": "const ids = [...new Set($('Preparar Envios').all().map(i => i.json.solicitud_id).filter(Boolean))];\nreturn [{ json: { ids } }];"
+        "jsCode": "const ids = $('Preparar Envios').all().flatMap(i => i.json.ids || []);\nreturn [{ json: { ids: [...new Set(ids)] } }];"
       }
     },
     {
@@ -120,7 +122,7 @@
     }
   ],
   "connections": {
-    "Cada 1 hora": { "main": [[{ "node": "Obtener Recordatorios", "type": "main", "index": 0 }]] },
+    "Todos los dias 8:00": { "main": [[{ "node": "Obtener Recordatorios", "type": "main", "index": 0 }]] },
     "Obtener Recordatorios": { "main": [[{ "node": "Hay Recordatorios", "type": "main", "index": 0 }]] },
     "Hay Recordatorios": { "main": [[{ "node": "Preparar Envios", "type": "main", "index": 0 }], []] },
     "Preparar Envios": { "main": [[{ "node": "WhatsApp Enviar", "type": "main", "index": 0 }]] },

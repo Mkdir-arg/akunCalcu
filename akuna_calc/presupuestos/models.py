@@ -42,6 +42,14 @@ class Presupuesto(models.Model):
         related_name='presupuestos',
         verbose_name='Cliente',
     )
+    solicitud = models.OneToOneField(
+        'solicitudes.SolicitudPresupuesto',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='presupuesto',
+        verbose_name='Solicitud de origen',
+    )
     fecha_expiracion = models.DateField(verbose_name='Fecha de expiración')
     validez_dias = models.PositiveIntegerField(default=30, verbose_name='Validez (días)')
     plazo_entrega_dias = models.PositiveIntegerField(

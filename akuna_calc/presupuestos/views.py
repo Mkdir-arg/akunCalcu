@@ -180,21 +180,58 @@ def lista(request):
     })
 
 
+def _get_solicitud_param(request):
+    """Solicitud de origen si el presupuesto se crea desde una solicitud
+    (por ?solicitud=<id> en GET o el hidden solicitud_id en POST)."""
+    sid = request.POST.get('solicitud_id') or request.GET.get('solicitud')
+    if not sid:
+        return None
+    from solicitudes.models import SolicitudPresupuesto
+    return SolicitudPresupuesto.objects.filter(pk=sid).first()
+
+
 @login_required
 def crear(request):
     return_url = _presupuestos_return_url(request)
+    solicitud = _get_solicitud_param(request)
     if request.method == 'POST':
         form = PresupuestoForm(request.POST)
         if form.is_valid():
             presupuesto = form.save(commit=False)
             presupuesto.numero = Presupuesto.generar_numero()
             presupuesto.created_by = request.user
+            if solicitud and not hasattr(solicitud, 'presupuesto'):
+                presupuesto.solicitud = solicitud
             presupuesto.save()
+            # Crear el presupuesto atiende la solicitud: queda vinculada y contestada
+            # (sale del home del vendedor y del recordatorio diario).
+            if presupuesto.solicitud_id and solicitud.estado == solicitud.ESTADO_ASIGNADA:
+                solicitud.marcar_contestada()
             messages.success(request, f'Presupuesto {presupuesto.numero} creado.')
             return redirect(append_return_to(reverse('presupuestos:presupuestos-detalle', kwargs={'pk': presupuesto.pk}), return_url))
     else:
-        form = PresupuestoForm()
-    return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Nuevo Presupuesto', 'return_url': return_url})
+        initial = {}
+        cliente_id = request.GET.get('cliente')
+        if cliente_id:
+            initial['cliente'] = cliente_id
+        form = PresupuestoForm(initial=initial)
+    crear_cliente_url = None
+    if solicitud:
+        from urllib.parse import urlencode
+        volver = reverse('presupuestos:presupuestos-crear') + '?solicitud=' + str(solicitud.pk)
+        crear_cliente_url = reverse('comercial:cliente_create') + '?' + urlencode({
+            'nombre': solicitud.nombre_cliente or '',
+            'telefono': solicitud.telefono or '',
+            'email': solicitud.email or '',
+            'next': volver,
+        })
+    return render(request, 'presupuestos/form.html', {
+        'form': form,
+        'titulo': 'Nuevo Presupuesto',
+        'return_url': return_url,
+        'solicitud': solicitud,
+        'crear_cliente_url': crear_cliente_url,
+    })
 
 
 @login_required

@@ -1,30 +1,20 @@
-from datetime import timedelta
-
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 
 class SolicitudPresupuestoQuerySet(models.QuerySet):
-    def pendientes_recordatorio(self, ahora=None, horas=1):
-        """Solicitudes asignadas y sin contestar cuyo último aviso fue hace >= `horas`.
-
-        La base de tiempo es el último recordatorio enviado o, si nunca se envió,
-        la fecha de asignación. Devuelve una lista (no queryset) porque el corte
-        depende de un campo calculado por registro.
-        """
-        ahora = ahora or timezone.now()
-        limite = ahora - timedelta(hours=horas)
-        candidatos = self.filter(
-            estado=SolicitudPresupuesto.ESTADO_ASIGNADA,
-            vendedor__isnull=False,
-        ).select_related('vendedor', 'vendedor__perfil_acceso__numero_whatsapp')
-        pendientes = []
-        for solicitud in candidatos:
-            base = solicitud.ultimo_recordatorio or solicitud.fecha_asignacion
-            if base and base <= limite:
-                pendientes.append(solicitud)
-        return pendientes
+    def pendientes(self):
+        """Solicitudes asignadas y sin contestar (con vendedor), para el resumen
+        diario de recordatorios. Se agrupan por vendedor en la view."""
+        return (
+            self.filter(
+                estado=SolicitudPresupuesto.ESTADO_ASIGNADA,
+                vendedor__isnull=False,
+            )
+            .select_related('vendedor', 'vendedor__perfil_acceso__numero_whatsapp')
+            .order_by('vendedor_id', 'fecha_recepcion')
+        )
 
 
 class SolicitudPresupuesto(models.Model):
@@ -109,11 +99,11 @@ class SolicitudPresupuesto(models.Model):
         """Aviso inicial que recibe el vendedor cuando se le asigna la solicitud."""
         return "\n".join(["📩 Nuevo pedido de presupuesto"] + self._lineas_datos())
 
-    def mensaje_recordatorio(self):
-        """Recordatorio horario mientras la solicitud siga sin contestar."""
-        return "\n".join(
-            ["⏰ Recordatorio: tenés un pedido de presupuesto sin responder"] + self._lineas_datos()
-        )
+    def resumen_corto(self):
+        """Etiqueta de una sola línea para el listado del recordatorio diario.
+        Sin saltos de línea: WhatsApp/Meta no los permite en params de plantilla."""
+        cliente = self.nombre_cliente or self.email or 'Sin nombre'
+        return f"{cliente} ({self.telefono})" if self.telefono else cliente
 
 
 class ConfiguracionSolicitudes(models.Model):

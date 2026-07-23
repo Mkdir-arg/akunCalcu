@@ -14,6 +14,24 @@
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="_return_to" value="{{ return_url }}">
+            {% if solicitud %}
+            <input type="hidden" name="solicitud_id" value="{{ solicitud.pk }}">
+            <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4">
+                <p class="text-sm font-bold text-blue-900 mb-2"><i class="fas fa-inbox mr-1"></i>Pedido recibido por email</p>
+                <div class="text-sm text-slate-700 space-y-1">
+                    {% if solicitud.nombre_cliente %}<p><i class="fas fa-user w-4 text-slate-400 mr-1"></i>{{ solicitud.nombre_cliente }}</p>{% endif %}
+                    {% if solicitud.telefono %}<p><i class="fas fa-phone w-4 text-slate-400 mr-1"></i>{{ solicitud.telefono }}</p>{% endif %}
+                    {% if solicitud.email %}<p><i class="fas fa-envelope w-4 text-slate-400 mr-1"></i>{{ solicitud.email }}</p>{% endif %}
+                    {% if solicitud.mensaje %}<p class="text-slate-500 mt-2">{{ solicitud.mensaje|truncatechars:200 }}</p>{% endif %}
+                </div>
+                {% if crear_cliente_url %}
+                <a href="{{ crear_cliente_url }}" class="inline-flex items-center mt-3 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">
+                    <i class="fas fa-user-plus mr-1"></i>Crear cliente con estos datos
+                </a>
+                {% endif %}
+                <p class="text-xs text-slate-500 mt-2">Elegí el cliente en el desplegable, o creá uno nuevo con los datos del pedido. Al guardar, la solicitud queda atendida.</p>
+            </div>
+            {% endif %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cliente.label }}</label>

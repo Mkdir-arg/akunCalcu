@@ -21,7 +21,9 @@ Estado en la instancia de n8n (2026-07-19):
   Gmail Trigger (`q: -from:me -subject:"Nuevo pedido de presupuesto"`, para que el reenvío no
   se levante como pedido nuevo). **Inactivo**: falta poner el toggle "Active" en ON (esta
   versión de n8n no permite activar por API).
-- **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `LZZaucnhQhXZne8Y`) — **activo**.
+- **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `M5N22elKbX2w6SMQ`) — corre
+  **1 vez por día a las 08:00** y manda **un solo WhatsApp por vendedor** con el listado de
+  todas sus solicitudes sin contestar. **Inactivo** (activar cuando esté todo listo).
 
 Ya NO hace falta importar los `.json` (quedan como backup). Pendiente para el flujo completo:
 setear `EVOLUTION_APIKEY` en el servicio n8n, aprobar las plantillas de Meta, y activar el
@@ -54,15 +56,20 @@ La IA recibe el email entero (JSON de Gmail) y devuelve:
 (`vendedor.email`, `vendedor.whatsapp`, `vendedor.nombre`) y de ahí salen el reenvío y el
 WhatsApp.
 
-## Workflow 2 — Recordatorios (ya creado, inactivo)
+## Workflow 2 — Recordatorios (resumen diario)
 
 ```
-Cada 1 hora (Schedule)
-  → Obtener Recordatorios (POST /solicitudes/api/recordatorios/)
+Todos los días 8:00 (Schedule cron 0 8 * * *)
+  → Obtener Recordatorios (POST /solicitudes/api/recordatorios/ → 1 ítem por vendedor)
   → Hay Recordatorios? (IF cantidad > 0)
-       └─ sí → Preparar Envios → WhatsApp Enviar (sendTemplate 'recordatorio_solicitud')
+       └─ sí → Preparar Envios → WhatsApp Enviar (sendTemplate 'recordatorio_solicitud', UN WhatsApp por vendedor)
                  → Recolectar IDs → Marcar Recordatorio (POST /solicitudes/api/marcar-recordatorio/)
 ```
+
+Django agrupa por vendedor y arma el listado en **una sola línea** (`Cliente (tel) · Cliente (tel) · …`)
+porque Meta no permite saltos de línea en los parámetros de plantilla. El `{{1}}` de
+`recordatorio_solicitud` recibe ese listado. Conviene que la plantilla tenga texto en plural
+(ej. "tenés pedidos de presupuesto sin responder: {{1}}").
 
 ---
 
@@ -73,9 +80,9 @@ Todos POST, auth por header `X-Bot-Secret` = env `SOLICITUDES_BOT_SECRET`.
 | Endpoint | Uso |
 |---|---|
 | `/solicitudes/api/crear/` | Crea la solicitud + asigna vendedor round-robin. Idempotente por `gmail_thread_id`. |
-| `/solicitudes/api/recordatorios/` | Devuelve solicitudes sin contestar hace ≥1h (con WhatsApp del vendedor). |
+| `/solicitudes/api/recordatorios/` | Resumen diario: un ítem por vendedor con el listado (una línea) de sus solicitudes asignadas sin contestar. |
 | `/solicitudes/api/marcar-recordatorio/` | Marca enviado el recordatorio de los ids dados. |
-| `/solicitudes/api/marcar-contestada/` | Marca contestada (auto: cuando el vendedor responde en el hilo). |
+| `/solicitudes/api/marcar-contestada/` | Marca contestada (manual desde el home/panel). También se cierra sola al crear un presupuesto desde la solicitud (FEAT-028). |
 
 ### Crear — request
 ```json
@@ -89,7 +96,7 @@ Todos POST, auth por header `X-Bot-Secret` = env `SOLICITUDES_BOT_SECRET`.
 ```
 Si no hay vendedores en la rotación: `estado: "sin_asignar"`, `vendedor: null`.
 
-### Marcar contestada — request (auto, por hilo)
+### Marcar contestada — request (manual; acepta solicitud_id o gmail_thread_id)
 ```json
 { "gmail_thread_id": "18f..." }
 ```
@@ -133,11 +140,12 @@ Hasta tener las plantillas aprobadas, el reenvío por **Gmail** al vendedor sí 
 7. Crear y aprobar en Meta las plantillas `nueva_solicitud` y `recordatorio_solicitud`.
 8. Importar `n8n-solicitudes-reparto.json`, revisar y **activar** ambos workflows.
 
-**Detección de "contestada" automática (opcional, v2):**
-- Un tercer workflow con Gmail Trigger sobre respuestas del vendedor (o sobre el label
-  "Enviados") que, al detectar una respuesta en el hilo, llame a
-  `POST /solicitudes/api/marcar-contestada/` con el `gmail_thread_id`. Mientras tanto, la
-  solicitud se marca contestada a mano desde el panel `/solicitudes/`.
+**"Contestada" — cómo se cierra una solicitud:**
+- **Manual:** botón "Marcar contestada" en el home del vendedor o en el panel `/solicitudes/`.
+- **Automática:** al **crear un presupuesto desde la solicitud** (FEAT-028) la solicitud queda
+  vinculada y pasa a contestada sola.
+- La detección por **respuesta de email** (un tercer workflow que miraba el hilo de Gmail) se
+  **dio de baja**: quedó redundante con "atendida = tiene presupuesto".
 
 ---
 

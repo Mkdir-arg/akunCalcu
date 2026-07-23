@@ -33,6 +33,7 @@
 | [FEAT-025](./FEAT-025-reparto-automatico-solicitudes-presupuesto.md) | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | Implementado | 2026-07-18 | — |
 | [FEAT-026](./FEAT-026-colocacion-obra-nueva-presupuestos.md) | Colocación en presupuestos de obra nueva (renglón en PDF + validación al confirmar) | Implementado | 2026-07-21 | — |
 | [FEAT-027](./FEAT-027-estado-confirmado-y-buscador-presupuestos.md) | Cambiar estado desde Confirmado + buscador único del listado de presupuestos | Implementado | 2026-07-21 | — |
+| [FEAT-028](./FEAT-028-solicitudes-vendedor-home-a-presupuesto.md) | Bandeja del vendedor en el home + crear presupuesto desde la solicitud | Implementado | 2026-07-23 | — |
 
 ---
 

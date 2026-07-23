@@ -2,7 +2,12 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.template.loader import render_to_string
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
+from django.contrib.auth.models import User
+
+from usuarios.models import PerfilAccesoUsuario, RolSistema
+from solicitudes.models import SolicitudPresupuesto
 
 
 class BaseTemplateSelect2HelperTest(SimpleTestCase):
@@ -189,3 +194,39 @@ class HealthcheckViewTest(SimpleTestCase):
         self.assertFalse(mocked_settings.called)
         self.assertFalse(mocked_blacklist.called)
         self.assertFalse(mocked_remember_page_state.called)
+
+
+class HomeVendedorTest(TestCase):
+    def setUp(self):
+        self.rol = RolSistema.objects.create(nombre='Vendedor', codigo='vendedor', activo=True)
+        self.vendedor = User.objects.create_user('vend_home', 'v@akun.com', 'x')
+        PerfilAccesoUsuario.objects.create(
+            usuario=self.vendedor, rol=self.rol, permisos=['dashboard.view'],
+        )
+
+    def test_home_muestra_mis_solicitudes(self):
+        self.client.force_login(self.vendedor)
+        s = SolicitudPresupuesto.objects.create(
+            nombre_cliente='Cli Uno', vendedor=self.vendedor, estado='asignada',
+        )
+        resp = self.client.get(reverse('home'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['es_vendedor'])
+        self.assertIn(s, resp.context['mis_solicitudes'])
+        self.assertContains(resp, 'Mis solicitudes pendientes')
+
+    def test_solicitud_contestada_no_aparece(self):
+        self.client.force_login(self.vendedor)
+        SolicitudPresupuesto.objects.create(
+            nombre_cliente='Cerrada', vendedor=self.vendedor,
+            estado=SolicitudPresupuesto.ESTADO_CONTESTADA,
+        )
+        resp = self.client.get(reverse('home'))
+        self.assertEqual(list(resp.context['mis_solicitudes']), [])
+
+    def test_admin_no_es_vendedor(self):
+        admin = User.objects.create_superuser('admin_home', 'a@a.com', 'x')
+        self.client.force_login(admin)
+        resp = self.client.get(reverse('home'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['es_vendedor'])

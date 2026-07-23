@@ -263,6 +263,9 @@ _register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gasto
 _register_route('agenda.view', 'agenda:calendario', 'agenda:crear', 'agenda:editar', 'agenda:eliminar', 'agenda:cliente_info')
 
 _register_route('solicitudes.view', 'solicitudes:lista', 'solicitudes:marcar_contestada', 'solicitudes:reasignar')
+# El vendedor marca "contestada" desde su bandeja del home (dashboard); la view valida
+# que solo pueda actuar sobre sus propias solicitudes.
+_register_route('dashboard.view', 'solicitudes:marcar_contestada')
 
 
 def normalize_access_codes(access_codes):

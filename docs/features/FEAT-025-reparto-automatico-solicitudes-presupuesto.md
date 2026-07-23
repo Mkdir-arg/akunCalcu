@@ -22,11 +22,12 @@ Gmail Trigger (casilla empresa)
       → Django crea SolicitudPresupuesto + asigna vendedor round-robin (puntero en DB)
       → devuelve {nombre, email, whatsapp} del vendedor
   → n8n reenvía el mail al vendedor + le manda WhatsApp
-Cron horario de n8n:
-  → POST /solicitudes/api/recordatorios/  → solicitudes sin contestar hace ≥1h
-  → n8n manda WhatsApp de recordatorio → POST /solicitudes/api/marcar-recordatorio/
-Cuando el vendedor responde en el hilo:
-  → n8n POST /solicitudes/api/marcar-contestada/  (por gmail_thread_id)
+Cron diario de n8n (08:00):
+  → POST /solicitudes/api/recordatorios/  → un ítem por vendedor con el listado de sus pendientes
+  → n8n manda UN WhatsApp por vendedor (listado en una línea) → POST /solicitudes/api/marcar-recordatorio/
+Cierre de la solicitud ("contestada"):
+  → manual (home del vendedor / panel) o automático al crear un presupuesto desde la solicitud (FEAT-028)
+  → (la detección por respuesta de email se dio de baja: redundante con "atendida = tiene presupuesto")
 ```
 
 ## Criterios de aceptación (todos cumplidos)
@@ -40,7 +41,8 @@ Cuando el vendedor responde en el hilo:
 - [x] Panel `/solicitudes/` con filtros (estado, vendedor) y paginación (20).
 - [x] "Contestada" manual (botón del panel) y automática (endpoint por `gmail_thread_id`).
 - [x] Reasignación manual a otro vendedor.
-- [x] Recordatorio cada 1 hora mientras la solicitud siga sin contestar.
+- [x] Recordatorio **1 vez por día a las 08:00**: un solo WhatsApp por vendedor con el listado
+  de todas sus solicitudes sin contestar (no un mensaje por solicitud).
 - [x] Workflow de n8n documentado en `docs/n8n/`.
 
 ## Archivos
