@@ -77,6 +77,7 @@
     <!-- Stats removed -->
 </div>
 
+{% if not es_vendedor %}
 <!-- Main Actions -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <!-- Calculadora Rápida -->
@@ -164,6 +165,7 @@
         </a>
     </div>
 </div>
+{% endif %}
 
 <script>
 function marcarContestada(url, cliente) {

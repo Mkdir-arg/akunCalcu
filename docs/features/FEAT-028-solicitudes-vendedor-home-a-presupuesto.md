@@ -41,7 +41,8 @@ Solicitud (asignada)  →  /home/ "Mis solicitudes"  →  "Crear presupuesto"
 - `comercial/views.py` — `cliente_create` acepta prefill por query params (nombre/apellido/tel/email)
   y `next` (URL interna) para volver con `?cliente=<id>`.
 - `core/views.py` + `core/templates/core/home.html` — tabla "Mis solicitudes pendientes" (solo rol
-  vendedor) con acciones + JS de "marcar contestada" (SweetAlert2).
+  vendedor) con acciones + JS de "marcar contestada" (SweetAlert2). Para el vendedor el home queda
+  enfocado: se ocultan las tarjetas generales (Calculadora/Productos/Comercial) y "Acciones Rápidas".
 - `solicitudes/views.py` — `solicitud_marcar_contestada` honra `next` y valida propiedad (el vendedor
   solo marca las suyas; admin cualquiera).
 - `usuarios/access_control.py` — `solicitudes:marcar_contestada` también accesible con `dashboard.view`
