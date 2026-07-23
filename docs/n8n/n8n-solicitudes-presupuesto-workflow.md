@@ -16,10 +16,11 @@ Archivos importables:
 - [n8n-solicitudes-recordatorios.json](./n8n-solicitudes-recordatorios.json)
 
 Estado en la instancia de n8n (2026-07-23):
-- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `BC4WvFsUMr1lcgmB`) — credenciales
+- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `1uIJ9sfGpBzJDkTQ`) — credenciales
   Gmail + OpenAI cableadas. Detecta **2 vías**: formulario web (determinístico) y mail directo
   (IA). Gmail Trigger con `simple:false` (trae el cuerpo) y `q` que incluye el formulario y
-  descarta ruido. **Inactivo**: falta poner el toggle "Active" en ON (esta versión de n8n no
+  descarta ruido. Ojo: `simple:false` devuelve el mensaje **parseado** (`subject`, `text`
+  =cuerpo plano, `from`=objeto con `.text`), NO el formato crudo (`payload.headers/parts`). **Inactivo**: falta poner el toggle "Active" en ON (esta versión de n8n no
   permite activar por API). ⚠️ El `.json` de backup quedó **desactualizado** (2 vías); la fuente
   de verdad es el workflow vivo `BC4WvFsUMr1lcgmB`.
 - **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `M5N22elKbX2w6SMQ`) — corre

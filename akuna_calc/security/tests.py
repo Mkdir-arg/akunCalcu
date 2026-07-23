@@ -166,3 +166,73 @@ class BackupApiCreateTest(TestCase):
     def test_get_no_permitido(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)
+
+
+class FusionarMergeTest(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from comercial.models import Cliente
+        self.admin = User.objects.create_superuser('admin_merge', 'a@a.com', 'x')
+        self.no_admin = User.objects.create_user('nadmin_merge', 'n@a.com', 'x')
+        self.origen = Cliente.objects.create(nombre='Matias', apellido='', condicion_iva='CF', direccion='x', localidad='y', telefono='111')
+        self.destino = Cliente.objects.create(nombre='Matias', apellido='Fariña', condicion_iva='CF', direccion='z', localidad='w')
+
+    def _venta(self, cliente, numero):
+        from comercial.models import Venta
+        from decimal import Decimal
+        return Venta.objects.create(numero_pedido=numero, cliente=cliente, valor_total=Decimal('100'), sena=0)
+
+    def _presupuesto(self, cliente, numero):
+        from presupuestos.models import Presupuesto
+        from datetime import date, timedelta
+        return Presupuesto.objects.create(numero=numero, cliente=cliente, fecha_expiracion=date.today() + timedelta(days=30), created_by=self.admin)
+
+    def test_merge_reasigna_y_da_de_baja(self):
+        from security.merge import merge_records
+        from comercial.models import Venta
+        v = self._venta(self.origen, 'V-M1')
+        p = self._presupuesto(self.origen, 'PRES-M1')
+        merge_records(self.origen, self.destino)
+        v.refresh_from_db(); p.refresh_from_db()
+        self.assertEqual(v.cliente_id, self.destino.pk)
+        self.assertEqual(p.cliente_id, self.destino.pk)
+        self.origen.refresh_from_db(); self.destino.refresh_from_db()
+        self.assertIsNotNone(self.origen.deleted_at)   # baja lógica del origen
+        self.assertIsNone(self.destino.deleted_at)     # destino intacto
+        self.assertEqual(self.destino.apellido, 'Fariña')  # no se tocan sus campos
+        self.assertEqual(Venta.objects.filter(cliente=self.origen).count(), 0)
+
+    def test_preview_cuenta_registros(self):
+        from security.merge import preview_merge
+        self._venta(self.origen, 'V-M2')
+        self._venta(self.origen, 'V-M3')
+        total = sum(x['count'] for x in preview_merge(self.origen))
+        self.assertGreaterEqual(total, 2)
+
+    def test_mismo_origen_destino_error(self):
+        from security.merge import merge_records
+        with self.assertRaises(ValueError):
+            merge_records(self.origen, self.origen)
+
+    def test_view_requiere_admin(self):
+        from django.urls import reverse
+        url = reverse('security:fusionar')
+        self.client.force_login(self.no_admin)
+        self.assertIn(self.client.get(url).status_code, (403, 302))
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_view_confirmar_fusiona(self):
+        from django.urls import reverse
+        from comercial.models import Venta
+        v = self._venta(self.origen, 'V-M4')
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('security:fusionar'), {
+            'tipo': 'cliente', 'accion': 'confirmar',
+            'origen': self.origen.pk, 'destino': self.destino.pk,
+        })
+        self.assertEqual(resp.status_code, 302)
+        v.refresh_from_db()
+        self.assertEqual(v.cliente_id, self.destino.pk)
+        self.origen.refresh_from_db()
+        self.assertIsNotNone(self.origen.deleted_at)

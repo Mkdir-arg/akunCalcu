@@ -51,6 +51,22 @@ class ClienteForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
         }
 
+    def clean_email(self):
+        """Evita clientes duplicados por email (case-insensitive). En edición ignora
+        al propio cliente. Los clientes sin email no se validan (puede haber varios)."""
+        email = (self.cleaned_data.get('email') or '').strip()
+        if not email:
+            return email
+        qs = Cliente.objects.filter(email__iexact=email, deleted_at__isnull=True)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        existente = qs.first()
+        if existente:
+            raise forms.ValidationError(
+                f'Ya existe un cliente con ese email ({existente}). Elegilo del desplegable en vez de crear uno nuevo.'
+            )
+        return email
+
 
 class VentaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

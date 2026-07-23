@@ -140,6 +140,7 @@ ACCESS_MODULES = [
         'items': [
             {'code': 'seguridad.backups', 'label': 'Backups', 'route_name': 'security:backup_login'},
             {'code': 'seguridad.auditoria', 'label': 'Auditoría', 'route_name': 'security:audit_list'},
+            {'code': 'seguridad.fusionar', 'label': 'Fusionar duplicados', 'route_name': 'security:fusionar'},
         ],
     },
     {

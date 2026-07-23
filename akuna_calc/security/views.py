@@ -10,7 +10,11 @@ from django.core.paginator import Paginator
 from django.conf import settings as django_settings
 from django.utils import timezone
 
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError
+from django.urls import reverse
 from .models import AuditLog, Backup, SecuritySettings
+from .merge import get_merge_entities, preview_merge, merge_records
 import os
 import subprocess
 from datetime import datetime
@@ -177,6 +181,73 @@ def audit_list(request):
         },
     }
     return render(request, 'security/audit_list.html', context)
+
+
+def _client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    return (xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')) or None
+
+
+@login_required
+def fusionar(request):
+    """Fusiona registros duplicados (Cliente / Proveedor / Cuenta): reasigna todo lo
+    del origen al destino y da de baja al origen. Solo admin / acceso total."""
+    from usuarios.access_control import user_has_full_access
+    if not user_has_full_access(request.user):
+        raise PermissionDenied
+
+    entities = get_merge_entities()
+    tipo = request.GET.get('tipo') or request.POST.get('tipo') or 'cliente'
+    if tipo not in entities:
+        tipo = 'cliente'
+    entidad = entities[tipo]
+    candidatos = list(entidad['queryset'])
+
+    context = {
+        'tipos': [(k, v['label']) for k, v in entities.items()],
+        'tipo': tipo,
+        'tipo_label': entidad['label'],
+        'candidatos': candidatos,
+    }
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        origen = entidad['queryset'].filter(pk=request.POST.get('origen') or 0).first()
+        destino = entidad['queryset'].filter(pk=request.POST.get('destino') or 0).first()
+
+        if not origen or not destino:
+            messages.error(request, 'Elegí un origen y un destino válidos.')
+        elif origen.pk == destino.pk:
+            messages.error(request, 'El origen y el destino no pueden ser el mismo registro.')
+        elif accion == 'preview':
+            context.update({
+                'preview': preview_merge(origen),
+                'origen': origen,
+                'destino': destino,
+            })
+        elif accion == 'confirmar':
+            try:
+                movidos = merge_records(origen, destino)
+            except (ValueError, IntegrityError) as exc:
+                messages.error(request, f'No se pudo fusionar: {exc}')
+            else:
+                total = sum(n for _, n in movidos)
+                detalle = ', '.join(f'{n} {lbl}' for lbl, n in movidos) or 'ningún registro relacionado'
+                AuditLog.objects.create(
+                    user=request.user, username=request.user.username,
+                    action='UPDATE', level='WARNING',
+                    model_name=f'merge:{tipo}', object_id=str(destino.pk),
+                    object_repr=f'{origen} -> {destino}'[:200],
+                    path=request.path, method='POST', ip_address=_client_ip(request),
+                    description=f'Fusión de {entidad["label"]}: «{origen}» (baja lógica) → «{destino}». Reasignado: {detalle}.',
+                )
+                messages.success(
+                    request,
+                    f'Fusión completa: {total} registro(s) movido(s) de «{origen}» a «{destino}». El origen quedó dado de baja.',
+                )
+                return redirect(f"{reverse('security:fusionar')}?tipo={tipo}")
+
+    return render(request, 'security/fusionar.html', context)
 
 
 @login_required

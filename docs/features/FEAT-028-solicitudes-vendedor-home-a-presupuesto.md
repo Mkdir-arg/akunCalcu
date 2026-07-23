@@ -40,6 +40,8 @@ Solicitud (asignada)  →  /home/ "Mis solicitudes"  →  "Crear presupuesto"
   cliente con estos datos" + hidden `solicitud_id`.
 - `comercial/views.py` — `cliente_create` acepta prefill por query params (nombre/apellido/tel/email)
   y `next` (URL interna) para volver con `?cliente=<id>`.
+- `comercial/forms.py` — `ClienteForm.clean_email`: valida **email único** (case-insensitive) para no
+  crear clientes duplicados; al crear desde una solicitud avisa "ya existe, elegilo del desplegable".
 - `core/views.py` + `core/templates/core/home.html` — tabla "Mis solicitudes pendientes" (solo rol
   vendedor) con acciones + JS de "marcar contestada" (SweetAlert2). Para el vendedor el home queda
   enfocado: se ocultan las tarjetas generales (Calculadora/Productos/Comercial) y "Acciones Rápidas".

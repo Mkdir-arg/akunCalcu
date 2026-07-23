@@ -14,11 +14,17 @@
 
 ---
 
+## 2026-07-23 — Fusionar duplicados (merge) bajo Seguridad (FEAT-029)
+
+**Pedido:** "En Seguridad, transferir datos: hay duplicados (ej. cliente Matias y Matias Fariña). Elegir origen y destino, pasar todo lo relacionado del origen al destino y borrar el origen." Definido: destino intacto, baja lógica del origen, entidades Cliente/Proveedor/Cuenta con selector de tipo, solo admin/acceso total.
+**Archivos:** `security/merge.py` (nuevo: registry + `preview_merge` + `merge_records`), `security/views.py` (view `fusionar`), `security/urls.py`, `security/templates/security/fusionar.html`, `usuarios/access_control.py` (ítem `seguridad.fusionar`), `security/tests.py`.
+**Descripción:** Reasignación **genérica** de FKs vía `Modelo._meta.related_objects` (cubre Venta/Presupuesto/Agenda/Factura para Cliente y Compra/Agenda-colocador para Cuenta, y cualquier FK futura) con `_base_manager.update()`; baja lógica del origen (`delete()` → `deleted_at`); todo atómico + `AuditLog` (WARNING). `proveedor` y `cuenta` son el mismo modelo (Cuenta; proveedor filtra por tipo). Solo acceso total. Sin migración. Tests: security 5 nuevos OK; 210 OK en apps relacionadas; comercial baseline 24/6 (sin regresiones).
+
 ## 2026-07-23 — Bandeja del vendedor en el home + crear presupuesto desde la solicitud (FEAT-028)
 
 **Pedido:** "Si soy vendedor, en /home/ quiero ver una tabla con mis solicitudes asignadas, y esa tarea se relaciona a un presupuesto." Se pensó el flujo completo para no duplicar (solicitud → presupuesto → venta/pedido).
 **Archivos:** `presupuestos/models.py` (FK OneToOne `Presupuesto.solicitud` + migración `0012_presupuesto_solicitud`), `presupuestos/views.py` (`crear` acepta `?solicitud`/`?cliente`, vincula y cierra la solicitud), `presupuestos/templates/presupuestos/form.html`, `comercial/views.py` (`cliente_create` prellena por query params + `next`), `core/views.py` + `core/templates/core/home.html` (tabla "Mis solicitudes pendientes" para rol vendedor), `solicitudes/views.py` (`marcar_contestada` honra `next` + guard de propiedad), `usuarios/access_control.py` (marcar_contestada también con `dashboard.view`).
-**Descripción:** El vendedor ve en el home sus solicitudes asignadas sin atender. "Crear presupuesto" abre el alta precargada con los datos del pedido (elige Cliente existente o crea uno nuevo prellenado, sin duplicar); al guardar, el presupuesto queda vinculado (OneToOne) y la solicitud pasa a **contestada** (sale del home y del recordatorio). Se reusa el estado `contestada` (sin estado nuevo) y por eso **se dio de baja la detección de "contestada por email"** (WF3, nunca construido, redundante). Migración aditiva. Requiere asignar al rol Vendedor los accesos Dashboard + Presupuestos. Tests: 157 OK (solicitudes+presupuestos+core+comercial), sin regresiones.
+**Descripción:** El vendedor ve en el home sus solicitudes asignadas sin atender. "Crear presupuesto" abre el alta precargada con los datos del pedido (elige Cliente existente o crea uno nuevo prellenado, sin duplicar); al guardar, el presupuesto queda vinculado (OneToOne) y la solicitud pasa a **contestada** (sale del home y del recordatorio). `ClienteForm.clean_email` valida **email único** (no permite crear dos clientes con el mismo email). Se reusa el estado `contestada` (sin estado nuevo) y por eso **se dio de baja la detección de "contestada por email"** (WF3, nunca construido, redundante). Migración aditiva. Requiere asignar al rol Vendedor los accesos Dashboard + Presupuestos. Tests: 157 OK (solicitudes+presupuestos+core+comercial), sin regresiones.
 
 ## 2026-07-21 — Pricing: fin de la pérdida silenciosa de datos en config (FIX-016)
 

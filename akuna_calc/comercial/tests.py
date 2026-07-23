@@ -45,6 +45,31 @@ class ClienteCreatePrefillTest(TestCase):
         self.assertEqual(initial.get('email'), 'j@x.com')
 
 
+class ClienteEmailUnicoTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin_dup', 'a@a.com', 'x')
+        self.client.force_login(self.admin)
+        Cliente.objects.create(nombre='Juan', apellido='Perez', condicion_iva='CF',
+                               direccion='x', localidad='y', email='dup@x.com')
+
+    def test_bloquea_email_duplicado(self):
+        resp = self.client.post(reverse('comercial:cliente_create'), {
+            'nombre': 'Otro', 'apellido': 'Cliente', 'condicion_iva': 'CF',
+            'direccion': 'z', 'localidad': 'w', 'email': 'DUP@x.com',
+        })
+        self.assertEqual(resp.status_code, 200)  # re-render con error (no redirect)
+        self.assertContains(resp, 'Ya existe un cliente con ese email')
+        self.assertEqual(Cliente.objects.filter(email__iexact='dup@x.com').count(), 1)
+
+    def test_permite_email_nuevo(self):
+        resp = self.client.post(reverse('comercial:cliente_create'), {
+            'nombre': 'Nuevo', 'apellido': 'Cliente', 'condicion_iva': 'CF',
+            'direccion': 'z', 'localidad': 'w', 'email': 'nuevo@x.com',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Cliente.objects.filter(email__iexact='nuevo@x.com').exists())
+
+
 class ClienteDetailViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
