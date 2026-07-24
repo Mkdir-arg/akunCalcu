@@ -22,6 +22,18 @@
 
 ## Fixes registrados
 
+### FIX-018 — El recargo de renovación por unidad no se aplicaba a productos terciarizados
+**Fecha**: 2026-07-24
+**Reportado por**: Usuario (presupuesto 559 en producción)
+**Severidad**: Media (presupuestos de renovación con terciarizados quedaban cotizados de menos)
+**Feature afectada**: FEAT-016 (productos terciarizados) + `presupuestos` (recargos por tipo de obra)
+
+**Síntoma**: En un presupuesto con tipo de obra "Renovación", al agregar un ítem de producto terciarizado (precio final manual) el precio del ítem no sumaba el "Recargo renovación por unidad". Los ítems de aluminio y PVC del mismo presupuesto sí lo sumaban.
+**Causa raíz**: En `_fields_item_desde_post` (`presupuestos/views.py`), la rama de terciarizados devolvía el precio manual tal cual, sin el bloque `if presupuesto.tipo_obra == 'renovacion'` que sí tienen las ramas de PVC y aluminio. Tampoco grababa `recargo_renovacion_unitario_aplicado` en `resultado_json`, así que el desglose de recargos del detalle/PDF lo ignoraba.
+**Solución**: La rama terciarizado ahora separa `precio_unitario_base` (el valor ingresado) del recargo y persiste `precio_unitario = base + recargo` junto con `recargo_renovacion_unitario_aplicado`/`recargo_renovacion_total_aplicado` en `resultado_json`, igual que las otras ramas. Aplica tanto a agregar como a editar ítem (comparten el helper). Test de regresión nuevo: `test_agregar_item_terciarizado_en_renovacion_aplica_recargo`. Tests de `presupuestos`: 122 OK. Sin migración.
+**Archivos modificados**: `akuna_calc/presupuestos/views.py`, `akuna_calc/presupuestos/tests.py`
+**Nota para datos existentes**: los ítems terciarizados ya cargados (ej. presupuesto 559) no se corrigen solos; basta volver a guardar la "Configuración de obra" del presupuesto (llama a `actualizar_items_por_configuracion`, que reaplica el recargo sobre `precio_unitario_base`) o editar el ítem.
+
 ### FIX-017 — Formato de números argentino + IVA mal desglosado en el PDF de presupuestos
 **Fecha**: 2026-07-21
 **Reportado por**: Usuario

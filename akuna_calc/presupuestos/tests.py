@@ -516,6 +516,33 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(item.cantidad, 2)
         self.assertEqual(item.resultado_json.get('tipo'), 'terciarizado')
 
+    def test_agregar_item_terciarizado_en_renovacion_aplica_recargo(self):
+        from django.urls import reverse
+        self.client.login(username='viewuser', password='testpass')
+        presupuesto = crear_presupuesto(self.user)
+        presupuesto.tipo_obra = 'renovacion'
+        presupuesto.recargo_renovacion_unitario = 20000
+        presupuesto.save(update_fields=['tipo_obra', 'recargo_renovacion_unitario'])
+
+        url = reverse('presupuestos:presupuestos-item-agregar', args=[presupuesto.pk])
+        with patch('presupuestos.views.Producto') as mock_prod:
+            mock_prod.objects.filter.return_value.exists.return_value = True
+            res = self.client.post(url, {
+                'producto_id': '72',
+                'precio_terciarizado': '15000',
+                'cantidad': '2',
+                'descripcion': 'Cortina Roller',
+            })
+
+        self.assertEqual(res.status_code, 302)
+        item = presupuesto.items.get()
+        self.assertEqual(float(item.precio_unitario), 35000.0)  # 15000 + 20000
+        self.assertEqual(float(item.precio_total), 70000.0)
+        self.assertEqual(item.resultado_json.get('precio_unitario_base'), 15000.0)
+        self.assertEqual(item.resultado_json.get('recargo_renovacion_unitario_aplicado'), 20000.0)
+        self.assertEqual(item.resultado_json.get('recargo_renovacion_total_aplicado'), 40000.0)
+        self.assertEqual(float(item.get_recargo_renovacion_total()), 40000.0)
+
     def test_agregar_item_terciarizado_sin_precio_no_crea_item(self):
         from django.urls import reverse
         self.client.login(username='viewuser', password='testpass')

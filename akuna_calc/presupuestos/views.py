@@ -305,18 +305,23 @@ def _fields_item_desde_post(request, presupuesto):
     producto_id_raw = data.get('producto_id')
     if producto_id_raw and Producto.objects.filter(pk=producto_id_raw, terciarizado=True).exists():
         try:
-            precio_unitario = float(data.get('precio_terciarizado', 0) or 0)
+            precio_unitario_base = float(data.get('precio_terciarizado', 0) or 0)
         except (TypeError, ValueError):
-            precio_unitario = 0
-        if precio_unitario <= 0:
+            precio_unitario_base = 0
+        if precio_unitario_base <= 0:
             return None, 'Ingresá el precio final del producto terciarizado.'
+        recargo_unitario = 0
+        if presupuesto.tipo_obra == 'renovacion':
+            recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0)
         return {
             'descripcion': descripcion or 'Producto terciarizado',
             'cantidad': cantidad, 'ancho_mm': 0, 'alto_mm': 0,
-            'margen_porcentaje': 0, 'precio_unitario': precio_unitario,
+            'margen_porcentaje': 0, 'precio_unitario': precio_unitario_base + recargo_unitario,
             'resultado_json': {
-                'precio_unitario_base': precio_unitario, 'tipo': 'terciarizado',
+                'precio_unitario_base': precio_unitario_base, 'tipo': 'terciarizado',
                 'producto_id': int(producto_id_raw),
+                'recargo_renovacion_unitario_aplicado': recargo_unitario,
+                'recargo_renovacion_total_aplicado': recargo_unitario * cantidad,
             },
         }, None
 

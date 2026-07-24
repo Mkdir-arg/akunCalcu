@@ -16,8 +16,8 @@ class EventoAgendaForm(forms.ModelForm):
     class Meta:
         model = EventoAgenda
         fields = [
-            'titulo', 'numero_pedido', 'descripcion', 'tipo', 'fecha_evento', 'hora_envio',
-            'anticipacion_dias', 'destinatarios', 'activo',
+            'titulo', 'numero_pedido', 'descripcion', 'tipo', 'fecha_evento', 'hora_evento',
+            'hora_envio', 'anticipacion_dias', 'destinatarios', 'activo',
             'tecnico', 'colocador', 'cliente', 'direccion', 'lat', 'lng',
         ]
         widgets = {
@@ -26,6 +26,7 @@ class EventoAgendaForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'class': _INPUT, 'rows': 3, 'placeholder': 'Detalle del evento (opcional)'}),
             'tipo': forms.Select(attrs={'class': _INPUT, 'id': 'id_tipo'}),
             'fecha_evento': forms.DateInput(attrs={'class': _INPUT, 'type': 'date'}, format='%Y-%m-%d'),
+            'hora_evento': forms.TimeInput(attrs={'class': _INPUT, 'type': 'time'}, format='%H:%M'),
             'hora_envio': forms.TimeInput(attrs={'class': _INPUT, 'type': 'time'}, format='%H:%M'),
             'anticipacion_dias': forms.NumberInput(attrs={'class': _INPUT, 'min': 0}),
             'destinatarios': forms.SelectMultiple(attrs={'class': _INPUT}),
@@ -52,6 +53,7 @@ class EventoAgendaForm(forms.ModelForm):
         self.fields['tecnico'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'username')
         self.fields['tecnico'].required = False
         self.fields['hora_envio'].input_formats = ['%H:%M', '%H:%M:%S']
+        self.fields['hora_evento'].input_formats = ['%H:%M', '%H:%M:%S']
         self.fields['fecha_evento'].input_formats = ['%Y-%m-%d']
 
     def clean_destinatarios(self):

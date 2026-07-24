@@ -38,6 +38,10 @@ class EventoAgenda(models.Model):
         max_length=20, choices=TIPO_CHOICES, default='pendientes', verbose_name="Tipo",
     )
     fecha_evento = models.DateField(verbose_name="Fecha del evento")
+    hora_evento = models.TimeField(
+        null=True, blank=True, verbose_name="Horario del evento",
+        help_text="Hora en que ocurre el evento (colocación, visita, etc.). Opcional.",
+    )
     hora_envio = models.TimeField(verbose_name="Hora de envío")
     anticipacion_dias = models.PositiveIntegerField(
         default=0,
@@ -135,6 +139,10 @@ class EventoAgenda(models.Model):
         """Si el evento cae en la fecha dada (para mostrarlo en el calendario)."""
         return self.fecha_evento == fecha
 
+    def hora_agenda(self):
+        """Hora a mostrar/ordenar en el calendario: la del evento si está cargada, si no la de envío."""
+        return self.hora_evento or self.hora_envio
+
     def marcar_enviado(self, ahora=None):
         ahora = ahora or timezone.now()
         self.ultimo_envio = ahora
@@ -157,7 +165,10 @@ class EventoAgenda(models.Model):
             partes.append(f"📦 Pedido N° {self.numero_pedido}")
         if self.descripcion:
             partes.append(self.descripcion)
-        partes.append(f"📅 {self.fecha_evento.strftime('%d/%m/%Y')}")
+        fecha_txt = f"📅 {self.fecha_evento.strftime('%d/%m/%Y')}"
+        if self.hora_evento:
+            fecha_txt += f" · 🕐 {self.hora_evento.strftime('%H:%M')} hs"
+        partes.append(fecha_txt)
         if self.cliente:
             partes.append(f"👤 {self.cliente.nombre} {self.cliente.apellido}".rstrip())
             if self.cliente.telefono:

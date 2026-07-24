@@ -65,8 +65,16 @@
                 </div>
 
                 <div>
+                    <label for="{{ form.hora_evento.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Horario del evento</label>
+                    {{ form.hora_evento }}
+                    <p class="text-xs text-slate-500 mt-1">Hora en que ocurre la colocación, visita, etc. (opcional). Se incluye en el WhatsApp.</p>
+                    {% if form.hora_evento.errors %}<p class="text-xs text-red-600 mt-1">{{ form.hora_evento.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
                     <label for="{{ form.hora_envio.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Hora de envío <span class="text-red-500">*</span></label>
                     {{ form.hora_envio }}
+                    <p class="text-xs text-slate-500 mt-1">Hora a la que se envía el recordatorio por WhatsApp.</p>
                     {% if form.hora_envio.errors %}<p class="text-xs text-red-600 mt-1">{{ form.hora_envio.errors.0 }}</p>{% endif %}
                 </div>
 

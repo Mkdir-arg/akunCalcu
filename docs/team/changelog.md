@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-24 — El recargo de renovación no se aplicaba a productos terciarizados (FIX-018)
+
+**Pedido:** "En el presupuesto 559 no se está aplicando el Recargo renovación por unidad. ¿Puede ser porque es terciarizado y ellos ingresan el valor del ítem?"
+**Archivos:** `akuna_calc/presupuestos/views.py`, `akuna_calc/presupuestos/tests.py`.
+**Descripción:** Exactamente eso: en `_fields_item_desde_post`, la rama de productos terciarizados devolvía el precio manual sin el bloque de recargo por renovación que sí tienen PVC y aluminio, y sin grabar `recargo_renovacion_unitario_aplicado` en `resultado_json`. Ahora suma el recargo al precio unitario y persiste el desglose igual que las otras ramas (aplica a agregar y editar ítem, comparten helper). Los ítems ya cargados se corrigen re-guardando la "Configuración de obra" del presupuesto o editando el ítem. Test de regresión nuevo; presupuestos 122 OK. Sin migración. Detalle en FIX-018.
+
 ## 2026-07-24 — Graficador 3D de aberturas en el cotizador de presupuestos (FEAT-030)
 
 **Pedido:** "En /presupuestos/, al calcular un ítem, mostrar al lado un diseño 3D de la abertura interpretando los parámetros ingresados (como los cotizadores comerciales de ventanas)."

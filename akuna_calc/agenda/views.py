@@ -126,7 +126,7 @@ def calendario(request):
             dias_semana.append({
                 'fecha': dia,
                 'is_today': dia == hoy,
-                'eventos': sorted([e for e in eventos_qs if e.ocurre_en(dia)], key=lambda e: e.hora_envio),
+                'eventos': sorted([e for e in eventos_qs if e.ocurre_en(dia)], key=lambda e: e.hora_agenda()),
             })
         ctx.update({
             'dias_semana': dias_semana,
@@ -146,7 +146,7 @@ def calendario(request):
         DIAS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
         ctx.update({
             'fecha_dia': fecha_ref,
-            'eventos_dia': sorted([e for e in eventos_qs if e.ocurre_en(fecha_ref)], key=lambda e: e.hora_envio),
+            'eventos_dia': sorted([e for e in eventos_qs if e.ocurre_en(fecha_ref)], key=lambda e: e.hora_agenda()),
             'dia_prev': str(fecha_ref - timedelta(days=1)),
             'dia_next': str(fecha_ref + timedelta(days=1)),
             'nombre_dia': DIAS_ES[fecha_ref.weekday()],

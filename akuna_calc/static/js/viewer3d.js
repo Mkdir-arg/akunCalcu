@@ -181,8 +181,8 @@ function build() {
   }
   g.add(frame(W, H, pw, pd, 0));
   if (puerta) {
-    const u = new THREE.Mesh(new RoundedBoxGeometry(W, 0.05, pd + 0.02, 2, 0.006), perfilMat);
-    u.position.set(0, -H / 2 + 0.02, 0); u.castShadow = true; g.add(u);
+    const u = new THREE.Mesh(new RoundedBoxGeometry(W + 0.03, 0.07, pd + 0.05, 2, 0.006), perfilMat);
+    u.position.set(0, -H / 2 + 0.03, 0); u.castShadow = true; g.add(u);
   }
 
   const Wi = W - 2 * pw, Hi = H - 2 * pw;
@@ -190,11 +190,23 @@ function build() {
   function buildLeaf(lw, lh, withHandle, handleSide, tir) {
     const leaf = new THREE.Group();
     leaf.add(frame(lw, lh, lf, ld, 0));
-    leaf.add(glass(lw - 2 * lf, lh - 2 * lf, 0, def));
+    // Zócalo inferior en puertas (panel ciego bajo el vidrio): es lo que hace
+    // que la hoja se lea como puerta — el despiece real lo tiene (ZÓCALO DE PUERTA).
+    const zocaloH = puerta ? Math.min(0.24, Math.max(0.14, lh * 0.12)) : 0;
+    if (zocaloH > 0) {
+      const zoc = new THREE.Mesh(new RoundedBoxGeometry(lw - 2 * lf + 0.012, zocaloH, ld * 0.96, 2, 0.004), perfilMat);
+      zoc.position.set(0, -lh / 2 + lf + zocaloH / 2, 0);
+      zoc.castShadow = true; zoc.receiveShadow = true;
+      leaf.add(zoc);
+    }
+    const gl = glass(lw - 2 * lf, lh - 2 * lf - zocaloH, 0, def);
+    gl.position.y = zocaloH / 2;
+    leaf.add(gl);
     if (withHandle) {
       const h = handle();
-      const hx = handleSide === 'izq' ? -lw / 2 + lf + 0.03 : lw / 2 - lf - 0.03;
-      h.position.set(hx, puerta ? -0.02 : 0, ld / 2 + 0.02);
+      if (puerta) h.scale.setScalar(1.5);   // herraje de puerta, más visible
+      const hx = handleSide === 'izq' ? -lw / 2 + lf + 0.035 : lw / 2 - lf - 0.035;
+      h.position.set(hx, puerta ? -0.03 : 0, ld / 2 + 0.02);
       if (handleSide === 'izq') h.rotation.y = Math.PI;
       leaf.add(h);
       if (puerta) {

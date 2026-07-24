@@ -70,7 +70,7 @@
                     </span>
                     {% for evento in celda.eventos %}
                     <a href="{% url 'agenda:editar' evento.pk %}"
-                       title="{{ evento.hora_envio|time:'H:i' }} · {{ evento.titulo }} ({{ evento.get_tipo_display }})"
+                       title="{{ evento.hora_agenda|time:'H:i' }} · {{ evento.titulo }} ({{ evento.get_tipo_display }})"
                        class="block truncate rounded px-1.5 py-0.5 text-[11px] font-medium leading-tight
                        {% if evento.tipo == 'mediciones' %}bg-blue-100 text-blue-800 hover:bg-blue-200
                        {% elif evento.tipo == 'servicio_tecnico' %}bg-orange-100 text-orange-800 hover:bg-orange-200
@@ -78,7 +78,7 @@
                        {% elif evento.tipo == 'llamar' %}bg-purple-100 text-purple-800 hover:bg-purple-200
                        {% elif evento.tipo == 'colocaciones' %}bg-green-100 text-green-800 hover:bg-green-200
                        {% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                        <i class="fas fa-circle text-[6px] align-middle mr-0.5"></i>{{ evento.hora_envio|time:'H:i' }} {{ evento.titulo }}
+                        <i class="fas fa-circle text-[6px] align-middle mr-0.5"></i>{{ evento.hora_agenda|time:'H:i' }} {{ evento.titulo }}
                     </a>
                     {% endfor %}
                 </div>
@@ -128,7 +128,7 @@
                         {% elif evento.tipo == 'llamar' %}bg-purple-100 text-purple-800
                         {% elif evento.tipo == 'colocaciones' %}bg-green-100 text-green-800
                         {% else %}bg-slate-100 text-slate-700{% endif %}">
-                        <i class="fas fa-circle text-[5px] align-middle mr-0.5"></i>{{ evento.hora_envio|time:'H:i' }} {{ evento.titulo|truncatechars:20 }}
+                        <i class="fas fa-circle text-[5px] align-middle mr-0.5"></i>{{ evento.hora_agenda|time:'H:i' }} {{ evento.titulo|truncatechars:20 }}
                     </span>
                     {% empty %}
                     <p class="text-[10px] text-slate-300 text-center mt-4">—</p>
@@ -173,8 +173,11 @@
                         {% elif evento.tipo == 'llamar' %}text-purple-700
                         {% elif evento.tipo == 'colocaciones' %}text-green-700
                         {% else %}text-slate-700{% endif %}">
-                        {{ evento.hora_envio|time:'H:i' }}
+                        {{ evento.hora_agenda|time:'H:i' }}
                     </p>
+                    {% if evento.hora_evento %}
+                    <p class="text-[10px] text-slate-400 leading-tight">Envío {{ evento.hora_envio|time:'H:i' }}</p>
+                    {% endif %}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1 flex-wrap">

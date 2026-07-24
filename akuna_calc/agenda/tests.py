@@ -95,6 +95,22 @@ class EventoAgendaModelTests(TestCase):
         e = EventoAgenda(titulo='E', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), estado='enviado')
         self.assertIsNone(e.proximo_envio_relativo(hoy=date(2026, 6, 10)))
 
+    def test_hora_agenda_prefiere_hora_evento(self):
+        e = EventoAgenda(fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0), hora_evento=time(14, 30))
+        self.assertEqual(e.hora_agenda(), time(14, 30))
+
+    def test_hora_agenda_cae_en_hora_envio_si_no_hay_horario(self):
+        e = EventoAgenda(fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0))
+        self.assertEqual(e.hora_agenda(), time(9, 0))
+
+    def test_hora_evento_no_afecta_el_scheduling(self):
+        e = EventoAgenda.objects.create(
+            titulo='Colocación', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
+            hora_evento=time(14, 30),
+        )
+        self.assertTrue(e.esta_pendiente(_aware(2026, 6, 10, 10, 0)))
+        self.assertFalse(e.esta_pendiente(_aware(2026, 6, 10, 8, 0)))
+
 
 class EventoVisitaClienteTests(TestCase):
 
@@ -139,6 +155,24 @@ class EventoVisitaClienteTests(TestCase):
             titulo='Medición Pérez', tipo='mediciones', fecha_evento=date(2026, 6, 10), hora_envio=time(9, 0),
         )
         self.assertNotIn('Pedido', e.mensaje())
+
+    def test_mensaje_incluye_hora_evento(self):
+        e = EventoAgenda.objects.create(
+            titulo='Colocación Pérez', tipo='colocaciones', fecha_evento=date(2026, 6, 10),
+            hora_envio=time(9, 0), hora_evento=time(14, 30),
+        )
+        msg = e.mensaje()
+        self.assertIn('10/06/2026', msg)
+        self.assertIn('🕐 14:30 hs', msg)
+
+    def test_mensaje_sin_hora_evento_no_muestra_reloj(self):
+        e = EventoAgenda.objects.create(
+            titulo='Colocación Pérez', tipo='colocaciones', fecha_evento=date(2026, 6, 10),
+            hora_envio=time(9, 0),
+        )
+        msg = e.mensaje()
+        self.assertIn('10/06/2026', msg)
+        self.assertNotIn('🕐', msg)
 
     def test_cliente_info_sin_login_redirige(self):
         self.assertEqual(self.client.get(reverse('agenda:cliente_info', args=[self.cliente.pk])).status_code, 302)
@@ -276,6 +310,28 @@ class EventoViewsTests(TestCase):
         })
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(EventoAgenda.objects.filter(titulo='Medición obra').exists())
+
+    def test_crear_evento_con_hora_evento(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.post(reverse('agenda:crear'), {
+            'titulo': 'Colocación obra Díaz', 'tipo': 'colocaciones',
+            'fecha_evento': '2026-06-20', 'hora_evento': '14:30', 'hora_envio': '09:00',
+            'anticipacion_dias': 0, 'destinatarios': [self.num.pk], 'activo': 'on',
+        })
+        self.assertEqual(resp.status_code, 302)
+        e = EventoAgenda.objects.get(titulo='Colocación obra Díaz')
+        self.assertEqual(e.hora_evento, time(14, 30))
+
+    def test_crear_evento_sin_hora_evento_es_valido(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.post(reverse('agenda:crear'), {
+            'titulo': 'Pendiente sin horario', 'tipo': 'pendientes',
+            'fecha_evento': '2026-06-20', 'hora_envio': '09:00', 'anticipacion_dias': 0,
+            'destinatarios': [self.num.pk], 'activo': 'on',
+        })
+        self.assertEqual(resp.status_code, 302)
+        e = EventoAgenda.objects.get(titulo='Pendiente sin horario')
+        self.assertIsNone(e.hora_evento)
 
     def test_crear_evento_con_numero_pedido(self):
         self.client.login(username='admin', password='pass1234')
