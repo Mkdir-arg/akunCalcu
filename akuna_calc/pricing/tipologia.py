@@ -20,6 +20,10 @@ TIPO_PANO_FIJO = 'pano_fijo'
 TIPO_PUERTA_BATIENTE = 'puerta_batiente'
 TIPO_PUERTA_CORREDIZA = 'puerta_corrediza'
 
+# Producto que NO es una abertura dibujable (persianas, cortinas, cajones,
+# motorización, estructura, postigón, etc.): el visor no muestra 3D.
+TIPO_NO_DIBUJO = 'no_dibujo'
+
 # Default seguro cuando no hay ninguna pista.
 TIPO_DEFAULT = TIPO_PANO_FIJO
 
@@ -34,6 +38,7 @@ TIPO_DIBUJO_CHOICES = [
     (TIPO_PANO_FIJO, 'Paño fijo'),
     (TIPO_PUERTA_BATIENTE, 'Puerta batiente'),
     (TIPO_PUERTA_CORREDIZA, 'Puerta corrediza'),
+    (TIPO_NO_DIBUJO, 'No dibujar (complemento: persiana, cortina, cajón…)'),
 ]
 
 
@@ -65,12 +70,16 @@ def clasificar_tipologia(descripcion, cantidad_hojas=None) -> str:
         return TIPO_VENTANA_CORREDIZA
     if 'oscilo' in desc:
         return TIPO_VENTANA_OSCILO
-    if any(k in desc for k in ('proyect', 'banderola', 'toldo')):
+    if any(k in desc for k in ('proyect', 'banderola', 'toldo', 'brazo', 'empuje')):
         return TIPO_VENTANA_PROYECTANTE
     if any(k in desc for k in ('batiente', 'rebatible', 'abrir')):
         return TIPO_VENTANA_BATIENTE
     if any(k in desc for k in ('fij', 'pano')):
         return TIPO_PANO_FIJO
+
+    # Complementos: no son aberturas dibujables → el visor no muestra 3D.
+    if any(k in desc for k in ('persiana', 'cortina', 'cajon', 'motorizac', 'estructura', 'postigon')):
+        return TIPO_NO_DIBUJO
 
     # Sin match textual: pista por cantidad de hojas.
     try:

@@ -1289,11 +1289,15 @@ const CotizadorModal = () => {
         return 'blanco';
     };
 
+    // ¿Este producto se dibuja en 3D? Los complementos (persianas, cortinas, etc.) no.
+    const _prod3d = productos.find(p => p.id === config.producto_id);
+    const dibuja3d = !!result && !!_prod3d && (_prod3d.tipologia || 'pano_fijo') !== 'no_dibujo';
+
     // Monta / actualiza el visor 3D cuando hay resultado calculado.
     useEffect(() => {
         if (!result || !viewerRef.current) return;
         const prod = productos.find(p => p.id === config.producto_id);
-        if (!prod) return;
+        if (!prod || (prod.tipologia || 'pano_fijo') === 'no_dibujo') return;
         const vid = vidrios.find(v => v.codigo === config.vidrio_codigo);
         const trat = tratamientos.find(t => t.id === config.tratamiento_id);
         const params = {
@@ -1577,8 +1581,14 @@ const CotizadorModal = () => {
             <div className="flex flex-col">
                 {result ? (
                     <>
-                        <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
-                            className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
+                        {dibuja3d ? (
+                            <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
+                                className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
+                        ) : (
+                            <div className="w-full h-72 rounded-2xl mb-4 flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-400 text-sm text-center px-6">
+                                <span><i className="fas fa-cube mr-2 opacity-50"></i>Sin vista previa 3D para este producto</span>
+                            </div>
+                        )}
                         <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
                             <p className="text-sm opacity-80 mb-1">Precio unitario</p>
                             <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>

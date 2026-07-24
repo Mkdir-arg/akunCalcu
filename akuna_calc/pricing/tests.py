@@ -15,6 +15,7 @@ from pricing.tipologia import (
     clasificar_tipologia, resolver_tipologia,
     TIPO_VENTANA_CORREDIZA, TIPO_VENTANA_BATIENTE, TIPO_VENTANA_OSCILO,
     TIPO_VENTANA_PROYECTANTE, TIPO_PANO_FIJO, TIPO_PUERTA_BATIENTE, TIPO_PUERTA_CORREDIZA,
+    TIPO_NO_DIBUJO,
 )
 
 User = get_user_model()
@@ -45,6 +46,33 @@ class ClasificarTipologiaTest(SimpleTestCase):
     def test_puerta_gana_sobre_corrediza(self):
         # 'puerta corrediza' es puerta_corrediza, no ventana_corrediza
         self.assertEqual(clasificar_tipologia('Puerta corrediza', 2), TIPO_PUERTA_CORREDIZA)
+
+    # --- Casos del catálogo real (93 productos) ---
+    def test_brazo_de_empuje_es_proyectante(self):
+        self.assertEqual(clasificar_tipologia('BRAZO DE EMPUJE VIDRIO SIMPLE', 1), TIPO_VENTANA_PROYECTANTE)
+        self.assertEqual(clasificar_tipologia('BRAZO EMPUJE VIDRIO DVH', 1), TIPO_VENTANA_PROYECTANTE)
+
+    def test_banderola_es_proyectante(self):
+        self.assertEqual(clasificar_tipologia('BANDEROLA VIDRIO SIMPLE', 1), TIPO_VENTANA_PROYECTANTE)
+
+    def test_raja_de_abrir_es_batiente(self):
+        self.assertEqual(clasificar_tipologia('RAJA DE ABRIR 1 HOJA VIDRIO SIMPLE', 1), TIPO_VENTANA_BATIENTE)
+        self.assertEqual(clasificar_tipologia('RAJA DE ABRIR EN 2 HOJAS VIDRIO SIMPLE', 2), TIPO_VENTANA_BATIENTE)
+
+    def test_puerta_modelo_es_puerta_batiente(self):
+        self.assertEqual(clasificar_tipologia('PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE', 1), TIPO_PUERTA_BATIENTE)
+        self.assertEqual(clasificar_tipologia('PUERTA CHAPA', 1), TIPO_PUERTA_BATIENTE)
+        self.assertEqual(clasificar_tipologia('PUERTA PLACA', 1), TIPO_PUERTA_BATIENTE)
+
+    def test_complementos_no_se_dibujan(self):
+        for nombre in ('PERSIANA ALUMINIO', 'PERSIANA PVC', 'CORTINA ROLLER', 'CORTINA SCREEN',
+                       'CAJON EXTERIOR', 'CAJON INTERIOR', 'MOTORIZACION DE PERSIANAS',
+                       'ESTRUCTURA', 'POSTIGON ALUMINIO BLANCO'):
+            self.assertEqual(clasificar_tipologia(nombre, 1), TIPO_NO_DIBUJO, nombre)
+
+    def test_cortina_con_2_hojas_no_es_corrediza(self):
+        # el chequeo de complemento gana sobre la pista de cantidad_hojas
+        self.assertEqual(clasificar_tipologia('CORTINA BLACK OUT', 2), TIPO_NO_DIBUJO)
 
     def test_sin_acentos_y_mayusculas(self):
         self.assertEqual(clasificar_tipologia('PAÑO FIJO', 1), TIPO_PANO_FIJO)
