@@ -293,3 +293,16 @@ Usar exclusivamente **FontAwesome 6.4.0** (ya incluido en base.html).
 | SweetAlert2 | 11 | Modales y alertas |
 
 **No agregar nuevas librerías sin pasar por el Arquitecto y registrar un ADR.**
+
+---
+
+## Visor 3D de aberturas (Three.js) — específico de página
+
+El cotizador de presupuestos incluye un **visor 3D** de la abertura (FEAT-030 / ADR-015). **No** está en `base.html`: se carga **solo donde se usa** y **de forma perezosa**.
+
+- **Módulo:** `static/js/viewer3d.js` (Three.js puro, ESM autocontenido). Expone `window.AkunViewer.mount(container, params) / setParams / dispose`.
+- **Carga:** import map de `three` (jsdelivr) en el `extra_head` de la página + un `<script type="module">` que define `window.__loadAkunViewer` (hace `import()` recién al primer uso).
+- **Uso desde React/Babel:** `window.__loadAkunViewer().then(v => v.mount(ref.current, params))`.
+- **params:** `{ tipo, ancho, alto, hojas, mosquitero, premarco, vidrio }`.
+
+**Regla:** dentro de un template Django, **no usar `style={{ }}` de JSX** (choca con `{{ }}` del motor de plantillas) → usar clases Tailwind (ej. `h-72` en vez de `style={{height:'300px'}}`).

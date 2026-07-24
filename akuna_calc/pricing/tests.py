@@ -11,8 +11,54 @@ from pricing import config_views
 from pricing.models import Accesorio
 from pricing.forms import AccesorioCreateForm, AccesorioEditForm
 from pricing.services.calculator import PriceCalculator
+from pricing.tipologia import (
+    clasificar_tipologia,
+    TIPO_VENTANA_CORREDIZA, TIPO_VENTANA_BATIENTE, TIPO_VENTANA_OSCILO,
+    TIPO_VENTANA_PROYECTANTE, TIPO_PANO_FIJO, TIPO_PUERTA_BATIENTE, TIPO_PUERTA_CORREDIZA,
+)
 
 User = get_user_model()
+
+
+class ClasificarTipologiaTest(SimpleTestCase):
+    def test_corrediza(self):
+        self.assertEqual(clasificar_tipologia('Ventana corrediza 2 hojas', 2), TIPO_VENTANA_CORREDIZA)
+
+    def test_batiente(self):
+        self.assertEqual(clasificar_tipologia('Ventana batiente 1 hoja', 1), TIPO_VENTANA_BATIENTE)
+
+    def test_oscilobatiente(self):
+        self.assertEqual(clasificar_tipologia('Ventana oscilobatiente', 1), TIPO_VENTANA_OSCILO)
+
+    def test_proyectante(self):
+        self.assertEqual(clasificar_tipologia('Banderola proyectante', 1), TIPO_VENTANA_PROYECTANTE)
+
+    def test_pano_fijo(self):
+        self.assertEqual(clasificar_tipologia('Paño fijo', 1), TIPO_PANO_FIJO)
+
+    def test_puerta_batiente(self):
+        self.assertEqual(clasificar_tipologia('Puerta de abrir 1 hoja', 1), TIPO_PUERTA_BATIENTE)
+
+    def test_puerta_corrediza(self):
+        self.assertEqual(clasificar_tipologia('Puerta corrediza patio', 2), TIPO_PUERTA_CORREDIZA)
+
+    def test_puerta_gana_sobre_corrediza(self):
+        # 'puerta corrediza' es puerta_corrediza, no ventana_corrediza
+        self.assertEqual(clasificar_tipologia('Puerta corrediza', 2), TIPO_PUERTA_CORREDIZA)
+
+    def test_sin_acentos_y_mayusculas(self):
+        self.assertEqual(clasificar_tipologia('PAÑO FIJO', 1), TIPO_PANO_FIJO)
+        self.assertEqual(clasificar_tipologia('VENTANA CORREDIZA', 2), TIPO_VENTANA_CORREDIZA)
+
+    def test_default_una_hoja_sin_pista(self):
+        self.assertEqual(clasificar_tipologia('Producto especial', 1), TIPO_PANO_FIJO)
+
+    def test_default_dos_hojas_sin_pista_es_corrediza(self):
+        self.assertEqual(clasificar_tipologia('Producto especial', 2), TIPO_VENTANA_CORREDIZA)
+
+    def test_descripcion_vacia(self):
+        self.assertEqual(clasificar_tipologia('', None), TIPO_PANO_FIJO)
+        self.assertEqual(clasificar_tipologia(None, None), TIPO_PANO_FIJO)
 
 
 class MarcoViewsTest(TestCase):

@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-24 — Graficador 3D de aberturas en el cotizador de presupuestos (FEAT-030)
+
+**Pedido:** "En /presupuestos/, al calcular un ítem, mostrar al lado un diseño 3D de la abertura interpretando los parámetros ingresados (como los cotizadores comerciales de ventanas)."
+**Archivos:** `pricing/tipologia.py` (nuevo: clasificador de tipología, función pura), `static/js/viewer3d.js` (nuevo: visor 3D Three.js como módulo ESM autocontenido), `pricing/catalog_views.py` + `pricing/config_views.py` (exponen `cantidad_hojas` + `tipologia`), `presupuestos/templates/presupuestos/detalle.html` (import map + loader lazy + `useEffect`/canvas en el modal), `pricing/tests.py`.
+**Descripción:** Al calcular un ítem de aluminio, el modal muestra un 3D paramétrico rotable de la abertura, generado desde los parámetros: tipología clasificada por palabras clave sobre `producto.descripcion` + `cantidad_hojas` (corrediza/batiente/oscilo/proyectante/paño fijo/puerta), medidas a escala, hojas, opcionales (mosquitero/premarco) y vidrio (DVH/gris/bronce/esmerilado). **Three.js puro** (no React Three Fiber) como módulo estático con import map desde CDN, cargado **perezosamente** al abrir el modal → sin build, sin migración. Clasificador en el backend como fuente única de verdad. Bug corregido en dev: `style={{}}` de JSX chocaba con el parser de plantillas de Django (se usan clases Tailwind). ADR-015. Tests: clasificador 12/12, presupuestos 121/121, sin regresiones. **Fase 2 pendiente:** PNG por ítem en la lista + PDF; color de perfil y mano como dato; verificación visual manual con Docker.
+
 ## 2026-07-23 — Fusionar duplicados (merge) bajo Seguridad (FEAT-029)
 
 **Pedido:** "En Seguridad, transferir datos: hay duplicados (ej. cliente Matias y Matias Fariña). Elegir origen y destino, pasar todo lo relacionado del origen al destino y borrar el origen." Definido: destino intacto, baja lógica del origen, entidades Cliente/Proveedor/Cuenta con selector de tipo, solo admin/acceso total.

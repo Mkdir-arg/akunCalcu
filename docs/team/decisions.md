@@ -181,3 +181,15 @@
 **Decisión**: Usar Chart.js 4.4.0 via CDN, cargado únicamente en el bloque `extra_js` del template `clientes/detail.html`. No se agrega a `base.html` para no impactar el peso de todas las páginas.
 
 **Consecuencias**: Si se necesitan gráficos en otras páginas, se puede reutilizar el mismo CDN en sus respectivos `extra_js`. Si el uso crece, evaluar agregar a `base.html` o instalar via npm.
+
+---
+
+## ADR-015: Three.js para el visor 3D de aberturas (sin build)
+**Fecha**: 2026-07-24
+**Estado**: Activo
+
+**Contexto**: El cotizador de presupuestos necesita mostrar un diseño 3D de la abertura según los parámetros ingresados (REQ-038 / FEAT-030). El modal de ítem es React cargado por Babel-in-browser, **sin bundler**.
+
+**Decisión**: Usar **Three.js puro** — no React Three Fiber, que exige bundler — como **módulo ESM estático autocontenido** (`static/js/viewer3d.js`), cargado vía **import map** desde CDN (jsdelivr) y de forma **perezosa** (solo al abrir/usar el modal). El modal lo invoca imperativamente (`window.__loadAkunViewer().then(v => v.mount(container, params))`). La geometría se genera **paramétricamente** (no se usan modelos glTF pre-hechos, que se deforman al escalar a medidas arbitrarias). El clasificador de tipología vive en el backend (`pricing/tipologia.py`) como fuente única de verdad, expuesto por el API de productos.
+
+**Consecuencias**: Three.js queda disponible para 3D en el navegador sin introducir build ni npm, coherente con el patrón React/unpkg. Depende de un CDN (con `.catch` si falla). Si el uso de 3D crece, evaluar self-hostear los módulos de three o migrar a un bundler. **Importante**: los `style={{}}` de JSX no se pueden usar dentro de templates Django (chocan con `{{ }}` del motor de plantillas) → usar clases Tailwind.

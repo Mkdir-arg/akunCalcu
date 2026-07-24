@@ -1,12 +1,31 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
 {% load l10n %}
+{% load static %}
 {% block title %}{{ presupuesto.numero }}{% endblock %}
 
 {% block extra_head %}
 <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+  // Carga perezosa del visor 3D: three.js solo se descarga la primera vez que
+  // se necesita (al calcular un ítem), no en la carga de la página.
+  window.__loadAkunViewer = function () {
+    if (!window.__akunViewerPromise) {
+      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}").then(function () { return window.AkunViewer; });
+    }
+    return window.__akunViewerPromise;
+  };
+</script>
 {% endblock %}
 
 {% block content %}
@@ -946,7 +965,7 @@ function buildSection(title, icon, color, total, items) {
 <script type="text/babel">
 (function() {
 'use strict';
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const COTIZACION_USD = {{ presupuesto.cotizacion_usd|default:0|unlocalize }};
 
@@ -1078,7 +1097,7 @@ root.render(<FormularioPVC />);
 <script type="text/babel">
 (function() {
 'use strict';
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // -- Componente Select con busqueda --
 const Sel = ({ label, options, value, onChange, placeholder, disabled = false }) => {
@@ -1248,6 +1267,40 @@ const CotizadorModal = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const viewerRef = useRef(null);
+
+    // Mapea la descripción del vidrio elegido a un tipo visual del visor 3D.
+    const mapVidrio = (desc) => {
+        const d = (desc || '').toLowerCase();
+        if (d.includes('dvh') || d.includes('doble')) return 'dvh';
+        if (d.includes('gris') || d.includes('fum')) return 'gris';
+        if (d.includes('bronce')) return 'bronce';
+        if (d.includes('esmeril') || d.includes('opaco') || d.includes('satin')) return 'esmerilado';
+        return 'incoloro';
+    };
+
+    // Monta / actualiza el visor 3D cuando hay resultado calculado.
+    useEffect(() => {
+        if (!result || !viewerRef.current) return;
+        const prod = productos.find(p => p.id === config.producto_id);
+        if (!prod) return;
+        const vid = vidrios.find(v => v.codigo === config.vidrio_codigo);
+        const params = {
+            tipo: prod.tipologia || 'pano_fijo',
+            ancho: config.ancho_mm, alto: config.alto_mm,
+            hojas: prod.cantidad_hojas || 1,
+            mosquitero: (config.opcionales || []).some(o => o.tipo === 'mosquitero'),
+            premarco: (config.opcionales || []).some(o => o.tipo === 'premarco'),
+            vidrio: mapVidrio(vid && vid.descripcion),
+        };
+        let cancel = false;
+        if (window.__loadAkunViewer) {
+            window.__loadAkunViewer()
+                .then(v => { if (!cancel && viewerRef.current && v) v.mount(viewerRef.current, params); })
+                .catch(() => {});
+        }
+        return () => { cancel = true; };
+    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.opcionales, productos, vidrios]);
 
     useEffect(() => {
         fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
@@ -1512,6 +1565,8 @@ const CotizadorModal = () => {
             <div className="flex flex-col">
                 {result ? (
                     <>
+                        <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
+                            className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
                         <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
                             <p className="text-sm opacity-80 mb-1">Precio unitario</p>
                             <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>

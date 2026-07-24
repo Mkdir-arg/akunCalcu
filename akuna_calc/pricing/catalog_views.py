@@ -6,6 +6,7 @@ from rest_framework import status
 from django.db import models
 
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Vidrio, Perfil, Accesorio, Tratamiento, Mosquitero, Contravidrio, ContravidrioExterior, Cruce, VidrioRepartido
+from .tipologia import clasificar_tipologia
 
 
 class ExtrusorasListView(APIView):
@@ -30,8 +31,12 @@ class ProductosListView(APIView):
         qs = Producto.objects.exclude(bloqueado='Si')
         if linea_id:
             qs = qs.filter(linea_id=linea_id)
-        productos = qs.values('id', 'descripcion', 'linea_id', 'terciarizado')
-        return Response(list(productos))
+        productos = list(qs.values('id', 'descripcion', 'linea_id', 'terciarizado', 'cantidad_hojas'))
+        for producto in productos:
+            producto['tipologia'] = clasificar_tipologia(
+                producto.get('descripcion'), producto.get('cantidad_hojas')
+            )
+        return Response(productos)
 
 
 class MarcosListView(APIView):

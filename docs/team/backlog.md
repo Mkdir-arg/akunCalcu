@@ -25,6 +25,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-005 | Como administrador, quiero agregar fórmulas de perfiles al configurar un Marco para definir automáticamente las dimensiones de los perfiles necesarios para fabricar ese marco | Mediano ✅ |
 | US-006 | Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar N ítems con la lógica del cotizador, dejar comentarios y generar un PDF para el cliente | Grande ✅ |
 | US-037 | Como responsable comercial, quiero que los pedidos de presupuesto que llegan por email se repartan automáticamente y por turnos entre los vendedores para que ninguno quede sin atender | Grande ✅ |
+| US-038 | Como vendedor, quiero ver un diseño 3D de la abertura al calcular cada ítem del presupuesto para confirmar visualmente la configuración antes de guardarla | Grande ✅ |
 
 ---
 

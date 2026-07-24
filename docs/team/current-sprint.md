@@ -29,6 +29,7 @@ _Se define en el sprint planning._
 | US-036 | Eliminar módulo de despiece; Pedidos de Fábrica queda solo | ✅ Completado | Implementado fuera de sprint activo; FEAT-020 (migración plantillas/0014 pendiente en prod — borra datos del despiece) |
 | US-035 | Órdenes de Fabricación en el pedido (planilla + PDF A4) | ✅ Completado | Etapa 1 (FEAT-021) + Etapa 2 PDF A4 (FEAT-022). Migraciones plantillas/0015 y configuracion/0003 pendientes en prod |
 | US-037 | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | ✅ Completado | App `solicitudes` nueva; FEAT-025. Migraciones solicitudes/0001, usuarios/0004 y usuarios/0005 pendientes en prod |
+| US-038 | Graficador 3D de aberturas en el cotizador de presupuestos | ✅ Completado | Three.js como módulo estático; clasificador de tipología; FEAT-030. Sin migración |
 
 ## Impedimentos
 
