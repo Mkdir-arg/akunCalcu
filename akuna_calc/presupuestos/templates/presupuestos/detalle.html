@@ -21,7 +21,7 @@
   // se necesita (al calcular un ítem), no en la carga de la página.
   window.__loadAkunViewer = function () {
     if (!window.__akunViewerPromise) {
-      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=4").then(function () { return window.AkunViewer; });
+      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=5").then(function () { return window.AkunViewer; });
     }
     return window.__akunViewerPromise;
   };

@@ -282,6 +282,10 @@ function reframe(W, H) {
 function resize() {
   if (!host) return;
   const w = host.clientWidth || 1, h = host.clientHeight || 1;
+  // Anti-loop: si el tamaño casi no cambió, no tocar el canvas (evita el
+  // feedback ResizeObserver → setSize → ResizeObserver que agranda el modal).
+  const cur = renderer.getSize(new THREE.Vector2());
+  if (Math.abs(cur.x - w) < 2 && Math.abs(cur.y - h) < 2) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
@@ -320,7 +324,14 @@ const AkunViewer = {
     if (!renderer) initEngine();
     if (host !== container) {
       host = container;
+      // El canvas va ABSOLUTO dentro del contenedor: queda fuera del flujo y
+      // no puede agrandar al padre (evita el scroll infinito del modal).
+      container.style.position = 'relative';
+      container.style.overflow = 'hidden';
+      if (container.clientHeight < 40) container.style.height = '288px';  // fallback si la clase de altura no aplicó
       container.appendChild(renderer.domElement);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.inset = '0';
       renderer.domElement.style.width = '100%';
       renderer.domElement.style.height = '100%';
       renderer.domElement.style.display = 'block';
