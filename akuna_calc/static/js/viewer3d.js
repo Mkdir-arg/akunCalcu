@@ -32,6 +32,7 @@ const PERFILES = {
   blanco:    { color: 0xf3f4f4, metalness: 0.15, roughness: 0.45 },
   negro:     { color: 0x1b1d1f, metalness: 0.40, roughness: 0.38 },
   antracita: { color: 0x373b3f, metalness: 0.50, roughness: 0.36 },
+  bronce:    { color: 0x54422e, metalness: 0.75, roughness: 0.35 },   // anodizado bronce
   madera:    { color: 0x6a4526, metalness: 0.05, roughness: 0.72 },
   aluminio:  { color: 0xbfc3c8, metalness: 0.90, roughness: 0.28 },
 };
@@ -234,7 +235,8 @@ function build() {
     }
   } else if (T.modo === 'swing') {
     if (nH === 1) {
-      const leaf = buildLeaf(Wi, Hi, true, 'izq', false);
+      // Bisagra a la izquierda → manija en el borde opuesto (derecho)
+      const leaf = buildLeaf(Wi, Hi, true, 'der', false);
       const hinge = new THREE.Group(); hinge.position.set(-Wi / 2, 0, 0.01); leaf.position.set(Wi / 2, 0, 0); hinge.add(leaf); g.add(hinge);
       movers.push({ apply: t => { hinge.rotation.y = -(Math.PI * 0.44) * t; } });
     } else {

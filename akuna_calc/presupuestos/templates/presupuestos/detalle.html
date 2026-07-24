@@ -21,7 +21,7 @@
   // se necesita (al calcular un ítem), no en la carga de la página.
   window.__loadAkunViewer = function () {
     if (!window.__akunViewerPromise) {
-      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=3").then(function () { return window.AkunViewer; });
+      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=4").then(function () { return window.AkunViewer; });
     }
     return window.__akunViewerPromise;
   };
@@ -1283,6 +1283,7 @@ const CotizadorModal = () => {
     const mapColor = (desc) => {
         const d = (desc || '').toLowerCase();
         if (d.includes('negro') || d.includes('negra')) return 'negro';
+        if (d.includes('bronce')) return 'bronce';
         if (d.includes('antracita') || d.includes('grafito') || d.includes('gris')) return 'antracita';
         if (d.includes('madera') || d.includes('roble') || d.includes('cedro') || d.includes('nogal') || d.includes('simil')) return 'madera';
         if (d.includes('anod') || d.includes('natural') || d.includes('aluminio') || d.includes('plata') || d.includes('crudo')) return 'aluminio';
