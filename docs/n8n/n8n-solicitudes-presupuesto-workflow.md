@@ -16,16 +16,18 @@ Archivos importables:
 - [n8n-solicitudes-recordatorios.json](./n8n-solicitudes-recordatorios.json)
 
 Estado en la instancia de n8n (2026-07-23):
-- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `1uIJ9sfGpBzJDkTQ`) — credenciales
+- **"Solicitudes Presupuesto - Reparto AkunCalcu"** (id `PlXLIyyN2wyFYICD`) — credenciales
   Gmail + OpenAI cableadas. Detecta **2 vías**: formulario web (determinístico) y mail directo
-  (IA). Gmail Trigger con `simple:false` (trae el cuerpo) y `q` que incluye el formulario y
-  descarta ruido. Ojo: `simple:false` devuelve el mensaje **parseado** (`subject`, `text`
-  =cuerpo plano, `from`=objeto con `.text`), NO el formato crudo (`payload.headers/parts`). **Inactivo**: falta poner el toggle "Active" en ON (esta versión de n8n no
-  permite activar por API). ⚠️ El `.json` de backup quedó **desactualizado** (2 vías); la fuente
-  de verdad es el workflow vivo `BC4WvFsUMr1lcgmB`.
-- **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `M5N22elKbX2w6SMQ`) — corre
-  **1 vez por día a las 08:00** y manda **un solo WhatsApp por vendedor** con el listado de
-  todas sus solicitudes sin contestar. **Inactivo** (activar cuando esté todo listo).
+  (IA). Gmail Trigger **v1.4**, `simple:false` (trae el cuerpo), **maxResults 20** + **readStatus
+  both** (no pierde en ráfaga ni si el mail se abrió) y `q` que incluye el formulario y descarta
+  ruido. Ojo: `simple:false` devuelve el mensaje **parseado** (`subject`, `text` =cuerpo plano,
+  `from`=objeto con `.text`), NO el formato crudo (`payload.headers/parts`). **Inactivo**: falta
+  poner el toggle "Active" en ON (esta versión de n8n no permite activar por API). ⚠️ El `.json`
+  de backup quedó **desactualizado** (2 vías); la fuente de verdad es el workflow vivo
+  `PlXLIyyN2wyFYICD`.
+- **"Solicitudes Presupuesto - Recordatorios AkunCalcu"** (id `M5N22elKbX2w6SMQ`) — **Activo**.
+  Corre **1 vez por día a las 08:00** y manda **un solo WhatsApp por vendedor** con el listado de
+  todas sus solicitudes sin contestar.
 
 Ya NO hace falta importar los `.json` (quedan como backup). Pendiente para el flujo completo:
 setear `EVOLUTION_APIKEY` en el servicio n8n, aprobar las plantillas de Meta, y activar el

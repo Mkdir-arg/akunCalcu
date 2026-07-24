@@ -1451,14 +1451,14 @@ def api_get_producto(request, pk):
     """Retorna datos del producto para autocompletar formularios."""
     try:
         producto = Producto.objects.select_related('extrusora', 'linea').get(pk=pk)
-        from .tipologia import clasificar_tipologia
+        from .tipologia import resolver_tipologia
         return JsonResponse({
             'extrusora_id': producto.extrusora.id,
             'extrusora_nombre': str(producto.extrusora),
             'linea_id': producto.linea.id,
             'linea_nombre': str(producto.linea),
             'cantidad_hojas': producto.cantidad_hojas or 1,
-            'tipologia': clasificar_tipologia(producto.descripcion, producto.cantidad_hojas),
+            'tipologia': resolver_tipologia(producto.tipo_dibujo, producto.descripcion, producto.cantidad_hojas),
         })
     except Producto.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)

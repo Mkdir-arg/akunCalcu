@@ -64,6 +64,10 @@ class Producto(models.Model):
         db_column="terciarizado", default=False,
         verbose_name="Producto terciarizado (precio manual al cotizar)",
     )
+    tipo_dibujo = models.CharField(
+        db_column="tipo_dibujo", max_length=30, blank=True, default="",
+        verbose_name="Tipo de dibujo 3D",
+    )
 
     class Meta:
         managed = False

@@ -1279,12 +1279,23 @@ const CotizadorModal = () => {
         return 'incoloro';
     };
 
+    // Mapea la descripción del tratamiento (terminación/color) al color del perfil 3D.
+    const mapColor = (desc) => {
+        const d = (desc || '').toLowerCase();
+        if (d.includes('negro') || d.includes('negra')) return 'negro';
+        if (d.includes('antracita') || d.includes('grafito') || d.includes('gris')) return 'antracita';
+        if (d.includes('madera') || d.includes('roble') || d.includes('cedro') || d.includes('nogal') || d.includes('simil')) return 'madera';
+        if (d.includes('anod') || d.includes('natural') || d.includes('aluminio') || d.includes('plata') || d.includes('crudo')) return 'aluminio';
+        return 'blanco';
+    };
+
     // Monta / actualiza el visor 3D cuando hay resultado calculado.
     useEffect(() => {
         if (!result || !viewerRef.current) return;
         const prod = productos.find(p => p.id === config.producto_id);
         if (!prod) return;
         const vid = vidrios.find(v => v.codigo === config.vidrio_codigo);
+        const trat = tratamientos.find(t => t.id === config.tratamiento_id);
         const params = {
             tipo: prod.tipologia || 'pano_fijo',
             ancho: config.ancho_mm, alto: config.alto_mm,
@@ -1292,6 +1303,7 @@ const CotizadorModal = () => {
             mosquitero: (config.opcionales || []).some(o => o.tipo === 'mosquitero'),
             premarco: (config.opcionales || []).some(o => o.tipo === 'premarco'),
             vidrio: mapVidrio(vid && vid.descripcion),
+            color: mapColor(trat && trat.descripcion),
         };
         let cancel = false;
         if (window.__loadAkunViewer) {
@@ -1300,7 +1312,7 @@ const CotizadorModal = () => {
                 .catch(() => {});
         }
         return () => { cancel = true; };
-    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.opcionales, productos, vidrios]);
+    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, productos, vidrios, tratamientos]);
 
     useEffect(() => {
         fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);

@@ -12,7 +12,7 @@ from pricing.models import Accesorio
 from pricing.forms import AccesorioCreateForm, AccesorioEditForm
 from pricing.services.calculator import PriceCalculator
 from pricing.tipologia import (
-    clasificar_tipologia,
+    clasificar_tipologia, resolver_tipologia,
     TIPO_VENTANA_CORREDIZA, TIPO_VENTANA_BATIENTE, TIPO_VENTANA_OSCILO,
     TIPO_VENTANA_PROYECTANTE, TIPO_PANO_FIJO, TIPO_PUERTA_BATIENTE, TIPO_PUERTA_CORREDIZA,
 )
@@ -59,6 +59,36 @@ class ClasificarTipologiaTest(SimpleTestCase):
     def test_descripcion_vacia(self):
         self.assertEqual(clasificar_tipologia('', None), TIPO_PANO_FIJO)
         self.assertEqual(clasificar_tipologia(None, None), TIPO_PANO_FIJO)
+
+
+class ResolverTipologiaTest(SimpleTestCase):
+    def test_campo_cargado_gana_sobre_el_nombre(self):
+        # El producto se llama "corrediza" pero tiene tipo_dibujo puerta → gana el campo
+        self.assertEqual(resolver_tipologia('puerta_batiente', 'Ventana corrediza', 2), TIPO_PUERTA_BATIENTE)
+
+    def test_vacio_cae_al_heuristico(self):
+        self.assertEqual(resolver_tipologia('', 'Ventana corrediza', 2), TIPO_VENTANA_CORREDIZA)
+
+    def test_none_cae_al_heuristico(self):
+        self.assertEqual(resolver_tipologia(None, 'Puerta de abrir', 1), TIPO_PUERTA_BATIENTE)
+
+    def test_solo_espacios_cae_al_heuristico(self):
+        self.assertEqual(resolver_tipologia('   ', 'Paño fijo', 1), TIPO_PANO_FIJO)
+
+
+class ProductoFormTipoDibujoTest(SimpleTestCase):
+    def test_form_incluye_campo_tipo_dibujo_con_opciones(self):
+        from pricing.forms import ProductoForm
+        form = ProductoForm()
+        self.assertIn('tipo_dibujo', form.fields)
+        valores = [c[0] for c in form.fields['tipo_dibujo'].choices]
+        self.assertIn('', valores)                 # opción "Automático"
+        self.assertIn(TIPO_PUERTA_CORREDIZA, valores)
+        self.assertIn(TIPO_PANO_FIJO, valores)
+
+    def test_tipo_dibujo_no_es_obligatorio(self):
+        from pricing.forms import ProductoForm
+        self.assertFalse(ProductoForm().fields['tipo_dibujo'].required)
 
 
 class MarcoViewsTest(TestCase):

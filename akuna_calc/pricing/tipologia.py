@@ -23,6 +23,19 @@ TIPO_PUERTA_CORREDIZA = 'puerta_corrediza'
 # Default seguro cuando no hay ninguna pista.
 TIPO_DEFAULT = TIPO_PANO_FIJO
 
+# Opciones para el campo `Producto.tipo_dibujo` (config del ABM de productos).
+# La opción vacía significa "automático": se usa el clasificador heurístico.
+TIPO_DIBUJO_CHOICES = [
+    ('', 'Automático (según el nombre)'),
+    (TIPO_VENTANA_CORREDIZA, 'Ventana corrediza'),
+    (TIPO_VENTANA_BATIENTE, 'Ventana batiente'),
+    (TIPO_VENTANA_OSCILO, 'Ventana oscilobatiente'),
+    (TIPO_VENTANA_PROYECTANTE, 'Ventana proyectante / banderola'),
+    (TIPO_PANO_FIJO, 'Paño fijo'),
+    (TIPO_PUERTA_BATIENTE, 'Puerta batiente'),
+    (TIPO_PUERTA_CORREDIZA, 'Puerta corrediza'),
+]
+
 
 def _normalizar(texto) -> str:
     """Minúsculas y sin acentos, para matchear 'paño'->'pano', etc."""
@@ -67,3 +80,15 @@ def clasificar_tipologia(descripcion, cantidad_hojas=None) -> str:
     if n >= 2:
         return TIPO_VENTANA_CORREDIZA
     return TIPO_DEFAULT
+
+
+def resolver_tipologia(tipo_dibujo, descripcion, cantidad_hojas=None) -> str:
+    """Tipología efectiva de un producto para el visor 3D.
+
+    El campo `tipo_dibujo` cargado en el ABM manda; si está vacío, cae al
+    clasificador heurístico por descripción.
+    """
+    tipo = (tipo_dibujo or '').strip()
+    if tipo:
+        return tipo
+    return clasificar_tipologia(descripcion, cantidad_hojas)

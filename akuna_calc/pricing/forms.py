@@ -1,5 +1,6 @@
 from django import forms
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento
+from .tipologia import TIPO_DIBUJO_CHOICES
 
 _input_class = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 _select_class = "w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -23,9 +24,16 @@ class LineaForm(forms.ModelForm):
 
 
 class ProductoForm(forms.ModelForm):
+    tipo_dibujo = forms.ChoiceField(
+        choices=TIPO_DIBUJO_CHOICES,
+        required=False,
+        label='Tipo de dibujo 3D',
+        widget=forms.Select(attrs={'class': _select_class}),
+    )
+
     class Meta:
         model = Producto
-        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas', 'horas_hombre', 'terciarizado']
+        fields = ['extrusora', 'linea', 'descripcion', 'cantidad_hojas', 'horas_hombre', 'terciarizado', 'tipo_dibujo']
         labels = {
             'descripcion': 'Nombre',
             'cantidad_hojas': 'Cantidad de Hojas',

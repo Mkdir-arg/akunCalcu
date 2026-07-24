@@ -58,3 +58,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-036](./REQ-036-eliminar-modulo-despiece.md) | Eliminar módulo de despiece y transformar Pedidos de Fábrica (prerrequisito de REQ-035) | Implementado | 2026-07-07 | FEAT-020 |
 | [REQ-037](./REQ-037-reparto-automatico-solicitudes-presupuesto.md) | Reparto automático de solicitudes de presupuesto por email (n8n + round-robin) | Implementado | 2026-07-18 | FEAT-025 |
 | [REQ-038](./REQ-038-graficador-3d-aberturas-en-cotizador.md) | Graficador 3D de aberturas en el cotizador de presupuestos | Implementado | 2026-07-24 | FEAT-030 |
+| [REQ-039](./REQ-039-imagen-3d-por-item-en-lista-y-pdf.md) | Imagen 3D por ítem en la lista y en el PDF del presupuesto (Fase 2) | En desarrollo | 2026-07-24 | — |

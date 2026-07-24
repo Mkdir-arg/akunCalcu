@@ -28,7 +28,13 @@ const TIPOS = {
   puerta_batiente:    { hojas: [1, 2],    modo: 'swing',   puerta: true,  open: 0.22 },
   puerta_corrediza:   { hojas: [2, 3],    modo: 'slide',   puerta: true,  open: 0.22 },
 };
-const PERFILES = { color: 0xf3f4f4, metalness: 0.15, roughness: 0.45 };
+const PERFILES = {
+  blanco:    { color: 0xf3f4f4, metalness: 0.15, roughness: 0.45 },
+  negro:     { color: 0x1b1d1f, metalness: 0.40, roughness: 0.38 },
+  antracita: { color: 0x373b3f, metalness: 0.50, roughness: 0.36 },
+  madera:    { color: 0x6a4526, metalness: 0.05, roughness: 0.72 },
+  aluminio:  { color: 0xbfc3c8, metalness: 0.90, roughness: 0.28 },
+};
 const VIDRIOS = {
   incoloro:   { color: 0xdff0f6, transmission: 0.95, roughness: 0.05, opacity: 0.30, dvh: false },
   dvh:        { color: 0xe6f2f7, transmission: 0.93, roughness: 0.06, opacity: 0.30, dvh: true },
@@ -42,7 +48,7 @@ let perfilMat, glassMat, spacerMat, handleMat, grooveMat, mallaTex, mallaMat;
 let windowGroup = null, movers = [], curOpen = 0, targetOpen = 0, framed = false;
 
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
-                mosquitero: false, premarco: false, vidrio: 'incoloro' };
+                mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco' };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -84,7 +90,7 @@ function initEngine() {
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; ground.name = '__ground';
   scene.add(ground);
 
-  perfilMat = new THREE.MeshStandardMaterial(PERFILES);
+  perfilMat = new THREE.MeshStandardMaterial(PERFILES.blanco);
   glassMat = new THREE.MeshPhysicalMaterial({ color: 0xdff0f6, metalness: 0, roughness: 0.05,
     transmission: 0.95, thickness: 0.02, ior: 1.5, transparent: true, opacity: 0.3,
     envMapIntensity: 1.6, clearcoat: 0.18, clearcoatRoughness: 0.1 });
@@ -287,6 +293,9 @@ function applyParams(params) {
   state.mosquitero = !!params.mosquitero;
   state.premarco = !!params.premarco;
   state.vidrio = VIDRIOS[params.vidrio] ? params.vidrio : 'incoloro';
+  state.color = PERFILES[params.color] ? params.color : 'blanco';
+  const p = PERFILES[state.color];
+  perfilMat.color.setHex(p.color); perfilMat.metalness = p.metalness; perfilMat.roughness = p.roughness;
   curOpen = 0;
   build();
 }
