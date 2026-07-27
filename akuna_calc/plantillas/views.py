@@ -14,6 +14,7 @@ from xhtml2pdf import pisa
 from configuracion.models import ConfiguracionGeneral
 from .models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
 from .forms import OrdenFabricacionForm
+from .utils import cortar_a_max_length
 
 
 def _build_logo_data_url():
@@ -93,10 +94,13 @@ def _guardar_medidas(orden, request):
     orden.medidas.all().delete()
     fila = 0
     for i in range(len(cantidades)):
-        item_txt = items[i].strip() if i < len(items) else ''
-        medida_txt = medidas[i].strip() if i < len(medidas) else ''
-        obs_txt = observaciones[i].strip() if i < len(observaciones) else ''
-        piso_txt = pisos[i].strip() if i < len(pisos) else ''
+        def _cortar(campo, valores):
+            return cortar_a_max_length(MedidaOrdenFabricacion, campo, valores[i] if i < len(valores) else '')
+
+        item_txt = _cortar('item', items)
+        medida_txt = _cortar('medida', medidas)
+        obs_txt = _cortar('observaciones', observaciones)
+        piso_txt = _cortar('piso_depto', pisos)
         # Una fila se guarda solo si tiene algún dato de texto cargado.
         if not any([item_txt, medida_txt, obs_txt, piso_txt]):
             continue
@@ -127,12 +131,15 @@ def orden_create(request, pedido_pk):
     pedido = get_object_or_404(PedidoFabrica, pk=pedido_pk)
     campos_abertura = ('tipo_abertura', 'linea', 'color', 'tipo_vidrio', 'modelo_hoja', 'cantidad_hojas',
                        'mosquitero', 'mosquitero_modelo', 'premarco')
-    datos = {campo: (request.POST.get(campo) or '').strip() for campo in campos_abertura}
+    datos = {
+        campo: cortar_a_max_length(OrdenFabricacion, campo, request.POST.get(campo))
+        for campo in campos_abertura
+    }
     orden = OrdenFabricacion.objects.create(
         pedido=pedido,
         numero=OrdenFabricacion.generar_numero(),
         orden=pedido.ordenes.count() + 1,
-        cliente_nombre=pedido.cliente,
+        cliente_nombre=cortar_a_max_length(OrdenFabricacion, 'cliente_nombre', pedido.cliente),
         **datos,
     )
     messages.success(request, f'Orden {orden.numero_formateado} creada. Completá el detalle.')
