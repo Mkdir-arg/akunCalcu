@@ -8,7 +8,8 @@ from .catalog_views import (
     MarcosListView, HojasListView, InterioresListView, VidriosListView,
     PerfilesListView, AccesoriosListView, TratamientosListView,
     MosquiterosListView, ContravidriosListView, ContravidriosExteriorListView,
-    CrucesListView, VidriosRepartidosListView, OpcionalesListView
+    CrucesListView, VidriosRepartidosListView, OpcionalesListView,
+    MaterialesCiegosListView,
 )
 from .config_views import (
     extrusoras_config, lineas_config, productos_config, marcos_config,
@@ -24,6 +25,7 @@ from .config_views import (
     accesorio_create, accesorio_edit, accesorio_delete,
     vidrio_create, vidrio_edit, vidrio_delete,
     tratamiento_create, tratamiento_edit, tratamiento_delete,
+    materiales_ciegos_config, material_ciego_create, material_ciego_edit, material_ciego_delete,
     api_get_producto, api_get_marco, api_get_hoja, api_get_extrusoras, api_get_perfiles,
 )
 
@@ -54,7 +56,8 @@ urlpatterns = [
     path("api/pricing/cruces/", CrucesListView.as_view(), name="cruces-list"),
     path("api/pricing/vidrios-repartidos/", VidriosRepartidosListView.as_view(), name="vidrios-repartidos-list"),
     path("api/pricing/opcionales/", OpcionalesListView.as_view(), name="opcionales-list"),
-    
+    path("api/pricing/materiales-ciegos/", MaterialesCiegosListView.as_view(), name="materiales-ciegos-list"),
+
     # Configuración ABMs — listas
     path("config/extrusoras/", extrusoras_config, name="config-extrusoras"),
     path("config/lineas/", lineas_config, name="config-lineas"),
@@ -66,6 +69,7 @@ urlpatterns = [
     path("config/accesorios/", accesorios_config, name="config-accesorios"),
     path("config/vidrios/", vidrios_config, name="config-vidrios"),
     path("config/tratamientos/", tratamientos_config, name="config-tratamientos"),
+    path("config/materiales-ciegos/", materiales_ciegos_config, name="config-materiales-ciegos"),
     # Configuración ABMs — crear
     path("config/extrusoras/nueva/", extrusora_create, name="config-extrusora-create"),
     path("config/lineas/nueva/", linea_create, name="config-linea-create"),
@@ -77,6 +81,7 @@ urlpatterns = [
     path("config/accesorios/nuevo/", accesorio_create, name="config-accesorio-create"),
     path("config/vidrios/nuevo/", vidrio_create, name="config-vidrio-create"),
     path("config/tratamientos/nuevo/", tratamiento_create, name="config-tratamiento-create"),
+    path("config/materiales-ciegos/nuevo/", material_ciego_create, name="config-material-ciego-create"),
     # Configuración ABMs — editar
     path("config/extrusoras/<int:pk>/editar/", extrusora_edit, name="config-extrusora-edit"),
     path("config/lineas/<int:pk>/editar/", linea_edit, name="config-linea-edit"),
@@ -90,6 +95,7 @@ urlpatterns = [
     path("config/accesorios/<str:codigo>/<str:tipo>/editar/", accesorio_edit, name="config-accesorio-edit-legacy"),
     path("config/vidrios/<str:pk>/editar/", vidrio_edit, name="config-vidrio-edit"),
     path("config/tratamientos/<int:pk>/editar/", tratamiento_edit, name="config-tratamiento-edit"),
+    path("config/materiales-ciegos/<int:pk>/editar/", material_ciego_edit, name="config-material-ciego-edit"),
     # Configuración ABMs — eliminar (lógico)
     path("config/extrusoras/<int:pk>/eliminar/", extrusora_delete, name="config-extrusora-delete"),
     path("config/lineas/<int:pk>/eliminar/", linea_delete, name="config-linea-delete"),
@@ -102,4 +108,5 @@ urlpatterns = [
     path("config/accesorios/<str:codigo>/<str:tipo>/eliminar/", accesorio_delete, name="config-accesorio-delete-legacy"),
     path("config/vidrios/<str:pk>/eliminar/", vidrio_delete, name="config-vidrio-delete"),
     path("config/tratamientos/<int:pk>/eliminar/", tratamiento_delete, name="config-tratamiento-delete"),
+    path("config/materiales-ciegos/<int:pk>/eliminar/", material_ciego_delete, name="config-material-ciego-delete"),
 ]

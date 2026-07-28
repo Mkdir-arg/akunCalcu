@@ -641,6 +641,7 @@
     <input type="hidden" name="descripcion" id="f-descripcion">
     <input type="hidden" name="cantidad" id="f-cantidad">
     <input type="hidden" name="opcionales_json" id="f-opcionales_json">
+    <input type="hidden" name="tirantes_json" id="f-tirantes_json">
     <input type="hidden" name="precio_terciarizado" id="f-precio_terciarizado">
 </form>
 {% endif %}
@@ -907,6 +908,14 @@ function verDetalleItem(resultado, descripcion) {
             '<div class="flex justify-between font-medium"><span>' + d.vidrios.codigo + ' - ' + d.vidrios.descripcion + '</span><span class="text-purple-600">$' + fmt(d.vidrios.precio_total) + '</span></div>' +
             '<div class="text-xs text-gray-500 mt-0.5">' + d.vidrios.ancho_mm + 'mm x ' + d.vidrios.alto_mm + 'mm = ' + d.vidrios.area_m2 + 'm2 x $' + d.vidrios.precio_m2 + '/m2' + (d.vidrios.cantidad_hojas > 1 ? ' x ' + d.vidrios.cantidad_hojas + ' hojas' : '') + '</div>'
         ]);
+    }
+
+    // Secciones (tirantes)
+    if (d.secciones && d.secciones.length > 0) {
+        html += buildSection('Secciones', 'fa-grip-lines', 'purple', r.total_secciones, d.secciones.map(i =>
+            '<div class="flex justify-between font-medium"><span>Sección ' + i.orden + ': ' + i.descripcion + '</span><span class="text-purple-600">$' + fmt(i.precio_total) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">' + i.ancho_mm + 'mm x ' + i.alto_mm + 'mm = ' + i.area_m2 + 'm2 x $' + i.precio_m2 + '/m2</div>'
+        ));
     }
 
     // Tratamiento
@@ -1240,6 +1249,96 @@ const DesgloseItem = ({ left, right, detail, color = 'blue' }) => (
     </div>
 );
 
+// -- Editor de tirantes divisores (secciones con relleno propio) --
+const TirantesEditor = ({ alto, tirantes, vidrios, materiales, perfiles, onChange }) => {
+    const t = tirantes || { activo: false, perfil_codigo: null, secciones: [] };
+    const secciones = t.secciones || [];
+    const altoTotal = parseInt(alto) || 0;
+    const suma = secciones.reduce((acc, s) => acc + (parseInt(s.alto_mm) || 0), 0);
+    const sumaOk = suma === altoTotal;
+
+    const update = (patch) => onChange({ ...t, ...patch });
+    const setSeccion = (i, patch) => update({ secciones: secciones.map((s, idx) => idx === i ? { ...s, ...patch } : s) });
+
+    const toggle = (activo) => {
+        if (activo && secciones.length < 2) {
+            const mitad = Math.floor(altoTotal / 2);
+            update({
+                activo: true,
+                secciones: [
+                    { alto_mm: mitad, material: { tipo: 'vidrio', codigo: null, id: null } },
+                    { alto_mm: altoTotal - mitad, material: { tipo: 'vidrio', codigo: null, id: null } },
+                ],
+            });
+        } else {
+            update({ activo: activo });
+        }
+    };
+
+    const addSeccion = () => update({ secciones: [...secciones, { alto_mm: 0, material: { tipo: 'vidrio', codigo: null, id: null } }] });
+    const removeSeccion = (i) => update({ secciones: secciones.filter((_, idx) => idx !== i) });
+
+    return (
+        <div className="mt-4 border-t pt-4">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wide cursor-pointer">
+                <input type="checkbox" checked={!!t.activo} onChange={e => toggle(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span><i className="fas fa-grip-lines mr-1 text-blue-600"></i>Dividir con tirantes</span>
+            </label>
+
+            {t.activo && (
+                <div className="mt-3 space-y-2">
+                    <p className="text-xs text-slate-500">Cargá el alto de cada sección (de arriba hacia abajo). Genera {Math.max(0, secciones.length - 1)} tirante(s).</p>
+                    {secciones.map((s, i) => {
+                        const mat = s.material || {};
+                        return (
+                        <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs font-bold text-slate-500 w-14">Sec. {i + 1}</span>
+                                <input type="number" min="1" value={s.alto_mm}
+                                    onChange={e => setSeccion(i, { alto_mm: parseInt(e.target.value) || 0 })}
+                                    placeholder="Alto"
+                                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500" />
+                                <span className="text-xs text-slate-400">mm alto</span>
+                                {secciones.length > 2 && (
+                                    <button type="button" onClick={() => removeSeccion(i)} className="ml-auto text-red-500 hover:text-red-700 p-1" title="Quitar sección">
+                                        <i className="fas fa-trash text-xs"></i>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex gap-1.5 mb-2">
+                                <button type="button" onClick={() => setSeccion(i, { material: { tipo: 'vidrio', codigo: null, id: null } })}
+                                    className={`flex-1 py-1 rounded text-xs font-semibold border ${mat.tipo === 'ciego' ? 'bg-white border-gray-200 text-gray-500' : 'bg-purple-100 border-purple-300 text-purple-700'}`}>Vidrio</button>
+                                <button type="button" onClick={() => setSeccion(i, { material: { tipo: 'ciego', codigo: null, id: null } })}
+                                    className={`flex-1 py-1 rounded text-xs font-semibold border ${mat.tipo === 'ciego' ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-gray-200 text-gray-500'}`}>Ciego (chapa/panel)</button>
+                            </div>
+                            {mat.tipo === 'ciego'
+                                ? <Sel label="Material" options={materiales} value={mat.id}
+                                    onChange={v => setSeccion(i, { material: { tipo: 'ciego', id: v, codigo: null } })} placeholder="Elegí material..." />
+                                : <Sel label="Vidrio" options={vidrios} value={mat.codigo}
+                                    onChange={v => setSeccion(i, { material: { tipo: 'vidrio', codigo: v, id: null } })} placeholder="Elegí vidrio..." />
+                            }
+                        </div>
+                        );
+                    })}
+
+                    <button type="button" onClick={addSeccion}
+                        className="w-full bg-blue-50 text-blue-600 py-2 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 text-sm font-semibold">
+                        <i className="fas fa-plus mr-2"></i>Agregar sección
+                    </button>
+
+                    <Sel label="Perfil del tirante (opcional)" options={perfiles} value={t.perfil_codigo}
+                        onChange={v => update({ perfil_codigo: v })} placeholder="Sin perfil (solo divide)" />
+
+                    <div className={sumaOk ? 'text-xs font-semibold text-green-600' : 'text-xs font-semibold text-red-600'}>
+                        Suma de secciones: {suma} mm / alto {altoTotal} mm {sumaOk ? '— OK' : '— deben coincidir'}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // -- Componente principal --
 const CotizadorModal = () => {
     const [config, setConfig] = useState({
@@ -1248,6 +1347,7 @@ const CotizadorModal = () => {
         interior_id: null, tratamiento_id: null,
         ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30,
         opcionales: [],
+        tirantes: { activo: false, perfil_codigo: null, secciones: [] },
     });
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
@@ -1263,6 +1363,9 @@ const CotizadorModal = () => {
     const [interiores, setInteriores] = useState([]);
     const [tratamientos, setTratamientos] = useState([]);
     const [opcionalesDisp, setOpcionalesDisp] = useState([]);
+    const [vidriosCatalogo, setVidriosCatalogo] = useState([]);
+    const [materialesCiegos, setMaterialesCiegos] = useState([]);
+    const [perfilesTirante, setPerfilesTirante] = useState([]);
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -1309,6 +1412,9 @@ const CotizadorModal = () => {
             premarco: (config.opcionales || []).some(o => o.tipo === 'premarco'),
             vidrio: mapVidrio(vid && vid.descripcion),
             color: mapColor(trat && trat.descripcion),
+            tirantes: (config.tirantes && config.tirantes.activo && (config.tirantes.secciones || []).length >= 2)
+                ? config.tirantes.secciones.map(s => ({ alto_mm: parseInt(s.alto_mm) || 0, ciego: s.material.tipo === 'ciego' }))
+                : null,
         };
         let cancel = false;
         if (window.__loadAkunViewer) {
@@ -1317,11 +1423,14 @@ const CotizadorModal = () => {
                 .catch(() => {});
         }
         return () => { cancel = true; };
-    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, productos, vidrios, tratamientos]);
+    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, config.tirantes, productos, vidrios, tratamientos]);
 
     useEffect(() => {
         fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(setExtrusoras);
         fetch('/pricing/api/pricing/tratamientos/').then(r => r.json()).then(setTratamientos);
+        fetch('/pricing/api/pricing/vidrios/').then(r => r.json()).then(setVidriosCatalogo);
+        fetch('/pricing/api/pricing/materiales-ciegos/').then(r => r.json()).then(setMaterialesCiegos);
+        fetch('/pricing/api/pricing/perfiles/').then(r => r.json()).then(setPerfilesTirante);
     }, []);
     useEffect(() => {
         if (config.extrusora_id) fetch(`/pricing/api/pricing/lineas/?extrusora_id=${config.extrusora_id}`).then(r => r.json()).then(setLineas);
@@ -1381,6 +1490,18 @@ const CotizadorModal = () => {
                     alto_mm: s.alto_mm || 1500,
                     margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
                     opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2 })),
+                    tirantes: (s.tirantes && s.tirantes.activo)
+                        ? {
+                            activo: true,
+                            perfil_codigo: s.tirantes.perfil_codigo || null,
+                            secciones: (s.tirantes.secciones || []).map(sec => ({
+                                alto_mm: sec.alto_mm,
+                                material: (sec.material && sec.material.tipo === 'ciego')
+                                    ? { tipo: 'ciego', id: sec.material.id, codigo: null }
+                                    : { tipo: 'vidrio', codigo: (sec.material ? sec.material.codigo : null), id: null },
+                            })),
+                        }
+                        : { activo: false, perfil_codigo: null, secciones: [] },
                 }));
             }
             document.getElementById('modal-item').classList.remove('hidden');
@@ -1389,20 +1510,42 @@ const CotizadorModal = () => {
         window.__cotizadorReset = () => {
             setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setError(null);
             setDescripcion(''); setCantidad(1);
-            setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [] });
+            setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [], tirantes: { activo: false, perfil_codigo: null, secciones: [] } });
         };
         return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; } catch (e) {} };
     }, []);
 
+    // Valida los tirantes; devuelve un mensaje de error o null si está OK.
+    const tirantesInvalido = () => {
+        const t = config.tirantes;
+        if (!t || !t.activo) return null;
+        const secs = t.secciones || [];
+        if (secs.length < 2) return 'Agregá al menos 2 secciones para dividir con tirantes.';
+        if (secs.some(s => (parseInt(s.alto_mm) || 0) <= 0)) return 'Cada sección necesita un alto mayor a 0.';
+        const suma = secs.reduce((a, s) => a + (parseInt(s.alto_mm) || 0), 0);
+        if (suma !== (parseInt(config.alto_mm) || 0)) return `La suma de las secciones (${suma} mm) debe ser igual al alto (${config.alto_mm} mm).`;
+        if (secs.some(s => s.material.tipo === 'ciego' ? !s.material.id : !s.material.codigo)) return 'Elegí el material de relleno de cada sección.';
+        return null;
+    };
+
+    // Payload de cálculo: si no hay tirantes activos, no mandamos secciones a medio cargar.
+    const buildPayload = () => {
+        const t = config.tirantes;
+        const tirantes = (t && t.activo) ? t : { activo: false, perfil_codigo: null, secciones: [] };
+        return { ...config, tirantes };
+    };
+
     const calcular = async () => {
         if (!config.marco_id) { setError('Selecciona un marco primero'); return; }
+        const tErr = tirantesInvalido();
+        if (tErr) { setError(tErr); return; }
         setLoading(true); setError(null);
         try {
             const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
             const res = await fetch('/pricing/api/pricing/calculate/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(config),
+                body: JSON.stringify(buildPayload()),
             });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || e.error || 'Error al calcular'); }
             setResult(await res.json());
@@ -1412,6 +1555,8 @@ const CotizadorModal = () => {
 
     const guardar = () => {
         if (!result) { setError('Calcula el precio primero'); return; }
+        const tErr = tirantesInvalido();
+        if (tErr) { setError(tErr); return; }
         setSaving(true);
         document.getElementById('f-producto_id').value = config.producto_id || '';
         document.getElementById('f-marco_id').value = config.marco_id || '';
@@ -1425,6 +1570,8 @@ const CotizadorModal = () => {
         document.getElementById('f-descripcion').value = descripcion || `Abertura ${config.ancho_mm}x${config.alto_mm}mm`;
         document.getElementById('f-cantidad').value = cantidad;
         document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id })));
+        const t = config.tirantes;
+        document.getElementById('f-tirantes_json').value = JSON.stringify((t && t.activo) ? t : { activo: false });
         enviarItemForm();
     };
 
@@ -1530,6 +1677,17 @@ const CotizadorModal = () => {
                 </div>
                 )}
 
+                {/* Tirantes divisores */}
+                {!esTerc && config.marco_id && (
+                    <TirantesEditor
+                        alto={config.alto_mm}
+                        tirantes={config.tirantes}
+                        vidrios={vidriosCatalogo}
+                        materiales={materialesCiegos}
+                        perfiles={perfilesTirante}
+                        onChange={t => setConfig(c => ({ ...c, tirantes: t }))} />
+                )}
+
                 {/* Opcionales */}
                 {!esTerc && config.producto_id && opcionalesDisp.length > 0 && (
                     <div className="mt-4 border-t pt-4">
@@ -1630,6 +1788,17 @@ const CotizadorModal = () => {
                                         left={`${result.desglose.vidrios.codigo} - ${result.desglose.vidrios.descripcion}`}
                                         right={result.desglose.vidrios.precio_total}
                                         detail={`${result.desglose.vidrios.ancho_mm}mm x ${result.desglose.vidrios.alto_mm}mm = ${result.desglose.vidrios.area_m2}m2 x $${result.desglose.vidrios.precio_m2}/m2${result.desglose.vidrios.cantidad_hojas > 1 ? ` x ${result.desglose.vidrios.cantidad_hojas} hojas` : ''}`} />
+                                </DesgloseSection>
+                            )}
+                            {/* Secciones (tirantes) */}
+                            {result.desglose.secciones && result.desglose.secciones.length > 0 && (
+                                <DesgloseSection title={`Secciones (${result.desglose.secciones.length})`} icon="fa-grip-lines" color="purple" total={result.resumen.total_secciones}>
+                                    {result.desglose.secciones.map((item, idx) => (
+                                        <DesgloseItem key={idx} color="purple"
+                                            left={`Sección ${item.orden}: ${item.descripcion}`}
+                                            right={item.precio_total}
+                                            detail={`${item.ancho_mm}mm x ${item.alto_mm}mm = ${item.area_m2}m2 x $${item.precio_m2}/m2`} />
+                                    ))}
                                 </DesgloseSection>
                             )}
                             {/* Tratamiento */}

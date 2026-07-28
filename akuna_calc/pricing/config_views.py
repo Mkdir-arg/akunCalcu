@@ -24,6 +24,7 @@ from .models import (
     Vidrio,
     VidrioHoja,
     Tratamiento,
+    MaterialCiego,
     DespieceAccesoriosMarco,
     DespieceAccesoriosHoja,
     DespieceAccesoriosInterior,
@@ -39,6 +40,7 @@ from .forms import (
     AccesorioCreateForm, AccesorioEditForm,
     VidrioCreateForm, VidrioEditForm,
     TratamientoForm,
+    MaterialCiegoForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -1442,6 +1444,59 @@ def tratamiento_delete(request, pk):
         obj.save()
         messages.success(request, 'Tratamiento desactivado.')
     return redirect('config-tratamientos')
+
+
+# ─── MATERIALES CIEGOS ────────────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(is_staff)
+def materiales_ciegos_config(request):
+    allowed_sort_fields = {
+        'nombre': ('nombre', 'codigo'),
+        'codigo': ('codigo',),
+        'precio_m2': ('precio_m2', 'nombre'),
+    }
+    sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'nombre')
+    materiales = MaterialCiego.objects.filter(activo=True).order_by(*ordering)
+    return render(request, 'pricing/config/materiales_ciegos.html', {
+        'materiales': materiales,
+        'sort': sort,
+        'dir': dir_,
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def material_ciego_create(request):
+    form = MaterialCiegoForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Material ciego creado correctamente.')
+        return redirect('config-materiales-ciegos')
+    return render(request, 'pricing/config/material_ciego_form.html', {'form': form, 'titulo': 'Nuevo Material Ciego', 'cancel_url': 'config-materiales-ciegos'})
+
+
+@login_required
+@user_passes_test(is_staff)
+def material_ciego_edit(request, pk):
+    obj = get_object_or_404(MaterialCiego, pk=pk)
+    form = MaterialCiegoForm(request.POST or None, instance=obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Material ciego actualizado correctamente.')
+        return redirect('config-materiales-ciegos')
+    return render(request, 'pricing/config/material_ciego_form.html', {'form': form, 'titulo': 'Editar Material Ciego', 'cancel_url': 'config-materiales-ciegos', 'object': obj})
+
+
+@login_required
+@user_passes_test(is_staff)
+def material_ciego_delete(request, pk):
+    obj = get_object_or_404(MaterialCiego, pk=pk)
+    if request.method == 'POST':
+        obj.activo = False
+        obj.save(update_fields=['activo', 'updated_at'])
+        messages.success(request, 'Material ciego desactivado.')
+    return redirect('config-materiales-ciegos')
 
 
 # ─── API ENDPOINTS ────────────────────────────────────────────────────────────

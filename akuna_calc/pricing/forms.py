@@ -1,5 +1,5 @@
 from django import forms
-from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento
+from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento, MaterialCiego
 from .tipologia import TIPO_DIBUJO_CHOICES
 
 _input_class = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -444,4 +444,17 @@ class TratamientoForm(forms.ModelForm):
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
             'precio_kg': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
+        }
+
+
+class MaterialCiegoForm(forms.ModelForm):
+    class Meta:
+        model = MaterialCiego
+        fields = ['codigo', 'nombre', 'precio_m2', 'activo']
+        labels = {'precio_m2': 'Precio / m²'}
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': _input_class}),
+            'nombre': forms.TextInput(attrs={'class': _input_class}),
+            'precio_m2': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'rounded border-gray-300 text-blue-600 focus:ring-blue-500'}),
         }

@@ -345,6 +345,13 @@ def _fields_item_desde_post(request, presupuesto):
     except (json.JSONDecodeError, TypeError):
         pass
 
+    try:
+        tirantes = json.loads(data.get('tirantes_json', '') or '{}')
+        if isinstance(tirantes, dict) and tirantes.get('activo'):
+            config['tirantes'] = tirantes
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     descripcion = descripcion or 'Abertura sin descripción'
     try:
         resultado = calcular_precio(config)

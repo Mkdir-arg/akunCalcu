@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import models
 
-from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Vidrio, Perfil, Accesorio, Tratamiento, Mosquitero, Contravidrio, ContravidrioExterior, Cruce, VidrioRepartido
+from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Vidrio, Perfil, Accesorio, Tratamiento, Mosquitero, Contravidrio, ContravidrioExterior, Cruce, VidrioRepartido, MaterialCiego
 from .tipologia import resolver_tipologia
 
 
@@ -159,6 +159,22 @@ class VidriosRepartidosListView(APIView):
             qs = qs.filter(interior_id=interior_id)
         vidrios_repartidos = qs.values('id', 'descripcion')
         return Response(list(vidrios_repartidos))
+
+
+class MaterialesCiegosListView(APIView):
+    """Catálogo de materiales ciegos (chapa/panel) para el relleno de secciones."""
+
+    def get(self, request):
+        materiales = MaterialCiego.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'precio_m2')
+        return Response([
+            {
+                'id': m['id'],
+                'codigo': m['codigo'],
+                'nombre': m['nombre'],
+                'precio_m2': float(m['precio_m2'] or 0),
+            }
+            for m in materiales
+        ])
 
 
 class OpcionalesListView(APIView):

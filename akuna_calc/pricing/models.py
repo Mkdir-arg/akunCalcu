@@ -339,6 +339,33 @@ class Tratamiento(models.Model):
         return self.descripcion or f"Tratamiento {self.id}"
 
 
+class MaterialCiego(models.Model):
+    """Material de relleno ciego (chapa, panel, tablero) para las secciones de
+    una abertura dividida por tirantes.
+
+    A diferencia de las tablas legacy de este módulo (managed=False), es una
+    tabla administrada por Django con su propia migración. El precio es por m²,
+    igual que los vidrios, y se aplica al área de cada sección al cotizar.
+    """
+
+    codigo = models.CharField(max_length=50, unique=True, verbose_name="Código")
+    nombre = models.CharField(max_length=200, verbose_name="Nombre")
+    precio_m2 = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0, verbose_name="Precio por m²"
+    )
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Material ciego"
+        verbose_name_plural = "Materiales ciegos"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+
 class VidrioHoja(models.Model):
     """Relacion many-to-many entre Vidrio y Hoja."""
     vidrio = models.ForeignKey(

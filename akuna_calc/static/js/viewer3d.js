@@ -11,6 +11,7 @@
  *   - hojas: cantidad de hojas (se acota a las válidas del tipo)
  *   - mosquitero / premarco: boolean
  *   - vidrio: incoloro | dvh | gris | bronce | esmerilado
+ *   - tirantes: [{ alto_mm, ciego }] (opcional) — secciones divididas por tirantes
  *
  * NO requiere build: se carga como ESM vía import map (three desde CDN).
  */
@@ -49,7 +50,8 @@ let perfilMat, glassMat, spacerMat, handleMat, grooveMat, mallaTex, mallaMat;
 let windowGroup = null, movers = [], curOpen = 0, targetOpen = 0, framed = false;
 
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
-                mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco' };
+                mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco',
+                tirantes: null };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -267,6 +269,32 @@ function build() {
     mg.add(mesh); mg.position.z = pd / 2 + 0.012; g.add(mg);
   }
 
+  // Tirantes divisores: bandas horizontales, con panel opaco en las secciones
+  // ciegas (chapa/panel) y una barra divisora entre secciones consecutivas.
+  if (Array.isArray(state.tirantes) && state.tirantes.length >= 2) {
+    const totalMm = state.tirantes.reduce((a, s) => a + (parseInt(s.alto_mm, 10) || 0), 0);
+    if (totalMm > 0) {
+      const barD = pd * 0.55, zf = 0.006;
+      let yTop = Hi / 2;
+      state.tirantes.forEach((s, i) => {
+        const segH = ((parseInt(s.alto_mm, 10) || 0) / totalMm) * Hi;
+        const yc = yTop - segH / 2;
+        if (s.ciego) {
+          const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(Math.max(Wi - 2 * lf, 0.02), Math.max(segH - 0.01, 0.02), barD),
+            perfilMat,
+          );
+          panel.position.set(0, yc, zf); panel.castShadow = true; panel.receiveShadow = true; g.add(panel);
+        }
+        if (i < state.tirantes.length - 1) {
+          const bar = new THREE.Mesh(new RoundedBoxGeometry(Wi + 0.01, 0.03, barD, 2, 0.004), perfilMat);
+          bar.position.set(0, yTop - segH, zf); bar.castShadow = true; g.add(bar);
+        }
+        yTop -= segH;
+      });
+    }
+  }
+
   scene.add(g); windowGroup = g;
   scene.getObjectByName('__ground').position.y = -H / 2 - 0.02;
   targetOpen = T.open || 0;
@@ -312,6 +340,7 @@ function applyParams(params) {
   state.premarco = !!params.premarco;
   state.vidrio = VIDRIOS[params.vidrio] ? params.vidrio : 'incoloro';
   state.color = PERFILES[params.color] ? params.color : 'blanco';
+  state.tirantes = Array.isArray(params.tirantes) ? params.tirantes : null;
   const p = PERFILES[state.color];
   perfilMat.color.setHex(p.color); perfilMat.metalness = p.metalness; perfilMat.roughness = p.roughness;
   curOpen = 0;

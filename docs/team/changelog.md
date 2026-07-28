@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-27 — Tirantes divisores con relleno por sección en el cotizador (FEAT-031)
+
+**Pedido:** "Para Fábrica: hay productos con tirantes que dividen la abertura (ej. una puerta con tirante a cierta altura → vidrio arriba y chapa abajo). Poder decir a qué altura va, que calcule el área de cada cuadrado y elegir el material que rellena cada área. Es dinámico: puede tener 2, 3, 4 tirantes."
+**Archivos:** `pricing/models.py` (+ migración `0005_materialciego`), `pricing/forms.py`, `pricing/config_views.py`, `pricing/catalog_views.py`, `pricing/urls.py`, `pricing/serializers.py`, `pricing/services/calculator.py`, `presupuestos/views.py`, `presupuestos/pdf_descriptions.py`, `presupuestos/templates/presupuestos/detalle.html`, `static/js/viewer3d.js`, `usuarios/access_control.py`, tests de `pricing` y `presupuestos`, + templates `config/materiales_ciegos.html` y `material_ciego_form.html`.
+**Descripción:** En el cotizador de aluminio de un presupuesto, "Dividir con tirantes" permite cargar el alto de cada sección (arriba→abajo; N secciones = N-1 tirantes) y asignar a cada una un **vidrio** o un **material ciego** (chapa/panel) del catálogo nuevo. El motor calcula el precio como Σ (área × precio/m² de cada sección) + el/los perfiles de los tirantes (peso × precio_kg, que también entran al tratamiento) + el resto igual que antes; sin tirantes el cálculo queda **idéntico**. Se agrega un **ABM de materiales ciegos** (staff-only, permiso `fabrica.materiales_ciegos`) y el visor 3D dibuja las bandas/tirantes (panel opaco en las ciegas). La estructura viaja en `resultado_json` + `snapshot_item` (sin migración en `presupuestos`); el PDF la menciona en la narrativa. Validación: alturas > 0 y suma == alto (cliente + serializer). **Alcance v1**: solo horizontal, 1 paño (puerta/paño fijo); multi-hoja, grilla vertical, rebaje por sección y bajada a la orden de fabricación quedan fuera. ADR-016. Tests: 16 nuevos OK, sin regresiones. **Pendiente deploy:** correr `pricing/0005` en Docker/Railway + cargar materiales ciegos + verificación visual real.
+
 ## 2026-07-24 — El recargo de renovación no se aplicaba a productos terciarizados (FIX-018)
 
 **Pedido:** "En el presupuesto 559 no se está aplicando el Recargo renovación por unidad. ¿Puede ser porque es terciarizado y ellos ingresan el valor del ítem?"
