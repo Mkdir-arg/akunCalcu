@@ -1244,6 +1244,18 @@ const DesgloseItem = ({ left, right, detail, color = 'blue' }) => (
     </div>
 );
 
+// -- Bloque agrupado de configuración (título + ícono + hint) --
+const Block = ({ title, icon, hint, children }) => (
+    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+            <i className={`fas ${icon} text-xs text-blue-600 w-4 text-center`}></i>
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-600">{title}</span>
+            {hint && <span className="ml-auto text-[11px] text-slate-400 font-semibold truncate max-w-[45%]">{hint}</span>}
+        </div>
+        <div className="p-3">{children}</div>
+    </div>
+);
+
 // -- Componente principal --
 const CotizadorModal = () => {
     const [config, setConfig] = useState({
@@ -1458,11 +1470,13 @@ const CotizadorModal = () => {
     const esTerc = _prodSel ? !!_prodSel.terciarizado : (editTipo === 'terciarizado');
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
 
             {/* Configuracion */}
-            <div>
-                <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="space-y-4">
+                <Block title="Descripción" icon="fa-pen">
+                <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-2">
                         <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Descripcion</label>
                         <input type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)}
@@ -1475,7 +1489,9 @@ const CotizadorModal = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
                     </div>
                 </div>
+                </Block>
 
+                <Block title="Producto" icon="fa-box" hint={_prodSel ? _prodSel.descripcion : null}>
                 <div className="grid grid-cols-2 gap-x-4">
                     <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id}
                         onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
@@ -1507,6 +1523,7 @@ const CotizadorModal = () => {
                         onChange={v => set('tratamiento_id', v)} placeholder="Sin tratamiento" />
                     </>}
                 </div>
+                </Block>
 
                 {esTerc && (
                     <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
@@ -1522,7 +1539,8 @@ const CotizadorModal = () => {
                 )}
 
                 {!esTerc && (
-                <div className="grid grid-cols-3 gap-3 mt-1">
+                <Block title="Medidas" icon="fa-ruler-combined">
+                <div className="grid grid-cols-3 gap-3">
                     {[['Ancho (mm)', 'ancho_mm'], ['Alto (mm)', 'alto_mm'], ['Margen (%)', 'margen_porcentaje']].map(([lbl, key]) => (
                         <div key={key}>
                             <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{lbl}</label>
@@ -1532,14 +1550,12 @@ const CotizadorModal = () => {
                         </div>
                     ))}
                 </div>
+                </Block>
                 )}
 
                 {/* Opcionales */}
                 {!esTerc && config.producto_id && opcionalesDisp.length > 0 && (
-                    <div className="mt-4 border-t pt-4">
-                        <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
-                            <i className="fas fa-plus-circle mr-1 text-blue-600"></i>Opcionales
-                        </label>
+                    <Block title="Opcionales" icon="fa-plus-circle" hint={config.opcionales.length > 0 ? `${config.opcionales.length} agregado(s)` : null}>
                         {config.opcionales.length > 0 && (
                             <div className="mb-2 space-y-1.5">
                                 {config.opcionales.map((opc, idx) => (
@@ -1574,22 +1590,10 @@ const CotizadorModal = () => {
                                     setConfig(c => ({ ...c, opcionales: [...c.opcionales, { ...opcional, cantidad: opcional.cantidad || 1 }] }));
                                 }
                             }} />
-                    </div>
+                    </Block>
                 )}
 
-                {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
-
-                {esTerc ? (
-                    <button onClick={guardarTerciarizado} disabled={saving || !precioTerc}
-                        className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">
-                        {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Agregando...</> : <><i className="fas fa-plus mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
-                    </button>
-                ) : (
-                    <button onClick={calcular} disabled={loading || !config.marco_id}
-                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">
-                        {loading ? <><i className="fas fa-spinner fa-spin mr-2"></i>Calculando...</> : <><i className="fas fa-calculator mr-2"></i>Calcular precio</>}
-                    </button>
-                )}
+                {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2"><i className="fas fa-exclamation-circle"></i>{error}</div>}
             </div>
 
             {/* Resultado */}
@@ -1697,10 +1701,6 @@ const CotizadorModal = () => {
                             )}
                         </div>
 
-                        <button onClick={guardar} disabled={saving}
-                            className="mt-4 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all">
-                            {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
-                        </button>
                     </>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-16 text-slate-300">
@@ -1710,6 +1710,32 @@ const CotizadorModal = () => {
                     </div>
                 )}
             </div>
+        </div>
+
+        {/* Footer sticky: total + CTA dinámico */}
+        <div className="sticky bottom-0 -mx-6 -mb-6 mt-2 px-6 py-3 bg-white border-t border-slate-200 flex items-center gap-3">
+            {result && !esTerc && (
+                <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
+            )}
+            <span className="flex-1"></span>
+            <button onClick={() => cerrarModalItem()} className="px-5 py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
+            {esTerc ? (
+                <button onClick={guardarTerciarizado} disabled={saving || !precioTerc}
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+                    {saving ? <><i className="fas fa-spinner fa-spin"></i>Agregando...</> : <><i className="fas fa-plus"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
+                </button>
+            ) : result ? (
+                <button onClick={guardar} disabled={saving}
+                    className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                    {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
+                </button>
+            ) : (
+                <button onClick={calcular} disabled={loading || !config.marco_id}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+                    {loading ? <><i className="fas fa-spinner fa-spin"></i>Calculando...</> : <><i className="fas fa-calculator"></i>Calcular precio</>}
+                </button>
+            )}
+        </div>
         </div>
     );
 };
