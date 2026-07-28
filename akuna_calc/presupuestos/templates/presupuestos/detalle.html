@@ -1254,8 +1254,8 @@ const DesgloseItem = ({ left, right, detail, color = 'blue' }) => (
 
 // -- Bloque agrupado de configuración (título + ícono + hint) --
 const Block = ({ title, icon, hint, children }) => (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+    <div className="border border-slate-200 rounded-xl bg-white">
+        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 rounded-t-xl">
             <i className={`fas ${icon} text-xs text-blue-600 w-4 text-center`}></i>
             <span className="text-[11px] font-bold tracking-wider uppercase text-slate-600">{title}</span>
             {hint && <span className="ml-auto text-[11px] text-slate-400 font-semibold truncate max-w-[45%]">{hint}</span>}
