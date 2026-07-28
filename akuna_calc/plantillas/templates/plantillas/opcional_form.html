@@ -175,7 +175,7 @@
         </button>
     </div>
 
-    {% else %}
+    {% elif opcional.tipo == 'premarco' or opcional.tipo == 'otro' %}
     <!-- Fórmulas de Cálculo (Otro) -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-{% else %}
+{% elif opcional.tipo == 'premarco' or opcional.tipo == 'otro' %}
 function scheduleFormulasSave() {
     clearTimeout(autosaveTimers.formulas);
     setSaveStatus('estadoFormulasOpcional', 'saving');

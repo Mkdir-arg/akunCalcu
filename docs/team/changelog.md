@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-27 — Opcional de tipo "unidad" (cantidad × precio en el cotizador) (FEAT-032)
+
+**Pedido:** "En /opcionales/crear/ quiero un tipo 'unidad' que tenga un costo, y que al cotizar te pida la cantidad, multiplique cantidad × precio y lo sume al cotizador."
+**Archivos:** `plantillas/models.py` (choice `unidad` + campo `precio_unidad`, migración `0016`), `plantillas/forms.py`, `plantillas/templates/plantillas/opcional_form.html`, `pricing/services/calculator.py` (`_calcular_opcionales`), `pricing/catalog_views.py` (`OpcionalesListView`), `presupuestos/pdf_descriptions.py` (`_serialize_options`), `presupuestos/templates/presupuestos/detalle.html`, `pricing/tests.py`.
+**Descripción:** Nuevo tipo de opcional de fábrica **"Unidad"** con `precio_unidad`. En el cotizador, al agregar ese opcional aparece un input de **cantidad** (default 1) y el precio es `cantidad × precio_unidad`, sumado al total y mostrado en el desglose (panel y modal de ítems guardados). En el ABM, el precio por unidad se muestra solo para el tipo unidad y las secciones de fórmulas/perfiles/accesorios se ocultan para ese tipo. La cantidad viaja en el payload del opcional (`{id, cantidad}`, retrocompatible) y se persiste en el snapshot (`_serialize_options`) para reconstruir al editar. Disponible para todos los productos (como `otro`). `precio_unidad` es opcional en el form y se normaliza a 0 en `clean()` (evita romper el alta de los otros tipos — regresión detectada y corregida en el Reviewer). Rama `feat/req-042-opcional-unidad` (main intacto). Tests: 5 nuevos OK, sin regresiones (217 corridos, baseline legacy 1 fail + 3 errors). **Pendiente deploy:** migración `plantillas/0016`.
+
 ## 2026-07-24 — El recargo de renovación no se aplicaba a productos terciarizados (FIX-018)
 
 **Pedido:** "En el presupuesto 559 no se está aplicando el Recargo renovación por unidad. ¿Puede ser porque es terciarizado y ellos ingresan el valor del ítem?"

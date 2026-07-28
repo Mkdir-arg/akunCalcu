@@ -61,4 +61,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-039](./REQ-039-imagen-3d-por-item-en-lista-y-pdf.md) | Imagen 3D por ítem en la lista y en el PDF del presupuesto (Fase 2) | En desarrollo | 2026-07-24 | — |
 | [REQ-040](./REQ-040-horario-evento-agenda.md) | Horario del evento en la agenda (separado de la hora de envío) | En desarrollo | 2026-07-24 | — |
 | [REQ-041](./REQ-041-tirantes-divisores-relleno-por-seccion.md) | Tirantes divisores con relleno por sección en el cotizador | En desarrollo | 2026-07-27 | — |
-| [REQ-042](./REQ-042-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | En desarrollo | 2026-07-27 | — |
+| [REQ-042](./REQ-042-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | Implementado | 2026-07-27 | FEAT-032 |

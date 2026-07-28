@@ -1,8 +1,8 @@
 # REQ-042 — Opcional de tipo "unidad" (cantidad × precio en el cotizador)
 
-- **Estado:** En desarrollo
+- **Estado:** Implementado
 - **Fecha:** 2026-07-27
-- **Derivó en:** _(pendiente FEAT-XXX)_
+- **Derivó en:** [FEAT-032](../features/FEAT-032-opcional-tipo-unidad.md)
 
 ## Contexto
 
