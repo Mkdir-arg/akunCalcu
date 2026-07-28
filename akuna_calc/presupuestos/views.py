@@ -24,6 +24,7 @@ from core.navigation import append_return_to, resolve_return_url
 from usuarios.access_control import get_access_profile, user_has_full_access
 from comercial.models import Venta, _formatear_cuit
 from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
+from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, PricingError
 from pricing.models import Producto
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
@@ -531,21 +532,33 @@ def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
     if presupuesto.plazo_entrega_dias:
         fecha_comprometida = timezone.now().date() + timedelta(days=presupuesto.plazo_entrega_dias)
 
+    def _cortar(campo, valor):
+        return cortar_a_max_length(OrdenFabricacion, campo, valor)
+
+    # Los ítems PVC y terciarizados no guardan snapshot, así que el tipo de
+    # abertura cae en la descripción que escribe el vendedor, que puede ser más
+    # larga que el casillero de la orden. Si no entra, el texto íntegro va a
+    # Observaciones para que el taller no pierda el detalle.
+    abertura_completa = ((snapshot.get('producto') or {}).get('descripcion', '') or item.descripcion or '').strip()
+    tipo_abertura = _cortar('tipo_abertura', abertura_completa)
+    nota = abertura_completa if len(abertura_completa) > len(tipo_abertura) else ''
+
     orden_fabricacion = OrdenFabricacion.objects.create(
         pedido=pedido,
         item_presupuesto=item,
         numero=numero,
         orden=orden,
         fecha_comprometida=fecha_comprometida,
-        cliente_nombre=cliente.get_nombre_completo(),
-        cliente_domicilio=cliente.direccion or '',
-        cliente_localidad=cliente.localidad or '',
-        cliente_mail=cliente.email or '',
-        cliente_telefono=cliente.telefono or '',
-        tipo_abertura=(snapshot.get('producto') or {}).get('descripcion', '') or item.descripcion,
-        linea=(snapshot.get('linea') or {}).get('nombre', ''),
-        color=(snapshot.get('tratamiento') or {}).get('descripcion', ''),
-        tipo_vidrio=(snapshot.get('vidrio') or {}).get('descripcion', ''),
+        cliente_nombre=_cortar('cliente_nombre', cliente.get_nombre_completo()),
+        cliente_domicilio=_cortar('cliente_domicilio', cliente.direccion),
+        cliente_localidad=_cortar('cliente_localidad', cliente.localidad),
+        cliente_mail=_cortar('cliente_mail', cliente.email),
+        cliente_telefono=_cortar('cliente_telefono', cliente.telefono),
+        tipo_abertura=tipo_abertura,
+        linea=_cortar('linea', (snapshot.get('linea') or {}).get('nombre', '')),
+        color=_cortar('color', (snapshot.get('tratamiento') or {}).get('descripcion', '')),
+        tipo_vidrio=_cortar('tipo_vidrio', (snapshot.get('vidrio') or {}).get('descripcion', '')),
+        nota=nota,
     )
 
     medida = ''
@@ -583,7 +596,7 @@ def _procesar_confirmacion(request, presupuesto):
         venta = _crear_venta_desde_presupuesto(presupuesto)
         pedido = PedidoFabrica.objects.create(
             numero=_generar_numero_pedido_fabrica(),
-            cliente=presupuesto.cliente.get_nombre_completo(),
+            cliente=cortar_a_max_length(PedidoFabrica, 'cliente', presupuesto.cliente.get_nombre_completo()),
             observaciones=f'Generado automáticamente desde el presupuesto {presupuesto.numero}.',
             usuario=request.user,
             presupuesto=presupuesto,

@@ -1679,6 +1679,54 @@ class ConfirmarPresupuestoTest(TestCase):
         self.assertEqual(orden.tipo_abertura, 'Cortina roller')
         self.assertEqual(orden.medidas.get().medida, '')
 
+    def test_confirmar_con_descripcion_mas_larga_que_el_campo_recorta_y_guarda_completa_en_nota(self):
+        """FIX-019: una descripción de 222 caracteres desbordaba tipo_abertura (150)
+        y MySQL en modo estricto rechazaba el INSERT con error 1406 → 500."""
+        descripcion_larga = (
+            'V2 ESTRUCTURA COMPUESTA EN LA PARTE SUPERIOR POR UNA CORREDIZA EN DOS HOJAS DE 80 CM '
+            'CADA UNA CON VIDRIO DVH Y EN LA PARTE INFERIOR UN PAÑO FIJO CON TRAVESAÑO DIVISOR '
+            'CENTRAL Y MOSQUITERO CORREDIZO DEL LADO EXTERIOR'
+        )
+        self.assertGreater(len(descripcion_larga), 150)
+        p = crear_presupuesto(self.user)
+        self._crear_item(p, descripcion=descripcion_larga, cantidad=1)
+        p.recalcular_total()
+
+        res = self._confirmar(p, '10000')
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        orden = p.pedidos_fabrica.get().ordenes.get()
+        self.assertEqual(len(orden.tipo_abertura), 150)
+        self.assertEqual(orden.tipo_abertura, descripcion_larga[:150])
+        self.assertEqual(orden.nota, descripcion_larga)
+
+    def test_confirmar_con_descripcion_corta_no_ensucia_la_nota(self):
+        p = crear_presupuesto(self.user)
+        self._crear_item(p, descripcion='V1', cantidad=1)
+        p.recalcular_total()
+
+        self._confirmar(p, '10000')
+
+        orden = p.pedidos_fabrica.get().ordenes.get()
+        self.assertEqual(orden.tipo_abertura, 'V1')
+        self.assertEqual(orden.nota, '')
+
+    def test_confirmar_con_direccion_de_cliente_larga_recorta_al_limite(self):
+        cliente = crear_cliente()
+        cliente.direccion = 'Av. Siempreviva ' + 'x' * 300
+        cliente.save(update_fields=['direccion'])
+        p = crear_presupuesto(self.user, cliente=cliente)
+        self._crear_item(p, descripcion='V1', cantidad=1)
+        p.recalcular_total()
+
+        res = self._confirmar(p, '10000')
+
+        self.assertEqual(res.status_code, 302)
+        orden = p.pedidos_fabrica.get().ordenes.get()
+        self.assertEqual(len(orden.cliente_domicilio), 200)
+
 
 class BuscadorPresupuestosTest(TestCase):
     """El buscador único del listado matchea cualquier dato de la tabla:

@@ -299,6 +299,35 @@ class OrdenFabricacionViewsTest(TestCase):
         self.assertEqual(orden.mosquitero_modelo, 'MOSQ-01 - Mosquitero estándar')
         self.assertEqual(orden.premarco, 'SI')
 
+    def test_orden_create_recorta_valores_mas_largos_que_el_campo(self):
+        """FIX-019: un valor más largo que la columna hacía que MySQL rechazara
+        el INSERT completo (error 1406) en vez de truncar."""
+        response = self.client.post(f'/plantillas/pedidos/{self.pedido.pk}/ordenes/crear/', {
+            'tipo_abertura': 'V' * 400,
+            'color': 'B' * 250,
+        })
+
+        orden = self.pedido.ordenes.get()
+        self.assertRedirects(response, f'/plantillas/ordenes/{orden.pk}/editar/')
+        self.assertEqual(len(orden.tipo_abertura), 150)
+        self.assertEqual(len(orden.color), 100)
+
+    def test_orden_edit_recorta_medidas_mas_largas_que_el_campo(self):
+        orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)
+
+        self.client.post(f'/plantillas/ordenes/{orden.pk}/editar/', {
+            'medida_item': ['1'],
+            'medida_cantidad': ['1'],
+            'medida_medida': ['M' * 300],
+            'medida_observaciones': ['O' * 400],
+            'medida_piso_depto': ['P' * 200],
+        })
+
+        medida = orden.medidas.get()
+        self.assertEqual(len(medida.medida), 120)
+        self.assertEqual(len(medida.observaciones), 200)
+        self.assertEqual(len(medida.piso_depto), 80)
+
     def test_orden_edit_guarda_campos_y_medidas(self):
         orden = OrdenFabricacion.objects.create(pedido=self.pedido, numero=1)
 
