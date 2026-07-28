@@ -602,8 +602,14 @@
     <div class="absolute inset-0 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full {% if es_pvc %}max-w-md{% else %}max-w-5xl{% endif %} max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
-                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-{% if es_pvc %}plus{% else %}calculator{% endif %} mr-2 text-blue-600"></i>Agregar item al presupuesto</h2>
-                <button onclick="cerrarModalItem()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0"><i class="fas fa-{% if es_pvc %}plus{% else %}calculator{% endif %}"></i></div>
+                    <div class="min-w-0">
+                        <h2 id="modal-item-title" class="text-base font-bold text-slate-800 leading-tight">Agregar ítem</h2>
+                        <p class="text-xs text-slate-500 truncate">{{ presupuesto.numero }} · {{ presupuesto.cliente.get_nombre_completo }}</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModalItem()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors shrink-0">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -987,6 +993,7 @@ const FormularioPVC = () => {
     useEffect(() => {
         // Puente JS↔React: editar un ítem PVC abre este mismo modal pre-cargado.
         window.__cotizadorEditar = (payload) => {
+            const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Editar ítem';
             const rj = payload.resultado || {};
             setEditId(payload.itemId);
             setDescripcion(payload.descripcion || '');
@@ -998,6 +1005,7 @@ const FormularioPVC = () => {
             document.body.style.overflow = 'hidden';
         };
         window.__cotizadorReset = () => {
+            const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
             setEditId(null);
             setDescripcion(''); setCantidad(1); setValorUsd(0); setMargen(30); setSaving(false);
         };
@@ -1367,6 +1375,7 @@ const CotizadorModal = () => {
     useEffect(() => {
         // Puente JS↔React: editar un ítem abre este mismo modal pre-cargado.
         window.__cotizadorEditar = (payload) => {
+            const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Editar ítem';
             const rj = payload.resultado || {};
             setEditId(payload.itemId);
             setEditTipo(rj.tipo === 'terciarizado' ? 'terciarizado' : null);
@@ -1403,6 +1412,7 @@ const CotizadorModal = () => {
             document.body.style.overflow = 'hidden';
         };
         window.__cotizadorReset = () => {
+            const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
             setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setError(null);
             setDescripcion(''); setCantidad(1);
             setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [] });
