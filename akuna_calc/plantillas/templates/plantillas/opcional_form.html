@@ -38,6 +38,11 @@
                     {{ form.precio_m2 }}
                     {% if form.precio_m2.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>{% endif %}
                 </div>
+                <div id="precio-unidad-wrapper" style="display:none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.precio_unidad.label }}</label>
+                    {{ form.precio_unidad }}
+                    {% if form.precio_unidad.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_unidad.errors.0 }}</p>{% endif %}
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.descripcion.label }}</label>
                     {{ form.descripcion }}
@@ -53,6 +58,7 @@
                 function toggleOpcionalFields() {
                     const tipo = document.getElementById('id_tipo');
                     const precioWrap = document.getElementById('precio-m2-wrapper');
+                    const precioUnidadWrap = document.getElementById('precio-unidad-wrapper');
                     const lineaWrap = document.getElementById('linea-wrapper');
 
                     if (!tipo || !precioWrap || !lineaWrap) {
@@ -60,6 +66,9 @@
                     }
 
                     precioWrap.style.display = tipo.value === 'mosquitero' ? '' : 'none';
+                    if (precioUnidadWrap) {
+                        precioUnidadWrap.style.display = tipo.value === 'unidad' ? '' : 'none';
+                    }
                     lineaWrap.style.display = tipo.value === 'premarco' ? '' : 'none';
 
                     if (typeof filtrarPerfilesPorLinea === 'function') {

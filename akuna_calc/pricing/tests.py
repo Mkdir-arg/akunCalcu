@@ -904,3 +904,68 @@ class VidrioFormPerdidaDatosTemplateTest(SimpleTestCase):
             '/pricing/config/vidrios/V1/editar/',
         )
         self.assertIn('name="relaciones_hojas_enviadas"', html)
+
+
+# ─── REQ-042: OPCIONAL DE TIPO "UNIDAD" ───────────────────────────────────────
+
+class OpcionalUnidadCalculatorTest(TestCase):
+    def test_calcula_cantidad_por_precio_unidad(self):
+        opc = OpcionalFabrica.objects.create(
+            codigo='U1', nombre='Herraje', tipo='unidad', precio_unidad=500,
+        )
+        items = []
+        total = PriceCalculator()._calcular_opcionales(
+            [{'id': opc.id, 'cantidad': 3}],
+            {'Ancho': 1000, 'Alto': 1000, 'Cantidad': 1},
+            None,
+            items,
+        )
+        self.assertEqual(total, 1500.0)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['tipo'], 'unidad')
+        self.assertEqual(items[0]['cantidad'], 3)
+        self.assertEqual(items[0]['precio_unidad'], 500.0)
+        self.assertEqual(items[0]['precio_total'], 1500.0)
+
+    def test_cantidad_default_uno(self):
+        opc = OpcionalFabrica.objects.create(
+            codigo='U2', nombre='Cerradura', tipo='unidad', precio_unidad=200,
+        )
+        items = []
+        total = PriceCalculator()._calcular_opcionales([{'id': opc.id}], {}, None, items)
+        self.assertEqual(total, 200.0)
+        self.assertEqual(items[0]['cantidad'], 1)
+
+    def test_cantidad_invalida_cae_a_uno(self):
+        opc = OpcionalFabrica.objects.create(
+            codigo='U3', nombre='X', tipo='unidad', precio_unidad=100,
+        )
+        items = []
+        total = PriceCalculator()._calcular_opcionales(
+            [{'id': opc.id, 'cantidad': 'abc'}], {}, None, items,
+        )
+        self.assertEqual(total, 100.0)
+        self.assertEqual(items[0]['cantidad'], 1)
+
+
+class OpcionalUnidadListViewTest(TestCase):
+    def test_lista_incluye_unidad_y_precio_unidad(self):
+        from rest_framework.test import APIRequestFactory
+        from pricing.catalog_views import OpcionalesListView
+        OpcionalFabrica.objects.create(codigo='U1', nombre='Herraje', tipo='unidad', precio_unidad=500)
+        resp = OpcionalesListView.as_view()(APIRequestFactory().get('/pricing/api/pricing/opcionales/'))
+        fila = [o for o in resp.data if o['codigo'] == 'U1']
+        self.assertEqual(len(fila), 1)
+        self.assertIn('precio_unidad', fila[0])
+        self.assertEqual(fila[0]['tipo'], 'unidad')
+
+
+class OpcionalUnidadFormTest(TestCase):
+    def test_form_unidad_valido_sin_linea(self):
+        from plantillas.forms import OpcionalFabricaForm
+        form = OpcionalFabricaForm(data={
+            'codigo': 'U1', 'nombre': 'Herraje', 'tipo': 'unidad', 'linea_id': '',
+            'precio_m2': '0', 'precio_unidad': '500', 'descripcion': '', 'activo': True,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIn('unidad', dict(OpcionalFabrica.TIPO_CHOICES))

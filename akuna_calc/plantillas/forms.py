@@ -48,17 +48,22 @@ class OpcionalFabricaForm(forms.ModelForm):
 
     class Meta:
         model = OpcionalFabrica
-        fields = ['codigo', 'nombre', 'tipo', 'linea_id', 'precio_m2', 'descripcion', 'activo']
+        fields = ['codigo', 'nombre', 'tipo', 'linea_id', 'precio_m2', 'precio_unidad', 'descripcion', 'activo']
         widgets = {
             'codigo': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'placeholder': 'OPC-001'}),
             'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
             'tipo': forms.Select(attrs={'class': 'w-full px-3 py-2 border rounded-lg'}),
             'precio_m2': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'step': '0.01', 'min': '0'}),
+            'precio_unidad': forms.NumberInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'step': '0.01', 'min': '0'}),
             'descripcion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border rounded-lg', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # El precio por unidad solo aplica al tipo 'unidad'; no debe ser
+        # obligatorio para los demás tipos (se normaliza a 0 en clean()).
+        self.fields['precio_unidad'].required = False
 
         choices = [('', 'Seleccionar línea...')]
         try:
@@ -83,5 +88,10 @@ class OpcionalFabricaForm(forms.ModelForm):
 
         if tipo != 'mosquitero':
             cleaned_data['precio_m2'] = 0
+
+        if tipo == 'unidad':
+            cleaned_data['precio_unidad'] = cleaned_data.get('precio_unidad') or 0
+        else:
+            cleaned_data['precio_unidad'] = 0
 
         return cleaned_data

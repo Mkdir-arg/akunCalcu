@@ -808,7 +808,24 @@ class PriceCalculator:
             
             precio_opcional = 0.0
             
-            if opcional.tipo == 'mosquitero':
+            if opcional.tipo == 'unidad':
+                # Cantidad (ingresada al cotizar) × precio por unidad.
+                try:
+                    cantidad_unidad = int(opc_config.get('cantidad') or 1)
+                except (TypeError, ValueError):
+                    cantidad_unidad = 1
+                cantidad_unidad = max(1, cantidad_unidad)
+                precio_unitario = float(opcional.precio_unidad or 0)
+                precio_opcional = cantidad_unidad * precio_unitario
+                items.append({
+                    "codigo": opcional.codigo,
+                    "nombre": opcional.nombre,
+                    "tipo": "unidad",
+                    "cantidad": cantidad_unidad,
+                    "precio_unidad": precio_unitario,
+                    "precio_total": round(precio_opcional, 2),
+                })
+            elif opcional.tipo == 'mosquitero':
                 # Calcular por fórmulas: resultado_formula * precio_m2 * cantidad
                 formulas = FormulaOpcional.objects.filter(opcional=opcional).order_by('orden')
                 producto_id = variables.get("ProductoId")

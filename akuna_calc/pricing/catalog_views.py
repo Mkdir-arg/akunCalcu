@@ -181,13 +181,13 @@ class OpcionalesListView(APIView):
             if producto:
                 premarco_filter = db_models.Q(tipo='premarco', linea_id=producto.linea_id)
             
-            # Tipo otro: mostrar todos. Premarco: filtrar por línea del producto.
+            # Tipo otro y unidad: mostrar todos. Premarco: filtrar por línea del producto.
             opcionales = OpcionalFabrica.objects.filter(
                 activo=True
             ).filter(
-                db_models.Q(id__in=mosq_ids) | premarco_filter | db_models.Q(tipo='otro')
-            ).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+                db_models.Q(id__in=mosq_ids) | premarco_filter | db_models.Q(tipo='otro') | db_models.Q(tipo='unidad')
+            ).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2', 'precio_unidad')
         else:
-            opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2')
+            opcionales = OpcionalFabrica.objects.filter(activo=True).values('id', 'codigo', 'nombre', 'tipo', 'precio_m2', 'precio_unidad')
         
         return Response(list(opcionales))

@@ -930,7 +930,9 @@ function verDetalleItem(resultado, descripcion) {
         html += buildSection('Opcionales', 'fa-plus-circle', 'indigo', r.total_opcionales, d.opcionales.map(i => {
             let detail = '<div class="flex justify-between font-medium"><span>' + i.codigo + ' - ' + i.nombre + '</span><span class="text-indigo-600">$' + fmt(i.precio_total) + '</span></div>';
             detail += '<div class="text-xs text-gray-500 mt-0.5">';
-            if (i.tipo === 'mosquitero' && i.formulas) {
+            if (i.tipo === 'unidad') {
+                detail += 'Cantidad ' + i.cantidad + ' x $' + (i.precio_unidad || 0).toLocaleString('es-AR') + ' = $' + fmt(i.precio_total);
+            } else if (i.tipo === 'mosquitero' && i.formulas) {
                 i.formulas.forEach(f => { detail += 'Cant: ' + f.cantidad + ' x ' + f.area_m2 + 'm2 x $' + (i.precio_m2 || 0).toLocaleString('es-AR') + '/m2 = $' + fmt(f.precio) + '<br>'; });
             } else {
                 if (i.perfiles) i.perfiles.forEach(p => { detail += p.codigo + ': Cant ' + p.cantidad + ' x ' + p.longitud_mm + 'mm = $' + fmt(p.precio_total) + '<br>'; });
@@ -1193,12 +1195,14 @@ const OpcionalesModal = ({ opcionales, onSelect }) => {
                                                         <div className="text-sm text-gray-500 mt-1">
                                                             {opcional.tipo === 'mosquitero'
                                                                 ? <span><i className="fas fa-dollar-sign mr-1"></i>${(opcional.precio_m2 || 0).toLocaleString('es-AR')}/m2</span>
+                                                                : opcional.tipo === 'unidad'
+                                                                ? <span><i className="fas fa-dollar-sign mr-1"></i>${(parseFloat(opcional.precio_unidad) || 0).toLocaleString('es-AR')}/unidad</span>
                                                                 : <span><i className="fas fa-calculator mr-1"></i>Calculado por formulas</span>
                                                             }
                                                         </div>
                                                     </div>
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${opcional.tipo === 'mosquitero' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                                        {opcional.tipo === 'mosquitero' ? 'Mosquitero' : 'Otro'}
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${opcional.tipo === 'mosquitero' ? 'bg-blue-100 text-blue-800' : opcional.tipo === 'unidad' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                                                        {opcional.tipo === 'mosquitero' ? 'Mosquitero' : opcional.tipo === 'unidad' ? 'Unidad' : 'Otro'}
                                                     </span>
                                                 </div>
                                             </button>
@@ -1380,7 +1384,7 @@ const CotizadorModal = () => {
                     ancho_mm: s.ancho_mm || 1200,
                     alto_mm: s.alto_mm || 1500,
                     margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
-                    opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2 })),
+                    opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2, precio_unidad: o.precio_unidad, cantidad: o.cantidad || 1 })),
                 }));
             }
             document.getElementById('modal-item').classList.remove('hidden');
@@ -1424,7 +1428,7 @@ const CotizadorModal = () => {
         document.getElementById('f-margen_porcentaje').value = config.margen_porcentaje;
         document.getElementById('f-descripcion').value = descripcion || `Abertura ${config.ancho_mm}x${config.alto_mm}mm`;
         document.getElementById('f-cantidad').value = cantidad;
-        document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id })));
+        document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id, cantidad: o.cantidad || 1 })));
         enviarItemForm();
     };
 
@@ -1540,11 +1544,21 @@ const CotizadorModal = () => {
                             <div className="mb-2 space-y-1.5">
                                 {config.opcionales.map((opc, idx) => (
                                     <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 flex items-center justify-between">
-                                        <div>
+                                        <div className="flex-1">
                                             <div className="font-medium text-sm text-gray-800">{opc.codigo} - {opc.nombre}</div>
-                                            <div className="text-xs text-gray-500">
-                                                {opc.tipo === 'mosquitero' ? `$${(opc.precio_m2 || 0).toLocaleString('es-AR')}/m2` : 'Calculado por formulas'}
-                                            </div>
+                                            {opc.tipo === 'unidad' ? (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <label className="text-xs text-gray-500">Cantidad</label>
+                                                    <input type="number" min="1" value={opc.cantidad || 1}
+                                                        onChange={e => { const v = Math.max(1, parseInt(e.target.value) || 1); setConfig(c => ({ ...c, opcionales: c.opcionales.map((o, i) => i === idx ? { ...o, cantidad: v } : o) })); }}
+                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500" />
+                                                    <span className="text-xs text-gray-500">x ${(parseFloat(opc.precio_unidad) || 0).toLocaleString('es-AR')} = ${((opc.cantidad || 1) * (parseFloat(opc.precio_unidad) || 0)).toLocaleString('es-AR')}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-gray-500">
+                                                    {opc.tipo === 'mosquitero' ? `$${(opc.precio_m2 || 0).toLocaleString('es-AR')}/m2` : 'Calculado por formulas'}
+                                                </div>
+                                            )}
                                         </div>
                                         <button onClick={() => setConfig(c => ({ ...c, opcionales: c.opcionales.filter((_, i) => i !== idx) }))}
                                             className="text-red-500 hover:text-red-700 p-1.5" title="Quitar">
@@ -1557,7 +1571,7 @@ const CotizadorModal = () => {
                         <OpcionalesModal opcionales={opcionalesDisp}
                             onSelect={opcional => {
                                 if (!config.opcionales.find(o => o.id === opcional.id)) {
-                                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, opcional] }));
+                                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, { ...opcional, cantidad: opcional.cantidad || 1 }] }));
                                 }
                             }} />
                     </div>
@@ -1660,7 +1674,9 @@ const CotizadorModal = () => {
                                                 <span className="text-indigo-600">${fmt(item.precio_total)}</span>
                                             </div>
                                             <div className="text-xs text-gray-500 mt-0.5">
-                                                {item.tipo === 'mosquitero' ? (
+                                                {item.tipo === 'unidad' ? (
+                                                    <div>Cantidad {item.cantidad} x ${(item.precio_unidad || 0).toLocaleString('es-AR')} = ${fmt(item.precio_total)}</div>
+                                                ) : item.tipo === 'mosquitero' ? (
                                                     item.formulas && item.formulas.map((f, fi) => (
                                                         <div key={fi}>Cant: {f.cantidad} x {f.area_m2}m2 x ${(item.precio_m2 || 0).toLocaleString('es-AR')}/m2 = ${fmt(f.precio)}</div>
                                                     ))

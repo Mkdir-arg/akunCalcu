@@ -243,14 +243,17 @@ def _should_refresh_technical_summary(snapshot: Dict[str, Any], summary: Any) ->
 
 def _serialize_options(options_data: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     option_ids: List[int] = []
+    cantidad_por_id: Dict[int, Any] = {}
     for option in options_data or []:
         option_id = option.get('id')
         if option_id in (None, ''):
             continue
         try:
-            option_ids.append(int(option_id))
+            oid = int(option_id)
         except (TypeError, ValueError):
             continue
+        option_ids.append(oid)
+        cantidad_por_id[oid] = option.get('cantidad')
 
     if not option_ids:
         return []
@@ -261,12 +264,21 @@ def _serialize_options(options_data: Iterable[Dict[str, Any]]) -> List[Dict[str,
         option = options_by_id.get(option_id)
         if not option:
             continue
-        serialized.append({
+        data = {
             'id': option.id,
             'codigo': _clean_text(option.codigo),
             'nombre': _clean_text(option.nombre),
             'tipo': _clean_text(option.tipo),
-        })
+        }
+        # El opcional de tipo unidad guarda la cantidad (elegida al cotizar) y su
+        # precio unitario, para reconstruir el ítem al editar y mostrarlo en el PDF.
+        if option.tipo == 'unidad':
+            try:
+                data['cantidad'] = max(1, int(cantidad_por_id.get(option_id) or 1))
+            except (TypeError, ValueError):
+                data['cantidad'] = 1
+            data['precio_unidad'] = float(option.precio_unidad or 0)
+        serialized.append(data)
     return serialized
 
 
