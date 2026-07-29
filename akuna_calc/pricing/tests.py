@@ -1058,6 +1058,28 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
             )
 
 
+class ValidateConfigCantidadHojasTest(SimpleTestCase):
+    """La cantidad de hojas la define el producto (campo "Cantidad de Hojas").
+
+    Por eso hay que poder distinguir "el payload no la mandó" (→ se usa la del
+    producto) de "mandó 1" (→ gana el 1 explícito)."""
+
+    def _cfg(self, **extra):
+        data = {'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 1000}
+        data.update(extra)
+        return data
+
+    def test_sin_cantidad_hojas_queda_none(self):
+        cleaned = PriceCalculator()._validate_config(self._cfg())
+        self.assertIsNone(cleaned['cantidad_hojas'])
+
+    def test_cantidad_hojas_explicita_se_respeta(self):
+        cleaned = PriceCalculator()._validate_config(self._cfg(cantidad_hojas=1))
+        self.assertEqual(cleaned['cantidad_hojas'], 1)
+        cleaned = PriceCalculator()._validate_config(self._cfg(cantidad_hojas=3))
+        self.assertEqual(cleaned['cantidad_hojas'], 3)
+
+
 class PriceCalculatorValidarSeccionesTest(SimpleTestCase):
     """La validación vive en el calculador porque el guardado del ítem no pasa
     por el serializer del API y es el que fija el precio cobrado."""

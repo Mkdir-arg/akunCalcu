@@ -73,10 +73,22 @@ class PriceCalculator:
             if hoja_id and interior.hoja_id != hoja_id:
                 raise PricingError("El interior no pertenece a la hoja seleccionada.")
 
+        # Cantidad de hojas: la define el producto (campo "Cantidad de Hojas").
+        # Multiplica todo lo que se repite por hoja: el despiece de la hoja, el
+        # relleno (vidrio único o secciones) y los tirantes.
+        try:
+            cantidad_hojas_producto = int(marco.producto.cantidad_hojas) if marco.producto.cantidad_hojas else 1
+        except Exception as e:
+            logger.warning(f"Error obteniendo cantidad_hojas del marco: {e}")
+            cantidad_hojas_producto = 1
+        cantidad_hojas_producto = max(1, cantidad_hojas_producto)
+
         variables = {
             "Ancho": cleaned["ancho_mm"],
             "Alto": cleaned["alto_mm"],
-            "Cantidad": cleaned["cantidad_hojas"],
+            # `Cantidad` (alias `hojas`) en las fórmulas = hojas del producto.
+            # Si el payload manda un valor explícito, gana ese.
+            "Cantidad": cleaned.get("cantidad_hojas") or cantidad_hojas_producto,
             "ProductoId": cleaned.get("producto_id"),
         }
 
@@ -212,14 +224,6 @@ class PriceCalculator:
         tirantes_cfg = cleaned.get("tirantes") or {}
         secciones_cfg = tirantes_cfg.get("secciones") or []
         tirantes_activo = bool(tirantes_cfg.get("activo")) and len(secciones_cfg) >= 2
-
-        # Cantidad de hojas del producto: multiplica el relleno (vidrio único o
-        # secciones) y los tirantes, porque cada hoja lleva su propio paño.
-        try:
-            cantidad_hojas_producto = int(marco.producto.cantidad_hojas) if marco.producto.cantidad_hojas else 1
-        except Exception as e:
-            logger.warning(f"Error obteniendo cantidad_hojas del marco: {e}")
-            cantidad_hojas_producto = 1
 
         vidrio_detalle = None
         precio_vidrio = 0.0
@@ -397,8 +401,12 @@ class PriceCalculator:
             "tirantes": configuracion.get("tirantes") or {},
         }
 
-        cantidad_hojas = configuracion.get("cantidad_hojas", 1)
-        cleaned["cantidad_hojas"] = int(cantidad_hojas)
+        # Se conserva None cuando no viene, para poder distinguir "no lo mandaron"
+        # (→ se usa la cantidad de hojas del producto) de "mandaron 1".
+        cantidad_hojas = configuracion.get("cantidad_hojas")
+        cleaned["cantidad_hojas"] = (
+            int(cantidad_hojas) if cantidad_hojas not in (None, "") else None
+        )
 
         return cleaned
 

@@ -63,3 +63,4 @@ Thumbs.db
 .mcp.json
 akuna_calc/scaffold_demo.py
 akuna_calc/audit_tirantes.py
+akuna_calc/diagnostico_hojas.py
