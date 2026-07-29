@@ -64,3 +64,4 @@ Thumbs.db
 akuna_calc/scaffold_demo.py
 akuna_calc/audit_tirantes.py
 akuna_calc/diagnostico_hojas.py
+akuna_calc/diagnostico_color.py

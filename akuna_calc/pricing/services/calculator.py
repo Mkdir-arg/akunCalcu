@@ -83,12 +83,30 @@ class PriceCalculator:
             cantidad_hojas_producto = 1
         cantidad_hojas_producto = max(1, cantidad_hojas_producto)
 
+        # El color del perfil lo define el TRATAMIENTO elegido (la terminación es
+        # el color: ver ABM de Tratamientos). El motor busca cada perfil por
+        # (código + color); sin color tomaba la primera fila, así que un perfil con
+        # varios colores podía cotizarse con el precio/kg de otro color.
+        # Un `color_id` explícito en el payload sigue teniendo prioridad.
+        tratamiento_obj = None
+        if cleaned.get("tratamiento_id"):
+            tratamiento_obj = self._get_tratamiento(cleaned["tratamiento_id"])
+        color_efectivo = self._resolver_color(cleaned.get("color_id"), tratamiento_obj)
+
         variables = {
             "Ancho": cleaned["ancho_mm"],
             "Alto": cleaned["alto_mm"],
-            # `Cantidad` (alias `hojas`) en las fórmulas = hojas del producto.
-            # Si el payload manda un valor explícito, gana ese.
-            "Cantidad": cleaned.get("cantidad_hojas") or cantidad_hojas_producto,
+            # `Cantidad` (alias `hojas`) en las fórmulas: se mantiene en 1 salvo que
+            # el payload mande un valor explícito.
+            #
+            # NO se usa acá `Producto.cantidad_hojas`: el despiece ya tiene la
+            # cantidad de hojas incorporada en sus propias fórmulas (cada producto
+            # tiene su marco/hoja con el conteo por producto). Se verificó contra un
+            # presupuesto real de una corredera de 2 hojas: los perfiles de hoja
+            # salen con cantidad 2 (uno por hoja) evaluando `Cantidad` = 1, así que
+            # inyectar 2 acá duplicaría los perfiles de toda fórmula que la use.
+            # Las hojas sí multiplican el RELLENO (vidrio único y secciones).
+            "Cantidad": cleaned.get("cantidad_hojas") or 1,
             "ProductoId": cleaned.get("producto_id"),
         }
 
@@ -100,14 +118,14 @@ class PriceCalculator:
         peso_total_perfiles += self._calcular_perfiles_simple(
             DespiecePerfilesMarco.objects.filter(marco_id=marco.id),
             variables,
-            cleaned["color_id"],
+            color_efectivo,
             perfiles_items,
         )
         if hoja_id:
             peso_total_perfiles += self._calcular_perfiles_simple(
                 DespiecePerfilesHoja.objects.filter(hoja_id=hoja_id),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -116,7 +134,7 @@ class PriceCalculator:
             peso_total_perfiles += self._calcular_perfiles_simple(
                 DespiecePerfilesMosquitero.objects.filter(mosquitero_id=mosquitero_id),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -125,7 +143,7 @@ class PriceCalculator:
             peso_total_perfiles += self._calcular_perfiles_contravidrio(
                 DespiecePerfilesContravidrio.objects.filter(contravidrio_id=contravidrio_id),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -136,7 +154,7 @@ class PriceCalculator:
                     contravidrio_id=contravidrio_exterior_id
                 ),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -147,7 +165,7 @@ class PriceCalculator:
                     vidrio_repartido_id=vidrio_repartido_id
                 ),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -156,7 +174,7 @@ class PriceCalculator:
             peso_total_perfiles += self._calcular_perfiles_cruces(
                 DespieceCruces.objects.filter(cruce_id=cruces_id),
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
 
@@ -242,7 +260,7 @@ class PriceCalculator:
                 tirantes_cfg.get("perfil_codigo"),
                 (len(secciones_cfg) - 1) * cantidad_hojas_producto,
                 cleaned["ancho_mm"],
-                cleaned["color_id"],
+                color_efectivo,
                 perfiles_items,
             )
         else:
@@ -283,9 +301,8 @@ class PriceCalculator:
         # Tratamientos
         tratamiento_total = 0.0
         tratamiento_detalle: Optional[Dict[str, Any]] = None
-        tratamiento_id = cleaned.get("tratamiento_id")
-        if tratamiento_id:
-            tratamiento = self._get_tratamiento(tratamiento_id)
+        if tratamiento_obj is not None:
+            tratamiento = tratamiento_obj  # ya resuelto arriba (define el color)
             tratamiento_total = peso_total_perfiles * _to_float(tratamiento.precio_kg)
             tratamiento_detalle = {
                 "id": tratamiento.id,
@@ -323,7 +340,7 @@ class PriceCalculator:
             total_opcionales = self._calcular_opcionales(
                 opcionales_config,
                 variables,
-                cleaned["color_id"],
+                color_efectivo,
                 opcionales_items,
             )
 
@@ -570,6 +587,7 @@ class PriceCalculator:
                 "precio_kg": _to_float(perfil.precio_kg),
                 "precio_total": round(precio_total, 2),
                 "angulo": despiece.angulo,
+                "color_id": perfil.color_id,
             }
             items.append(item)
             peso_total += peso_kg
