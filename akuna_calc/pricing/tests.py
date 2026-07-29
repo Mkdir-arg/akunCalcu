@@ -1058,6 +1058,55 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
             )
 
 
+class ResolverColorTest(SimpleTestCase):
+    """El color con el que se busca el perfil es el Tratamiento elegido."""
+
+    def test_sin_tratamiento_ni_color_devuelve_none(self):
+        self.assertIsNone(PriceCalculator()._resolver_color(None, None))
+
+    def test_toma_el_color_del_tratamiento(self):
+        trat = SimpleNamespace(id=2, color_id=7)
+        self.assertEqual(PriceCalculator()._resolver_color(None, trat), 7)
+
+    def test_color_explicito_del_payload_tiene_prioridad(self):
+        trat = SimpleNamespace(id=2, color_id=7)
+        self.assertEqual(PriceCalculator()._resolver_color(3, trat), 3)
+
+    def test_tratamiento_sin_color_no_cambia_el_comportamiento(self):
+        trat = SimpleNamespace(id=1, color_id=None)
+        self.assertIsNone(PriceCalculator()._resolver_color(None, trat))
+
+
+class GetPerfilPorColorTest(SimpleTestCase):
+    """Con varias filas del mismo perfil (una por color) hay que tomar la del
+    color pedido, no la primera."""
+
+    @patch('pricing.services.calculator.Perfil.objects.filter')
+    def test_prefiere_la_fila_del_color(self, mock_filter):
+        blanco = SimpleNamespace(codigo='P-100', color_id=1, precio_kg=5000)
+        negro = SimpleNamespace(codigo='P-100', color_id=7, precio_kg=9000)
+        qs = MagicMock()
+        qs.first.return_value = blanco          # la primera fila (sin filtrar) es blanca
+        qs.filter.return_value.first.return_value = negro
+        mock_filter.return_value = qs
+
+        perfil = PriceCalculator()._get_perfil('P-100', 7)
+
+        self.assertIs(perfil, negro)
+        self.assertEqual(perfil.precio_kg, 9000)
+        qs.filter.assert_called_once_with(color_id=7)
+
+    @patch('pricing.services.calculator.Perfil.objects.filter')
+    def test_sin_color_cae_a_la_primera_fila(self, mock_filter):
+        blanco = SimpleNamespace(codigo='P-100', color_id=1, precio_kg=5000)
+        qs = MagicMock()
+        qs.first.return_value = blanco
+        mock_filter.return_value = qs
+
+        self.assertIs(PriceCalculator()._get_perfil('P-100', None), blanco)
+        qs.filter.assert_not_called()
+
+
 class ValidateConfigCantidadHojasTest(SimpleTestCase):
     """La cantidad de hojas la define el producto (campo "Cantidad de Hojas").
 

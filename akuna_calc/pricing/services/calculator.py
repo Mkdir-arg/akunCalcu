@@ -499,6 +499,20 @@ class PriceCalculator:
 
         return vidrio_obj, rebaje_ancho, rebaje_alto
 
+    def _resolver_color(self, color_id: Optional[int], tratamiento: Optional[Tratamiento]) -> Optional[int]:
+        """Color con el que se buscan los perfiles.
+
+        El color es el TRATAMIENTO elegido (la terminación: ver el ABM de
+        Tratamientos), así que si el payload no manda un `color_id` explícito se
+        usa el del tratamiento. Sin ninguno de los dos se devuelve None y el
+        perfil se busca sólo por código (comportamiento previo).
+        """
+        if color_id is not None:
+            return color_id
+        if tratamiento is not None:
+            return tratamiento.color_id
+        return None
+
     def _get_tratamiento(self, tratamiento_id: int) -> Tratamiento:
         try:
             return Tratamiento.objects.get(pk=tratamiento_id)
