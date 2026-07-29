@@ -920,7 +920,7 @@ function verDetalleItem(resultado, descripcion) {
     if (d.secciones && d.secciones.length > 0) {
         html += buildSection('Secciones', 'fa-grip-lines', 'purple', r.total_secciones, d.secciones.map(i =>
             '<div class="flex justify-between font-medium"><span>Sección ' + i.orden + ': ' + i.descripcion + '</span><span class="text-purple-600">$' + fmt(i.precio_total) + '</span></div>' +
-            '<div class="text-xs text-gray-500 mt-0.5">' + i.ancho_mm + 'mm x ' + i.alto_mm + 'mm = ' + i.area_m2 + 'm2 x $' + i.precio_m2 + '/m2</div>'
+            '<div class="text-xs text-gray-500 mt-0.5">' + i.ancho_mm + 'mm x ' + i.alto_mm + 'mm = ' + i.area_m2 + 'm2 x $' + i.precio_m2 + '/m2' + (i.cantidad_hojas > 1 ? ' x ' + i.cantidad_hojas + ' hojas' : '') + '</div>'
         ));
     }
 
@@ -1814,7 +1814,7 @@ const CotizadorModal = () => {
                                         <DesgloseItem key={idx} color="purple"
                                             left={`Sección ${item.orden}: ${item.descripcion}`}
                                             right={item.precio_total}
-                                            detail={`${item.ancho_mm}mm x ${item.alto_mm}mm = ${item.area_m2}m2 x $${item.precio_m2}/m2`} />
+                                            detail={`${item.ancho_mm}mm x ${item.alto_mm}mm = ${item.area_m2}m2 x $${item.precio_m2}/m2${item.cantidad_hojas > 1 ? ` x ${item.cantidad_hojas} hojas` : ''}`} />
                                     ))}
                                 </DesgloseSection>
                             )}

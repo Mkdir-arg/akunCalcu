@@ -400,6 +400,12 @@ def build_item_snapshot(config: Dict[str, Any], descripcion_manual: str, cantida
         'tirantes': _serialize_tirantes(config.get('tirantes')),
     }
 
+    # Con tirantes el precio sale del relleno de cada sección y el vidrio único
+    # NO se cotiza: no lo anunciamos (el PDF y la orden listarían un vidrio que
+    # no se presupuestó). Los materiales reales van en `tirantes.secciones`.
+    if snapshot['tirantes']:
+        snapshot['vidrio'] = None
+
     snapshot['titulo_item'] = _build_title(snapshot)
     snapshot['descripcion_narrativa'] = build_narrative_from_snapshot(snapshot)
     snapshot['resumen_tecnico'] = build_technical_summary(snapshot)

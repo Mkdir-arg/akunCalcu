@@ -74,9 +74,22 @@ tirantes: {
 ## Decisiones técnicas
 
 1. **`MaterialCiego` como tabla administrada por Django** (no legacy `managed=False`): es un catálogo nuevo del sistema, sin equivalente en la base histórica. Ver ADR-016.
-2. **Secciones suman el paño completo, sin multiplicar por `cantidad_hojas`**: los tirantes se pensaron para tipologías de 1 paño (puerta / paño fijo). En multi-hoja (correderas) el precio de secciones no aplica el multiplicador de hojas — v1 fuera de alcance para multi-hoja. Ver ADR-016.
+2. **Área bruta + multi-hoja multiplica** (auditoría 2026-07-29): cada sección cobra `ancho_total × alto_sección` (m² de abertura, sin rebaje) **× `cantidad_hojas`** del producto; los tirantes también se multiplican por hojas. Antes no multiplicaban y subcobraba en correderas. Ver ADR-016 (puntos 4 y 5).
 3. **El tirante se cotiza como perfil elegido al cotizar** (longitud = ancho), reutilizando la maquinaria de perfiles; si no se elige perfil, el tirante solo divide (sin costo propio).
 4. **Persistencia sin migración en `presupuestos`**: tirantes/secciones van en `resultado_json` + `snapshot_item`, aditivo y compatible con ítems viejos.
+
+## Auditoría del cálculo (2026-07-29)
+
+Se auditó el cálculo de punta a punta contra la base real. **Verificado correcto:** áreas por sección (suman el área de la abertura), precio = área × precio/m² del material, sin doble cobro del vidrio (`total_vidrios = 0` con tirantes), el desglose cuadra exacto contra el subtotal en todos los casos, N secciones → N-1 tirantes con peso y precio correctos, el peso del tirante entra al tratamiento, y el margen se aplica sobre el subtotal con secciones incluidas.
+
+**Cuatro problemas encontrados y corregidos:**
+
+| # | Problema | Impacto medido | Fix |
+|---|---|---|---|
+| 1 | La validación `suma secciones == alto` vivía sólo en el serializer del API y en el JS; el **guardado** del ítem no validaba | secciones 1200+400 con alto 2000 → cobraba 1,44 m² en vez de 1,8 m² ($23.760 vs $29.160) y quedaba guardado | `_validar_secciones` en el calculador (choke point de ambos caminos) |
+| 2 | Material inexistente o dado de baja: la sección se **salteaba en silencio** | vidrio inexistente → $20.520; material ciego inactivo → $18.360 (−37 %) en vez de $29.160 | `PricingError` explícito por sección |
+| 3 | `cantidad_hojas` no multiplicaba las secciones (el vidrio único sí) | producto de 2 hojas → secciones $19.440 vs vidrio único $28.800 | secciones y tirantes × `cantidad_hojas` |
+| 4 | El cotizador standalone (`pricing/cotizador.html`) no mostraba el bloque "Secciones"; y el snapshot anunciaba un **vidrio que no se cotizó** en PDF y orden de fabricación | desglose visible que no cerraba; orden con vidrio equivocado | bloque "Secciones" agregado; `snapshot['vidrio'] = None` con tirantes y los materiales de las secciones van al casillero de vidrio + nota de la orden |
 
 ## Fuera de alcance (posible v2)
 

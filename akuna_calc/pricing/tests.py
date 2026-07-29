@@ -12,7 +12,7 @@ from pricing.models import Accesorio, MaterialCiego
 from pricing.forms import AccesorioCreateForm, AccesorioEditForm, MaterialCiegoForm
 from pricing.serializers import PricingCalculateSerializer
 from pricing.catalog_views import MaterialesCiegosListView
-from pricing.services.calculator import PriceCalculator
+from pricing.services.calculator import PriceCalculator, PricingError
 from pricing.tipologia import (
     clasificar_tipologia, resolver_tipologia,
     TIPO_VENTANA_CORREDIZA, TIPO_VENTANA_BATIENTE, TIPO_VENTANA_OSCILO,
@@ -1018,7 +1018,7 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
             {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
             {'alto_mm': 500, 'material': {'tipo': 'ciego', 'id': 3}},
         ]
-        total = calc._calcular_secciones(secciones, 1000, items)
+        total = calc._calcular_secciones(secciones, 1000, 1, items)
         # vidrio: 1.0 m2 x 100 = 100 ; ciego: 0.5 m2 x 200 = 100
         self.assertAlmostEqual(total, 200.0, places=2)
         self.assertEqual(len(items), 2)
@@ -1027,16 +1027,58 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
         self.assertAlmostEqual(items[0]['area_m2'], 1.0, places=4)
         self.assertAlmostEqual(items[1]['area_m2'], 0.5, places=4)
 
-    def test_seccion_con_material_faltante_se_saltea(self):
+    def test_secciones_multiplican_por_cantidad_de_hojas(self):
         calc = PriceCalculator()
-        calc._get_vidrio_opt = lambda codigo: None
-        calc._get_material_ciego = lambda mid: None
+        calc._get_vidrio_opt = lambda codigo: SimpleNamespace(codigo=codigo, descripcion='Float', precio=100.0)
         items = []
         total = calc._calcular_secciones(
-            [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'X'}}], 1000, items,
+            [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}}], 1000, 2, items,
         )
-        self.assertEqual(total, 0.0)
-        self.assertEqual(items, [])
+        # 1.0 m2 x 100 x 2 hojas = 200
+        self.assertAlmostEqual(total, 200.0, places=2)
+        self.assertEqual(items[0]['cantidad_hojas'], 2)
+
+    def test_material_faltante_es_error_no_se_saltea(self):
+        """Saltear la sección la borraba del precio => se cobraba de menos."""
+        calc = PriceCalculator()
+        calc._get_vidrio_opt = lambda codigo: None
+        items = []
+        with self.assertRaises(PricingError):
+            calc._calcular_secciones(
+                [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'X'}}], 1000, 1, items,
+            )
+
+    def test_material_ciego_faltante_es_error(self):
+        calc = PriceCalculator()
+        calc._get_material_ciego = lambda mid: None
+        items = []
+        with self.assertRaises(PricingError):
+            calc._calcular_secciones(
+                [{'alto_mm': 1000, 'material': {'tipo': 'ciego', 'id': 99999}}], 1000, 1, items,
+            )
+
+
+class PriceCalculatorValidarSeccionesTest(SimpleTestCase):
+    """La validación vive en el calculador porque el guardado del ítem no pasa
+    por el serializer del API y es el que fija el precio cobrado."""
+
+    def _secs(self, *altos):
+        return [{'alto_mm': a, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}} for a in altos]
+
+    def test_suma_igual_al_alto_pasa(self):
+        PriceCalculator()._validar_secciones(self._secs(1200, 800), 2000)
+
+    def test_suma_menor_al_alto_falla(self):
+        with self.assertRaises(PricingError):
+            PriceCalculator()._validar_secciones(self._secs(1200, 400), 2000)
+
+    def test_suma_mayor_al_alto_falla(self):
+        with self.assertRaises(PricingError):
+            PriceCalculator()._validar_secciones(self._secs(1200, 900), 2000)
+
+    def test_seccion_con_alto_cero_falla(self):
+        with self.assertRaises(PricingError):
+            PriceCalculator()._validar_secciones(self._secs(2000, 0), 2000)
 
 
 class PriceCalculatorTirantesPerfilTest(SimpleTestCase):

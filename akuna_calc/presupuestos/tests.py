@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from decimal import Decimal
 
 from django.test import TestCase, Client
@@ -2003,3 +2003,43 @@ class SerializeTirantesTest(SimpleTestCase):
     def test_inactivo_devuelve_none(self):
         self.assertIsNone(_serialize_tirantes({'activo': False, 'secciones': []}))
         self.assertIsNone(_serialize_tirantes(None))
+
+
+class SnapshotTirantesNoAnunciaVidrioTest(SimpleTestCase):
+    """Con tirantes el vidrio único NO se cotiza: el PDF y la orden de fábrica no
+    deben anunciar un vidrio que no se presupuestó."""
+
+    @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Tratamiento.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Interior.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Hoja.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Marco.objects')
+    def test_con_tirantes_el_snapshot_no_lleva_vidrio(
+        self, mock_marco, mock_hoja, mock_interior, mock_trat, mock_vidrio, mock_ciego,
+    ):
+        mock_marco.select_related.return_value.filter.return_value.first.return_value = None
+        for m in (mock_hoja, mock_interior, mock_trat):
+            m.return_value.first.return_value = None
+        # El queryset de vidrios se usa de dos formas: `.first()` (vidrio único)
+        # e iterando (materiales de las secciones).
+        vidrio_obj = SimpleNamespace(codigo='F6', descripcion='Float 6mm')
+        qs_vidrio = MagicMock()
+        qs_vidrio.__iter__ = lambda self: iter([vidrio_obj])
+        qs_vidrio.first.return_value = vidrio_obj
+        mock_vidrio.return_value = qs_vidrio
+        mock_ciego.return_value = [SimpleNamespace(id=3, codigo='CH', nombre='Chapa')]
+
+        config = {
+            'ancho_mm': 900, 'alto_mm': 2000, 'vidrio_codigo': 'F6',
+            'tirantes': {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+                {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+                {'alto_mm': 800, 'material': {'tipo': 'ciego', 'id': 3}},
+            ]},
+        }
+        snap = build_item_snapshot(config, 'Puerta dividida', 1)
+
+        self.assertIsNone(snap['vidrio'])
+        self.assertTrue(snap['tirantes']['activo'])
+        self.assertNotIn('vidrio Float 6mm', snap['descripcion_narrativa'])
+        self.assertIn('tirante', snap['descripcion_narrativa'])
