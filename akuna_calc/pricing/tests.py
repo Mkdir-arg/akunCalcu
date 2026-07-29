@@ -8,8 +8,10 @@ from django.contrib.auth import get_user_model
 
 from plantillas.models import FormulaOpcional, OpcionalFabrica
 from pricing import config_views
-from pricing.models import Accesorio
-from pricing.forms import AccesorioCreateForm, AccesorioEditForm
+from pricing.models import Accesorio, MaterialCiego
+from pricing.forms import AccesorioCreateForm, AccesorioEditForm, MaterialCiegoForm
+from pricing.serializers import PricingCalculateSerializer
+from pricing.catalog_views import MaterialesCiegosListView
 from pricing.services.calculator import PriceCalculator
 from pricing.tipologia import (
     clasificar_tipologia, resolver_tipologia,
@@ -969,3 +971,118 @@ class OpcionalUnidadFormTest(TestCase):
         })
         self.assertTrue(form.is_valid(), form.errors)
         self.assertIn('unidad', dict(OpcionalFabrica.TIPO_CHOICES))
+# ─── REQ-041: TIRANTES DIVISORES CON RELLENO POR SECCIÓN ──────────────────────
+
+class TirantesSerializerTest(SimpleTestCase):
+    def _base(self, **over):
+        data = {'marco_id': 1, 'ancho_mm': 1000, 'alto_mm': 1500, 'margen_porcentaje': 30}
+        data.update(over)
+        return data
+
+    def test_tirantes_validos(self):
+        data = self._base(tirantes={'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+            {'alto_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 900, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]})
+        s = PricingCalculateSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+
+    def test_suma_distinta_al_alto_falla(self):
+        data = self._base(tirantes={'activo': True, 'secciones': [
+            {'alto_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]})
+        s = PricingCalculateSerializer(data=data)
+        self.assertFalse(s.is_valid())
+
+    def test_menos_de_dos_secciones_falla(self):
+        data = self._base(tirantes={'activo': True, 'secciones': [
+            {'alto_mm': 1500, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]})
+        s = PricingCalculateSerializer(data=data)
+        self.assertFalse(s.is_valid())
+
+    def test_inactivo_es_valido(self):
+        data = self._base(tirantes={'activo': False, 'secciones': []})
+        s = PricingCalculateSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+
+
+class PriceCalculatorSeccionesTest(SimpleTestCase):
+    def test_secciones_vidrio_y_ciego_suman_areas(self):
+        calc = PriceCalculator()
+        calc._get_vidrio_opt = lambda codigo: SimpleNamespace(codigo=codigo, descripcion='Float', precio=100.0)
+        calc._get_material_ciego = lambda mid: SimpleNamespace(id=mid, codigo='CH', nombre='Chapa', precio_m2=200.0)
+        items = []
+        secciones = [
+            {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 500, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]
+        total = calc._calcular_secciones(secciones, 1000, items)
+        # vidrio: 1.0 m2 x 100 = 100 ; ciego: 0.5 m2 x 200 = 100
+        self.assertAlmostEqual(total, 200.0, places=2)
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0]['material']['tipo'], 'vidrio')
+        self.assertEqual(items[1]['material']['tipo'], 'ciego')
+        self.assertAlmostEqual(items[0]['area_m2'], 1.0, places=4)
+        self.assertAlmostEqual(items[1]['area_m2'], 0.5, places=4)
+
+    def test_seccion_con_material_faltante_se_saltea(self):
+        calc = PriceCalculator()
+        calc._get_vidrio_opt = lambda codigo: None
+        calc._get_material_ciego = lambda mid: None
+        items = []
+        total = calc._calcular_secciones(
+            [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'X'}}], 1000, items,
+        )
+        self.assertEqual(total, 0.0)
+        self.assertEqual(items, [])
+
+
+class PriceCalculatorTirantesPerfilTest(SimpleTestCase):
+    def test_perfil_del_tirante_suma_peso_y_precio(self):
+        calc = PriceCalculator()
+        calc._get_perfil = lambda codigo, color_id: SimpleNamespace(
+            codigo=codigo, descripcion='Travesaño', peso_metro=2.0, precio_kg=10.0, corte45=None,
+        )
+        items = []
+        peso = calc._calcular_tirantes_perfil('T1', 2, 1000, None, items)
+        # 1.0 m x 2 x 2.0 kg/m = 4.0 kg ; 4.0 x 10 = 40
+        self.assertAlmostEqual(peso, 4.0, places=4)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['cantidad'], 2)
+        self.assertAlmostEqual(items[0]['precio_total'], 40.0, places=2)
+
+    def test_sin_perfil_no_suma_nada(self):
+        calc = PriceCalculator()
+        items = []
+        self.assertEqual(calc._calcular_tirantes_perfil(None, 2, 1000, None, items), 0.0)
+        self.assertEqual(items, [])
+
+
+class MaterialCiegoModelTest(TestCase):
+    def test_str_y_defaults(self):
+        m = MaterialCiego.objects.create(codigo='CH1', nombre='Chapa lisa', precio_m2=1500)
+        self.assertEqual(str(m), 'CH1 - Chapa lisa')
+        self.assertTrue(m.activo)
+
+
+class MaterialCiegoFormTest(TestCase):
+    def test_form_valido(self):
+        form = MaterialCiegoForm(data={'codigo': 'CH1', 'nombre': 'Chapa', 'precio_m2': '1500', 'activo': True})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_codigo_requerido(self):
+        form = MaterialCiegoForm(data={'codigo': '', 'nombre': 'Chapa', 'precio_m2': '10', 'activo': True})
+        self.assertFalse(form.is_valid())
+
+
+class MaterialesCiegosListViewTest(TestCase):
+    def test_lista_solo_activos_y_precio_float(self):
+        MaterialCiego.objects.create(codigo='A', nombre='Activo', precio_m2=10, activo=True)
+        MaterialCiego.objects.create(codigo='B', nombre='Inactivo', precio_m2=20, activo=False)
+        resp = MaterialesCiegosListView().get(RequestFactory().get('/'))
+        codigos = [m['codigo'] for m in resp.data]
+        self.assertIn('A', codigos)
+        self.assertNotIn('B', codigos)
+        self.assertIsInstance(resp.data[0]['precio_m2'], float)

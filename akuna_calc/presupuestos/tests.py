@@ -13,7 +13,7 @@ from plantillas.models import PedidoFabrica
 from usuarios.models import PerfilAccesoUsuario, RolSistema
 from .forms import PresupuestoForm
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context
+from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context, _serialize_tirantes
 
 
 def crear_cliente():
@@ -1961,3 +1961,45 @@ class ColocacionPresupuestoTest(TestCase):
         self.assertContains(res, 'data-monto-colocacion="50000')
         self.assertContains(res, 'Falta el monto de colocación')  # JS: error si 0
         self.assertContains(res, 'Monto de colocación bajo')       # JS: alerta si < 100.000
+
+
+class TirantesNarrativaTest(SimpleTestCase):
+    def test_narrativa_menciona_la_division(self):
+        snap = {
+            'descripcion_manual': 'Puerta', 'titulo_item': 'Puerta',
+            'cantidad': 1, 'ancho_mm': 900, 'alto_mm': 2000,
+            'tirantes': {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+                {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'descripcion': 'Float 6mm'}},
+                {'alto_mm': 800, 'material': {'tipo': 'ciego', 'nombre': 'Chapa'}},
+            ]},
+        }
+        texto = build_narrative_from_snapshot(snap)
+        self.assertIn('dividida por 1 tirante', texto)
+        self.assertIn('Float 6mm', texto)
+        self.assertIn('Chapa', texto)
+
+    def test_sin_tirantes_no_agrega_clausula(self):
+        snap = {'descripcion_manual': 'Ventana', 'titulo_item': 'Ventana', 'cantidad': 1,
+                'ancho_mm': 1000, 'alto_mm': 1000}
+        self.assertNotIn('tirante', build_narrative_from_snapshot(snap))
+
+
+class SerializeTirantesTest(SimpleTestCase):
+    @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
+    def test_serializa_con_labels(self, mock_vidrio, mock_ciego):
+        mock_vidrio.return_value = [SimpleNamespace(codigo='F6', descripcion='Float 6mm')]
+        mock_ciego.return_value = [SimpleNamespace(id=3, codigo='CH', nombre='Chapa')]
+        tirantes = {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+            {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]}
+        out = _serialize_tirantes(tirantes)
+        self.assertTrue(out['activo'])
+        self.assertEqual(out['perfil_codigo'], 'T1')
+        self.assertEqual(out['secciones'][0]['material']['descripcion'], 'Float 6mm')
+        self.assertEqual(out['secciones'][1]['material']['nombre'], 'Chapa')
+
+    def test_inactivo_devuelve_none(self):
+        self.assertIsNone(_serialize_tirantes({'activo': False, 'secciones': []}))
+        self.assertIsNone(_serialize_tirantes(None))

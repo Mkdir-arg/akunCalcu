@@ -184,6 +184,20 @@
 
 ---
 
+## ADR-016: Tirantes divisores — relleno por sección + catálogo de materiales ciegos
+**Fecha**: 2026-07-27
+**Estado**: Activo
+
+**Contexto**: Una abertura puede dividirse con tirantes (travesaños horizontales) en varias secciones, cada una con un material distinto (ej. puerta con vidrio arriba y chapa abajo). El motor de `pricing` cotizaba **un único vidrio** para toda la abertura (`área × precio × cantidad_hojas`) y el único material con precio/m² era `Vidrio`; no había catálogo de chapa/panel (REQ-041 / FEAT-031).
+
+**Decisión**:
+1. **Nuevo modelo `MaterialCiego`** (chapa/panel/tablero) como tabla **administrada por Django** (no legacy `managed=False`) con su migración `pricing/0005` — es un catálogo nuevo, sin equivalente histórico.
+2. **Relleno por sección**: con tirantes activos, el precio del relleno = Σ (área de cada sección × precio/m² de su material: vidrio o ciego). Cada tirante suma su perfil (longitud = ancho) como cualquier otro perfil, y su peso entra al tratamiento. Sin tirantes, el motor queda **idéntico** (rama de vidrio único).
+3. **Alcance v1**: solo divisiones **horizontales**; las secciones suman el paño completo **sin** multiplicar por `cantidad_hojas` (pensado para 1 paño: puerta / paño fijo). Multi-hoja (correderas), grilla vertical, rebaje por sección y bajada a la orden de fabricación quedan fuera.
+4. **Persistencia sin migración en `presupuestos`**: la estructura de tirantes va en `ItemPresupuesto.resultado_json` (`desglose.secciones`) y en el `snapshot_item` (`tirantes`), aditiva y compatible con ítems previos.
+
+**Consecuencias**: El cotizador cubre aberturas mixtas con precio correcto por área. El catálogo de materiales ciegos se administra desde Fábrica (permiso `fabrica.materiales_ciegos`). El precio de secciones en multi-hoja quedaría subestimado si se forzara ahí — por eso el UI habilita tirantes recién con marco elegido y la doc aclara el alcance. La migración `pricing/0005` debe correrse en todos los entornos.
+
 ## ADR-015: Three.js para el visor 3D de aberturas (sin build)
 **Fecha**: 2026-07-24
 **Estado**: Activo
