@@ -29,6 +29,7 @@ from ..models import (
     Hoja,
     Interior,
     Marco,
+    MaterialCiego,
     Mosquitero,
     Perfil,
     Producto,
@@ -72,10 +73,36 @@ class PriceCalculator:
             if hoja_id and interior.hoja_id != hoja_id:
                 raise PricingError("El interior no pertenece a la hoja seleccionada.")
 
+        # Cantidad de hojas: la define el producto (campo "Cantidad de Hojas").
+        # Multiplica SOLO el relleno —vidrio único y secciones de tirantes— porque
+        # es lo que se repite por paño. El despiece (perfiles y accesorios) NO se
+        # multiplica: ya trae el conteo de hojas en sus propias fórmulas.
+        try:
+            cantidad_hojas_producto = int(marco.producto.cantidad_hojas) if marco.producto.cantidad_hojas else 1
+        except Exception as e:
+            logger.warning(f"Error obteniendo cantidad_hojas del marco: {e}")
+            cantidad_hojas_producto = 1
+        cantidad_hojas_producto = max(1, cantidad_hojas_producto)
+
+        # El color NO entra en el precio del perfil: el perfil se cotiza en crudo
+        # (su precio/kg) y el color se cobra en el TRATAMIENTO (precio por kilo
+        # sobre el peso total de los perfiles). Derivar el color del tratamiento
+        # para elegir la fila del perfil se evaluó y se descartó: cobraría el color
+        # dos veces. Ver ADR-016.
         variables = {
             "Ancho": cleaned["ancho_mm"],
             "Alto": cleaned["alto_mm"],
-            "Cantidad": cleaned["cantidad_hojas"],
+            # `Cantidad` (alias `hojas`) en las fórmulas: se mantiene en 1 salvo que
+            # el payload mande un valor explícito.
+            #
+            # NO se usa acá `Producto.cantidad_hojas`: el despiece ya tiene la
+            # cantidad de hojas incorporada en sus propias fórmulas (cada producto
+            # tiene su marco/hoja con el conteo por producto). Se verificó contra un
+            # presupuesto real de una corredera de 2 hojas: los perfiles de hoja
+            # salen con cantidad 2 (uno por hoja) evaluando `Cantidad` = 1, así que
+            # inyectar 2 acá duplicaría los perfiles de toda fórmula que la use.
+            # Las hojas sí multiplican el RELLENO (vidrio único y secciones).
+            "Cantidad": cleaned.get("cantidad_hojas") or 1,
             "ProductoId": cleaned.get("producto_id"),
         }
 
@@ -204,47 +231,68 @@ class PriceCalculator:
                 accesorios_items,
             )
 
-        # Vidrios — usa el seleccionado por el usuario; si no hay, auto-detecta desde la hoja
+        # Relleno de la abertura: por secciones (tirantes) o por vidrio único.
+        # Con tirantes, la abertura se divide en bandas horizontales; cada sección
+        # aporta area × precio_m² de su material (vidrio o material ciego) y cada
+        # tirante suma su perfil (peso × precio_kg), como cualquier otro perfil.
+        tirantes_cfg = cleaned.get("tirantes") or {}
+        secciones_cfg = tirantes_cfg.get("secciones") or []
+        tirantes_activo = bool(tirantes_cfg.get("activo")) and len(secciones_cfg) >= 2
+
         vidrio_detalle = None
         precio_vidrio = 0.0
-        vidrio_codigo = cleaned.get("vidrio_codigo")
-        vidrio_obj, rebaje_ancho_formula, rebaje_alto_formula = self._get_vidrio_formula_context(
-            hoja_id,
-            vidrio_codigo,
-        )
+        secciones_items: List[Dict[str, Any]] = []
+        total_secciones = 0.0
 
-        if vidrio_obj:
-            vidrio = vidrio_obj
-            precio_m2 = _to_float(vidrio.precio)
+        if tirantes_activo:
+            self._validar_secciones(secciones_cfg, cleaned["alto_mm"])
+            total_secciones = self._calcular_secciones(
+                secciones_cfg,
+                cleaned["ancho_mm"],
+                cantidad_hojas_producto,
+                secciones_items,
+            )
+            peso_total_perfiles += self._calcular_tirantes_perfil(
+                tirantes_cfg.get("perfil_codigo"),
+                (len(secciones_cfg) - 1) * cantidad_hojas_producto,
+                cleaned["ancho_mm"],
+                cleaned["color_id"],
+                perfiles_items,
+            )
+        else:
+            # Vidrio único — usa el seleccionado; si no hay, auto-detecta desde la hoja.
+            vidrio_codigo = cleaned.get("vidrio_codigo")
+            vidrio_obj, rebaje_ancho_formula, rebaje_alto_formula = self._get_vidrio_formula_context(
+                hoja_id,
+                vidrio_codigo,
+            )
 
-            ancho_vidrio = cleaned["ancho_mm"]
-            alto_vidrio = cleaned["alto_mm"]
+            if vidrio_obj:
+                vidrio = vidrio_obj
+                precio_m2 = _to_float(vidrio.precio)
 
-            if rebaje_ancho_formula:
-                ancho_vidrio = self._eval_formula(rebaje_ancho_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
-            if rebaje_alto_formula:
-                alto_vidrio = self._eval_formula(rebaje_alto_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+                ancho_vidrio = cleaned["ancho_mm"]
+                alto_vidrio = cleaned["alto_mm"]
 
-            if ancho_vidrio > 0 and alto_vidrio > 0:
-                area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
+                if rebaje_ancho_formula:
+                    ancho_vidrio = self._eval_formula(rebaje_ancho_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
+                if rebaje_alto_formula:
+                    alto_vidrio = self._eval_formula(rebaje_alto_formula, {"Ancho": cleaned["ancho_mm"], "Alto": cleaned["alto_mm"]})
 
-                try:
-                    cantidad_hojas_producto = int(marco.producto.cantidad_hojas) if marco.producto.cantidad_hojas else 1
-                except Exception as e:
-                    logger.warning(f"Error obteniendo cantidad_hojas del marco: {e}")
-                    cantidad_hojas_producto = 1
+                if ancho_vidrio > 0 and alto_vidrio > 0:
+                    area_m2 = (ancho_vidrio * alto_vidrio) / 1_000_000
 
-                precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
-                vidrio_detalle = {
-                    "codigo": vidrio.codigo,
-                    "descripcion": vidrio.descripcion,
-                    "ancho_mm": round(ancho_vidrio, 2),
-                    "alto_mm": round(alto_vidrio, 2),
-                    "area_m2": round(area_m2, 4),
-                    "precio_m2": precio_m2,
-                    "cantidad_hojas": cantidad_hojas_producto,
-                    "precio_total": round(precio_vidrio, 2),
-                }
+                    precio_vidrio = area_m2 * precio_m2 * cantidad_hojas_producto
+                    vidrio_detalle = {
+                        "codigo": vidrio.codigo,
+                        "descripcion": vidrio.descripcion,
+                        "ancho_mm": round(ancho_vidrio, 2),
+                        "alto_mm": round(alto_vidrio, 2),
+                        "area_m2": round(area_m2, 4),
+                        "precio_m2": precio_m2,
+                        "cantidad_hojas": cantidad_hojas_producto,
+                        "precio_total": round(precio_vidrio, 2),
+                    }
 
         # Tratamientos
         tratamiento_total = 0.0
@@ -296,9 +344,10 @@ class PriceCalculator:
         total_perfiles = sum(item["precio_total"] for item in perfiles_items)
         total_accesorios = sum(item["precio_total"] for item in accesorios_items)
         total_vidrios = round(precio_vidrio, 2)
+        total_secciones_r = round(total_secciones, 2)
         total_tratamiento = round(tratamiento_total, 2)
 
-        subtotal = total_perfiles + total_accesorios + total_vidrios + total_tratamiento + total_mano_obra + total_opcionales
+        subtotal = total_perfiles + total_accesorios + total_vidrios + total_secciones_r + total_tratamiento + total_mano_obra + total_opcionales
         margen = subtotal * cleaned["margen_porcentaje"] / 100.0
         total = subtotal + margen
 
@@ -310,6 +359,7 @@ class PriceCalculator:
                 "perfiles": perfiles_items,
                 "accesorios": accesorios_items,
                 "vidrios": vidrio_detalle,
+                "secciones": secciones_items if tirantes_activo else None,
                 "tratamiento": tratamiento_detalle,
                 "mano_obra": mano_obra_detalle,
                 "opcionales": opcionales_items if opcionales_items else None,
@@ -318,6 +368,7 @@ class PriceCalculator:
                 "total_perfiles": round(total_perfiles, 2),
                 "total_accesorios": round(total_accesorios, 2),
                 "total_vidrios": round(total_vidrios, 2),
+                "total_secciones": total_secciones_r,
                 "total_tratamiento": round(total_tratamiento, 2),
                 "total_mano_obra": round(total_mano_obra, 2),
                 "total_opcionales": round(total_opcionales, 2),
@@ -361,10 +412,15 @@ class PriceCalculator:
             "margen_porcentaje": margen,
             "rebaje_vidrio_mm": configuracion.get("rebaje_vidrio_mm", 0),
             "opcionales": configuracion.get("opcionales", []),
+            "tirantes": configuracion.get("tirantes") or {},
         }
 
-        cantidad_hojas = configuracion.get("cantidad_hojas", 1)
-        cleaned["cantidad_hojas"] = int(cantidad_hojas)
+        # Se conserva None cuando no viene, para poder distinguir "no lo mandaron"
+        # (→ se usa la cantidad de hojas del producto) de "mandaron 1".
+        cantidad_hojas = configuracion.get("cantidad_hojas")
+        cleaned["cantidad_hojas"] = (
+            int(cantidad_hojas) if cantidad_hojas not in (None, "") else None
+        )
 
         return cleaned
 
@@ -928,8 +984,131 @@ class PriceCalculator:
                 })
             
             total_opcionales += precio_opcional
-        
+
         return total_opcionales
+
+    def _get_material_ciego(self, material_id: Any) -> Optional[MaterialCiego]:
+        if material_id in (None, ""):
+            return None
+        return MaterialCiego.objects.filter(pk=material_id, activo=True).first()
+
+    def _get_vidrio_opt(self, codigo: Optional[str]) -> Optional[Vidrio]:
+        if not codigo:
+            return None
+        return Vidrio.objects.filter(pk=codigo).first()
+
+    def _validar_secciones(self, secciones_config: List[Dict[str, Any]], alto_mm: int) -> None:
+        """Valida las secciones ANTES de cotizar.
+
+        Vive en el calculador (y no sólo en el serializer del API) porque el
+        precio que se cobra se recalcula también desde el guardado del ítem, que
+        no pasa por el serializer. Si las secciones no cubren el alto exacto, el
+        área cotizada sería menor que la abertura y se cobraría de menos.
+        """
+        suma = 0
+        for idx, seccion in enumerate(secciones_config, start=1):
+            alto_seccion = _to_float(seccion.get("alto_mm"))
+            if alto_seccion <= 0:
+                raise PricingError(f"La sección {idx} necesita un alto mayor a cero.")
+            suma += int(alto_seccion)
+        if suma != int(alto_mm):
+            raise PricingError(
+                f"La suma de las secciones ({suma} mm) debe ser igual al alto de la abertura ({int(alto_mm)} mm)."
+            )
+
+    def _calcular_secciones(
+        self,
+        secciones_config: List[Dict[str, Any]],
+        ancho_mm: float,
+        cantidad_hojas: int,
+        items: List[Dict[str, Any]],
+    ) -> float:
+        """Precio del relleno de cada sección: area × precio_m² × cantidad de hojas.
+
+        El ancho de cada sección es el ancho de la abertura y el alto lo define el
+        usuario (área bruta, sin rebaje). Vidrio → precio del vidrio; ciego →
+        precio del material ciego. Se multiplica por la cantidad de hojas del
+        producto, igual que el vidrio único: cada hoja lleva su propio paño.
+
+        Un material inexistente o dado de baja es un ERROR (no se saltea): si se
+        ignorara, la sección desaparecería del precio y se cobraría de menos.
+        """
+        total = 0.0
+        cantidad_hojas = max(1, int(cantidad_hojas or 1))
+        for idx, seccion in enumerate(secciones_config, start=1):
+            alto_seccion = _to_float(seccion.get("alto_mm"))
+            if alto_seccion <= 0 or ancho_mm <= 0:
+                raise PricingError(f"La sección {idx} tiene medidas inválidas.")
+
+            material = seccion.get("material") or {}
+            tipo = material.get("tipo")
+
+            if tipo == "ciego":
+                mat = self._get_material_ciego(material.get("id"))
+                if not mat:
+                    raise PricingError(
+                        f"El material ciego de la sección {idx} no existe o está dado de baja."
+                    )
+                precio_m2 = _to_float(mat.precio_m2)
+                material_ref = {"tipo": "ciego", "id": mat.id, "codigo": mat.codigo, "nombre": mat.nombre}
+                descripcion = f"{mat.codigo} - {mat.nombre}"
+            else:
+                vidrio = self._get_vidrio_opt(material.get("codigo"))
+                if not vidrio:
+                    raise PricingError(
+                        f"El vidrio de la sección {idx} no existe: {material.get('codigo') or '(sin elegir)'}."
+                    )
+                precio_m2 = _to_float(vidrio.precio)
+                material_ref = {"tipo": "vidrio", "codigo": vidrio.codigo, "descripcion": vidrio.descripcion}
+                descripcion = f"{vidrio.codigo} - {vidrio.descripcion}"
+
+            area_m2 = (ancho_mm * alto_seccion) / 1_000_000
+            precio = area_m2 * precio_m2 * cantidad_hojas
+            items.append({
+                "orden": idx,
+                "ancho_mm": round(ancho_mm, 2),
+                "alto_mm": round(alto_seccion, 2),
+                "area_m2": round(area_m2, 4),
+                "cantidad_hojas": cantidad_hojas,
+                "material": material_ref,
+                "descripcion": descripcion,
+                "precio_m2": precio_m2,
+                "precio_total": round(precio, 2),
+            })
+            total += precio
+        return total
+
+    def _calcular_tirantes_perfil(
+        self,
+        perfil_codigo: Optional[str],
+        cantidad_tirantes: int,
+        ancho_mm: float,
+        color_id: Optional[int],
+        items: List[Dict[str, Any]],
+    ) -> float:
+        """Perfil de cada tirante divisor: longitud = ancho de la abertura.
+
+        Devuelve el peso total (para que lo sume el tratamiento). Si no se eligió
+        perfil, no cuesta nada (el tirante solo divide las secciones)."""
+        if not perfil_codigo or cantidad_tirantes <= 0 or ancho_mm <= 0:
+            return 0.0
+        perfil = self._get_perfil(perfil_codigo, color_id)
+        longitud_m = ancho_mm / 1000.0
+        peso_kg = longitud_m * cantidad_tirantes * _to_float(perfil.peso_metro)
+        precio_total = peso_kg * _to_float(perfil.precio_kg)
+        items.append({
+            "codigo": perfil.codigo,
+            "descripcion": perfil.descripcion,
+            "cantidad": cantidad_tirantes,
+            "longitud_mm": round(ancho_mm, 2),
+            "longitud_m": round(longitud_m, 4),
+            "peso_kg": round(peso_kg, 4),
+            "precio_kg": _to_float(perfil.precio_kg),
+            "precio_total": round(precio_total, 2),
+            "angulo": "",
+            "segmento": "tirante",
+        })
+        return peso_kg
 
 
 def calcular_precio(configuracion: Dict[str, Any]) -> Dict[str, Any]:

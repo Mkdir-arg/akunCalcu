@@ -120,6 +120,7 @@ ACCESS_MODULES = [
             {'code': 'fabrica.accesorios', 'label': 'Accesorios', 'route_name': 'config-accesorios'},
             {'code': 'fabrica.vidrios', 'label': 'Vidrios', 'route_name': 'config-vidrios'},
             {'code': 'fabrica.tratamientos', 'label': 'Tratamientos', 'route_name': 'config-tratamientos'},
+            {'code': 'fabrica.materiales_ciegos', 'label': 'Materiales ciegos', 'route_name': 'config-materiales-ciegos'},
         ],
     },
     {

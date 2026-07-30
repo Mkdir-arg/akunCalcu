@@ -1,8 +1,8 @@
 # REQ-041 — Tirantes divisores con relleno por sección en el cotizador
 
-- **Estado:** En desarrollo
+- **Estado:** Implementado
 - **Fecha:** 2026-07-27
-- **Derivó en:** _(pendiente FEAT-XXX)_
+- **Derivó en:** [FEAT-031](../features/FEAT-031-tirantes-divisores-relleno-por-seccion.md)
 
 ## Contexto
 

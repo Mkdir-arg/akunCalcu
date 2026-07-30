@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% block title %}Configuración - Materiales Ciegos{% endblock %}
+{% block content %}
+{% csrf_token %}
+<div class="max-w-full mx-auto px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-layer-group mr-3"></i>Materiales Ciegos
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Chapa, panel y tablero para el relleno de secciones (tirantes)</p>
+        </div>
+        <a href="{% url 'config-material-ciego-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
+            <i class="fas fa-plus mr-2"></i>Nuevo Material
+        </a>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        {% include 'core/includes/table_filters.html' with table_filter_id='materiales-ciegos-table' table_filter_placeholder='Buscar por código o nombre...' %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=nombre&dir={% if sort == 'nombre' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Nombre{% if sort == 'nombre' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio_m2&dir={% if sort == 'precio_m2' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio/m²{% if sort == 'precio_m2' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for material in materiales %}
+                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="materiales-ciegos-table">
+                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ material.codigo }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ material.nombre }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ material.precio_m2|default:"-" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'config-material-ciego-edit' material.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="confirmarDesactivar('{% url 'config-material-ciego-delete' material.pk %}', '{{ material.nombre|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center">
+                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay materiales ciegos registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr data-filter-empty="materiales-ciegos-table" class="hidden">
+                        <td colspan="4" class="px-6 py-8 text-center">
+                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                            <p class="text-slate-500 font-medium">No hay materiales que coincidan con los filtros</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarDesactivar(url, nombre) {
+    Swal.fire({
+        title: '¿Desactivar material?',
+        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, desactivar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+{% endblock %}

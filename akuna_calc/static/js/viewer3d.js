@@ -11,6 +11,7 @@
  *   - hojas: cantidad de hojas (se acota a las válidas del tipo)
  *   - mosquitero / premarco: boolean
  *   - vidrio: incoloro | dvh | gris | bronce | esmerilado
+ *   - tirantes: [{ alto_mm, ciego }] (opcional) — secciones divididas por tirantes
  *
  * NO requiere build: se carga como ESM vía import map (three desde CDN).
  */
@@ -49,7 +50,8 @@ let perfilMat, glassMat, spacerMat, handleMat, grooveMat, mallaTex, mallaMat;
 let windowGroup = null, movers = [], curOpen = 0, targetOpen = 0, framed = false;
 
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
-                mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco' };
+                mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco',
+                tirantes: null };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -188,7 +190,7 @@ function build() {
 
   const Wi = W - 2 * pw, Hi = H - 2 * pw;
 
-  function buildLeaf(lw, lh, withHandle, handleSide, tir) {
+  function buildLeaf(lw, lh, withHandle, handleSide, tir, secciones) {
     const leaf = new THREE.Group();
     leaf.add(frame(lw, lh, lf, ld, 0));
     // Zócalo inferior en puertas (panel ciego bajo el vidrio): es lo que hace
@@ -200,9 +202,14 @@ function build() {
       zoc.castShadow = true; zoc.receiveShadow = true;
       leaf.add(zoc);
     }
-    const gl = glass(lw - 2 * lf, lh - 2 * lf - zocaloH, 0, def);
-    gl.position.y = zocaloH / 2;
-    leaf.add(gl);
+    const fillW = lw - 2 * lf, fillH = lh - 2 * lf - zocaloH, fillY = zocaloH / 2;
+    if (secciones) {
+      addSecciones(leaf, fillW, fillH, fillY, 0.002, secciones);
+    } else {
+      const gl = glass(fillW, fillH, 0, def);
+      gl.position.y = fillY;
+      leaf.add(gl);
+    }
     if (withHandle) {
       const h = handle();
       if (puerta) h.scale.setScalar(1.5);   // herraje de puerta, más visible
@@ -222,9 +229,36 @@ function build() {
     return leaf;
   }
 
+  // Secciones de tirantes: bandas horizontales (vidrio o panel ciego) + barra
+  // divisora, dibujadas DENTRO del target (hoja o paño) para que acompañen la
+  // apertura. `secs` = [{alto_mm, ciego}].
+  const tir3 = (Array.isArray(state.tirantes) && state.tirantes.length >= 2) ? state.tirantes : null;
+  function addSecciones(target, w, h, yBase, z, secs) {
+    const totalMm = secs.reduce((a, s) => a + (parseInt(s.alto_mm, 10) || 0), 0);
+    if (totalMm <= 0) { return; }
+    let yTop = yBase + h / 2;
+    secs.forEach((s, i) => {
+      const segH = ((parseInt(s.alto_mm, 10) || 0) / totalMm) * h;
+      const yc = yTop - segH / 2;
+      if (s.ciego) {
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(w, Math.max(segH - 0.006, 0.02), 0.02), perfilMat);
+        panel.position.set(0, yc, z); panel.castShadow = true; panel.receiveShadow = true; target.add(panel);
+      } else {
+        const gseg = glass(w, Math.max(segH - 0.006, 0.02), z, def);
+        gseg.position.y = yc; target.add(gseg);
+      }
+      if (i < secs.length - 1) {
+        const bar = new THREE.Mesh(new RoundedBoxGeometry(w + 0.02, 0.028, 0.03, 2, 0.004), perfilMat);
+        bar.position.set(0, yTop - segH, z); bar.castShadow = true; target.add(bar);
+      }
+      yTop -= segH;
+    });
+  }
+
   if (T.modo === 'none') {
     g.add(frame(Wi, Hi, lf * 0.7, ld * 0.7, 0.004));
-    g.add(glass(Wi - 2 * lf, Hi - 2 * lf, 0, def));
+    if (tir3) { addSecciones(g, Wi - 2 * lf, Hi - 2 * lf, 0, 0.004, tir3); }
+    else { g.add(glass(Wi - 2 * lf, Hi - 2 * lf, 0, def)); }
   } else if (T.modo === 'slide') {
     const colW = Wi / nH, overlap = lf;
     for (let i = 0; i < nH; i++) {
@@ -236,7 +270,7 @@ function build() {
   } else if (T.modo === 'swing') {
     if (nH === 1) {
       // Bisagra a la izquierda → manija en el borde opuesto (derecho)
-      const leaf = buildLeaf(Wi, Hi, true, 'der', false);
+      const leaf = buildLeaf(Wi, Hi, true, 'der', false, tir3);
       const hinge = new THREE.Group(); hinge.position.set(-Wi / 2, 0, 0.01); leaf.position.set(Wi / 2, 0, 0); hinge.add(leaf); g.add(hinge);
       movers.push({ apply: t => { hinge.rotation.y = -(Math.PI * 0.44) * t; } });
     } else {
@@ -250,11 +284,11 @@ function build() {
       }
     }
   } else if (T.modo === 'tilt') {
-    const leaf = buildLeaf(Wi, Hi, true, 'izq', false);
+    const leaf = buildLeaf(Wi, Hi, true, 'izq', false, tir3);
     const hinge = new THREE.Group(); hinge.position.set(0, -Hi / 2, 0.01); leaf.position.set(0, Hi / 2, 0); hinge.add(leaf); g.add(hinge);
     movers.push({ apply: t => { hinge.rotation.x = -(Math.PI * 0.09) * t; } });
   } else if (T.modo === 'project') {
-    const leaf = buildLeaf(Wi, Hi, true, 'izq', false);
+    const leaf = buildLeaf(Wi, Hi, true, 'izq', false, tir3);
     const hinge = new THREE.Group(); hinge.position.set(0, Hi / 2, 0.01); leaf.position.set(0, -Hi / 2, 0); hinge.add(leaf); g.add(hinge);
     movers.push({ apply: t => { hinge.rotation.x = (Math.PI * 0.11) * t; } });
   }
@@ -312,6 +346,7 @@ function applyParams(params) {
   state.premarco = !!params.premarco;
   state.vidrio = VIDRIOS[params.vidrio] ? params.vidrio : 'incoloro';
   state.color = PERFILES[params.color] ? params.color : 'blanco';
+  state.tirantes = Array.isArray(params.tirantes) ? params.tirantes : null;
   const p = PERFILES[state.color];
   perfilMat.color.setHex(p.color); perfilMat.metalness = p.metalness; perfilMat.roughness = p.roughness;
   curOpen = 0;

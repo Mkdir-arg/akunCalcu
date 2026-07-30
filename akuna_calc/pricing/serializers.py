@@ -5,6 +5,30 @@ from __future__ import annotations
 from rest_framework import serializers
 
 
+class TiranteSeccionMaterialSerializer(serializers.Serializer):
+    tipo = serializers.ChoiceField(choices=['vidrio', 'ciego'])
+    codigo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class TiranteSeccionSerializer(serializers.Serializer):
+    alto_mm = serializers.IntegerField(min_value=1)
+    material = TiranteSeccionMaterialSerializer()
+
+
+class TirantesSerializer(serializers.Serializer):
+    activo = serializers.BooleanField(required=False, default=False)
+    perfil_codigo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    secciones = TiranteSeccionSerializer(many=True, required=False, default=list)
+
+    def validate(self, data):
+        if data.get('activo') and len(data.get('secciones') or []) < 2:
+            raise serializers.ValidationError(
+                'Con tirantes activos se necesitan al menos 2 secciones.'
+            )
+        return data
+
+
 class PricingCalculateSerializer(serializers.Serializer):
     producto_id = serializers.IntegerField(required=False, allow_null=True)
     marco_id = serializers.IntegerField()
@@ -24,8 +48,20 @@ class PricingCalculateSerializer(serializers.Serializer):
     rebaje_vidrio_mm = serializers.IntegerField(required=False, default=0)
     cantidad_hojas = serializers.IntegerField(required=False, min_value=1)
     opcionales = serializers.ListField(child=serializers.DictField(), required=False, default=list)
+    tirantes = TirantesSerializer(required=False)
 
     def validate_margen_porcentaje(self, value: float) -> float:
         if value < 0:
             raise serializers.ValidationError("El margen no puede ser negativo.")
         return value
+
+    def validate(self, data):
+        tirantes = data.get('tirantes')
+        if tirantes and tirantes.get('activo'):
+            secciones = tirantes.get('secciones') or []
+            suma = sum(int(s['alto_mm']) for s in secciones)
+            if suma != int(data['alto_mm']):
+                raise serializers.ValidationError(
+                    f"La suma de las secciones ({suma} mm) debe ser igual al alto de la abertura ({data['alto_mm']} mm)."
+                )
+        return data

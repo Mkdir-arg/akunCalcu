@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List
 
 from plantillas.models import OpcionalFabrica
-from pricing.models import Hoja, Interior, Marco, Tratamiento, Vidrio
+from pricing.models import Hoja, Interior, Marco, MaterialCiego, Tratamiento, Vidrio
 
 
 _GENERIC_DESCRIPTIONS = {
@@ -132,6 +132,14 @@ def build_narrative_from_snapshot(snapshot: Dict[str, Any]) -> str:
 
     if vidrio_label:
         clauses.append(f'vidrio {vidrio_label}')
+
+    tirantes = snapshot.get('tirantes')
+    if isinstance(tirantes, dict) and tirantes.get('secciones'):
+        materiales = [_tirantes_material_label(s.get('material') or {}) for s in tirantes['secciones']]
+        n_tirantes = max(0, len(materiales) - 1)
+        if n_tirantes:
+            plural = 's' if n_tirantes != 1 else ''
+            clauses.append(f'dividida por {n_tirantes} tirante{plural} en {_humanize_list(materiales)}')
 
     if tratamiento_label:
         clauses.append(f'terminación {tratamiento_label.lower()}')
@@ -282,6 +290,68 @@ def _serialize_options(options_data: Iterable[Dict[str, Any]]) -> List[Dict[str,
     return serialized
 
 
+def _serialize_tirantes(tirantes: Any) -> Dict[str, Any] | None:
+    """Serializa la config de tirantes al snapshot, resolviendo las etiquetas de
+    material (para narrativa/PDF) y conservando codigo/id (para reconstruir el
+    ítem al editar)."""
+    if not isinstance(tirantes, dict) or not tirantes.get('activo'):
+        return None
+
+    secciones_in = tirantes.get('secciones') or []
+    if len(secciones_in) < 2:
+        return None
+
+    codigos_vidrio = {
+        _clean_text((s.get('material') or {}).get('codigo'))
+        for s in secciones_in
+        if (s.get('material') or {}).get('tipo') != 'ciego'
+    }
+    codigos_vidrio.discard('')
+    vidrios = {v.codigo: v for v in Vidrio.objects.filter(codigo__in=codigos_vidrio)} if codigos_vidrio else {}
+
+    ids_ciego = {
+        (s.get('material') or {}).get('id')
+        for s in secciones_in
+        if (s.get('material') or {}).get('tipo') == 'ciego' and (s.get('material') or {}).get('id') not in (None, '')
+    }
+    ciegos = {m.id: m for m in MaterialCiego.objects.filter(id__in=ids_ciego)} if ids_ciego else {}
+
+    secciones_out: List[Dict[str, Any]] = []
+    for seccion in secciones_in:
+        material = seccion.get('material') or {}
+        if material.get('tipo') == 'ciego':
+            mat = ciegos.get(material.get('id'))
+            material_out = {
+                'tipo': 'ciego',
+                'id': material.get('id'),
+                'codigo': _clean_text(getattr(mat, 'codigo', material.get('codigo'))),
+                'nombre': _clean_text(getattr(mat, 'nombre', '')),
+            }
+        else:
+            vidrio = vidrios.get(_clean_text(material.get('codigo')))
+            material_out = {
+                'tipo': 'vidrio',
+                'codigo': _clean_text(material.get('codigo')),
+                'descripcion': _clean_text(getattr(vidrio, 'descripcion', '')),
+            }
+        secciones_out.append({
+            'alto_mm': seccion.get('alto_mm'),
+            'material': material_out,
+        })
+
+    return {
+        'activo': True,
+        'perfil_codigo': _clean_text(tirantes.get('perfil_codigo')),
+        'secciones': secciones_out,
+    }
+
+
+def _tirantes_material_label(material: Dict[str, Any]) -> str:
+    if material.get('tipo') == 'ciego':
+        return _clean_text(material.get('nombre')) or _clean_text(material.get('codigo')) or 'material ciego'
+    return _clean_text(material.get('descripcion')) or _clean_text(material.get('codigo')) or 'vidrio'
+
+
 def build_item_snapshot(config: Dict[str, Any], descripcion_manual: str, cantidad: int = 1) -> Dict[str, Any]:
     marco = (
         Marco.objects
@@ -327,7 +397,14 @@ def build_item_snapshot(config: Dict[str, Any], descripcion_manual: str, cantida
         } if vidrio else None,
         'tratamiento': _serialize_entity(tratamiento, 'descripcion'),
         'opcionales': _serialize_options(config.get('opcionales') or []),
+        'tirantes': _serialize_tirantes(config.get('tirantes')),
     }
+
+    # Con tirantes el precio sale del relleno de cada sección y el vidrio único
+    # NO se cotiza: no lo anunciamos (el PDF y la orden listarían un vidrio que
+    # no se presupuestó). Los materiales reales van en `tirantes.secciones`.
+    if snapshot['tirantes']:
+        snapshot['vidrio'] = None
 
     snapshot['titulo_item'] = _build_title(snapshot)
     snapshot['descripcion_narrativa'] = build_narrative_from_snapshot(snapshot)

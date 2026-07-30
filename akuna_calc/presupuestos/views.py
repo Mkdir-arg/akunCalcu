@@ -345,6 +345,13 @@ def _fields_item_desde_post(request, presupuesto):
     except (json.JSONDecodeError, TypeError):
         pass
 
+    try:
+        tirantes = json.loads(data.get('tirantes_json', '') or '{}')
+        if isinstance(tirantes, dict) and tirantes.get('activo'):
+            config['tirantes'] = tirantes
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     descripcion = descripcion or 'Abertura sin descripción'
     try:
         resultado = calcular_precio(config)
@@ -543,6 +550,21 @@ def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
     tipo_abertura = _cortar('tipo_abertura', abertura_completa)
     nota = abertura_completa if len(abertura_completa) > len(tipo_abertura) else ''
 
+    # Abertura dividida por tirantes: no hay un único vidrio, sino un material por
+    # sección (de arriba hacia abajo). El taller necesita ese detalle para cortar,
+    # así que va al casillero de vidrio y, completo, a la nota.
+    tirantes_snap = snapshot.get('tirantes') or {}
+    vidrio_texto = (snapshot.get('vidrio') or {}).get('descripcion', '')
+    if tirantes_snap.get('secciones'):
+        partes = []
+        for sec in tirantes_snap['secciones']:
+            mat = sec.get('material') or {}
+            etiqueta = mat.get('nombre') or mat.get('descripcion') or mat.get('codigo') or 's/d'
+            partes.append(f"{sec.get('alto_mm')}mm {etiqueta}")
+        vidrio_texto = ' + '.join(partes)
+        detalle_tirantes = f'Dividida por tirantes: {vidrio_texto}.'
+        nota = f'{nota}\n{detalle_tirantes}'.strip() if nota else detalle_tirantes
+
     orden_fabricacion = OrdenFabricacion.objects.create(
         pedido=pedido,
         item_presupuesto=item,
@@ -557,7 +579,7 @@ def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
         tipo_abertura=tipo_abertura,
         linea=_cortar('linea', (snapshot.get('linea') or {}).get('nombre', '')),
         color=_cortar('color', (snapshot.get('tratamiento') or {}).get('descripcion', '')),
-        tipo_vidrio=_cortar('tipo_vidrio', (snapshot.get('vidrio') or {}).get('descripcion', '')),
+        tipo_vidrio=_cortar('tipo_vidrio', vidrio_texto),
         nota=nota,
     )
 
