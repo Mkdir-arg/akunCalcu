@@ -17,11 +17,13 @@ avise por WhatsApp. Un panel web permite seguir el estado de cada solicitud.
 
 ```
 Gmail Trigger (casilla empresa)
-  → IA clasifica "¿es pedido de presupuesto?" + extrae nombre/tel/email/mensaje
+  → si el subject es "Nuevo formulario web": parser del formulario de la página
+    si no: IA clasifica "¿es pedido de presupuesto?" + extrae nombre/tel/email/mensaje
   → POST /solicitudes/api/crear/  (header X-Bot-Secret)
-      → Django crea SolicitudPresupuesto + asigna vendedor round-robin (puntero en DB)
-      → devuelve {nombre, email, whatsapp} del vendedor
-  → n8n reenvía el mail al vendedor + le manda WhatsApp
+      → Django filtra spam (FIX-019): si lo es, queda "descartada" y NO consume turno
+      → si no, crea SolicitudPresupuesto + asigna vendedor round-robin (puntero en DB)
+      → devuelve {nombre, email, whatsapp} del vendedor + flag `notificar`
+  → si notificar: n8n reenvía el mail al vendedor + le manda WhatsApp
 Cron diario de n8n (08:00):
   → POST /solicitudes/api/recordatorios/  → un ítem por vendedor con el listado de sus pendientes
   → n8n manda UN WhatsApp por vendedor (listado en una línea) → POST /solicitudes/api/marcar-recordatorio/

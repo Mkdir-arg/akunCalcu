@@ -37,8 +37,11 @@ def _payload_solicitud(solicitud, duplicada=False):
         # n8n usa este flag para decidir si reenvía el mail y manda el WhatsApp:
         # cubre en una sola condición el duplicado, el spam descartado y el caso
         # de que no haya vendedores en el pool.
-        'notificar': bool(vendedor_data) and not duplicada
-        and solicitud.estado == SolicitudPresupuesto.ESTADO_ASIGNADA,
+        'notificar': (
+            bool(vendedor_data)
+            and not duplicada
+            and solicitud.estado == SolicitudPresupuesto.ESTADO_ASIGNADA
+        ),
         'solicitud_id': solicitud.pk,
         'estado': solicitud.estado,
         'vendedor': vendedor_data,

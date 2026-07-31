@@ -22,6 +22,26 @@
 
 ## Fixes registrados
 
+### FIX-019 — El spam del formulario web se asignaba a un vendedor y le gastaba el turno de la rotación
+**Fecha**: 2026-07-31
+**Reportado por**: Análisis del estado del reparto (MCP n8n + Railway)
+**Severidad**: Media (mitad de las asignaciones recientes eran basura; el reparto quedaba desbalanceado en trabajo real)
+**Feature afectada**: FEAT-025 (reparto automático de solicitudes de presupuesto)
+
+**Síntoma**: Los pedidos que llegan por el formulario web de la página entraban al reparto sin ninguna validación de contenido. El spam se asignaba a una vendedora real, le consumía el turno del round-robin, le disparaba mail + WhatsApp y le quedaba en "Mis solicitudes pendientes" del home hasta marcarlo a mano. Medido en producción: de las 4 últimas solicitudes, 2 eran spam (61 "yo"/`hjfhfjhcdh@gjhgjhv.com`, 63 "Rosserial_Gon" con promoción en ruso), más una tercera el 26/07 (link-building a `groshi.xyz`). Por cómo cayó el orden, Veronica se llevó los 2 spam y Valeria los 2 pedidos reales.
+
+**Causa raíz**: Dos capas. (1) En el workflow n8n `PlXLIyyN2wyFYICD`, las dos ramas del `if(m)` del nodo `Parsear Formulario` hardcodean `es_presupuesto: true`: al venir con subject "Nuevo formulario web", el IF `Es Formulario Web` desvía el mail y **nunca pasa por el clasificador de IA**. (2) En `api_crear` (`solicitudes/views.py`), `asignar_siguiente_vendedor()` se llamaba antes de mirar el contenido, y ese helper avanza el puntero `ConfiguracionSolicitudes.ultimo_vendedor` de forma incondicional. Se arregló en Django y no solo en n8n porque `api_crear` es el único punto por el que pasan todas las solicitudes (formulario + rama IA + orígenes futuros) y es donde se consume el turno.
+
+**Solución**: Módulo nuevo `solicitudes/spam.py` con `clasificar_spam()`, heurística por puntaje sin dependencias externas. Cinco señales de 1 punto: escritura no latina (cirílico/CJK/árabe...), teléfono no plausible para Argentina (normaliza prefijo 54, el 9 de móvil y el 0 de larga distancia; tiene que quedar en 10 dígitos), URL en el mensaje, parte local del email con patrón de evasión de Gmail (4+ puntos o punto pegado a la `@`), y ausencia de vocabulario de aberturas. **Umbral 2**: una sola señal no descarta, así que un pedido real con el teléfono mal tipeado sigue entrando. A propósito no se valida el dominio del email: hay clientes reales con typos (`albacvilas@yahoo.ccom.ar`). Si da spam, `api_crear` **no llama a `asignar_siguiente_vendedor()`** (el turno queda intacto), guarda la solicitud con estado nuevo `descartada` y el motivo en `notas`. Se agregó el flag `notificar` al payload de la API (false si es duplicada, descartada, o si no hay vendedores) y el IF `Es Nueva` de n8n pasó a evaluarlo en vez de `duplicada` — con la expresión retrocompatible `($json.notificar ?? !$json.duplicada)`, para que el orden de deploy backend/workflow no importe. El panel muestra badge gris "Descartada" con el motivo en el tooltip y permite reasignarla, que es el rescate manual de un falso positivo.
+
+**Validación**: 19 tests nuevos (`solicitudes` 39 OK; suite de `solicitudes core usuarios presupuestos` 201 OK) usando los textos reales de producción. Los dos casos legítimos (Adriana con medidas de línea Modena, Alba Vilas con ventana corrediza) son la red de seguridad: si el clasificador los descartara, el fix sería peor que el bug. El caso 63 es spam sofisticado — abre con una pregunta en español que menciona "vidrios" y "ventanas" para pasar filtros de palabras clave y sigue en ruso; lo agarran las otras tres señales.
+
+**Archivos modificados**: `akuna_calc/solicitudes/spam.py` (nuevo), `akuna_calc/solicitudes/models.py`, `akuna_calc/solicitudes/migrations/0002_solicitud_estado_descartada.py` (nueva), `akuna_calc/solicitudes/views.py`, `akuna_calc/solicitudes/templates/solicitudes/solicitud_list.html`, `akuna_calc/solicitudes/tests.py`, `docs/n8n/n8n-solicitudes-reparto.json`
+
+**Estado en producción**: migración `solicitudes/0002` aplicada el 2026-07-31 18:26 (deployment `c81e10cc`) y workflow n8n republicado 18:28 (`activeVersionId` `41d13913`), verificado con credenciales, filtro `q` y `jsCode` intactos.
+
+**Riesgo asumido**: falso positivo. No se pierde nada — la solicitud queda en el panel como "Descartada" con el motivo y se reasigna con un click. Ojo que en la rama de IA el clasificador no ve el mail original sino el resumen de 1-3 líneas que escribe GPT, así que ahí la superficie de error es la calidad de ese resumen.
+
 ### FIX-018 — El recargo de renovación por unidad no se aplicaba a productos terciarizados
 **Fecha**: 2026-07-24
 **Reportado por**: Usuario (presupuesto 559 en producción)
