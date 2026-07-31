@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-07-30 — Orden manual de los ítems del presupuesto (FEAT-033)
+
+**Pedido:** "Al lado de los botones (24 items, Agregar) quiero un botón que diga Orden; al tocarlo poder arrastrar los ítems para arriba o para abajo, guardar ese orden, y que ese orden sea el que se ve en el PDF."
+**Archivos:** `presupuestos/views.py` (view `reordenar_items`; `agregar_item` usa `max+1`), `presupuestos/urls.py`, `presupuestos/templates/presupuestos/detalle.html` (botón + modal + JS), `presupuestos/tests.py`.
+**Descripción:** Botón **"Orden"** en la sección Items que abre un modal con la lista arrastrable (**drag & drop nativo de HTML5, sin librería nueva**, más flechas ▲▼ para que funcione en touch). Al guardar, se persiste `ItemPresupuesto.orden = 1..N` en una transacción; el endpoint filtra ids ajenos, duplicados e inválidos, y manda al final los ítems que no vinieron en la lista. **Sin migración**: el campo `orden` y el `ordering = ['orden','created_at']` ya existían, y como el detalle y el PDF usan `presupuesto.items.all()`, el orden se refleja en los dos automáticamente. Los ítems nuevos pasan a usar `max(orden)+1` (con `count()` colisionaban con el último tras reordenar). El botón sólo aparece con 2+ ítems y si el presupuesto no está confirmado/cancelado. Tests: 11 nuevos OK; suites 253 con el baseline legacy. Detalle en FEAT-033.
+
 ## 2026-07-27 — Opcional de tipo "unidad" (cantidad × precio en el cotizador) (FEAT-032)
 
 **Pedido:** "En /opcionales/crear/ quiero un tipo 'unidad' que tenga un costo, y que al cotizar te pida la cantidad, multiplique cantidad × precio y lo sume al cotizador."

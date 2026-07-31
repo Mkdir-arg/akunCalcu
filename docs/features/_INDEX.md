@@ -38,6 +38,7 @@
 | [FEAT-030](./FEAT-030-graficador-3d-aberturas-cotizador.md) | Graficador 3D de aberturas en el cotizador de presupuestos | Implementado | 2026-07-24 | — |
 | [FEAT-031](./FEAT-031-tirantes-divisores-relleno-por-seccion.md) | Tirantes divisores con relleno por sección en el cotizador | Implementado | 2026-07-27 | — |
 | [FEAT-032](./FEAT-032-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | Implementado | 2026-07-27 | — |
+| [FEAT-033](./FEAT-033-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | — |
 
 ---
 
@@ -48,7 +49,7 @@
 | `pedidos` | FEAT-001 | 2026-03-04 |
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011, FEAT-030, FEAT-031, FEAT-032 | 2026-07-27 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
-| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019, FEAT-026, FEAT-027, FEAT-030, FEAT-031, FEAT-032 | 2026-07-27 |
+| `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019, FEAT-026, FEAT-027, FEAT-030, FEAT-031, FEAT-032, FEAT-033 | 2026-07-30 |
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |

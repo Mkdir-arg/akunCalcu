@@ -182,6 +182,12 @@
                     <div class="flex items-center gap-3">
                         <span class="text-slate-400 text-sm">{{ presupuesto.items.count }} item{{ presupuesto.items.count|pluralize:"s" }}</span>
                         {% if not presupuesto.esta_bloqueado %}
+                        {% if presupuesto.items.count > 1 %}
+                        <button onclick="abrirModalOrden()" title="Cambiar el orden de los ítems"
+                            class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
+                            <i class="fas fa-arrow-up-arrow-down mr-1"></i>Orden
+                        </button>
+                        {% endif %}
                         {% if presupuesto.tipo_obra %}
                         <button onclick="abrirModalItem()"
                             class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
@@ -653,6 +659,70 @@
 {% endif %}
 {% endif %}
 
+{% if not presupuesto.esta_bloqueado and presupuesto.items.count > 1 %}
+<!-- ===== MODAL ORDENAR ITEMS ===== -->
+<div id="modal-orden" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalOrden()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 grid place-items-center shrink-0">
+                        <i class="fas fa-arrow-up-arrow-down"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 leading-tight">Orden de los ítems</h2>
+                        <p class="text-xs text-slate-500">Arrastrá para ordenar. Este orden es el que sale en el PDF.</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModalOrden()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors shrink-0">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-4">
+                <ul id="orden-lista" class="space-y-2">
+                    {% for item in items_detalle %}
+                    <li draggable="true" data-id="{{ item.pk }}"
+                        class="orden-fila flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 cursor-grab hover:border-blue-300 hover:bg-slate-50 transition-colors">
+                        <i class="fas fa-grip-vertical text-slate-300 shrink-0"></i>
+                        <span class="orden-pos w-6 h-6 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold grid place-items-center shrink-0"></span>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-sm text-slate-800 truncate">{{ item.descripcion }}</p>
+                            <p class="text-xs text-slate-400 truncate">
+                                {{ item.ancho_mm }}mm x {{ item.alto_mm }}mm{% if item.cantidad > 1 %} · x{{ item.cantidad }}{% endif %}
+                            </p>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700 shrink-0">
+                            {% if presupuesto.es_pvc %}US${{ item.get_precio_total_usd|formato_numero }}{% else %}${{ item.precio_total|formato_numero }}{% endif %}
+                        </span>
+                        <span class="flex flex-col shrink-0">
+                            <button type="button" onclick="moverFilaOrden(this, -1)" title="Subir"
+                                class="text-slate-300 hover:text-blue-600 px-1 leading-none"><i class="fas fa-chevron-up text-xs"></i></button>
+                            <button type="button" onclick="moverFilaOrden(this, 1)" title="Bajar"
+                                class="text-slate-300 hover:text-blue-600 px-1 leading-none"><i class="fas fa-chevron-down text-xs"></i></button>
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="flex items-center gap-3 px-6 py-3 border-t bg-slate-50 shrink-0">
+                <span class="flex-1"></span>
+                <button onclick="cerrarModalOrden()"
+                    class="px-5 py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-white transition-colors">Cancelar</button>
+                <button onclick="guardarOrden()"
+                    class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold text-sm inline-flex items-center gap-2 transition-all">
+                    <i class="fas fa-check"></i>Guardar orden
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="orden-form" method="post" action="{% url 'presupuestos:presupuestos-items-reordenar' presupuesto.pk %}" style="display:none">
+    {% csrf_token %}
+</form>
+{% endif %}
+
 <!-- ===== MODAL VER DESGLOSE ===== -->
 <div id="modal-desglose" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalDesglose()"></div>
@@ -843,10 +913,97 @@ function cerrarModalDesglose() {
     document.body.style.overflow = '';
 }
 
+// -- Orden de los ítems: arrastrar (drag&drop nativo) o botones subir/bajar --
+function abrirModalOrden() {
+    const modal = document.getElementById('modal-orden');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    renumerarOrden();
+}
+
+function cerrarModalOrden() {
+    const modal = document.getElementById('modal-orden');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function renumerarOrden() {
+    const lista = document.getElementById('orden-lista');
+    if (!lista) return;
+    [...lista.querySelectorAll('.orden-fila')].forEach((fila, i) => {
+        const pos = fila.querySelector('.orden-pos');
+        if (pos) pos.textContent = i + 1;
+    });
+}
+
+function moverFilaOrden(boton, delta) {
+    const fila = boton.closest('.orden-fila');
+    const lista = fila.parentNode;
+    if (delta < 0 && fila.previousElementSibling) {
+        lista.insertBefore(fila, fila.previousElementSibling);
+    } else if (delta > 0 && fila.nextElementSibling) {
+        lista.insertBefore(fila.nextElementSibling, fila);
+    }
+    renumerarOrden();
+}
+
+function guardarOrden() {
+    const lista = document.getElementById('orden-lista');
+    const form = document.getElementById('orden-form');
+    if (!lista || !form) return;
+    form.querySelectorAll('input[name="orden"]').forEach(i => i.remove());
+    [...lista.querySelectorAll('.orden-fila')].forEach(fila => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'orden';
+        input.value = fila.dataset.id;
+        form.appendChild(input);
+    });
+    form.submit();
+}
+
+(function initDragOrden() {
+    const lista = document.getElementById('orden-lista');
+    if (!lista) return;
+    let arrastrada = null;
+
+    lista.addEventListener('dragstart', (e) => {
+        arrastrada = e.target.closest('.orden-fila');
+        if (!arrastrada) return;
+        arrastrada.classList.add('opacity-40');
+        // Firefox necesita datos seteados para permitir el drop.
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', arrastrada.dataset.id || '');
+        }
+    });
+
+    lista.addEventListener('dragend', () => {
+        if (arrastrada) arrastrada.classList.remove('opacity-40');
+        arrastrada = null;
+        renumerarOrden();
+    });
+
+    lista.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!arrastrada) return;
+        const sobre = e.target.closest('.orden-fila');
+        if (!sobre || sobre === arrastrada) return;
+        const caja = sobre.getBoundingClientRect();
+        const despues = (e.clientY - caja.top) > caja.height / 2;
+        lista.insertBefore(arrastrada, despues ? sobre.nextElementSibling : sobre);
+    });
+
+    lista.addEventListener('drop', (e) => e.preventDefault());
+})();
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         cerrarModalItem();
         cerrarModalDesglose();
+        cerrarModalOrden();
     }
 });
 

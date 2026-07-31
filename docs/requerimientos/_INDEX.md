@@ -62,3 +62,4 @@ s# Requerimientos — AkunCalcu
 | [REQ-040](./REQ-040-horario-evento-agenda.md) | Horario del evento en la agenda (separado de la hora de envío) | En desarrollo | 2026-07-24 | — |
 | [REQ-041](./REQ-041-tirantes-divisores-relleno-por-seccion.md) | Tirantes divisores con relleno por sección en el cotizador | Implementado | 2026-07-27 | FEAT-031 |
 | [REQ-042](./REQ-042-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | Implementado | 2026-07-27 | FEAT-032 |
+| [REQ-043](./REQ-043-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | FEAT-033 |

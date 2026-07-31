@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Max, Q
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
@@ -393,13 +393,57 @@ def agregar_item(request, pk):
         if error:
             messages.error(request, error)
             return redirect('presupuestos:presupuestos-detalle', pk=pk)
+        # El ítem nuevo va al final: max+1 (no `count()`, que colisiona con el
+        # último si el usuario reordenó los ítems a mano).
+        ultimo_orden = presupuesto.items.aggregate(m=Max('orden'))['m'] or 0
         item = ItemPresupuesto.objects.create(
-            presupuesto=presupuesto, orden=presupuesto.items.count(), **fields,
+            presupuesto=presupuesto, orden=ultimo_orden + 1, **fields,
         )
         presupuesto.recalcular_total()
         messages.success(request, f'Ítem "{item.descripcion}" agregado.')
         return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
+    return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+@login_required
+@require_POST
+def reordenar_items(request, pk):
+    """Guarda el orden de los ítems que el usuario acomodó arrastrando.
+
+    El orden que se persiste en `ItemPresupuesto.orden` es el que se ve en el
+    detalle y en el PDF (ambos usan `presupuesto.items.all()`, que aplica el
+    `ordering = ['orden', 'created_at']` del model).
+    """
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
+    if presupuesto.esta_bloqueado():
+        messages.error(request, 'No se puede reordenar los ítems de un presupuesto confirmado o cancelado.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    ids_validos = set(presupuesto.items.values_list('pk', flat=True))
+    posicion = 0
+    vistos = []
+
+    with transaction.atomic():
+        for crudo in request.POST.getlist('orden'):
+            try:
+                item_id = int(crudo)
+            except (TypeError, ValueError):
+                continue
+            if item_id not in ids_validos or item_id in vistos:
+                continue
+            vistos.append(item_id)
+            posicion += 1
+            ItemPresupuesto.objects.filter(pk=item_id, presupuesto=presupuesto).update(orden=posicion)
+
+        # Si algún ítem no vino en la lista (se agregó en otra pestaña mientras
+        # se ordenaba), queda al final en vez de perder su posición.
+        for item_id in presupuesto.items.exclude(pk__in=vistos).values_list('pk', flat=True):
+            posicion += 1
+            ItemPresupuesto.objects.filter(pk=item_id).update(orden=posicion)
+
+    if vistos:
+        messages.success(request, 'Orden de los ítems actualizado.')
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 

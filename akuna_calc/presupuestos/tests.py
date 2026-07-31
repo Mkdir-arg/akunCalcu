@@ -2043,3 +2043,92 @@ class SnapshotTirantesNoAnunciaVidrioTest(SimpleTestCase):
         self.assertTrue(snap['tirantes']['activo'])
         self.assertNotIn('vidrio Float 6mm', snap['descripcion_narrativa'])
         self.assertIn('tirante', snap['descripcion_narrativa'])
+
+
+class ReordenarItemsTest(TestCase):
+    """El orden que se guarda es el que se ve en el detalle y en el PDF."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='ord', password='pass123', is_staff=True)
+        self.client.force_login(self.user)
+        self.presupuesto = crear_presupuesto(self.user)
+        self.a, self.b, self.c = [
+            ItemPresupuesto.objects.create(
+                presupuesto=self.presupuesto, descripcion=d, cantidad=1,
+                ancho_mm=1000, alto_mm=1000, margen_porcentaje=30,
+                precio_unitario=Decimal('100'), orden=i + 1,
+            )
+            for i, d in enumerate(['A', 'B', 'C'])
+        ]
+
+    def _url(self):
+        return f'/presupuestos/{self.presupuesto.pk}/items/reordenar/'
+
+    def _descripciones(self):
+        return [i.descripcion for i in self.presupuesto.items.all()]
+
+    def test_requiere_login(self):
+        self.client.logout()
+        res = self.client.post(self._url(), {'orden': [self.c.pk]})
+        self.assertEqual(res.status_code, 302)
+        self.assertIn('/login/', res['Location'])
+
+    def test_get_no_permitido(self):
+        self.assertEqual(self.client.get(self._url()).status_code, 405)
+
+    def test_guarda_el_orden_nuevo(self):
+        self.client.post(self._url(), {'orden': [self.c.pk, self.a.pk, self.b.pk]})
+        self.assertEqual(self._descripciones(), ['C', 'A', 'B'])
+
+    def test_el_orden_se_refleja_en_el_pdf(self):
+        self.client.post(self._url(), {'orden': [self.b.pk, self.c.pk, self.a.pk]})
+        # el PDF usa presupuesto.items.all(), que aplica el ordering del model
+        self.assertEqual(self._descripciones(), ['B', 'C', 'A'])
+
+    def test_ignora_ids_de_otro_presupuesto(self):
+        otro = crear_presupuesto(self.user)
+        ajeno = ItemPresupuesto.objects.create(
+            presupuesto=otro, descripcion='AJENO', cantidad=1, ancho_mm=1, alto_mm=1,
+            margen_porcentaje=0, precio_unitario=Decimal('1'), orden=1,
+        )
+        self.client.post(self._url(), {'orden': [ajeno.pk, self.c.pk, self.b.pk, self.a.pk]})
+        self.assertEqual(self._descripciones(), ['C', 'B', 'A'])
+        ajeno.refresh_from_db()
+        self.assertEqual(ajeno.orden, 1)  # intacto
+
+    def test_item_que_no_vino_en_la_lista_queda_al_final(self):
+        self.client.post(self._url(), {'orden': [self.c.pk, self.a.pk]})
+        self.assertEqual(self._descripciones()[:2], ['C', 'A'])
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.orden, 3)
+
+    def test_presupuesto_confirmado_no_se_reordena(self):
+        self.presupuesto.estado = 'confirmado'
+        self.presupuesto.save()
+        self.client.post(self._url(), {'orden': [self.c.pk, self.b.pk, self.a.pk]})
+        self.assertEqual(self._descripciones(), ['A', 'B', 'C'])
+
+    def test_ids_invalidos_no_rompen(self):
+        res = self.client.post(self._url(), {'orden': ['abc', '', self.b.pk]})
+        self.assertEqual(res.status_code, 302)
+        self.b.refresh_from_db()
+        self.assertEqual(self.b.orden, 1)
+
+    def test_boton_orden_visible_con_dos_o_mas_items(self):
+        res = self.client.get(f'/presupuestos/{self.presupuesto.pk}/')
+        self.assertContains(res, 'onclick="abrirModalOrden()"')
+        self.assertContains(res, 'id="orden-lista"')
+
+    def test_boton_orden_oculto_con_un_solo_item(self):
+        self.b.delete()
+        self.c.delete()
+        res = self.client.get(f'/presupuestos/{self.presupuesto.pk}/')
+        self.assertNotContains(res, 'onclick="abrirModalOrden()"')
+        self.assertNotContains(res, 'id="orden-lista"')
+
+    def test_boton_orden_oculto_si_esta_confirmado(self):
+        self.presupuesto.estado = 'confirmado'
+        self.presupuesto.save()
+        res = self.client.get(f'/presupuestos/{self.presupuesto.pk}/')
+        self.assertNotContains(res, 'onclick="abrirModalOrden()"')
+        self.assertNotContains(res, 'id="orden-lista"')
