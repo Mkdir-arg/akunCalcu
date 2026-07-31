@@ -21,10 +21,12 @@ class SolicitudPresupuesto(models.Model):
     ESTADO_ASIGNADA = 'asignada'
     ESTADO_CONTESTADA = 'contestada'
     ESTADO_SIN_ASIGNAR = 'sin_asignar'
+    ESTADO_DESCARTADA = 'descartada'
     ESTADO_CHOICES = [
         (ESTADO_ASIGNADA, 'Asignada'),
         (ESTADO_CONTESTADA, 'Contestada'),
         (ESTADO_SIN_ASIGNAR, 'Sin asignar'),
+        (ESTADO_DESCARTADA, 'Descartada'),
     ]
 
     nombre_cliente = models.CharField(max_length=200, blank=True, verbose_name="Nombre del cliente")

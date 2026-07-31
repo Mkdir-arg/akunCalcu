@@ -91,6 +91,10 @@
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
                                     <i class="fas fa-exclamation-triangle mr-1"></i>Sin asignar
                                 </span>
+                            {% elif s.estado == 'descartada' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600" title="{{ s.notas }}">
+                                    <i class="fas fa-ban mr-1"></i>Descartada
+                                </span>
                             {% else %}
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                                     <i class="fas fa-clock mr-1"></i>Asignada

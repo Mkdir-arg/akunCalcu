@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from .forms import ReasignarSolicitudForm
 from .models import SolicitudPresupuesto
 from .services import asignar_siguiente_vendedor, vendedores_pool
+from .spam import clasificar_spam
 
 
 def _validar_token(request):
@@ -33,6 +34,11 @@ def _payload_solicitud(solicitud, duplicada=False):
     return {
         'ok': True,
         'duplicada': duplicada,
+        # n8n usa este flag para decidir si reenvía el mail y manda el WhatsApp:
+        # cubre en una sola condición el duplicado, el spam descartado y el caso
+        # de que no haya vendedores en el pool.
+        'notificar': bool(vendedor_data) and not duplicada
+        and solicitud.estado == SolicitudPresupuesto.ESTADO_ASIGNADA,
         'solicitud_id': solicitud.pk,
         'estado': solicitud.estado,
         'vendedor': vendedor_data,
@@ -70,23 +76,38 @@ def api_crear(request):
         if existente:
             return JsonResponse(_payload_solicitud(existente, duplicada=True))
 
+    nombre_cliente = (data.get('nombre_cliente') or '').strip()[:200]
+    email = (data.get('email') or '').strip()[:254]
+    telefono = (data.get('telefono') or '').strip()[:50]
+    mensaje = data.get('mensaje') or ''
+
     solicitud = SolicitudPresupuesto(
-        nombre_cliente=(data.get('nombre_cliente') or '').strip()[:200],
-        email=(data.get('email') or '').strip()[:254],
-        telefono=(data.get('telefono') or '').strip()[:50],
+        nombre_cliente=nombre_cliente,
+        email=email,
+        telefono=telefono,
         asunto=(data.get('asunto') or '').strip()[:300],
-        mensaje=data.get('mensaje') or '',
+        mensaje=mensaje,
         gmail_thread_id=thread_id,
         origen='email',
     )
 
-    vendedor = asignar_siguiente_vendedor()
-    if vendedor:
-        solicitud.vendedor = vendedor
-        solicitud.estado = SolicitudPresupuesto.ESTADO_ASIGNADA
-        solicitud.fecha_asignacion = timezone.now()
+    es_spam, motivo = clasificar_spam(
+        nombre_cliente=nombre_cliente, email=email, telefono=telefono, mensaje=mensaje,
+    )
+    if es_spam:
+        # Se guarda igual (queda visible en el panel para rescatarla si fue un falso
+        # positivo) pero NO se llama a asignar_siguiente_vendedor: el spam no le
+        # gasta el turno de la rotación a nadie.
+        solicitud.estado = SolicitudPresupuesto.ESTADO_DESCARTADA
+        solicitud.notas = f'Descartada automáticamente ({motivo}).'
     else:
-        solicitud.estado = SolicitudPresupuesto.ESTADO_SIN_ASIGNAR
+        vendedor = asignar_siguiente_vendedor()
+        if vendedor:
+            solicitud.vendedor = vendedor
+            solicitud.estado = SolicitudPresupuesto.ESTADO_ASIGNADA
+            solicitud.fecha_asignacion = timezone.now()
+        else:
+            solicitud.estado = SolicitudPresupuesto.ESTADO_SIN_ASIGNAR
     solicitud.save()
 
     return JsonResponse(_payload_solicitud(solicitud), status=201)
@@ -235,7 +256,10 @@ def solicitud_reasignar(request, pk):
 
     vendedor = form.cleaned_data['vendedor']
     solicitud.vendedor = vendedor
-    if solicitud.estado == SolicitudPresupuesto.ESTADO_SIN_ASIGNAR:
+    # Reasignar una descartada es el rescate manual de un falso positivo del filtro.
+    if solicitud.estado in (
+        SolicitudPresupuesto.ESTADO_SIN_ASIGNAR, SolicitudPresupuesto.ESTADO_DESCARTADA,
+    ):
         solicitud.estado = SolicitudPresupuesto.ESTADO_ASIGNADA
     # Reinicia el reloj del recordatorio: el nuevo vendedor recién recibe la solicitud.
     solicitud.fecha_asignacion = timezone.now()
