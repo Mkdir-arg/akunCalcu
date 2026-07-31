@@ -45,14 +45,19 @@ Cierre de la solicitud ("contestada"):
 - [x] Reasignación manual a otro vendedor.
 - [x] Recordatorio **1 vez por día a las 08:00**: un solo WhatsApp por vendedor con el listado
   de todas sus solicitudes sin contestar (no un mensaje por solicitud).
-- [x] Workflow de n8n documentado en `docs/n8n/`.
+- [x] Workflow de n8n documentado en `docs/n8n/`. ⚠️ El JSON estuvo desincronizado del workflow
+  real (8 nodos vs 11) hasta FIX-020, que lo regeneró desde el grafo en vivo. Si se vuelve a
+  editar el workflow en la UI, **regenerar el JSON**: es el respaldo y la fuente del test
+  `docs/n8n/test-nodos-reparto.js`.
 
 ## Archivos
 
 **Nuevos (app `solicitudes`):**
 - `models.py` — `SolicitudPresupuesto` (+ manager `pendientes_recordatorio`) y
   `ConfiguracionSolicitudes` (singleton con el puntero del round-robin).
+  Estados: `asignada`, `contestada`, `sin_asignar`, `descartada` (este último de FIX-019).
 - `services.py` — `vendedores_pool()` y `asignar_siguiente_vendedor()` (round-robin atómico).
+- `spam.py` — `clasificar_spam()` (FIX-019): heurística por puntaje, 5 señales, umbral 2.
 - `views.py` — panel (`solicitud_list`, `solicitud_marcar_contestada`, `solicitud_reasignar`)
   y 4 endpoints API (`api_crear`, `api_recordatorios`, `api_marcar_recordatorio`,
   `api_marcar_contestada`).
@@ -82,17 +87,42 @@ Cierre de la solicitud ("contestada"):
   `X-Bot-Secret`.
 - **Idempotencia** por `gmail_thread_id`: si n8n reintenta, no duplica la solicitud.
 - **Rol `vendedor` sembrado por migración** (no existía en el repo).
+- **Filtro anti-spam en Django, no en n8n** (FIX-019): `api_crear` es el único punto por el
+  que pasan todas las solicitudes (formulario web + rama IA + orígenes futuros) y es donde se
+  consume el turno de la rotación. Ver `solicitudes/spam.py`.
 
-## Pendiente de despliegue (no hecho en esta sesión)
+## Estado en producción (verificado 2026-07-31)
 
-- Correr migraciones en Docker/Railway: `solicitudes/0001_initial`,
-  `usuarios/0004_perfilaccesousuario_numero_whatsapp`, `usuarios/0005_seed_rol_vendedor`.
-- Setear `SOLICITUDES_BOT_SECRET` en el entorno (Railway).
-- Conectar credenciales en n8n (Gmail de la empresa + Evolution/WhatsApp) e importar el
-  workflow de `docs/n8n/`.
-- Asignar el rol "Vendedor" y su número de WhatsApp a los usuarios que correspondan.
+Desplegado y funcionando. Ambos workflows de n8n están **activos**:
+`PlXLIyyN2wyFYICD` (Reparto, Gmail trigger cada minuto) y `M5N22elKbX2w6SMQ`
+(Recordatorios, cron 08:00 ARG). Migraciones aplicadas, `SOLICITUDES_BOT_SECRET` seteado en
+los servicios `web` y `n8n`, credenciales de Gmail/OpenAI/Evolution conectadas.
+
+Pool de rotación real: **Valeria Tullio** (`akunaberturasventas@gmail.com`) y
+**Veronica Malicoutakis** (`akunaberturasadm@gmail.com`). Round-robin verificado alternando
+correctamente en las solicitudes 60 a 63.
+
+**Pendientes conocidos (fuera del alcance de FEAT-025, FIX-019 y FIX-020):**
+- **Nadie avisa cuando el reparto se cae.** El 30/07 la credencial OAuth de Gmail expiró y el
+  trigger estuvo **25 horas sin poder leer la casilla** sin que nada lo reportara: un trigger que
+  no puede leer no genera ejecución, así que en n8n no se ve nada rojo. Falta un Error Trigger o
+  un chequeo diario de "horas sin lecturas". Ver también la nota de las credenciales de Google,
+  que caducan cada 7 días si la app OAuth está en modo Testing.
+- Los nodos `Crear Solicitud`, `Reenviar al Vendedor` y `WhatsApp al Vendedor` tienen
+  `onError: continueRegularOutput`: si Django está caído, la ejecución queda marcada
+  **"success"** y el pedido se pierde sin alerta. "0 errores" en n8n no es garantía de nada
+  en este workflow.
+- Con `maxResults: 20` ya funcionando de verdad (FIX-020), un poll con 20 mails dispara hasta
+  20 llamadas a OpenAI, 20 POST, 20 mails y 20 WhatsApp — atención al rate limit de Meta.
+- `api_marcar_contestada` no está automatizado: ningún workflow detecta la respuesta del
+  vendedor en el hilo de Gmail. El cierre es manual (panel/home) o vía FEAT-028.
+- El WhatsApp sale con `status: PENDING` (template `nueva_solicitud` de Evolution/Cloud API);
+  no hay confirmación de entrega.
+- El filtro `q` del Gmail trigger no tiene `in:inbox`, así que también procesa mails enviados
+  desde la cuenta (cada uno pasa por GPT-4o-mini). Gasto evitable.
 
 ## Tests
 
-- `solicitudes`: 21 OK (modelo, round-robin, pool, 4 endpoints API, panel).
-- Sin regresiones: `usuarios`/`agenda`/`gastos_diarios`/`security` = 88 OK.
+- `solicitudes`: **39 OK** (modelo, round-robin, pool, 4 endpoints API, panel, y 19 del
+  clasificador anti-spam de FIX-019 con los casos reales de producción).
+- Sin regresiones: `solicitudes`/`core`/`usuarios`/`presupuestos` = 201 OK.

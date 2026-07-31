@@ -22,6 +22,28 @@
 
 ## Fixes registrados
 
+### FIX-020 — El reparto procesaba 1 mail por lote y perdía el resto en silencio
+**Fecha**: 2026-07-31
+**Reportado por**: Auditoría de asignaciones (se preguntó si los mails de ayer y hoy se habían asignado)
+**Severidad**: **Alta** (pérdida silenciosa de pedidos de clientes reales)
+**Feature afectada**: FEAT-025 (reparto automático de solicitudes de presupuesto)
+
+**Síntoma**: El workflow leía hasta 20 mails por poll pero solo procesaba el primero y descartaba el resto **sin error, sin ejecución fallida y sin alerta**: los pedidos simplemente no existían para el sistema. Medido en dos polls del 31/07: la ejecución 56766 trajo 20 mails y salió 1; la 56768 trajo 15 y salió 1. **35 mails traídos, 2 procesados, 33 perdidos.** Entre lo perdido había 7 formularios web del 30/07, incluido un lead legítimo (consulta por ventanas a medida) que nunca se asignó a nadie. El bug existía desde la creación del workflow: cada vez que entraban 2+ mails en el mismo minuto se procesaba uno solo, así que veníamos perdiendo pedidos desde antes sin saberlo.
+
+**Causa raíz**: Los tres nodos Code corrían en modo *Run Once for All Items* (el default) pero estaban escritos para un solo ítem: `Extraer mail` (`const msg = $input.first().json` + `return [{json:…}]`), `Parsear Formulario` (`$input.first().json.body`) y `Parsear IA` (`JSON.parse($input.first().json.choices[0]…)`). Irónicamente el trigger tenía `maxResults: 20` con la nota *"no se pierden en ráfaga"*: se subió el límite para no perder mails y el nodo siguiente tiraba 19 de los 20. `Parsear IA` tenía además un segundo defecto independiente: resolvía el hilo con `$('Extraer mail').first().json.gmail_thread_id`, es decir el thread del **primer** mail, así que con varios ítems le pegaba el hilo de un mail a la clasificación de otro (idempotencia contra el thread equivocado y posible cruce de datos entre pedidos).
+
+**Solución**: Los 3 nodos Code pasaron a `mode: "runOnceForEachItem"` — n8n itera él mismo, así que la pérdida desaparece por construcción y el código queda más simple (`$json` en vez de `$input.first().json`, `return {json:…}` en vez de un array). En `Parsear IA` el hilo se resuelve con `$('Extraer mail').item.json.gmail_thread_id` (`.item` = ítem **pareado** vía `pairedItem`), con fallback a `$('Nuevo mail').item.json.threadId` para no quedar nunca con un `thread_id` vacío que desactivaría la idempotencia. **Se descartó la alternativa de mapear `$input.all()` con índices**: entre `Extraer mail` y `Parsear IA` está el IF `Es Formulario Web`, que filtra ítems, así que los arrays no alinean — se habría cambiado un bug de pérdida por uno de corrupción, más difícil de detectar. El resto del flujo ya manejaba N ítems nativamente (los IF y los nodos HTTP/Gmail corren una vez por ítem).
+
+**Validación**: `docs/n8n/test-nodos-reparto.js` (nuevo), harness en Node que **lee los `jsCode` del JSON versionado**, así que testea exactamente lo desplegado. 13 tests OK: 3 reproducen el bug con el código anterior (1 de 5 ítems; thread `t0` asignado a ítems cuyo hilo era `t1`/`t3`) y el resto verifican el fix con un lote de 5 mails que imita un poll real (3 formularios + 2 de ruido), incluyendo el caso del IF que filtra ítems. Se corre con `node docs/n8n/test-nodos-reparto.js`. Django sin cambios (`solicitudes`+`core` 50 OK).
+
+**Archivos modificados**: workflow n8n `PlXLIyyN2wyFYICD` (3 nodos Code), `docs/n8n/n8n-solicitudes-reparto.json`, `docs/n8n/test-nodos-reparto.js` (nuevo)
+
+**Hallazgo secundario corregido en el mismo fix**: `docs/n8n/n8n-solicitudes-reparto.json` estaba **desincronizado del workflow real** — tenía 8 nodos en vez de 11 (faltaba toda la rama del formulario web: `Extraer mail`, `Es Formulario Web`, `Parsear Formulario`), el filtro `q` viejo con `-from:me` (que justamente excluye los formularios, porque llegan `from: AKUN <akunaberturas@gmail.com>`) y sin `maxResults`. Reimportarlo habría roto producción. Se regeneró completo desde el grafo en vivo, así que ahora sí sirve como respaldo.
+
+**Estado en producción**: publicado el 2026-07-31 19:36 (`activeVersionId` `151fa192…`). Verificado con `mode: active`: los 3 modes aplicados, credenciales Gmail/OpenAI intactas, filtro `q`, `maxResults`, `onError` y las 9 conexiones sin cambios; `n8n_validate_workflow` valid, 0 errores; logs de n8n sin errores del trigger post-update.
+
+**Lo que este fix NO hace**: no recupera lo ya perdido (`lastTimeChecked` pasó por esos mails; los 7 formularios del 30/07 hay que cargarlos a mano). Y **no agrega ninguna alerta**: si el trigger se cae de nuevo, el sistema sigue callado — los tres `onError: continueRegularOutput` y la falta de Error Trigger siguen pendientes. Ojo también que ahora `maxResults: 20` es real: un poll con 20 mails dispara hasta 20 llamadas a OpenAI, 20 POST, 20 mails y 20 WhatsApp (posible rate limit de Meta en ráfaga).
+
 ### FIX-019 — El spam del formulario web se asignaba a un vendedor y le gastaba el turno de la rotación
 **Fecha**: 2026-07-31
 **Reportado por**: Análisis del estado del reparto (MCP n8n + Railway)

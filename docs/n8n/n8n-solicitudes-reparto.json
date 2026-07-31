@@ -5,44 +5,146 @@
       "id": "gmail-trigger",
       "name": "Nuevo mail",
       "type": "n8n-nodes-base.gmailTrigger",
-      "typeVersion": 1.2,
-      "position": [208, 304],
+      "typeVersion": 1.4,
+      "position": [
+        200,
+        400
+      ],
       "parameters": {
-        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
-        "simple": true,
-        "filters": { "q": "-from:me -subject:\"Nuevo pedido de presupuesto\"" },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "maxResults": 20,
+        "filters": {
+          "q": "subject:\"Nuevo formulario web\" OR (-subject:\"Nuevo pedido de presupuesto\" -category:promotions -category:social)",
+          "readStatus": "both"
+        },
         "options": {}
       },
-      "notes": "Filtro anti-loop: ignora mails propios y los reenvios del flujo (asunto 'Nuevo pedido de presupuesto'). Adjuntar credencial Gmail OAuth2 de la casilla de la empresa."
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TJKeo9bkTZYIBZOz",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "v1.4: hasta 20 mails/poll y toma leidos+no leidos (no se pierden en rafaga ni si se abrieron). q incluye el formulario y descarta ruido. simple=false trae subject/text/from."
+    },
+    {
+      "id": "extraer",
+      "name": "Extraer mail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        410,
+        400
+      ],
+      "notes": "FIX-020: mode=runOnceForEachItem. Antes usaba $input.first() y devolvia 1 solo item, asi que de cada lote del trigger (hasta 20 mails) se procesaba 1 y se perdian los demas en silencio.",
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const msg = $json;\nlet from='';\nif(msg.from){ from = (typeof msg.from==='string') ? msg.from : (msg.from.text || (msg.from.value && msg.from.value[0] && msg.from.value[0].address) || ''); }\nlet body = msg.text || '';\nif(!body && msg.html) body = String(msg.html).replace(/<[^>]+>/g,' ');\nif(!body) body = msg.snippet || '';\nbody = body.replace(/\\s+/g,' ').trim().slice(0,4000);\nreturn { json:{ gmail_id: msg.id||'', gmail_thread_id: msg.threadId||msg.id||'', subject: msg.subject||'', from: from, body: body } };"
+      }
+    },
+    {
+      "id": "if-formulario",
+      "name": "Es Formulario Web",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        620,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-form",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "Nuevo formulario web",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "parse-form",
+      "name": "Parsear Formulario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        260
+      ],
+      "notes": "FIX-020: mode=runOnceForEachItem. Antes usaba $input.first() y devolvia 1 solo item, asi que de cada lote del trigger (hasta 20 mails) se procesaba 1 y se perdian los demas en silencio.",
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const src=$json.body||'';\nconst thread=$json.gmail_thread_id||'';\nconst re=/Nombre\\s+([\\s\\S]*?)\\s+E-?mail\\s+([\\s\\S]*?)\\s+Tel[eé]fono\\s+([\\s\\S]*?)\\s+Barrio\\s*\\/?\\s*Localidad\\s+([\\s\\S]*?)\\s+Escrib[ií][\\s\\S]*?mensaje\\s+([\\s\\S]*?)\\s+Enviado desde/i;\nconst m=src.match(re);\nlet r;\nif(m){ let email=m[2].trim(); const em=email.match(/[^\\s<>\\[\\]()]+@[^\\s<>\\[\\]()]+\\.[^\\s<>\\[\\]()]+/); if(em) email=em[0]; const loc=m[4].trim(); const con=m[5].trim(); r={ es_presupuesto:true, nombre_cliente:m[1].trim(), email:email, telefono:m[3].trim(), asunto:'Formulario web', mensaje:(loc?('Localidad: '+loc+'. '):'')+con, gmail_thread_id:thread }; }\nelse { r={ es_presupuesto:true, nombre_cliente:'', email:'', telefono:'', asunto:'Formulario web', mensaje:src.slice(0,500), gmail_thread_id:thread }; }\nreturn { json:r };"
+      }
     },
     {
       "id": "ia",
       "name": "IA Clasificar y Extraer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [420, 304],
+      "position": [
+        840,
+        540
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/chat/completions",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "openAiApi",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [ { role: 'system', content: 'Sos un asistente de una empresa de aberturas (Akuna). Analizas emails entrantes y determinas si son un PEDIDO DE PRESUPUESTO o COTIZACION de un cliente. Devolve SOLO un JSON con las claves: es_presupuesto (boolean), nombre_cliente (string), email (string), telefono (string), asunto (string), mensaje (string, resumen del pedido en 1-3 lineas). Si el email NO es un pedido de presupuesto, pone es_presupuesto=false y el resto vacio.' }, { role: 'user', content: 'Email entrante (JSON de Gmail): ' + JSON.stringify($json) } ] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [ { role: 'system', content: 'Sos un asistente de una empresa de aberturas (Akuna). Analizas emails entrantes y determinas si son un PEDIDO DE PRESUPUESTO o COTIZACION de un cliente. Devolve SOLO un JSON con: es_presupuesto (boolean), nombre_cliente (string), email (string), telefono (string), asunto (string), mensaje (string, resumen del pedido en 1-3 lineas). Si NO es un pedido de presupuesto (spam, newsletter, factura, notificacion, respuesta de seguimiento sin pedido concreto), pone es_presupuesto=false y el resto vacio.' }, { role: 'user', content: 'Asunto: ' + ($json.subject||'') + '\\nDe: ' + ($json.from||'') + '\\nCuerpo:\\n' + ($json.body||'') } ] }) }}",
         "options": {}
       },
-      "credentials": { "openAiApi": { "id": "REEMPLAZAR_ID_CRED_OPENAI", "name": "OpenAI account" } }
+      "credentials": {
+        "openAiApi": {
+          "id": "19LKpht4lAMl7Sed",
+          "name": "OpenAI account"
+        }
+      }
     },
     {
       "id": "parsear",
       "name": "Parsear IA",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [640, 304],
+      "position": [
+        1050,
+        540
+      ],
+      "notes": "FIX-020: mode=runOnceForEachItem. Antes usaba $input.first() y devolvia 1 solo item, asi que de cada lote del trigger (hasta 20 mails) se procesaba 1 y se perdian los demas en silencio. El thread_id sale de .item (item pareado), no de .first(): con lote de varios mails le pegaba el hilo del mail #1 a la clasificacion de otro.",
       "parameters": {
-        "jsCode": "let r = {};\ntry { r = JSON.parse($json.choices[0].message.content); } catch (e) { r = { es_presupuesto: false }; }\nr.gmail_thread_id = ($('Nuevo mail').first().json.threadId) || ($('Nuevo mail').first().json.id) || '';\nreturn [{ json: r }];"
+        "mode": "runOnceForEachItem",
+        "jsCode": "let r={};\ntry{ r=JSON.parse($json.choices[0].message.content); }catch(e){ r={es_presupuesto:false}; }\nlet thread='';\ntry{ thread=$('Extraer mail').item.json.gmail_thread_id||''; }\ncatch(e){ try{ thread=$('Nuevo mail').item.json.threadId||''; }catch(e2){ thread=''; } }\nr.gmail_thread_id=thread;\nreturn { json:r };"
       }
     },
     {
@@ -50,16 +152,27 @@
       "name": "Es Presupuesto",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [860, 304],
+      "position": [
+        1260,
+        540
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose", "version": 1 },
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
           "conditions": [
             {
               "id": "cond-pres",
               "leftValue": "={{ $json.es_presupuesto ? 'si' : 'no' }}",
               "rightValue": "si",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -72,7 +185,10 @@
       "name": "Crear Solicitud",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 224],
+      "position": [
+        1470,
+        400
+      ],
       "onError": "continueRegularOutput",
       "parameters": {
         "method": "POST",
@@ -80,8 +196,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "X-Bot-Secret", "value": "={{ $env.SOLICITUDES_BOT_SECRET || 'REEMPLAZAR_SOLICITUDES_BOT_SECRET' }}" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Bot-Secret",
+              "value": "={{ $env.SOLICITUDES_BOT_SECRET || 'REEMPLAZAR_SOLICITUDES_BOT_SECRET' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -91,29 +213,75 @@
       }
     },
     {
+      "id": "es-nueva",
+      "name": "Es Nueva",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        400
+      ],
+      "notes": "Gate de notificacion: Django decide con el flag 'notificar' (false si es duplicada, si el filtro anti-spam la descarto, o si no hay vendedores en el pool). El fallback '?? !duplicada' mantiene el comportamiento viejo si el backend todavia no expone el flag.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-nueva",
+              "leftValue": "={{ ($json.notificar ?? !$json.duplicada) ? 'si' : 'no' }}",
+              "rightValue": "si",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
       "id": "gmail-reenviar",
       "name": "Reenviar al Vendedor",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1320, 128],
+      "position": [
+        1890,
+        300
+      ],
       "onError": "continueRegularOutput",
       "parameters": {
         "resource": "message",
         "operation": "send",
         "sendTo": "={{ $json.vendedor ? $json.vendedor.email : '' }}",
-        "subject": "=Nuevo pedido de presupuesto: {{ $('Parsear IA').first().json.nombre_cliente || 'cliente' }}",
+        "subject": "=Nuevo pedido de presupuesto: {{ $json.solicitud ? $json.solicitud.nombre_cliente : 'cliente' }}",
         "emailType": "text",
-        "message": "={{ $('Parsear IA').first().json.mensaje }}\n\n---\nCliente: {{ $('Parsear IA').first().json.nombre_cliente }}\nEmail: {{ $('Parsear IA').first().json.email }}\nTelefono: {{ $('Parsear IA').first().json.telefono }}\n\n(Asignado automaticamente por AkunCalcu)",
+        "message": "={{ $json.mensaje_whatsapp }}\n\n(Asignado automaticamente por AkunCalcu)",
         "options": {}
       },
-      "notes": "Adjuntar la misma credencial Gmail OAuth2 de la empresa. Envia un mail nuevo al vendedor asignado."
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TJKeo9bkTZYIBZOz",
+          "name": "Gmail account"
+        }
+      },
+      "webhookId": "fe351bef-f0b9-41b1-a102-fdddab0d7952"
     },
     {
       "id": "whatsapp",
       "name": "WhatsApp al Vendedor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, 320],
+      "position": [
+        1890,
+        500
+      ],
       "onError": "continueRegularOutput",
       "parameters": {
         "method": "POST",
@@ -121,48 +289,140 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "apikey", "value": "={{ $env.EVOLUTION_APIKEY || 'REEMPLAZAR_EVOLUTION_APIKEY' }}" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_APIKEY || 'REEMPLAZAR_EVOLUTION_APIKEY' }}"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.vendedor ? $json.vendedor.whatsapp : '', name: 'nueva_solicitud', language: 'es_AR', components: [{ type: 'body', parameters: [{ type: 'text', text: ($json.vendedor ? $json.vendedor.nombre : '') }, { type: 'text', text: (($('Parsear IA').first().json.nombre_cliente || '') + ' - ' + ($('Parsear IA').first().json.telefono || '')) }] }] }) }}",
-        "options": {}
-      },
-      "notes": "Requiere plantilla Meta aprobada 'nueva_solicitud' (es_AR) con 2 params: {{1}}=vendedor, {{2}}=cliente. Reemplazar EVOLUTION_APIKEY."
-    },
-    {
-      "id": "es-nueva",
-      "name": "Es Nueva",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1240, 340],
-      "notes": "Gate de notificacion: Django decide con el flag 'notificar' (false si es duplicada, si el filtro anti-spam la descarto, o si no hay vendedores en el pool). El fallback '?? !duplicada' mantiene el comportamiento viejo si el backend todavia no expone el flag.",
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose", "version": 1 },
-          "conditions": [
-            {
-              "id": "cond-nueva",
-              "leftValue": "={{ ($json.notificar ?? !$json.duplicada) ? 'si' : 'no' }}",
-              "rightValue": "si",
-              "operator": { "type": "string", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
-        },
+        "jsonBody": "={{ JSON.stringify({ number: $json.vendedor ? $json.vendedor.whatsapp : '', name: 'nueva_solicitud', language: 'es_AR', components: [{ type: 'body', parameters: [{ type: 'text', text: ($json.vendedor ? $json.vendedor.nombre : '') }, { type: 'text', text: (($json.solicitud ? $json.solicitud.nombre_cliente : '') + ' - ' + ($json.solicitud ? $json.solicitud.telefono : '')) }] }] }) }}",
         "options": {}
       }
     }
   ],
   "connections": {
-    "Nuevo mail": { "main": [[{ "node": "IA Clasificar y Extraer", "type": "main", "index": 0 }]] },
-    "IA Clasificar y Extraer": { "main": [[{ "node": "Parsear IA", "type": "main", "index": 0 }]] },
-    "Parsear IA": { "main": [[{ "node": "Es Presupuesto", "type": "main", "index": 0 }]] },
-    "Es Presupuesto": { "main": [[{ "node": "Crear Solicitud", "type": "main", "index": 0 }], []] },
-    "Crear Solicitud": { "main": [[{ "node": "Es Nueva", "type": "main", "index": 0 }]] },
-    "Es Nueva": { "main": [[{ "node": "Reenviar al Vendedor", "type": "main", "index": 0 }, { "node": "WhatsApp al Vendedor", "type": "main", "index": 0 }], []] }
+    "Nuevo mail": {
+      "main": [
+        [
+          {
+            "node": "Extraer mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer mail": {
+      "main": [
+        [
+          {
+            "node": "Es Formulario Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es Formulario Web": {
+      "main": [
+        [
+          {
+            "node": "Parsear Formulario",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IA Clasificar y Extraer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Formulario": {
+      "main": [
+        [
+          {
+            "node": "Crear Solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA Clasificar y Extraer": {
+      "main": [
+        [
+          {
+            "node": "Parsear IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear IA": {
+      "main": [
+        [
+          {
+            "node": "Es Presupuesto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es Presupuesto": {
+      "main": [
+        [
+          {
+            "node": "Crear Solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Crear Solicitud": {
+      "main": [
+        [
+          {
+            "node": "Es Nueva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es Nueva": {
+      "main": [
+        [
+          {
+            "node": "Reenviar al Vendedor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WhatsApp al Vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1", "timezone": "America/Argentina/Buenos_Aires" }
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  }
 }
