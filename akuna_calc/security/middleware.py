@@ -22,6 +22,7 @@ SECURITY_EXEMPT_PREFIXES = (
     '/media/',
     '/admin/jsi18n/',
     '/security/backups/api/',
+    '/security/salud/api/',
     '/agenda/api/',
     '/solicitudes/api/',
 )

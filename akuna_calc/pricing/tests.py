@@ -12,7 +12,13 @@ from pricing.models import Accesorio, MaterialCiego
 from pricing.forms import AccesorioCreateForm, AccesorioEditForm, MaterialCiegoForm
 from pricing.serializers import PricingCalculateSerializer
 from pricing.catalog_views import MaterialesCiegosListView
-from pricing.services.calculator import PriceCalculator, PricingError
+from pricing.services.calculator import (
+    PriceCalculator,
+    PricingError,
+    ejes_tirantes,
+    medida_seccion,
+    orientacion_tirantes,
+)
 from pricing.tipologia import (
     clasificar_tipologia, resolver_tipologia,
     TIPO_VENTANA_CORREDIZA, TIPO_VENTANA_BATIENTE, TIPO_VENTANA_OSCILO,
@@ -1007,6 +1013,46 @@ class TirantesSerializerTest(SimpleTestCase):
         s = PricingCalculateSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
 
+    def test_verticales_validan_contra_el_ancho(self):
+        data = self._base(tirantes={'activo': True, 'orientacion': 'vertical', 'secciones': [
+            {'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 400, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]})
+        s = PricingCalculateSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)                       # ancho = 1000
+
+    def test_verticales_que_suman_el_alto_fallan(self):
+        data = self._base(tirantes={'activo': True, 'orientacion': 'vertical', 'secciones': [
+            {'medida_mm': 900, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 600, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]})
+        s = PricingCalculateSerializer(data=data)                     # 1500 = alto, no ancho
+        self.assertFalse(s.is_valid())
+
+    def test_orientacion_invalida_falla(self):
+        data = self._base(tirantes={'activo': True, 'orientacion': 'diagonal', 'secciones': [
+            {'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 900, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]})
+        self.assertFalse(PricingCalculateSerializer(data=data).is_valid())
+
+    def test_seccion_sin_medida_falla(self):
+        data = self._base(tirantes={'activo': True, 'secciones': [
+            {'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 900, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]})
+        self.assertFalse(PricingCalculateSerializer(data=data).is_valid())
+
+    def test_formato_viejo_sin_orientacion_sigue_siendo_horizontal(self):
+        data = self._base(tirantes={'activo': True, 'secciones': [
+            {'alto_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 900, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]})
+        s = PricingCalculateSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)                       # 1500 = alto
+        self.assertEqual(s.validated_data['tirantes']['orientacion'], 'horizontal')
+        self.assertEqual(s.validated_data['tirantes']['secciones'][0]['medida_mm'], 600)
+
 
 class PriceCalculatorSeccionesTest(SimpleTestCase):
     def test_secciones_vidrio_y_ciego_suman_areas(self):
@@ -1018,7 +1064,7 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
             {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
             {'alto_mm': 500, 'material': {'tipo': 'ciego', 'id': 3}},
         ]
-        total = calc._calcular_secciones(secciones, 1000, 1, items)
+        total = calc._calcular_secciones(secciones, 1000, 1500, 1, items)
         # vidrio: 1.0 m2 x 100 = 100 ; ciego: 0.5 m2 x 200 = 100
         self.assertAlmostEqual(total, 200.0, places=2)
         self.assertEqual(len(items), 2)
@@ -1032,7 +1078,7 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
         calc._get_vidrio_opt = lambda codigo: SimpleNamespace(codigo=codigo, descripcion='Float', precio=100.0)
         items = []
         total = calc._calcular_secciones(
-            [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}}], 1000, 2, items,
+            [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}}], 1000, 1000, 2, items,
         )
         # 1.0 m2 x 100 x 2 hojas = 200
         self.assertAlmostEqual(total, 200.0, places=2)
@@ -1045,7 +1091,7 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
         items = []
         with self.assertRaises(PricingError):
             calc._calcular_secciones(
-                [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'X'}}], 1000, 1, items,
+                [{'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'X'}}], 1000, 1000, 1, items,
             )
 
     def test_material_ciego_faltante_es_error(self):
@@ -1054,8 +1100,161 @@ class PriceCalculatorSeccionesTest(SimpleTestCase):
         items = []
         with self.assertRaises(PricingError):
             calc._calcular_secciones(
-                [{'alto_mm': 1000, 'material': {'tipo': 'ciego', 'id': 99999}}], 1000, 1, items,
+                [{'alto_mm': 1000, 'material': {'tipo': 'ciego', 'id': 99999}}], 1000, 1000, 1, items,
             )
+
+
+class PriceCalculatorSeccionesVerticalesTest(SimpleTestCase):
+    """REQ-044: con tirantes verticales cada sección es una columna — reparte el
+    ancho y toma el alto completo de la abertura."""
+
+    def _calc(self):
+        calc = PriceCalculator()
+        calc._get_vidrio_opt = lambda codigo: SimpleNamespace(codigo=codigo, descripcion='Float', precio=100.0)
+        calc._get_material_ciego = lambda mid: SimpleNamespace(id=mid, codigo='CH', nombre='Chapa', precio_m2=200.0)
+        return calc
+
+    def test_columnas_reparten_el_ancho_y_toman_el_alto_completo(self):
+        items = []
+        secciones = [
+            {'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 400, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]
+        # abertura 1000 x 2000
+        total = self._calc()._calcular_secciones(secciones, 1000, 2000, 1, items, 'vertical')
+        # vidrio: 0.6 x 2.0 = 1.2 m2 x 100 = 120 ; ciego: 0.4 x 2.0 = 0.8 m2 x 200 = 160
+        self.assertAlmostEqual(total, 280.0, places=2)
+        self.assertAlmostEqual(items[0]['area_m2'], 1.2, places=4)
+        self.assertAlmostEqual(items[1]['area_m2'], 0.8, places=4)
+        # El desglose muestra las medidas reales de la columna, no las de la abertura
+        self.assertAlmostEqual(items[0]['ancho_mm'], 600.0, places=2)
+        self.assertAlmostEqual(items[0]['alto_mm'], 2000.0, places=2)
+
+    def test_las_columnas_cubren_el_area_de_la_abertura(self):
+        items = []
+        secciones = [
+            {'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 400, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]
+        self._calc()._calcular_secciones(secciones, 1000, 2000, 1, items, 'vertical')
+        self.assertAlmostEqual(sum(i['area_m2'] for i in items), 1000 * 2000 / 1_000_000, places=4)
+
+    def test_misma_area_total_que_horizontal(self):
+        """Girar la orientación no puede cambiar el área cotizada de la abertura."""
+        horiz, vert = [], []
+        calc = self._calc()
+        th = calc._calcular_secciones(
+            [{'medida_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+             {'medida_mm': 800, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}}],
+            1000, 2000, 1, horiz, 'horizontal',
+        )
+        tv = calc._calcular_secciones(
+            [{'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+             {'medida_mm': 400, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}}],
+            1000, 2000, 1, vert, 'vertical',
+        )
+        self.assertAlmostEqual(th, tv, places=2)
+
+    def test_validar_secciones_vertical_compara_contra_el_ancho(self):
+        calc = PriceCalculator()
+        secs = [{'medida_mm': 600, 'material': {}}, {'medida_mm': 400, 'material': {}}]
+        calc._validar_secciones(secs, 1000, 'vertical')          # suma == ancho: OK
+        with self.assertRaises(PricingError) as ctx:
+            calc._validar_secciones(secs, 2000, 'vertical')      # suma != ancho: error
+        self.assertIn('ancho', str(ctx.exception))
+
+    def test_perfil_del_tirante_vertical_mide_el_alto(self):
+        calc = PriceCalculator()
+        calc._get_perfil = lambda codigo, color_id: SimpleNamespace(
+            codigo=codigo, descripcion='Travesaño', peso_metro=2.0, precio_kg=10.0, corte45=None,
+        )
+        items = []
+        _, longitud = ejes_tirantes('vertical', 1000, 2000)
+        calc._calcular_tirantes_perfil('T1', 1, longitud, None, items)
+        self.assertAlmostEqual(items[0]['longitud_mm'], 2000.0, places=2)
+
+
+class CotizarTirantesWiringTest(SimpleTestCase):
+    """Cubre el tramo que usa `calculate()`: la orientación tiene que elegir bien
+    los ejes. Un ancho/alto cruzado acá cotiza un área y un tirante equivocados
+    aunque cada pieza suelta esté bien."""
+
+    def _calc(self):
+        calc = PriceCalculator()
+        calc._get_vidrio_opt = lambda codigo: SimpleNamespace(codigo=codigo, descripcion='Float', precio=100.0)
+        calc._get_perfil = lambda codigo, color_id: SimpleNamespace(
+            codigo=codigo, descripcion='Travesaño', peso_metro=2.0, precio_kg=10.0, corte45=None,
+        )
+        return calc
+
+    def _cfg(self, orientacion, *medidas):
+        return {
+            'activo': True, 'orientacion': orientacion, 'perfil_codigo': 'T1',
+            'secciones': [{'medida_mm': m, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}} for m in medidas],
+        }
+
+    def _cotizar(self, cfg, ancho=1000, alto=2000, hojas=1):
+        secs, perfs = [], []
+        total, peso = self._calc()._cotizar_tirantes(
+            cfg, ancho_mm=ancho, alto_mm=alto, color_id=None, cantidad_hojas=hojas,
+            secciones_items=secs, perfiles_items=perfs,
+        )
+        return total, peso, secs, perfs
+
+    def test_vertical_reparte_el_ancho_y_el_tirante_mide_el_alto(self):
+        total, _, secs, perfs = self._cotizar(self._cfg('vertical', 600, 400))
+        self.assertEqual([s['ancho_mm'] for s in secs], [600.0, 400.0])
+        self.assertEqual([s['alto_mm'] for s in secs], [2000.0, 2000.0])
+        self.assertAlmostEqual(perfs[0]['longitud_mm'], 2000.0, places=2)   # alto, no ancho
+        self.assertAlmostEqual(total, 2.0 * 100, places=2)                  # 2 m2 de abertura
+
+    def test_horizontal_reparte_el_alto_y_el_tirante_mide_el_ancho(self):
+        total, _, secs, perfs = self._cotizar(self._cfg('horizontal', 1200, 800))
+        self.assertEqual([s['ancho_mm'] for s in secs], [1000.0, 1000.0])
+        self.assertEqual([s['alto_mm'] for s in secs], [1200.0, 800.0])
+        self.assertAlmostEqual(perfs[0]['longitud_mm'], 1000.0, places=2)   # ancho, no alto
+        self.assertAlmostEqual(total, 2.0 * 100, places=2)
+
+    def test_vertical_con_secciones_que_suman_el_alto_es_error(self):
+        with self.assertRaises(PricingError):
+            self._cotizar(self._cfg('vertical', 1200, 800))                 # 2000 = alto
+
+    def test_sin_orientacion_se_comporta_como_horizontal(self):
+        """Ítem guardado antes de REQ-044: mismo precio y mismo tirante que antes."""
+        viejo = {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+            {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]}
+        total, peso, secs, perfs = self._cotizar(viejo)
+        self.assertAlmostEqual(total, 200.0, places=2)
+        self.assertAlmostEqual(perfs[0]['longitud_mm'], 1000.0, places=2)
+        self.assertAlmostEqual(peso, 1.0 * 1 * 2.0, places=4)
+        self.assertEqual([s['alto_mm'] for s in secs], [1200.0, 800.0])
+
+    def test_los_tirantes_se_multiplican_por_las_hojas(self):
+        _, _, _, perfs = self._cotizar(self._cfg('vertical', 600, 400), hojas=2)
+        self.assertEqual(perfs[0]['cantidad'], 2)                           # (2-1) secciones x 2 hojas
+
+
+class TirantesHelpersTest(SimpleTestCase):
+    """Contrato de datos de los tirantes: lo guardado antes de REQ-044 se sigue
+    leyendo igual (sin orientación = horizontal, sin `medida_mm` = `alto_mm`)."""
+
+    def test_medida_seccion_acepta_el_formato_viejo(self):
+        self.assertEqual(medida_seccion({'medida_mm': 600}), 600.0)
+        self.assertEqual(medida_seccion({'alto_mm': 900}), 900.0)
+        self.assertEqual(medida_seccion({'medida_mm': None, 'alto_mm': 900}), 900.0)
+        self.assertEqual(medida_seccion({}), 0.0)
+
+    def test_orientacion_por_defecto_es_horizontal(self):
+        self.assertEqual(orientacion_tirantes({}), 'horizontal')
+        self.assertEqual(orientacion_tirantes({'orientacion': 'horizontal'}), 'horizontal')
+        self.assertEqual(orientacion_tirantes({'orientacion': 'vertical'}), 'vertical')
+        self.assertEqual(orientacion_tirantes(None), 'horizontal')
+
+    def test_ejes_son_opuestos(self):
+        self.assertEqual(ejes_tirantes('horizontal', 1000, 2000), (2000, 1000))
+        self.assertEqual(ejes_tirantes('vertical', 1000, 2000), (1000, 2000))
 
 
 class ValidateConfigCantidadHojasTest(SimpleTestCase):

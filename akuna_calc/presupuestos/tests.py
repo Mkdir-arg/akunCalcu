@@ -1964,19 +1964,41 @@ class ColocacionPresupuestoTest(TestCase):
 
 
 class TirantesNarrativaTest(SimpleTestCase):
-    def test_narrativa_menciona_la_division(self):
-        snap = {
+    def _snap(self, tirantes):
+        return {
             'descripcion_manual': 'Puerta', 'titulo_item': 'Puerta',
-            'cantidad': 1, 'ancho_mm': 900, 'alto_mm': 2000,
-            'tirantes': {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+            'cantidad': 1, 'ancho_mm': 900, 'alto_mm': 2000, 'tirantes': tirantes,
+        }
+
+    def test_narrativa_menciona_la_division(self):
+        texto = build_narrative_from_snapshot(self._snap(
+            {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+                {'medida_mm': 1200, 'material': {'tipo': 'vidrio', 'descripcion': 'Float 6mm'}},
+                {'medida_mm': 800, 'material': {'tipo': 'ciego', 'nombre': 'Chapa'}},
+            ]},
+        ))
+        self.assertIn('dividida por 1 tirante horizontal', texto)
+        self.assertIn('Float 6mm', texto)
+        self.assertIn('Chapa', texto)
+
+    def test_narrativa_vertical(self):
+        texto = build_narrative_from_snapshot(self._snap(
+            {'activo': True, 'orientacion': 'vertical', 'secciones': [
+                {'medida_mm': 300, 'material': {'tipo': 'ciego', 'nombre': 'Chapa'}},
+                {'medida_mm': 300, 'material': {'tipo': 'vidrio', 'descripcion': 'Float 6mm'}},
+                {'medida_mm': 300, 'material': {'tipo': 'vidrio', 'descripcion': 'Float 6mm'}},
+            ]},
+        ))
+        self.assertIn('dividida por 2 tirantes verticales', texto)
+
+    def test_formato_viejo_se_narra_como_horizontal(self):
+        texto = build_narrative_from_snapshot(self._snap(
+            {'activo': True, 'secciones': [
                 {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'descripcion': 'Float 6mm'}},
                 {'alto_mm': 800, 'material': {'tipo': 'ciego', 'nombre': 'Chapa'}},
             ]},
-        }
-        texto = build_narrative_from_snapshot(snap)
-        self.assertIn('dividida por 1 tirante', texto)
-        self.assertIn('Float 6mm', texto)
-        self.assertIn('Chapa', texto)
+        ))
+        self.assertIn('dividida por 1 tirante horizontal', texto)
 
     def test_sin_tirantes_no_agrega_clausula(self):
         snap = {'descripcion_manual': 'Ventana', 'titulo_item': 'Ventana', 'cantidad': 1,
@@ -1999,6 +2021,27 @@ class SerializeTirantesTest(SimpleTestCase):
         self.assertEqual(out['perfil_codigo'], 'T1')
         self.assertEqual(out['secciones'][0]['material']['descripcion'], 'Float 6mm')
         self.assertEqual(out['secciones'][1]['material']['nombre'], 'Chapa')
+
+    @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
+    def test_normaliza_medida_y_orientacion(self, mock_vidrio, mock_ciego):
+        """El snapshot guarda siempre `medida_mm` + `orientacion`, también cuando
+        el ítem venía en el formato anterior a REQ-044 (`alto_mm`, sin eje)."""
+        mock_vidrio.return_value = [SimpleNamespace(codigo='F6', descripcion='Float 6mm')]
+        mock_ciego.return_value = []
+        viejo = _serialize_tirantes({'activo': True, 'secciones': [
+            {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]})
+        self.assertEqual(viejo['orientacion'], 'horizontal')
+        self.assertEqual([s['medida_mm'] for s in viejo['secciones']], [1200, 800])
+
+        vertical = _serialize_tirantes({'activo': True, 'orientacion': 'vertical', 'secciones': [
+            {'medida_mm': 600, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'medida_mm': 400, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+        ]})
+        self.assertEqual(vertical['orientacion'], 'vertical')
+        self.assertEqual([s['medida_mm'] for s in vertical['secciones']], [600, 400])
 
     def test_inactivo_devuelve_none(self):
         self.assertIsNone(_serialize_tirantes({'activo': False, 'secciones': []}))

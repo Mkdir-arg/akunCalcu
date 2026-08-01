@@ -1,0 +1,103 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Salud del sistema{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-4 animate-fade-in">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
+                <i class="fas fa-heart-pulse text-blue-500 mr-2"></i>Salud del sistema
+            </h1>
+            <p class="text-slate-500 font-medium mt-1">Estado de las integraciones que se rompen sin avisar</p>
+        </div>
+        <button onclick="cargarN8n()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm">
+            <i class="fas fa-rotate mr-1"></i>Actualizar
+        </button>
+    </div>
+
+    <!-- Chequeos -->
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Integración</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-salud" class="bg-white divide-y divide-gray-200">
+                    {% for c in salud.chequeos %}
+                    {% include 'security/_salud_fila.html' with c=c %}
+                    {% endfor %}
+                    <tr id="fila-cargando">
+                        <td colspan="3" class="px-6 py-6 text-center text-slate-500">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Consultando n8n...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-xs text-slate-400 mt-4">
+        <i class="fas fa-circle-info mr-1"></i>
+        El mismo estado está disponible en JSON en <code>/security/salud/api/</code> para que un
+        workflow lo consulte y avise por WhatsApp.
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const BADGES = {
+    ok:        {clase: 'bg-green-100 text-green-800',  icono: 'fa-check',                texto: 'OK'},
+    atencion:  {clase: 'bg-yellow-100 text-yellow-800', icono: 'fa-triangle-exclamation', texto: 'Atención'},
+    falla:     {clase: 'bg-red-100 text-red-800',      icono: 'fa-circle-xmark',         texto: 'Falla'},
+    sin_datos: {clase: 'bg-slate-100 text-slate-600',  icono: 'fa-question',             texto: 'Sin datos'},
+};
+
+function escapar(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto == null ? '' : texto;
+    return div.innerHTML;
+}
+
+function fila(c) {
+    const b = BADGES[c.estado] || BADGES.sin_datos;
+    return `<tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-6 py-4 text-sm"><p class="font-semibold text-slate-800">${escapar(c.nombre)}</p></td>
+        <td class="px-6 py-4 text-center">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${b.clase}">
+                <i class="fas ${b.icono} mr-1"></i>${b.texto}
+            </span>
+        </td>
+        <td class="px-6 py-4 text-sm text-slate-700">
+            <p>${escapar(c.mensaje)}</p>
+            ${c.detalle ? `<p class="text-xs text-slate-400 mt-1">${escapar(c.detalle)}</p>` : ''}
+        </td>
+    </tr>`;
+}
+
+function cargarN8n() {
+    const tbody = document.getElementById('tabla-salud');
+    tbody.innerHTML = `<tr id="fila-cargando"><td colspan="3" class="px-6 py-6 text-center text-slate-500">
+        <i class="fas fa-spinner fa-spin mr-2"></i>Consultando n8n...</td></tr>`;
+
+    fetch('{% url "security:api_salud" %}', {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((data) => { tbody.innerHTML = data.chequeos.map(fila).join(''); })
+        .catch((e) => {
+            tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-6 text-center text-slate-500">
+                <i class="fas fa-circle-xmark text-red-500 mr-2"></i>No se pudo consultar el estado (${escapar(e.message)}).
+                Recargá la página para ver al menos los chequeos locales.</td></tr>`;
+        });
+}
+
+document.addEventListener('DOMContentLoaded', cargarN8n);
+</script>
+{% endblock %}

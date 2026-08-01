@@ -13,8 +13,9 @@ from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.urls import reverse
-from .models import AuditLog, Backup, SecuritySettings
+from .models import AuditLog, Backup, HeartbeatIntegracion, SecuritySettings
 from .merge import get_merge_entities, preview_merge, merge_records
+import json
 import os
 import subprocess
 from datetime import datetime
@@ -186,6 +187,78 @@ def audit_list(request):
 def _client_ip(request):
     xff = request.META.get('HTTP_X_FORWARDED_FOR')
     return (xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')) or None
+
+
+# ---------------------------------------------------------------------------
+# Panel de salud de las integraciones (REQ-045)
+# ---------------------------------------------------------------------------
+
+@login_required
+def salud(request):
+    """Panel de salud. Renderiza los chequeos locales (instantáneos) y deja que el
+    template pida los de n8n por AJAX, para que un n8n lento no cuelgue la página."""
+    from usuarios.access_control import user_has_full_access
+    if not user_has_full_access(request.user):
+        raise PermissionDenied
+
+    from .health import recolectar_salud
+    return render(request, 'security/salud.html', {
+        'salud': recolectar_salud(incluir_n8n=False),
+    })
+
+
+def _autorizado_para_salud(request):
+    """Dos vías: sesión con acceso total (el panel por AJAX) o X-Bot-Secret (n8n)."""
+    secret = os.environ.get('HEALTH_BOT_SECRET', '')
+    token = request.headers.get('X-Bot-Secret', '')
+    if secret and token == secret:
+        return True
+
+    from usuarios.access_control import user_has_full_access
+    return request.user.is_authenticated and user_has_full_access(request.user)
+
+
+@require_http_methods(["GET"])
+def api_salud(request):
+    """Mismo estado que el panel, en JSON, para que un workflow lo consulte y avise.
+    Nunca devuelve credenciales ni valores de entorno: solo estados y mensajes."""
+    if not _autorizado_para_salud(request):
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    from .health import recolectar_salud
+    return JsonResponse(recolectar_salud(incluir_n8n=True))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_heartbeat(request):
+    """Latido de una integración externa: n8n confirma cada 15 min que sigue viva.
+
+    Es la única señal fiable para el reparto: su trigger solo genera ejecución cuando
+    entra un mail, así que el silencio no distingue "no llegaron mails" de "no puedo
+    leer la casilla"."""
+    secret = os.environ.get('HEALTH_BOT_SECRET', '')
+    if not secret or request.headers.get('X-Bot-Secret', '') != secret:
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    clave = (data.get('clave') or '').strip()
+    claves_validas = {c for c, _ in HeartbeatIntegracion.CLAVE_CHOICES}
+    if clave not in claves_validas:
+        return JsonResponse({'error': f'Clave inválida. Válidas: {sorted(claves_validas)}'}, status=400)
+
+    HeartbeatIntegracion.objects.update_or_create(
+        clave=clave,
+        defaults={
+            'ultimo_ok': timezone.now(),
+            'detalle': (data.get('detalle') or '').strip()[:300],
+        },
+    )
+    return JsonResponse({'ok': True, 'clave': clave})
 
 
 @login_required

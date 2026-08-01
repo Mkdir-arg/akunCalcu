@@ -11,7 +11,8 @@
  *   - hojas: cantidad de hojas (se acota a las válidas del tipo)
  *   - mosquitero / premarco: boolean
  *   - vidrio: incoloro | dvh | gris | bronce | esmerilado
- *   - tirantes: [{ alto_mm, ciego }] (opcional) — secciones divididas por tirantes
+ *   - tirantes: [{ medida_mm, ciego }] (opcional) — secciones divididas por tirantes
+ *   - tirantes_orientacion: horizontal (bandas, default) | vertical (columnas)
  *
  * NO requiere build: se carga como ESM vía import map (three desde CDN).
  */
@@ -51,7 +52,7 @@ let windowGroup = null, movers = [], curOpen = 0, targetOpen = 0, framed = false
 
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
                 mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco',
-                tirantes: null };
+                tirantes: null, tirantesOrientacion: 'horizontal' };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -229,16 +230,43 @@ function build() {
     return leaf;
   }
 
-  // Secciones de tirantes: bandas horizontales (vidrio o panel ciego) + barra
-  // divisora, dibujadas DENTRO del target (hoja o paño) para que acompañen la
-  // apertura. `secs` = [{alto_mm, ciego}].
+  // Secciones de tirantes: bandas horizontales o columnas verticales (vidrio o
+  // panel ciego) + barra divisora, dibujadas DENTRO del target (hoja o paño) para
+  // que acompañen la apertura. `secs` = [{medida_mm, ciego}]; la medida es el alto
+  // de la banda si los tirantes son horizontales y el ancho de la columna si son
+  // verticales, siempre en proporción sobre el hueco disponible.
   const tir3 = (Array.isArray(state.tirantes) && state.tirantes.length >= 2) ? state.tirantes : null;
+  const medidaSec = s => parseInt(s.medida_mm != null ? s.medida_mm : s.alto_mm, 10) || 0;
   function addSecciones(target, w, h, yBase, z, secs) {
-    const totalMm = secs.reduce((a, s) => a + (parseInt(s.alto_mm, 10) || 0), 0);
+    const totalMm = secs.reduce((a, s) => a + medidaSec(s), 0);
     if (totalMm <= 0) { return; }
+    const vertical = state.tirantesOrientacion === 'vertical';
+
+    if (vertical) {
+      let xLeft = -w / 2;
+      secs.forEach((s, i) => {
+        const segW = (medidaSec(s) / totalMm) * w;
+        const xc = xLeft + segW / 2;
+        const ancho = Math.max(segW - 0.006, 0.02);
+        if (s.ciego) {
+          const panel = new THREE.Mesh(new THREE.BoxGeometry(ancho, h, 0.02), perfilMat);
+          panel.position.set(xc, yBase, z); panel.castShadow = true; panel.receiveShadow = true; target.add(panel);
+        } else {
+          const gseg = glass(ancho, h, z, def);
+          gseg.position.x = xc; gseg.position.y = yBase; target.add(gseg);
+        }
+        if (i < secs.length - 1) {
+          const bar = new THREE.Mesh(new RoundedBoxGeometry(0.028, h + 0.02, 0.03, 2, 0.004), perfilMat);
+          bar.position.set(xLeft + segW, yBase, z); bar.castShadow = true; target.add(bar);
+        }
+        xLeft += segW;
+      });
+      return;
+    }
+
     let yTop = yBase + h / 2;
     secs.forEach((s, i) => {
-      const segH = ((parseInt(s.alto_mm, 10) || 0) / totalMm) * h;
+      const segH = (medidaSec(s) / totalMm) * h;
       const yc = yTop - segH / 2;
       if (s.ciego) {
         const panel = new THREE.Mesh(new THREE.BoxGeometry(w, Math.max(segH - 0.006, 0.02), 0.02), perfilMat);
@@ -347,6 +375,7 @@ function applyParams(params) {
   state.vidrio = VIDRIOS[params.vidrio] ? params.vidrio : 'incoloro';
   state.color = PERFILES[params.color] ? params.color : 'blanco';
   state.tirantes = Array.isArray(params.tirantes) ? params.tirantes : null;
+  state.tirantesOrientacion = params.tirantes_orientacion === 'vertical' ? 'vertical' : 'horizontal';
   const p = PERFILES[state.color];
   perfilMat.color.setHex(p.color); perfilMat.metalness = p.metalness; perfilMat.roughness = p.roughness;
   curOpen = 0;

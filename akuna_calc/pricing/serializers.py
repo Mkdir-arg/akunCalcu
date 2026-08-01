@@ -12,12 +12,29 @@ class TiranteSeccionMaterialSerializer(serializers.Serializer):
 
 
 class TiranteSeccionSerializer(serializers.Serializer):
-    alto_mm = serializers.IntegerField(min_value=1)
+    """Sección de una abertura dividida por tirantes.
+
+    `medida_mm` es la medida sobre el eje que se divide: el alto de la sección
+    con tirantes horizontales, el ancho con tirantes verticales. Se acepta el
+    `alto_mm` de la v1 (sólo horizontal) para no romper los ítems ya guardados.
+    """
+
+    medida_mm = serializers.IntegerField(min_value=1, required=False)
+    alto_mm = serializers.IntegerField(min_value=1, required=False)
     material = TiranteSeccionMaterialSerializer()
+
+    def validate(self, data):
+        if data.get('medida_mm') is None and data.get('alto_mm') is None:
+            raise serializers.ValidationError('Cada sección necesita su medida en mm.')
+        data['medida_mm'] = data.get('medida_mm') or data.get('alto_mm')
+        return data
 
 
 class TirantesSerializer(serializers.Serializer):
     activo = serializers.BooleanField(required=False, default=False)
+    orientacion = serializers.ChoiceField(
+        choices=['horizontal', 'vertical'], required=False, default='horizontal',
+    )
     perfil_codigo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     secciones = TiranteSeccionSerializer(many=True, required=False, default=list)
 
@@ -59,9 +76,11 @@ class PricingCalculateSerializer(serializers.Serializer):
         tirantes = data.get('tirantes')
         if tirantes and tirantes.get('activo'):
             secciones = tirantes.get('secciones') or []
-            suma = sum(int(s['alto_mm']) for s in secciones)
-            if suma != int(data['alto_mm']):
+            vertical = tirantes.get('orientacion') == 'vertical'
+            eje, total = ('ancho', data['ancho_mm']) if vertical else ('alto', data['alto_mm'])
+            suma = sum(int(s['medida_mm']) for s in secciones)
+            if suma != int(total):
                 raise serializers.ValidationError(
-                    f"La suma de las secciones ({suma} mm) debe ser igual al alto de la abertura ({data['alto_mm']} mm)."
+                    f"La suma de las secciones ({suma} mm) debe ser igual al {eje} de la abertura ({total} mm)."
                 )
         return data

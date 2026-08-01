@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List
 
 from plantillas.models import OpcionalFabrica
 from pricing.models import Hoja, Interior, Marco, MaterialCiego, Tratamiento, Vidrio
+from pricing.services.calculator import medida_seccion, orientacion_tirantes
 
 
 _GENERIC_DESCRIPTIONS = {
@@ -139,7 +140,11 @@ def build_narrative_from_snapshot(snapshot: Dict[str, Any]) -> str:
         n_tirantes = max(0, len(materiales) - 1)
         if n_tirantes:
             plural = 's' if n_tirantes != 1 else ''
-            clauses.append(f'dividida por {n_tirantes} tirante{plural} en {_humanize_list(materiales)}')
+            eje = orientacion_tirantes(tirantes)
+            clauses.append(
+                f'dividida por {n_tirantes} tirante{plural} {eje}{"es" if plural else ""} '
+                f'en {_humanize_list(materiales)}'
+            )
 
     if tratamiento_label:
         clauses.append(f'terminación {tratamiento_label.lower()}')
@@ -335,12 +340,13 @@ def _serialize_tirantes(tirantes: Any) -> Dict[str, Any] | None:
                 'descripcion': _clean_text(getattr(vidrio, 'descripcion', '')),
             }
         secciones_out.append({
-            'alto_mm': seccion.get('alto_mm'),
+            'medida_mm': int(medida_seccion(seccion)),
             'material': material_out,
         })
 
     return {
         'activo': True,
+        'orientacion': orientacion_tirantes(tirantes),
         'perfil_codigo': _clean_text(tirantes.get('perfil_codigo')),
         'secciones': secciones_out,
     }

@@ -142,6 +142,7 @@ ACCESS_MODULES = [
             {'code': 'seguridad.backups', 'label': 'Backups', 'route_name': 'security:backup_login'},
             {'code': 'seguridad.auditoria', 'label': 'Auditoría', 'route_name': 'security:audit_list'},
             {'code': 'seguridad.fusionar', 'label': 'Fusionar duplicados', 'route_name': 'security:fusionar'},
+            {'code': 'seguridad.salud', 'label': 'Salud del sistema', 'route_name': 'security:salud'},
         ],
     },
     {
@@ -171,6 +172,8 @@ PUBLIC_ROUTE_KEYS = {
     'pedidos:api_crear_borrador',
     'pedidos:api_confirmar',
     'security:backup_api_create',
+    'security:api_salud',
+    'security:api_heartbeat',
     'solicitudes:api_crear',
     'solicitudes:api_recordatorios',
     'solicitudes:api_marcar_recordatorio',

@@ -229,3 +229,44 @@ class Backup(models.Model):
             except:
                 return False
         return False
+
+
+class HeartbeatIntegracion(models.Model):
+    """Último latido de una integración externa que avisa que sigue viva.
+
+    Existe porque el silencio de un workflow de n8n no es concluyente: el trigger del
+    reparto solo genera ejecución cuando llega un mail, así que "sin ejecuciones" puede
+    significar "no llegaron mails" o "no puedo leer la casilla". Cuando la credencial de
+    Gmail expiró (30/07) n8n no dejó ni una ejecución de error: solo líneas en el log del
+    servicio, que la API REST no expone. El latido convierte esa ausencia en una señal
+    positiva: si deja de llegar, algo se rompió.
+    """
+
+    CLAVE_GMAIL_REPARTO = 'gmail_reparto'
+    CLAVE_CHOICES = [
+        (CLAVE_GMAIL_REPARTO, 'Lectura de Gmail (reparto de solicitudes)'),
+    ]
+
+    clave = models.CharField(
+        max_length=50, unique=True, choices=CLAVE_CHOICES, verbose_name="Integración",
+    )
+    ultimo_ok = models.DateTimeField(null=True, blank=True, verbose_name="Último latido OK")
+    detalle = models.CharField(max_length=300, blank=True, verbose_name="Detalle")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Latido de integración"
+        verbose_name_plural = "Latidos de integraciones"
+        ordering = ['clave']
+
+    def __str__(self):
+        if not self.ultimo_ok:
+            return f"{self.get_clave_display()} — sin latidos"
+        return f"{self.get_clave_display()} — {self.ultimo_ok:%d/%m/%Y %H:%M}"
+
+    @property
+    def minutos_desde_ultimo_ok(self):
+        """Minutos transcurridos desde el último latido, o None si nunca latió."""
+        if not self.ultimo_ok:
+            return None
+        return (timezone.now() - self.ultimo_ok).total_seconds() / 60

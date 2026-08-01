@@ -1,4 +1,4 @@
-s# Requerimientos — AkunCalcu
+# Requerimientos — AkunCalcu
 
 > Los requerimientos son ideas que pasaron por el análisis del equipo funcional (/idea) y están listas para entrar al flujo de desarrollo (/feature).
 > Este archivo se actualiza al crear o cambiar el estado de un requerimiento.
@@ -63,3 +63,5 @@ s# Requerimientos — AkunCalcu
 | [REQ-041](./REQ-041-tirantes-divisores-relleno-por-seccion.md) | Tirantes divisores con relleno por sección en el cotizador | Implementado | 2026-07-27 | FEAT-031 |
 | [REQ-042](./REQ-042-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | Implementado | 2026-07-27 | FEAT-032 |
 | [REQ-043](./REQ-043-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | FEAT-033 |
+| [REQ-044](./REQ-044-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | FEAT-034 |
+| [REQ-045](./REQ-045-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) | En desarrollo | 2026-08-01 | — |

@@ -25,7 +25,7 @@ from usuarios.access_control import get_access_profile, user_has_full_access
 from comercial.models import Venta, _formatear_cuit
 from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
 from plantillas.utils import cortar_a_max_length
-from pricing.services.calculator import calcular_precio, PricingError
+from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
 from pricing.models import Producto
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
@@ -595,18 +595,21 @@ def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
     nota = abertura_completa if len(abertura_completa) > len(tipo_abertura) else ''
 
     # Abertura dividida por tirantes: no hay un único vidrio, sino un material por
-    # sección (de arriba hacia abajo). El taller necesita ese detalle para cortar,
-    # así que va al casillero de vidrio y, completo, a la nota.
+    # sección (de arriba hacia abajo si los tirantes son horizontales, de izquierda
+    # a derecha si son verticales). El taller necesita ese detalle para cortar, así
+    # que va al casillero de vidrio y, completo, a la nota.
     tirantes_snap = snapshot.get('tirantes') or {}
     vidrio_texto = (snapshot.get('vidrio') or {}).get('descripcion', '')
     if tirantes_snap.get('secciones'):
+        vertical = orientacion_tirantes(tirantes_snap) == 'vertical'
         partes = []
         for sec in tirantes_snap['secciones']:
             mat = sec.get('material') or {}
             etiqueta = mat.get('nombre') or mat.get('descripcion') or mat.get('codigo') or 's/d'
-            partes.append(f"{sec.get('alto_mm')}mm {etiqueta}")
+            partes.append(f"{int(medida_seccion(sec))}mm {etiqueta}")
         vidrio_texto = ' + '.join(partes)
-        detalle_tirantes = f'Dividida por tirantes: {vidrio_texto}.'
+        sentido = 'verticales (izq→der)' if vertical else 'horizontales (arriba→abajo)'
+        detalle_tirantes = f'Dividida por tirantes {sentido}: {vidrio_texto}.'
         nota = f'{nota}\n{detalle_tirantes}'.strip() if nota else detalle_tirantes
 
     orden_fabricacion = OrdenFabricacion.objects.create(

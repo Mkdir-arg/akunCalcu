@@ -1,0 +1,32 @@
+{% comment %}
+Una fila del panel de salud. El render inicial (chequeos locales) usa este parcial y el
+refresco por AJAX arma el mismo HTML en JS: si se cambia el markup, tocar los dos lados.
+{% endcomment %}
+<tr class="hover:bg-slate-50 transition-colors">
+    <td class="px-6 py-4 text-sm">
+        <p class="font-semibold text-slate-800">{{ c.nombre }}</p>
+    </td>
+    <td class="px-6 py-4 text-center">
+        {% if c.estado == 'ok' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+            <i class="fas fa-check mr-1"></i>OK
+        </span>
+        {% elif c.estado == 'atencion' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+            <i class="fas fa-triangle-exclamation mr-1"></i>Atención
+        </span>
+        {% elif c.estado == 'falla' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+            <i class="fas fa-circle-xmark mr-1"></i>Falla
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+            <i class="fas fa-question mr-1"></i>Sin datos
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 text-sm text-slate-700">
+        <p>{{ c.mensaje }}</p>
+        {% if c.detalle %}<p class="text-xs text-slate-400 mt-1">{{ c.detalle }}</p>{% endif %}
+    </td>
+</tr>

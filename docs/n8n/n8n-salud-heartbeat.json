@@ -1,0 +1,102 @@
+{
+  "name": "Salud - Latido de Gmail AkunCalcu",
+  "nodes": [
+    {
+      "id": "cada-15-min",
+      "name": "Cada 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "leer-gmail",
+      "name": "Probar lectura de Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 1,
+        "simple": true,
+        "filters": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TJKeo9bkTZYIBZOz",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "Pide 1 mail solo para comprobar que la credencial sirve. NO tiene onError a proposito: si el OAuth caduca este nodo falla, no se manda el latido y el panel de salud lo detecta. alwaysOutputData=true para que una casilla vacia no corte el flujo y produzca un falso positivo."
+    },
+    {
+      "id": "avisar-django",
+      "name": "Latido a AkunCalcu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AKUNACALCU_WEB_URL || $env.WEB_URL || 'https://TU_DJANGO_URL') + '/security/salud/api/heartbeat/' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Bot-Secret",
+              "value": "={{ $env.HEALTH_BOT_SECRET || 'REEMPLAZAR_HEALTH_BOT_SECRET' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clave: 'gmail_reparto', detalle: 'lectura OK' }) }}",
+        "options": {}
+      },
+      "notes": "Si este POST no llega, el panel /security/salud/ marca el reparto en Falla a los 45 min (3 latidos perdidos)."
+    }
+  ],
+  "connections": {
+    "Cada 15 min": {
+      "main": [
+        [
+          {
+            "node": "Probar lectura de Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probar lectura de Gmail": {
+      "main": [
+        [
+          {
+            "node": "Latido a AkunCalcu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  }
+}

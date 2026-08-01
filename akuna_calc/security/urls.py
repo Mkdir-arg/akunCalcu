@@ -16,4 +16,8 @@ urlpatterns = [
     path('backups/trigger-n8n/', views.backup_trigger_n8n, name='backup_trigger_n8n'),
     path('audit/', views.audit_list, name='audit_list'),
     path('fusionar/', views.fusionar, name='fusionar'),
+    # Panel de salud de las integraciones
+    path('salud/', views.salud, name='salud'),
+    path('salud/api/', views.api_salud, name='api_salud'),
+    path('salud/api/heartbeat/', views.api_heartbeat, name='api_heartbeat'),
 ]

@@ -53,6 +53,35 @@ def _to_float(value: Any) -> float:
         return 0.0
 
 
+def medida_seccion(seccion: Dict[str, Any]) -> float:
+    """Medida de la sección sobre el eje que dividen los tirantes.
+
+    Los ítems presupuestados antes de REQ-044 (sólo tirantes horizontales) la
+    guardaron como `alto_mm`; se sigue leyendo para que su precio no cambie.
+    """
+    valor = seccion.get("medida_mm")
+    if valor in (None, ""):
+        valor = seccion.get("alto_mm")
+    return _to_float(valor)
+
+
+def orientacion_tirantes(tirantes: Dict[str, Any]) -> str:
+    """`horizontal` (bandas) o `vertical` (columnas). Sin dato → horizontal,
+    que es como se comportaban los tirantes antes de REQ-044."""
+    return "vertical" if (tirantes or {}).get("orientacion") == "vertical" else "horizontal"
+
+
+def ejes_tirantes(orientacion: str, ancho_mm: float, alto_mm: float) -> Tuple[float, float]:
+    """Devuelve (medida que reparten las secciones, longitud de cada tirante).
+
+    Son ejes opuestos: las bandas horizontales reparten el alto y su tirante mide
+    el ancho; las columnas verticales reparten el ancho y su tirante mide el alto.
+    """
+    if orientacion == "vertical":
+        return ancho_mm, alto_mm
+    return alto_mm, ancho_mm
+
+
 class PriceCalculator:
     """Main pricing calculator for legacy BOM tables."""
 
@@ -232,9 +261,10 @@ class PriceCalculator:
             )
 
         # Relleno de la abertura: por secciones (tirantes) o por vidrio único.
-        # Con tirantes, la abertura se divide en bandas horizontales; cada sección
-        # aporta area × precio_m² de su material (vidrio o material ciego) y cada
-        # tirante suma su perfil (peso × precio_kg), como cualquier otro perfil.
+        # Con tirantes, la abertura se divide en bandas horizontales o en columnas
+        # verticales según `orientacion`; cada sección aporta area × precio_m² de su
+        # material (vidrio o material ciego) y cada tirante suma su perfil
+        # (peso × precio_kg), como cualquier otro perfil.
         tirantes_cfg = cleaned.get("tirantes") or {}
         secciones_cfg = tirantes_cfg.get("secciones") or []
         tirantes_activo = bool(tirantes_cfg.get("activo")) and len(secciones_cfg) >= 2
@@ -245,20 +275,16 @@ class PriceCalculator:
         total_secciones = 0.0
 
         if tirantes_activo:
-            self._validar_secciones(secciones_cfg, cleaned["alto_mm"])
-            total_secciones = self._calcular_secciones(
-                secciones_cfg,
-                cleaned["ancho_mm"],
-                cantidad_hojas_producto,
-                secciones_items,
+            total_secciones, peso_tirantes = self._cotizar_tirantes(
+                tirantes_cfg,
+                ancho_mm=cleaned["ancho_mm"],
+                alto_mm=cleaned["alto_mm"],
+                color_id=cleaned["color_id"],
+                cantidad_hojas=cantidad_hojas_producto,
+                secciones_items=secciones_items,
+                perfiles_items=perfiles_items,
             )
-            peso_total_perfiles += self._calcular_tirantes_perfil(
-                tirantes_cfg.get("perfil_codigo"),
-                (len(secciones_cfg) - 1) * cantidad_hojas_producto,
-                cleaned["ancho_mm"],
-                cleaned["color_id"],
-                perfiles_items,
-            )
+            peso_total_perfiles += peso_tirantes
         else:
             # Vidrio único — usa el seleccionado; si no hay, auto-detecta desde la hoja.
             vidrio_codigo = cleaned.get("vidrio_codigo")
@@ -997,47 +1023,98 @@ class PriceCalculator:
             return None
         return Vidrio.objects.filter(pk=codigo).first()
 
-    def _validar_secciones(self, secciones_config: List[Dict[str, Any]], alto_mm: int) -> None:
+    def _cotizar_tirantes(
+        self,
+        tirantes_cfg: Dict[str, Any],
+        *,
+        ancho_mm: float,
+        alto_mm: float,
+        color_id: Optional[int],
+        cantidad_hojas: int,
+        secciones_items: List[Dict[str, Any]],
+        perfiles_items: List[Dict[str, Any]],
+    ) -> Tuple[float, float]:
+        """Cotiza una abertura dividida por tirantes: valida las secciones, cobra
+        el relleno de cada una y suma el perfil de los tirantes.
+
+        Devuelve (total del relleno, peso de los perfiles de tirante). Concentra
+        acá la elección de ejes según la orientación: confundir ancho con alto
+        cotizaría un área y una longitud de tirante equivocadas.
+        """
+        secciones_cfg = tirantes_cfg.get("secciones") or []
+        orientacion = orientacion_tirantes(tirantes_cfg)
+        medida_total, longitud_tirante = ejes_tirantes(orientacion, ancho_mm, alto_mm)
+
+        self._validar_secciones(secciones_cfg, medida_total, orientacion)
+        total_secciones = self._calcular_secciones(
+            secciones_cfg, ancho_mm, alto_mm, cantidad_hojas, secciones_items, orientacion,
+        )
+        peso_tirantes = self._calcular_tirantes_perfil(
+            tirantes_cfg.get("perfil_codigo"),
+            (len(secciones_cfg) - 1) * cantidad_hojas,
+            longitud_tirante,
+            color_id,
+            perfiles_items,
+        )
+        return total_secciones, peso_tirantes
+
+    def _validar_secciones(
+        self,
+        secciones_config: List[Dict[str, Any]],
+        medida_total_mm: int,
+        orientacion: str = "horizontal",
+    ) -> None:
         """Valida las secciones ANTES de cotizar.
 
         Vive en el calculador (y no sólo en el serializer del API) porque el
         precio que se cobra se recalcula también desde el guardado del ítem, que
-        no pasa por el serializer. Si las secciones no cubren el alto exacto, el
+        no pasa por el serializer. Si las secciones no cubren la medida exacta, el
         área cotizada sería menor que la abertura y se cobraría de menos.
+
+        `medida_total_mm` es el alto de la abertura con tirantes horizontales y
+        su ancho con tirantes verticales.
         """
+        eje = "ancho" if orientacion == "vertical" else "alto"
         suma = 0
         for idx, seccion in enumerate(secciones_config, start=1):
-            alto_seccion = _to_float(seccion.get("alto_mm"))
-            if alto_seccion <= 0:
-                raise PricingError(f"La sección {idx} necesita un alto mayor a cero.")
-            suma += int(alto_seccion)
-        if suma != int(alto_mm):
+            medida = medida_seccion(seccion)
+            if medida <= 0:
+                raise PricingError(f"La sección {idx} necesita un {eje} mayor a cero.")
+            suma += int(medida)
+        if suma != int(medida_total_mm):
             raise PricingError(
-                f"La suma de las secciones ({suma} mm) debe ser igual al alto de la abertura ({int(alto_mm)} mm)."
+                f"La suma de las secciones ({suma} mm) debe ser igual al {eje} de la abertura ({int(medida_total_mm)} mm)."
             )
 
     def _calcular_secciones(
         self,
         secciones_config: List[Dict[str, Any]],
         ancho_mm: float,
+        alto_mm: float,
         cantidad_hojas: int,
         items: List[Dict[str, Any]],
+        orientacion: str = "horizontal",
     ) -> float:
         """Precio del relleno de cada sección: area × precio_m² × cantidad de hojas.
 
-        El ancho de cada sección es el ancho de la abertura y el alto lo define el
-        usuario (área bruta, sin rebaje). Vidrio → precio del vidrio; ciego →
-        precio del material ciego. Se multiplica por la cantidad de hojas del
-        producto, igual que el vidrio único: cada hoja lleva su propio paño.
+        Con tirantes horizontales cada sección ocupa el ancho completo y su alto lo
+        define el usuario; con tirantes verticales es al revés (alto completo, ancho
+        por sección). En ambos casos el área es bruta, sin rebaje, y las secciones
+        suman el área de la abertura. Vidrio → precio del vidrio; ciego → precio del
+        material ciego. Se multiplica por la cantidad de hojas del producto, igual
+        que el vidrio único: cada hoja lleva su propio paño.
 
         Un material inexistente o dado de baja es un ERROR (no se saltea): si se
         ignorara, la sección desaparecería del precio y se cobraría de menos.
         """
         total = 0.0
+        vertical = orientacion == "vertical"
         cantidad_hojas = max(1, int(cantidad_hojas or 1))
         for idx, seccion in enumerate(secciones_config, start=1):
-            alto_seccion = _to_float(seccion.get("alto_mm"))
-            if alto_seccion <= 0 or ancho_mm <= 0:
+            medida = medida_seccion(seccion)
+            ancho_seccion = medida if vertical else ancho_mm
+            alto_seccion = alto_mm if vertical else medida
+            if ancho_seccion <= 0 or alto_seccion <= 0:
                 raise PricingError(f"La sección {idx} tiene medidas inválidas.")
 
             material = seccion.get("material") or {}
@@ -1062,11 +1139,11 @@ class PriceCalculator:
                 material_ref = {"tipo": "vidrio", "codigo": vidrio.codigo, "descripcion": vidrio.descripcion}
                 descripcion = f"{vidrio.codigo} - {vidrio.descripcion}"
 
-            area_m2 = (ancho_mm * alto_seccion) / 1_000_000
+            area_m2 = (ancho_seccion * alto_seccion) / 1_000_000
             precio = area_m2 * precio_m2 * cantidad_hojas
             items.append({
                 "orden": idx,
-                "ancho_mm": round(ancho_mm, 2),
+                "ancho_mm": round(ancho_seccion, 2),
                 "alto_mm": round(alto_seccion, 2),
                 "area_m2": round(area_m2, 4),
                 "cantidad_hojas": cantidad_hojas,
@@ -1082,25 +1159,26 @@ class PriceCalculator:
         self,
         perfil_codigo: Optional[str],
         cantidad_tirantes: int,
-        ancho_mm: float,
+        longitud_mm: float,
         color_id: Optional[int],
         items: List[Dict[str, Any]],
     ) -> float:
-        """Perfil de cada tirante divisor: longitud = ancho de la abertura.
+        """Perfil de cada tirante divisor: cruza la abertura de lado a lado, así que
+        su longitud es el ancho si el tirante es horizontal y el alto si es vertical.
 
         Devuelve el peso total (para que lo sume el tratamiento). Si no se eligió
         perfil, no cuesta nada (el tirante solo divide las secciones)."""
-        if not perfil_codigo or cantidad_tirantes <= 0 or ancho_mm <= 0:
+        if not perfil_codigo or cantidad_tirantes <= 0 or longitud_mm <= 0:
             return 0.0
         perfil = self._get_perfil(perfil_codigo, color_id)
-        longitud_m = ancho_mm / 1000.0
+        longitud_m = longitud_mm / 1000.0
         peso_kg = longitud_m * cantidad_tirantes * _to_float(perfil.peso_metro)
         precio_total = peso_kg * _to_float(perfil.precio_kg)
         items.append({
             "codigo": perfil.codigo,
             "descripcion": perfil.descripcion,
             "cantidad": cantidad_tirantes,
-            "longitud_mm": round(ancho_mm, 2),
+            "longitud_mm": round(longitud_mm, 2),
             "longitud_m": round(longitud_m, 4),
             "peso_kg": round(peso_kg, 4),
             "precio_kg": _to_float(perfil.precio_kg),
