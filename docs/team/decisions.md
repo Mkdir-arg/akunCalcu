@@ -184,6 +184,42 @@
 
 ---
 
+## ADR-017: Monitoreo de integraciones — latido positivo en vez de interpretar el silencio
+**Fecha**: 2026-08-01
+**Estado**: Activo
+
+**Contexto**: Tres incidentes seguidos estuvieron invisibles días (REQ-045 / FEAT-035): el OAuth de
+Gmail expiró y el reparto no leyó la casilla **25 horas**; el backup a Drive falló **9 días**; y el
+reparto procesaba 1 mail de cada 20 (FIX-020). El instinto era "avisar si un workflow lleva N horas
+sin ejecutarse", pero eso no funciona parejo: el trigger del reparto **solo ejecuta cuando entra un
+mail**, y un hueco de 24 h puede ser normal — pasó el 27/07 sin nada roto. Peor: cuando la
+credencial cayó, n8n **no generó ninguna ejecución de error**, solo líneas en el log del servicio,
+que la API REST no expone. Por la API, "no llegaron mails" y "no puedo leer la casilla" son
+indistinguibles.
+
+**Decisión**: separar los dos casos y no forzar una sola regla.
+
+1. **Workflows con schedule** → el silencio ES señal: umbral = intervalo + margen (26 h para un cron
+   diario). Vive en `WORKFLOWS_VIGILADOS` (`security/health.py`), en código y no en un modelo,
+   porque el umbral se deduce del propio cron del workflow.
+2. **Workflows con trigger por evento** → el silencio NO es señal, así que **no llevan umbral**. Su
+   salud se mide con un **latido**: un workflow de n8n de 3 nodos que cada 15 min lee 1 mail y hace
+   `POST /security/salud/api/heartbeat/`. Se exige una señal positiva en vez de interpretar una
+   ausencia. El nodo de Gmail **no lleva `onError`**: si el OAuth cae tiene que fallar, porque un
+   latido que se manda igual reportaría salud falsa.
+3. **Los estados que dependen de un tercero se miden en el tercero.** El backup a Drive se evalúa
+   por la última ejecución del workflow, no por el modelo `Backup`: Django lo marca *antes* de que
+   n8n suba el archivo, y esa diferencia entre intención y realidad es la que ocultó 9 días de fallas.
+
+**Consecuencias**: una caída se detecta en **45 minutos** en lugar de 25 horas, y como n8n caído
+tampoco late, el latido quedó como canario de cualquier caída del servicio (probado el mismo día:
+el panel destapó 11 horas de n8n abajo). El costo es un workflow más que mantener y una tabla
+(`HeartbeatIntegracion`). Para vigilar una integración nueva por trigger hay que agregarle su
+latido: no alcanza con sumarla a la lista de workflows. Queda pendiente el aviso proactivo (fase 2):
+el panel hay que ir a mirarlo, y el endpoint JSON existe justamente para que un workflow lo consulte.
+
+---
+
 ## ADR-016: Tirantes divisores — relleno por sección + catálogo de materiales ciegos
 **Fecha**: 2026-07-27
 **Estado**: Activo
@@ -201,6 +237,7 @@
 8. **`Contravidrio` / `Cruce` / `VidrioRepartido` / `Mosquitero` (despiece) son LEGADO, no un faltante de precio** (analizado 2026-07-30): el motor sabe cotizarlos y acepta sus ids (`contravidrio_id`, `cruces_id`, `vidrio_repartido_id`, `mosquitero_id`), pero **ningún cotizador los manda**, así que parecen "componentes sin cobrar". **No lo son**: en este sistema esos ítems se cargan como **Accesorios o Fórmulas de Perfiles del Marco y de la Hoja** (ABM de Marcos / Hojas), y desde ahí ya entran al precio. Verificado en un presupuesto real: el **cruce** aparece como accesorio de hoja (`t93 - CRUCE DE HOJA MODENA`) y el **contravidrio/felpa** como accesorio (`FELPA CON FEAL SEAL`, calculado con las medidas de la hoja 576×1420). Además el **mosquitero** es un **Opcional de Fábrica** (por m²) y el **vidrio repartido** quedó reemplazado por los tirantes (REQ-041). Los despieces `DespiecePerfilesVidrio`, `DespieceInterior` y `DespieceInteriorMosquitero` tienen **0 referencias** en el motor. ⇒ Es **código muerto del legado**, candidato a limpieza (como REQ-036 con el despiece); **no** hay que agregarle selectores al cotizador. Diagnóstico: `akuna_calc/diagnostico_componentes.py`.
 9. **Validación y materiales faltantes en el calculador, no sólo en el serializer** (revisado 2026-07-29): `_validar_secciones` (suma de secciones == alto) vive en `PriceCalculator` porque el precio que se cobra se recalcula desde el guardado del ítem, que **no** pasa por el serializer del API. Y un material inexistente o dado de baja lanza `PricingError` en vez de saltearse: saltear la sección la borraba del precio y cobraba de menos (se midió −37 % en un caso real).
 4. **Persistencia sin migración en `presupuestos`**: la estructura de tirantes va en `ItemPresupuesto.resultado_json` (`desglose.secciones`) y en el `snapshot_item` (`tirantes`), aditiva y compatible con ítems previos.
+10. **Orientación de los tirantes y campo `medida_mm`** (agregado 2026-08-01, REQ-044 / FEAT-034): `tirantes.orientacion` (`horizontal` \| `vertical`) define **los dos ejes a la vez**: qué dimensión reparten las secciones y cuánto mide el perfil del tirante, que son **opuestos** (bandas → reparten el alto, tirante = ancho; columnas → reparten el ancho, tirante = alto). Por eso la orientación **no es una preferencia visual**: cambia el área cotizada. En cada sección, `alto_mm` fue reemplazado por **`medida_mm`** (la medida sobre el eje que se divide): en vertical el nombre viejo mentía, y estos datos quedan guardados para siempre en `resultado_json` / `snapshot_item` y se le muestran al taller en la orden de fabricación. Se descartó reinterpretar `alto_mm` para ahorrar código. **Lectura retrocompatible** en un solo lugar: `medida_seccion()` cae a `alto_mm` y `orientacion_tirantes()` asume `horizontal` cuando falta el dato, así que los ítems anteriores conservan precio y dibujo sin migrar nada. La elección de ejes vive en `ejes_tirantes()` + `PriceCalculator._cotizar_tirantes()` (kwargs obligatorios) porque un ancho/alto cruzado ahí cotiza mal en silencio.
 
 **Consecuencias**: El cotizador cubre aberturas mixtas con precio correcto por área. El catálogo de materiales ciegos se administra desde Fábrica (permiso `fabrica.materiales_ciegos`). El precio de secciones en multi-hoja quedaría subestimado si se forzara ahí — por eso el UI habilita tirantes recién con marco elegido y la doc aclara el alcance. La migración `pricing/0005` debe correrse en todos los entornos.
 

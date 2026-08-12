@@ -159,7 +159,7 @@ def build_narrative_from_snapshot(snapshot: Dict[str, Any]) -> str:
         clauses.append(f'por {int(quantity)} unidades')
 
     if option_labels:
-        clauses.append(f'con opcionales {_humanize_list(option_labels)}')
+        clauses.append(f'incluye {_humanize_list(option_labels)}')
 
     sentence = title.rstrip(' .')
     if clauses:
@@ -201,7 +201,7 @@ def build_technical_summary(snapshot: Dict[str, Any]) -> str:
 
     option_labels = [_format_option_label(option) for option in (snapshot.get('opcionales') or [])]
     if option_labels:
-        parts.append(f'Opcionales: {_humanize_list(option_labels)}')
+        parts.append(f'Incluye: {_humanize_list(option_labels)}')
 
     return ' · '.join(parts)
 
@@ -241,6 +241,11 @@ def build_compact_technical_summary(snapshot: Dict[str, Any]) -> str:
 def _should_refresh_technical_summary(snapshot: Dict[str, Any], summary: Any) -> bool:
     summary_text = _clean_text(summary)
     if not summary_text:
+        return True
+
+    # Redacción vieja guardada en el snapshot: "Opcionales:" hacía creer al
+    # cliente que el ítem no estaba incluido en el precio.
+    if _contains_text(summary_text, 'Opcionales:'):
         return True
 
     for label in (
@@ -469,7 +474,9 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
         snapshot.setdefault('margen_porcentaje', item.margen_porcentaje)
         snapshot.setdefault('opcionales', [])
         snapshot.setdefault('titulo_item', _build_title(snapshot))
-        snapshot.setdefault('descripcion_narrativa', build_narrative_from_snapshot(snapshot))
+        narrativa = _clean_text(snapshot.get('descripcion_narrativa'))
+        if not narrativa or _contains_text(narrativa, 'con opcionales'):
+            snapshot['descripcion_narrativa'] = build_narrative_from_snapshot(snapshot)
         if _should_refresh_technical_summary(snapshot, snapshot.get('resumen_tecnico')):
             snapshot['resumen_tecnico'] = build_technical_summary(snapshot)
         else:

@@ -301,3 +301,29 @@ class MenuSeguridadTest(SaludBaseTest):
         item = next(i for i in seguridad['items'] if i['route_name'] == 'security:salud')
         self.assertTrue(item['active'])
         self.assertTrue(seguridad['active'])
+
+
+class AntiguedadTest(SaludBaseTest):
+    """_horas_desde se rompia con una fecha SIN zona horaria: usaba
+    django.utils.timezone.utc, deprecado en 4.2 y ya inexistente en Django 6.
+    Ningun test lo cubria porque n8n siempre manda ISO con zona."""
+
+    def test_fecha_sin_zona_se_asume_utc(self):
+        from datetime import datetime
+        sin_zona = (datetime.utcnow() - timedelta(hours=5)).isoformat()
+        self.assertAlmostEqual(health._horas_desde(sin_zona), 5, delta=0.2)
+
+    def test_fecha_con_zona(self):
+        con_zona = (timezone.now() - timedelta(hours=3)).isoformat()
+        self.assertAlmostEqual(health._horas_desde(con_zona), 3, delta=0.2)
+
+    def test_sin_fecha_devuelve_none(self):
+        self.assertIsNone(health._horas_desde(None))
+        self.assertIsNone(health._horas_desde(''))
+        self.assertIsNone(health._horas_desde('no-es-una-fecha'))
+
+    def test_textos_de_antiguedad(self):
+        self.assertEqual(health._texto_antiguedad(0.5), 'hace 30 min')
+        self.assertEqual(health._texto_antiguedad(28), 'hace 28 h')
+        self.assertEqual(health._texto_antiguedad(9 * 24), 'hace 9 días')
+        self.assertEqual(health._texto_antiguedad(None), 'sin fecha')

@@ -40,6 +40,7 @@
 | [FEAT-032](./FEAT-032-opcional-tipo-unidad.md) | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | Implementado | 2026-07-27 | — |
 | [FEAT-033](./FEAT-033-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | — |
 | [FEAT-034](./FEAT-034-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | — |
+| [FEAT-035](./FEAT-035-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) + latido de Gmail | Implementado | 2026-08-01 | — |
 
 ---
 
@@ -57,6 +58,6 @@
 | `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |
-| `security` | FEAT-011, FEAT-012, FEAT-029 | 2026-07-23 |
+| `security` | FEAT-011, FEAT-012, FEAT-029, FEAT-035 | 2026-08-01 |
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |

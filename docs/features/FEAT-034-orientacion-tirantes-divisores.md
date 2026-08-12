@@ -97,8 +97,8 @@ Y un método nuevo `PriceCalculator._cotizar_tirantes(...)` que concentra valida
 
 ## Verificación pendiente (manual)
 
-- El **render 3D real** y el **cálculo de punta a punta** necesitan Docker/MySQL (en SQLite no existen las tablas legacy `marco`, `perfiles`, `vidrios`). Cotizar una abertura con tirantes verticales y confirmar el dibujo en columnas y el precio.
-- Validar con un caso real de **corredera dividida verticalmente** que multiplicar las secciones por la cantidad de hojas sea el criterio comercial correcto también en este eje.
+- ~~El **render 3D real** y el **cálculo de punta a punta**~~ **Verificado 2026-08-12** en la app real (Docker + MySQL demo, manejada con Playwright): puerta 1 hoja 1200×1500, 2 secciones DVH. Horizontal: cada sección `1200×750 = 0,9 m² × $22.000 = $19.800`; vertical: `600×1500 = 0,9 m²` — mismo total en ambos ejes ($39.600 + 30% margen = $51.480, cierra exacto). El visor dibuja bandas/columnas con la barra divisoria en el eje correcto; el toggle de orientación, el reparto automático (1200 → 600+600), los textos por eje ("mm ancho", "izquierda → derecha") y el cartel "Suma de secciones — OK" se ven bien. También verificado el visor standalone con panel ciego en ambos ejes y con el formato viejo (`alto_mm`, sin orientación) → bandas idénticas a antes.
+- Validar con un caso real de **corredera dividida verticalmente** que multiplicar las secciones por la cantidad de hojas sea el criterio comercial correcto también en este eje (pendiente: requiere datos reales, no demo).
 
 ## Fuera de alcance
 

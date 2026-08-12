@@ -22,6 +22,38 @@
 
 ## Fixes registrados
 
+### FIX-022 — El PDF decía "Opcionales:" y los clientes creían que el premarco no estaba incluido
+**Fecha**: 2026-08-12
+**Reportado por**: Usuario (feedback de ventas: "cada presupuesto que se manda, los clientes preguntan si no está incluido")
+**Severidad**: Media (no afecta precios ni datos, pero genera una consulta del cliente en cada presupuesto con opcionales)
+**Feature afectada**: FEAT-005 / módulo `presupuestos` (PDF del presupuesto)
+
+**Síntoma**: Cuando un ítem se cotizaba con un opcional (premarco, mosquitero), el resumen del ítem en el PDF decía "**Opcionales:** PREM - Premarco". El cliente leía "opcional" y lo primero que preguntaba era si el premarco no estaba incluido en el precio, cuando sí lo está (el opcional se eligió al cotizar y forma parte del total).
+
+**Causa raíz**: "Opcional" es vocabulario interno del cotizador (los ítems extra elegibles) que se filtraba tal cual al documento del cliente, en `build_technical_summary` ("Opcionales: …") y `build_narrative_from_snapshot` ("con opcionales …") de `presupuestos/pdf_descriptions.py`.
+
+**Solución**: La redacción pasó a "**Incluye:** PREM - Premarco" (resumen técnico) e "incluye premarco" (narrativa), que además responde por adelantado la duda del cliente. Como el texto queda persistido en `resultado_json['snapshot_item']` de cada ítem, se extendió `_should_refresh_technical_summary` (y el equivalente para la narrativa en `build_pdf_item_context`) para regenerar el texto cuando detecta la redacción vieja: los presupuestos ya existentes se corrigen solos al volver a ver/imprimir el PDF, sin migración de datos. Los rótulos "Opcionales" dentro del cotizador (pantalla interna) quedan como están: el cliente no los ve y para el vendedor siguen siendo opcionales elegibles.
+
+**Validación**: Test nuevo `test_build_pdf_item_context_regenera_redaccion_vieja_de_opcionales` (snapshot guardado con redacción vieja → el contexto del PDF sale con "Incluye:") + 2 asserts existentes actualizados. `presupuestos`: 147 tests OK (SQLite local).
+
+**Archivos modificados**: `akuna_calc/presupuestos/pdf_descriptions.py`, `akuna_calc/presupuestos/tests.py`. Sin migración.
+
+### FIX-021 — El cotizador no dejaba recalcular después de editar (y mostraba un precio viejo)
+**Fecha**: 2026-08-01
+**Reportado por**: Usuario ("agrega un botón Recalcular porque si edito algo no lo puedo recalcular")
+**Severidad**: **Media** (no corrompe datos, pero el vendedor lee y puede dictar un precio que no es el que se guarda)
+**Feature afectada**: FEAT-007 / FEAT-023 (cotizador embebido en el detalle del presupuesto)
+
+**Síntoma**: En el pop-up *Agregar ítem*, una vez calculado el precio el botón **"Calcular precio" desaparecía**. Si el vendedor corregía una medida, el vidrio, un opcional o los tirantes, no tenía forma de volver a calcular sin cerrar el modal y cargar todo de nuevo. Peor: el panel de resultado y el total del footer seguían mostrando **el precio anterior**, sin ninguna señal de que ya no correspondía a lo que había en pantalla.
+
+**Causa raíz**: El CTA del footer es un ternario excluyente (`esTerc ? … : result ? Guardar : Calcular`), así que la existencia de `result` tapaba el botón de calcular. Y nada invalidaba `result` al cambiar `config`: el resultado quedaba pegado en pantalla indefinidamente. El precio **guardado** siempre fue el correcto —`_fields_item_desde_post` recalcula con `calcular_precio()` al recibir el POST y no confía en el resultado del cliente—, así que no hay presupuestos mal grabados por esto; el problema es que lo que se ve y lo que se guarda podían diferir.
+
+**Solución**: (1) Botón **"Recalcular"** en el footer, visible junto al de guardar cuando ya hay resultado, reusando el handler `calcular()`. (2) Detección de resultado viejo: al calcular se guarda la **firma** del payload usado (`resultSig`) y se compara con la configuración actual en cada render; si difieren, aparece un banner ámbar sobre el resultado ("este precio ya no corresponde"), el total del footer se reemplaza por *"Precio desactualizado — recalculá"* y el botón Recalcular pasa a primario. Se decidió **no bloquear** el guardado: el precio grabado se recalcula server-side igual, y trabar el flujo molestaría a quien corrige una medida a propósito. Cambiar la cantidad o la descripción no marca desactualizado (no afectan el precio unitario).
+
+**Validación**: `RecalcularEnCotizadorTest` (2 tests) verifica que el botón y ambos avisos llegan al HTML renderizado y que un presupuesto bloqueado no expone el cotizador. `presupuestos` + `pricing`: 251 corridos con el baseline conocido (1 failure + 3 errors por tablas legacy ausentes en SQLite). El bloque React compila con Babel. Falta la prueba visual en Docker.
+
+**Archivos modificados**: `akuna_calc/presupuestos/templates/presupuestos/detalle.html`, `akuna_calc/presupuestos/tests.py`. Sin backend, sin migración.
+
 ### FIX-020 — El reparto procesaba 1 mail por lote y perdía el resto en silencio
 **Fecha**: 2026-07-31
 **Reportado por**: Auditoría de asignaciones (se preguntó si los mails de ayer y hoy se habían asignado)

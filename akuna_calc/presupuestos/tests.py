@@ -314,7 +314,7 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
         self.assertIn('vidrio 4+9+4', sentence)
         self.assertIn('terminación blanco', sentence)
         self.assertIn('medidas 1200 x 1500 mm', sentence)
-        self.assertIn('con opcionales asdas - asdasd', sentence)
+        self.assertIn('incluye asdas - asdasd', sentence)
 
     def test_build_pdf_item_context_uses_legacy_fallback(self):
         item = SimpleNamespace(
@@ -338,7 +338,40 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
         self.assertEqual(context['titulo'], 'Abertura 1200x1500mm')
         self.assertIn('vidrio 4+9+4', context['descripcion_narrativa'])
         self.assertIn('medidas 1200 x 1500 mm', context['descripcion_narrativa'])
-        self.assertIn('Opcionales: MOSQ - Mosquitero', context['resumen_tecnico'])
+        self.assertIn('Incluye: MOSQ - Mosquitero', context['resumen_tecnico'])
+
+    def test_build_pdf_item_context_regenera_redaccion_vieja_de_opcionales(self):
+        item = SimpleNamespace(
+            descripcion='Ventana cocina',
+            cantidad=1,
+            ancho_mm=1200,
+            alto_mm=1500,
+            margen_porcentaje=30,
+            precio_unitario=125000,
+            precio_total=125000,
+            resultado_json={
+                'snapshot_item': {
+                    'descripcion_manual': 'Ventana cocina',
+                    'cantidad': 1,
+                    'ancho_mm': 1200,
+                    'alto_mm': 1500,
+                    'linea': {'nombre': 'Modena'},
+                    'producto': {'descripcion': 'BANDEROLA'},
+                    'vidrio': {'descripcion': '4+9+4'},
+                    'opcionales': [{'codigo': 'PREM', 'nombre': 'Premarco'}],
+                    'titulo_item': 'Ventana cocina',
+                    'descripcion_narrativa': 'Ventana cocina con opcionales PREM - Premarco.',
+                    'resumen_tecnico': '1 unidad · Modena · BANDEROLA · 1200 x 1500 mm · Vidrio 4+9+4 · Opcionales: PREM - Premarco',
+                }
+            },
+        )
+
+        context = build_pdf_item_context(item)
+
+        self.assertNotIn('Opcionales:', context['resumen_tecnico'])
+        self.assertIn('Incluye: PREM - Premarco', context['resumen_tecnico'])
+        self.assertNotIn('con opcionales', context['descripcion_narrativa'])
+        self.assertIn('incluye PREM - Premarco', context['descripcion_narrativa'])
 
     @patch('presupuestos.pdf_descriptions.OpcionalFabrica.objects.filter')
     @patch('presupuestos.pdf_descriptions.Tratamiento.objects.filter')
@@ -1961,6 +1994,44 @@ class ColocacionPresupuestoTest(TestCase):
         self.assertContains(res, 'data-monto-colocacion="50000')
         self.assertContains(res, 'Falta el monto de colocación')  # JS: error si 0
         self.assertContains(res, 'Monto de colocación bajo')       # JS: alerta si < 100.000
+
+
+class RecalcularEnCotizadorTest(TestCase):
+    """El cotizador reemplazaba 'Calcular precio' por 'Agregar al presupuesto' en
+    cuanto había resultado: editar cualquier dato después dejaba el precio de la
+    pantalla congelado, sin forma de refrescarlo y sin avisar que ya no valía."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('recalc_admin', password='testpass')
+        rol, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'x', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=rol)
+        self.client = Client()
+        self.client.login(username='recalc_admin', password='testpass')
+
+    def test_el_cotizador_trae_recalcular_y_el_aviso_de_desactualizado(self):
+        p = crear_presupuesto(self.user)
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Recalcular')
+        self.assertContains(res, 'este precio ya no corresponde')          # JS: banner
+        self.assertContains(res, 'Precio desactualizado')                  # JS: footer
+        # La firma de la config calculada es lo que dispara el aviso.
+        self.assertContains(res, 'setResultSig')
+
+    def test_presupuesto_bloqueado_no_muestra_el_cotizador(self):
+        p = crear_presupuesto(self.user)
+        p.estado = 'confirmado'
+        p.save()
+
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'Recalcular')
 
 
 class TirantesNarrativaTest(SimpleTestCase):

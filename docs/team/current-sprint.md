@@ -33,6 +33,8 @@ _Se define en el sprint planning._
 | US-042 | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | ✅ Completado | Tipo `unidad` + campo `precio_unidad`; FEAT-032. Migración `plantillas/0016` pendiente en prod |
 | US-043 | Orden manual de los ítems del presupuesto (arrastrar) | ✅ Completado | Sin migración (`orden` ya existía); FEAT-033 |
 | US-041 | Tirantes divisores con relleno por sección en el cotizador | ✅ Completado | Modelo `MaterialCiego` + ABM; motor de secciones; FEAT-031 / ADR-016. Migración `pricing/0005` pendiente en prod |
+| US-045 | Panel de salud de las integraciones (n8n, backups, migraciones) | ✅ Completado | App `security`; FEAT-035 / ADR-017. Migración `security/0004` **ya aplicada en prod**; workflow de latido `iDrsq7vyGPHG7qAb` activo |
+| US-044 | Orientación de los tirantes divisores (vertical u horizontal) | ✅ Completado | Sin migración; `medida_mm` + `orientacion` en el JSON, retrocompatible; FEAT-034 / ADR-016 punto 10. Falta verificar el render 3D con Docker |
 
 ## Impedimentos
 

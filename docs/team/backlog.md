@@ -26,6 +26,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-006 | Como vendedor, quiero armar un presupuesto vinculado a un cliente, agregar N ítems con la lógica del cotizador, dejar comentarios y generar un PDF para el cliente | Grande ✅ |
 | US-037 | Como responsable comercial, quiero que los pedidos de presupuesto que llegan por email se repartan automáticamente y por turnos entre los vendedores para que ninguno quede sin atender | Grande ✅ |
 | US-038 | Como vendedor, quiero ver un diseño 3D de la abertura al calcular cada ítem del presupuesto para confirmar visualmente la configuración antes de guardarla | Grande ✅ |
+| US-045 | Como responsable del sistema, quiero ver en una sola pantalla el estado de las integraciones para detectar en minutos una caída que hoy tarda días en descubrirse | Grande ✅ |
 
 ---
 

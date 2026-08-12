@@ -1,5 +1,8 @@
 # Workflow n8n — Latido de Gmail (panel de salud, REQ-045)
 
+- **ID en producción:** `iDrsq7vyGPHG7qAb` (creado 2026-08-01)
+- **Nombre:** Salud - Latido de Gmail AkunCalcu
+
 Workflow de 3 nodos que corre **cada 15 minutos** y confirma a Django que n8n todavía puede
 leer la casilla del reparto.
 

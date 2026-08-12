@@ -1,6 +1,7 @@
 # REQ-045 — Panel de salud de las integraciones
 
-- **Estado:** En desarrollo
+- **Estado:** Implementado
+- **Derivó en:** [FEAT-035](../features/FEAT-035-panel-salud-integraciones.md)
 - **Fecha:** 2026-08-01
 - **Origen:** Sesión del 31/07: se encontraron dos bugs y una caída de 25 horas, y los tres estaban invisibles.
 - **App principal:** `security` · consume datos de `solicitudes` y de la API de n8n

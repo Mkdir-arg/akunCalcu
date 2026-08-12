@@ -12,6 +12,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from datetime import timezone as datetime_timezone
 
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
@@ -116,7 +117,10 @@ def _horas_desde(iso_texto):
     if not momento:
         return None
     if timezone.is_naive(momento):
-        momento = timezone.make_aware(momento, timezone.utc)
+        # n8n manda ISO con zona, pero si algún día viniera sin ella se asume UTC.
+        # Se usa la constante de la stdlib y no django.utils.timezone.utc, que está
+        # deprecada en 4.2 y ya no existe en Django 6.
+        momento = momento.replace(tzinfo=datetime_timezone.utc)
     return (timezone.now() - momento).total_seconds() / 3600
 
 

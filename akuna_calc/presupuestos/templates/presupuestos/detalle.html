@@ -1570,6 +1570,9 @@ const CotizadorModal = () => {
     const [materialesCiegos, setMaterialesCiegos] = useState([]);
     const [perfilesTirante, setPerfilesTirante] = useState([]);
     const [result, setResult] = useState(null);
+    // Firma de la configuración con la que se calculó el precio que se está
+    // mostrando: si deja de coincidir con la actual, el resultado quedó viejo.
+    const [resultSig, setResultSig] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -1670,7 +1673,7 @@ const CotizadorModal = () => {
             setEditTipo(rj.tipo === 'terciarizado' ? 'terciarizado' : null);
             setDescripcion(payload.descripcion || '');
             setCantidad(payload.cantidad || 1);
-            setResult(null); setError(null);
+            setResult(null); setResultSig(null); setError(null);
             if (rj.tipo === 'terciarizado') {
                 setPrecioTerc(payload.precio || '');
                 const pid = rj.producto_id || null;
@@ -1717,7 +1720,7 @@ const CotizadorModal = () => {
         };
         window.__cotizadorReset = () => {
             const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
-            setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setError(null);
+            setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null);
             setDescripcion(''); setCantidad(1);
             setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [], tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] } });
         };
@@ -1744,9 +1747,14 @@ const CotizadorModal = () => {
     // Payload de cálculo: si no hay tirantes activos, no mandamos secciones a medio cargar.
     const buildPayload = () => {
         const t = config.tirantes;
-        const tirantes = (t && t.activo) ? t : { activo: false, perfil_codigo: null, secciones: [] };
+        const tirantes = (t && t.activo) ? t : { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] };
         return { ...config, tirantes };
     };
+
+    // El precio de la pantalla no se recalcula solo al editar la configuración:
+    // hay que avisar cuando quedó viejo, o el vendedor lee (y dicta) un total que
+    // no es el que se va a guardar — el backend recalcula al recibir el POST.
+    const desactualizado = !!result && resultSig !== JSON.stringify(buildPayload());
 
     const calcular = async () => {
         if (!config.marco_id) { setError('Selecciona un marco primero'); return; }
@@ -1755,13 +1763,15 @@ const CotizadorModal = () => {
         setLoading(true); setError(null);
         try {
             const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const payload = buildPayload();
             const res = await fetch('/pricing/api/pricing/calculate/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(buildPayload()),
+                body: JSON.stringify(payload),
             });
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || e.error || 'Error al calcular'); }
             setResult(await res.json());
+            setResultSig(JSON.stringify(payload));
         } catch(e) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -1958,6 +1968,12 @@ const CotizadorModal = () => {
             <div className="flex flex-col">
                 {result ? (
                     <>
+                        {desactualizado && (
+                            <div className="bg-amber-50 border border-amber-300 text-amber-800 px-3 py-2.5 rounded-xl text-sm mb-4 flex items-start gap-2">
+                                <i className="fas fa-triangle-exclamation mt-0.5"></i>
+                                <span>Cambiaste la configuración después de calcular: <strong>este precio ya no corresponde</strong>. Apretá <strong>Recalcular</strong> para actualizarlo.</span>
+                            </div>
+                        )}
                         {dibuja3d ? (
                             <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
                                 className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
@@ -2084,7 +2100,13 @@ const CotizadorModal = () => {
         {/* Footer sticky: total + CTA dinámico */}
         <div className="sticky bottom-0 -mx-6 -mb-6 mt-2 px-6 py-3 bg-white border-t border-slate-200 flex items-center gap-3">
             {result && !esTerc && (
-                <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
+                desactualizado ? (
+                    <span className="text-xs font-semibold text-amber-600 flex items-center gap-1.5">
+                        <i className="fas fa-triangle-exclamation"></i>Precio desactualizado — recalculá
+                    </span>
+                ) : (
+                    <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
+                )
             )}
             <span className="flex-1"></span>
             <button onClick={() => cerrarModalItem()} className="px-5 py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
@@ -2094,10 +2116,20 @@ const CotizadorModal = () => {
                     {saving ? <><i className="fas fa-spinner fa-spin"></i>Agregando...</> : <><i className="fas fa-plus"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
                 </button>
             ) : result ? (
-                <button onClick={guardar} disabled={saving}
-                    className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
-                    {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
-                </button>
+                <>
+                    {/* Recalcular: sin esto, editar cualquier dato después de calcular
+                        dejaba el precio de la pantalla congelado y sin forma de refrescarlo. */}
+                    <button onClick={calcular} disabled={loading || !config.marco_id}
+                        className={`px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${desactualizado
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'border border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i>Calculando...</> : <><i className="fas fa-arrows-rotate"></i>Recalcular</>}
+                    </button>
+                    <button onClick={guardar} disabled={saving}
+                        className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                        {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
+                    </button>
+                </>
             ) : (
                 <button onClick={calcular} disabled={loading || !config.marco_id}
                     className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">

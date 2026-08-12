@@ -213,6 +213,35 @@
 
 ---
 
+## Badges de estado
+
+Patrón de los listados (`solicitudes`, `security/salud`). Siempre con ícono a la izquierda:
+
+```html
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+    <i class="fas fa-check mr-1"></i>OK
+</span>
+```
+
+| Semántica | Clases | Ícono |
+|---|---|---|
+| Correcto / Contestada | `bg-green-100 text-green-800` | `fa-check` |
+| **Atención** (requiere mirada, no es error) | `bg-yellow-100 text-yellow-800` | `fa-triangle-exclamation` |
+| Falla / Sin asignar | `bg-red-100 text-red-800` | `fa-circle-xmark` · `fa-exclamation-triangle` |
+| Neutro / Sin datos / Descartada | `bg-slate-100 text-slate-600` | `fa-question` · `fa-ban` |
+| En curso / Asignada | `bg-blue-100 text-blue-800` | `fa-clock` |
+
+El **amarillo se incorporó en FEAT-035** para distinguir "hay que mirarlo" de "está roto": sin ese
+nivel intermedio, un backup de hace 3 días y una integración caída se veían iguales.
+
+⚠️ Si una tabla se refresca por AJAX, el HTML del badge queda duplicado (el parcial de Django y el
+que arma el JS). En `security/salud.html` está resuelto con un `_salud_fila.html` para el render
+inicial y un mapa `BADGES` en JS para el refresco, **con un comentario en cada lado avisando que hay
+que tocar los dos**. Si aparece un tercer caso así, conviene unificarlo devolviendo el HTML del
+parcial desde el endpoint.
+
+---
+
 ## Confirmaciones de eliminación
 
 **Siempre usar SweetAlert2**, nunca `confirm()` nativo del browser.
