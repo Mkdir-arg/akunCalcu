@@ -373,6 +373,59 @@ class PdfDescriptionsHelpersTest(SimpleTestCase):
         self.assertNotIn('con opcionales', context['descripcion_narrativa'])
         self.assertIn('incluye PREM - Premarco', context['descripcion_narrativa'])
 
+    def _item_todo_vidrio(self, secciones):
+        return SimpleNamespace(
+            descripcion='PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE',
+            cantidad=1,
+            ancho_mm=800,
+            alto_mm=2000,
+            margen_porcentaje=30,
+            precio_unitario=125000,
+            precio_total=125000,
+            resultado_json={
+                'snapshot_item': {
+                    'descripcion_manual': 'PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE',
+                    'cantidad': 1,
+                    'ancho_mm': 800,
+                    'alto_mm': 2000,
+                    'linea': {'nombre': 'Modena'},
+                    'producto': {'descripcion': 'PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE'},
+                    'vidrio': None,
+                    'opcionales': [],
+                    'tirantes': {'activo': True, 'orientacion': 'horizontal', 'secciones': secciones},
+                    'titulo_item': 'PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE',
+                    'descripcion_narrativa': 'PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE en línea Modena.',
+                    'resumen_tecnico': '1 unidad · Modena · PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE · 800 x 2000 mm',
+                }
+            },
+        )
+
+    def test_todo_vidrio_pasa_a_vidrio_y_revestimiento_si_hay_seccion_ciega(self):
+        item = self._item_todo_vidrio([
+            {'medida_mm': 1500, 'material': {'tipo': 'vidrio', 'codigo': 'FL4', 'descripcion': 'Float 4mm'}},
+            {'medida_mm': 500, 'material': {'tipo': 'ciego', 'id': 1, 'codigo': 'REV', 'nombre': 'Revestimiento PVC'}},
+        ])
+
+        context = build_pdf_item_context(item)
+
+        self.assertEqual(context['titulo'], 'PUERTA MODELO 1 (VIDRIO Y REVESTIMIENTO) VIDRIO SIMPLE')
+        self.assertIn('(VIDRIO Y REVESTIMIENTO)', context['resumen_tecnico'])
+        self.assertIn('(VIDRIO Y REVESTIMIENTO)', context['descripcion_narrativa'])
+        self.assertIn('(VIDRIO Y REVESTIMIENTO)', context['resumen_compacto'])
+        self.assertNotIn('TODO VIDRIO', context['titulo'])
+        self.assertNotIn('TODO VIDRIO', context['resumen_tecnico'])
+
+    def test_todo_vidrio_se_conserva_sin_seccion_ciega(self):
+        item = self._item_todo_vidrio([
+            {'medida_mm': 1500, 'material': {'tipo': 'vidrio', 'codigo': 'FL4', 'descripcion': 'Float 4mm'}},
+            {'medida_mm': 500, 'material': {'tipo': 'vidrio', 'codigo': 'FL4', 'descripcion': 'Float 4mm'}},
+        ])
+
+        context = build_pdf_item_context(item)
+
+        self.assertIn('(TODO VIDRIO)', context['titulo'])
+        self.assertIn('(TODO VIDRIO)', context['resumen_tecnico'])
+
     @patch('presupuestos.pdf_descriptions.OpcionalFabrica.objects.filter')
     @patch('presupuestos.pdf_descriptions.Tratamiento.objects.filter')
     @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')

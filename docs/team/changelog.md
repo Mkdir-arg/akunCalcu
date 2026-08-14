@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-08-13 — Los ítems con travesaño y revestimiento ya no dicen "(TODO VIDRIO)" (FIX-023)
+
+**Pedido:** "Las descripciones dicen (TODO VIDRIO) pero hay algunas que son con travesaño; esas tienen que decir vidrio y Revestimiento" (visto en el presupuesto 864 de producción).
+**Archivos:** `presupuestos/pdf_descriptions.py`, `presupuestos/tests.py`. **Sin migración.**
+**Descripción:** El nombre del producto en la base ("PUERTA MODELO 1 **(TODO VIDRIO)** VIDRIO SIMPLE") fluía tal cual al PDF aunque el ítem se hubiera cotizado con travesaños y secciones de revestimiento. Ahora, si el snapshot tiene al menos una sección de material ciego, el render reemplaza "TODO VIDRIO" por "**VIDRIO Y REVESTIMIENTO**" en título, resumen técnico, resumen compacto y narrativa. Se ajusta al renderizar (no se toca el dato guardado), así que **los presupuestos existentes se corrigen solos** al regenerar el PDF. Un travesaño con todas las secciones de vidrio conserva "(TODO VIDRIO)", que sigue siendo cierto. Tests: 2 nuevos, `presupuestos` 149 OK. Detalle en `docs/fixes/_LOG.md`.
+
 ## 2026-08-12 — El PDF ya no dice "Opcionales:": ahora dice "Incluye:" (FIX-022)
 
 **Pedido:** "Hay que sacar la palabra opcional que aparece por ejemplo cuando ponemos premarco, porque lo primero que preguntan los clientes es si no está incluido".

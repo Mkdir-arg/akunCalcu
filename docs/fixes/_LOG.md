@@ -22,6 +22,22 @@
 
 ## Fixes registrados
 
+### FIX-023 — El PDF decía "(TODO VIDRIO)" en ítems cotizados con travesaños y revestimiento
+**Fecha**: 2026-08-13
+**Reportado por**: Usuario (presupuesto 864 en producción: ítems con travesaño cuya descripción contradecía lo cotizado)
+**Severidad**: Media (no afecta precios, pero el PDF describe mal el producto que el cliente va a recibir)
+**Feature afectada**: FEAT-031/034 (tirantes divisores con relleno por sección) / módulo `presupuestos` (PDF)
+
+**Síntoma**: Los productos cuyo nombre en la base incluye "(TODO VIDRIO)" (ej. "PUERTA MODELO 1 (TODO VIDRIO) VIDRIO SIMPLE") imprimían ese texto en el PDF aunque el ítem se hubiera cotizado con travesaños y secciones de revestimiento (material ciego): el título decía "todo vidrio" y la abertura real lleva paños ciegos.
+
+**Causa raíz**: El nombre del producto es un dato de la base pensado para la variante estándar (toda vidriada) y fluye tal cual al título, resumen técnico, resumen compacto y narrativa del ítem. Nada lo ajustaba cuando la configuración cotizada (tirantes con secciones `tipo='ciego'`) dejaba de ser "todo vidrio".
+
+**Solución**: En `build_pdf_item_context` (único punto por donde salen los textos al PDF y al detalle), si el snapshot tiene travesaños con **al menos una sección de revestimiento**, se reemplaza "TODO VIDRIO" por "**VIDRIO Y REVESTIMIENTO**" (case-insensitive) en los cuatro textos renderizados. Se ajusta **al renderizar** y no en el snapshot guardado: así corrige también los presupuestos ya existentes sin migración, y el dato original queda intacto. Un travesaño con todas las secciones de vidrio conserva "(TODO VIDRIO)", que sigue siendo correcto. El título de la pantalla interna de detalle muestra `item.descripcion` (dato editable) y queda como está.
+
+**Validación**: 2 tests nuevos (`test_todo_vidrio_pasa_a_vidrio_y_revestimiento_si_hay_seccion_ciega` y `test_todo_vidrio_se_conserva_sin_seccion_ciega`). `presupuestos`: 149 tests OK (SQLite local).
+
+**Archivos modificados**: `akuna_calc/presupuestos/pdf_descriptions.py`, `akuna_calc/presupuestos/tests.py`. Sin migración.
+
 ### FIX-022 — El PDF decía "Opcionales:" y los clientes creían que el premarco no estaba incluido
 **Fecha**: 2026-08-12
 **Reportado por**: Usuario (feedback de ventas: "cada presupuesto que se manda, los clientes preguntan si no está incluido")

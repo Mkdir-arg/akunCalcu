@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Iterable, List
 
 from plantillas.models import OpcionalFabrica
@@ -363,6 +364,29 @@ def _tirantes_material_label(material: Dict[str, Any]) -> str:
     return _clean_text(material.get('descripcion')) or _clean_text(material.get('codigo')) or 'vidrio'
 
 
+_TODO_VIDRIO_RE = re.compile(r'todo\s+vidrio', re.IGNORECASE)
+
+
+def _tiene_revestimiento(snapshot: Dict[str, Any]) -> bool:
+    tirantes = snapshot.get('tirantes')
+    if not isinstance(tirantes, dict):
+        return False
+    return any(
+        (seccion.get('material') or {}).get('tipo') == 'ciego'
+        for seccion in (tirantes.get('secciones') or [])
+    )
+
+
+def _ajustar_todo_vidrio(texto: str, snapshot: Dict[str, Any]) -> str:
+    # El nombre del producto en la base dice "(TODO VIDRIO)", pero si el ítem se
+    # cotizó con travesaños y alguna sección lleva revestimiento el cliente lee
+    # una contradicción; se corrige al renderizar para cubrir también los
+    # presupuestos ya guardados.
+    if not texto or not _tiene_revestimiento(snapshot):
+        return texto
+    return _TODO_VIDRIO_RE.sub('VIDRIO Y REVESTIMIENTO', texto)
+
+
 def build_item_snapshot(config: Dict[str, Any], descripcion_manual: str, cantidad: int = 1) -> Dict[str, Any]:
     marco = (
         Marco.objects
@@ -484,8 +508,12 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
 
     return {
         'item': item,
-        'titulo': snapshot.get('titulo_item') or _build_title(snapshot),
-        'descripcion_narrativa': snapshot.get('descripcion_narrativa') or build_narrative_from_snapshot(snapshot),
-        'resumen_compacto': build_compact_technical_summary(snapshot),
-        'resumen_tecnico': snapshot.get('resumen_tecnico') or build_technical_summary(snapshot),
+        'titulo': _ajustar_todo_vidrio(snapshot.get('titulo_item') or _build_title(snapshot), snapshot),
+        'descripcion_narrativa': _ajustar_todo_vidrio(
+            snapshot.get('descripcion_narrativa') or build_narrative_from_snapshot(snapshot), snapshot
+        ),
+        'resumen_compacto': _ajustar_todo_vidrio(build_compact_technical_summary(snapshot), snapshot),
+        'resumen_tecnico': _ajustar_todo_vidrio(
+            snapshot.get('resumen_tecnico') or build_technical_summary(snapshot), snapshot
+        ),
     }
