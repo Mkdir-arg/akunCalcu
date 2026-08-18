@@ -2167,6 +2167,40 @@ class SerializeTirantesTest(SimpleTestCase):
         self.assertEqual(vertical['orientacion'], 'vertical')
         self.assertEqual([s['medida_mm'] for s in vertical['secciones']], [600, 400])
 
+    @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
+    def test_revestimiento_se_resuelve_desde_el_catalogo_de_vidrios(self, mock_vidrio, mock_ciego):
+        """El revestimiento viene por codigo: no se toca MaterialCiego."""
+        mock_vidrio.return_value = [
+            SimpleNamespace(codigo='F6', descripcion='Float 6mm'),
+            SimpleNamespace(codigo='REV', descripcion='Chapa lisa'),
+        ]
+        tirantes = {'activo': True, 'perfil_codigo': 'T1', 'secciones': [
+            {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'ciego', 'codigo': 'REV'}},
+        ]}
+
+        out = _serialize_tirantes(tirantes)
+
+        self.assertEqual(out['secciones'][1]['material']['nombre'], 'Chapa lisa')
+        self.assertEqual(out['secciones'][1]['material']['codigo'], 'REV')
+        self.assertEqual(out['secciones'][1]['material']['tipo'], 'ciego')
+        self.assertFalse(mock_ciego.called)
+
+    @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
+    @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
+    def test_el_revestimiento_cuenta_como_seccion_ciega_para_el_texto(self, mock_vidrio, mock_ciego):
+        """No se pierde el arreglo de FIX-023: sigue siendo 'ciego' para el PDF."""
+        from presupuestos.pdf_descriptions import _tiene_revestimiento
+
+        mock_vidrio.return_value = [SimpleNamespace(codigo='REV', descripcion='Chapa lisa')]
+        tirantes = {'activo': True, 'secciones': [
+            {'alto_mm': 1200, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 800, 'material': {'tipo': 'ciego', 'codigo': 'REV'}},
+        ]}
+
+        self.assertTrue(_tiene_revestimiento({'tirantes': _serialize_tirantes(tirantes)}))
+
     def test_inactivo_devuelve_none(self):
         self.assertIsNone(_serialize_tirantes({'activo': False, 'secciones': []}))
         self.assertIsNone(_serialize_tirantes(None))

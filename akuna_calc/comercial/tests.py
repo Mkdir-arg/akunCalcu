@@ -19,6 +19,7 @@ class ReciboModelTest(TestCase):
         )
         self.assertEqual(str(recibo), f"Recibo 1 - Venta {self.venta.numero_pedido} - $1000")
 from decimal import Decimal
+from datetime import datetime, date, timezone as dt_timezone
 import json
 from unittest.mock import patch
 from django.test import TestCase, Client
@@ -1381,6 +1382,76 @@ class VentasListDireccionFilterTest(TestCase):
         pedidos = [v.numero_pedido for v in response.context['ventas']]
         self.assertIn('DIR-CENTRO', pedidos)
         self.assertIn('DIR-NORTE', pedidos)
+
+
+class ReporteVentasPorFechaPedidoTest(TestCase):
+    """El rango de fechas del reporte se aplica sobre la fecha del pedido
+    (created_at), no sobre fecha_pago."""
+
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        self.user = User.objects.create_user(username='repfecha', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.user, permisos=['reportes.ventas'])
+        self.client_http = Client()
+        self.client_http.login(username='repfecha', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Ana', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def _venta(self, pedido, creada, fecha_pago=None, valor='100'):
+        venta = Venta.objects.create(
+            numero_pedido=pedido,
+            cliente=self.cliente,
+            valor_total=Decimal(valor),
+            sena=Decimal('0'),
+            fecha_pago=fecha_pago,
+        )
+        # created_at es auto_now_add: solo se puede fijar con un update directo.
+        Venta.objects.filter(pk=venta.pk).update(
+            created_at=datetime(creada[0], creada[1], creada[2], 12, 0, tzinfo=dt_timezone.utc)
+        )
+        return venta
+
+    def _reporte(self, **filtros):
+        response = self.client_http.post(reverse('comercial:reportes'), filtros)
+        self.assertEqual(response.status_code, 200)
+        return response.context['reporte_data']['ventas']
+
+    def test_filtra_por_fecha_de_pedido_y_no_por_fecha_de_pago(self):
+        # Pedido de agosto cuyo pago quedo registrado en julio: antes caia afuera.
+        self._venta('VTA-AGO', (2026, 8, 7), fecha_pago='2026-07-29', valor='500')
+        # Pedido de julio con pago en agosto: no debe entrar por la fecha de pago.
+        self._venta('VTA-JUL', (2026, 7, 20), fecha_pago='2026-08-15', valor='300')
+
+        ventas = self._reporte(fecha_desde='2026-08-01')
+
+        self.assertEqual([i['pedido'] for i in ventas['lista']], ['VTA-AGO'])
+        self.assertEqual(ventas['total'], Decimal('500'))
+
+    def test_incluye_ventas_sin_fecha_de_pago(self):
+        """Con fecha_pago NULL el filtro viejo las descartaba siempre."""
+        self._venta('VTA-SIN-PAGO', (2026, 8, 10), fecha_pago=None, valor='250')
+
+        ventas = self._reporte(fecha_desde='2026-08-01', fecha_hasta='2026-08-31')
+
+        self.assertEqual([i['pedido'] for i in ventas['lista']], ['VTA-SIN-PAGO'])
+        self.assertEqual(ventas['total'], Decimal('250'))
+
+    def test_fecha_hasta_incluye_todo_el_ultimo_dia(self):
+        self._venta('VTA-BORDE', (2026, 8, 31), fecha_pago=None)
+
+        ventas = self._reporte(fecha_desde='2026-08-01', fecha_hasta='2026-08-31')
+
+        self.assertEqual(ventas['cantidad'], 1)
+
+    def test_la_fecha_mostrada_es_la_del_pedido(self):
+        self._venta('VTA-MUESTRA', (2026, 8, 7), fecha_pago='2026-07-29')
+
+        ventas = self._reporte(fecha_desde='2026-08-01')
+
+        self.assertEqual(ventas['lista'][0]['fecha'], date(2026, 8, 7))
 
 
 class ReporteCobranzasTest(TestCase):

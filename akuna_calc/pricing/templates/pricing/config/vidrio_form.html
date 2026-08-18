@@ -35,6 +35,11 @@
                         {% if form.descripcion.errors %}<p class="text-red-600 text-xs mt-1">{{ form.descripcion.errors.0 }}</p>{% endif %}
                     </div>
                     <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.tipo.label }}</label>
+                        {{ form.tipo }}
+                        {% if form.tipo.errors %}<p class="text-red-600 text-xs mt-1">{{ form.tipo.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">Valor m²</label>
                         {{ form.precio }}
                         {% if form.precio.errors %}<p class="text-red-600 text-xs mt-1">{{ form.precio.errors.0 }}</p>{% endif %}

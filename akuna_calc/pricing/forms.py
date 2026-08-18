@@ -417,11 +417,12 @@ class AccesorioEditForm(BaseAccesorioForm):
 class VidrioCreateForm(forms.ModelForm):
     class Meta:
         model = Vidrio
-        fields = ['codigo', 'descripcion', 'precio']
+        fields = ['codigo', 'descripcion', 'tipo', 'precio']
         labels = {'precio': 'Precio / m²'}
         widgets = {
             'codigo': forms.TextInput(attrs={'class': _input_class}),
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'tipo': forms.Select(attrs={'class': _input_class}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 
@@ -429,10 +430,11 @@ class VidrioCreateForm(forms.ModelForm):
 class VidrioEditForm(forms.ModelForm):
     class Meta:
         model = Vidrio
-        fields = ['descripcion', 'precio']
+        fields = ['descripcion', 'tipo', 'precio']
         labels = {'precio': 'Precio / m²'}
         widgets = {
             'descripcion': forms.TextInput(attrs={'class': _input_class}),
+            'tipo': forms.Select(attrs={'class': _input_class}),
             'precio': forms.NumberInput(attrs={'class': _input_class, 'step': '0.01'}),
         }
 

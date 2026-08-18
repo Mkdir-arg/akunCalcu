@@ -70,9 +70,15 @@ class InterioresListView(APIView):
 
 
 class VidriosListView(APIView):
+    """Catalogo de vidrios. `tipo` separa los vidrios propiamente dichos de los
+    revestimientos (chapa/panel) que rellenan secciones ciegas."""
+
     def get(self, request):
         hoja_id = request.query_params.get('hoja_id')
+        tipo = request.query_params.get('tipo')
         qs = Vidrio.objects.exclude(bloqueado='Si')
+        if tipo:
+            qs = qs.filter(tipo=tipo)
         if hoja_id:
             from django.db import connection
             codigos = []
@@ -86,7 +92,7 @@ class VidriosListView(APIView):
                 qs = qs.filter(codigo__in=codigos)
             else:
                 qs = qs.none()
-        return Response(list(qs.values('codigo', 'descripcion', 'precio')))
+        return Response(list(qs.values('codigo', 'descripcion', 'precio', 'tipo')))
 
 
 class PerfilesListView(APIView):

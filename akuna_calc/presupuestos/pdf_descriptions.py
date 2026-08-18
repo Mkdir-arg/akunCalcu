@@ -312,18 +312,22 @@ def _serialize_tirantes(tirantes: Any) -> Dict[str, Any] | None:
     if len(secciones_in) < 2:
         return None
 
+    # Vidrios y revestimientos viven en el mismo catálogo, se resuelven juntos.
     codigos_vidrio = {
         _clean_text((s.get('material') or {}).get('codigo'))
         for s in secciones_in
-        if (s.get('material') or {}).get('tipo') != 'ciego'
     }
     codigos_vidrio.discard('')
     vidrios = {v.codigo: v for v in Vidrio.objects.filter(codigo__in=codigos_vidrio)} if codigos_vidrio else {}
 
+    # Compatibilidad: secciones ciegas guardadas contra MaterialCiego por id,
+    # antes de que los revestimientos pasaran al catálogo de vidrios.
     ids_ciego = {
         (s.get('material') or {}).get('id')
         for s in secciones_in
-        if (s.get('material') or {}).get('tipo') == 'ciego' and (s.get('material') or {}).get('id') not in (None, '')
+        if (s.get('material') or {}).get('tipo') == 'ciego'
+        and (s.get('material') or {}).get('id') not in (None, '')
+        and not _clean_text((s.get('material') or {}).get('codigo'))
     }
     ciegos = {m.id: m for m in MaterialCiego.objects.filter(id__in=ids_ciego)} if ids_ciego else {}
 
@@ -331,13 +335,22 @@ def _serialize_tirantes(tirantes: Any) -> Dict[str, Any] | None:
     for seccion in secciones_in:
         material = seccion.get('material') or {}
         if material.get('tipo') == 'ciego':
-            mat = ciegos.get(material.get('id'))
-            material_out = {
-                'tipo': 'ciego',
-                'id': material.get('id'),
-                'codigo': _clean_text(getattr(mat, 'codigo', material.get('codigo'))),
-                'nombre': _clean_text(getattr(mat, 'nombre', '')),
-            }
+            codigo_rev = _clean_text(material.get('codigo'))
+            revestimiento = vidrios.get(codigo_rev) if codigo_rev else None
+            if revestimiento is not None:
+                material_out = {
+                    'tipo': 'ciego',
+                    'codigo': revestimiento.codigo,
+                    'nombre': _clean_text(revestimiento.descripcion),
+                }
+            else:
+                mat = ciegos.get(material.get('id'))
+                material_out = {
+                    'tipo': 'ciego',
+                    'id': material.get('id'),
+                    'codigo': _clean_text(getattr(mat, 'codigo', material.get('codigo'))),
+                    'nombre': _clean_text(getattr(mat, 'nombre', material.get('nombre'))),
+                }
         else:
             vidrio = vidrios.get(_clean_text(material.get('codigo')))
             material_out = {

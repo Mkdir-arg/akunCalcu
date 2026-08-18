@@ -1655,12 +1655,17 @@ def construir_reporte_ventas(
     estado_venta_filtro=None,
     tipo_factura_filtro=None,
 ):
+    from django.utils import timezone
+
     ventas_query = Venta.objects.filter(deleted_at__isnull=True).select_related('cliente').prefetch_related('percepciones')
 
+    # El rango se aplica sobre la fecha del pedido (created_at), que es la que
+    # muestra el listado de ventas debajo del numero de pedido. Antes se usaba
+    # fecha_pago, que dejaba afuera las ventas sin pago registrado.
     if fecha_desde:
-        ventas_query = ventas_query.filter(fecha_pago__gte=fecha_desde)
+        ventas_query = ventas_query.filter(created_at__date__gte=fecha_desde)
     if fecha_hasta:
-        ventas_query = ventas_query.filter(fecha_pago__lte=fecha_hasta)
+        ventas_query = ventas_query.filter(created_at__date__lte=fecha_hasta)
     if cliente_filtro:
         ventas_query = ventas_query.filter(cliente__in=cliente_filtro)
     if razon_social_filtro:
@@ -1674,9 +1679,9 @@ def construir_reporte_ventas(
             ventas_query = ventas_query.filter(con_factura=False)
 
     ventas = []
-    for venta in ventas_query.order_by('-fecha_pago', '-created_at'):
+    for venta in ventas_query.order_by('-created_at', '-pk'):
         ventas.append({
-            'fecha': venta.fecha_pago or venta.created_at.date(),
+            'fecha': timezone.localtime(venta.created_at).date(),
             'pedido': venta.numero_pedido,
             'numero_factura': venta.numero_factura or '-',
             'factura_id': venta.id if venta.numero_factura else None,

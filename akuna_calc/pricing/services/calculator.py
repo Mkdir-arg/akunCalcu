@@ -1121,14 +1121,28 @@ class PriceCalculator:
             tipo = material.get("tipo")
 
             if tipo == "ciego":
-                mat = self._get_material_ciego(material.get("id"))
-                if not mat:
-                    raise PricingError(
-                        f"El material ciego de la sección {idx} no existe o está dado de baja."
-                    )
-                precio_m2 = _to_float(mat.precio_m2)
-                material_ref = {"tipo": "ciego", "id": mat.id, "codigo": mat.codigo, "nombre": mat.nombre}
-                descripcion = f"{mat.codigo} - {mat.nombre}"
+                codigo_rev = material.get("codigo")
+                revestimiento = self._get_vidrio_opt(codigo_rev) if codigo_rev else None
+                if revestimiento:
+                    precio_m2 = _to_float(revestimiento.precio)
+                    material_ref = {
+                        "tipo": "ciego",
+                        "codigo": revestimiento.codigo,
+                        "nombre": revestimiento.descripcion,
+                    }
+                    descripcion = f"{revestimiento.codigo} - {revestimiento.descripcion}"
+                else:
+                    # Compatibilidad: las secciones guardadas antes de mover los
+                    # revestimientos al catálogo de vidrios referencian
+                    # MaterialCiego por id y no traen código.
+                    mat = self._get_material_ciego(material.get("id"))
+                    if not mat:
+                        raise PricingError(
+                            f"El revestimiento de la sección {idx} no existe o está dado de baja."
+                        )
+                    precio_m2 = _to_float(mat.precio_m2)
+                    material_ref = {"tipo": "ciego", "id": mat.id, "codigo": mat.codigo, "nombre": mat.nombre}
+                    descripcion = f"{mat.codigo} - {mat.nombre}"
             else:
                 vidrio = self._get_vidrio_opt(material.get("codigo"))
                 if not vidrio:

@@ -296,10 +296,24 @@ class Accesorio(models.Model):
 
 
 class Vidrio(models.Model):
+    TIPO_VIDRIO = 'vidrio'
+    TIPO_REVESTIMIENTO = 'revestimiento'
+    TIPO_CHOICES = [
+        (TIPO_VIDRIO, 'Vidrio'),
+        (TIPO_REVESTIMIENTO, 'Revestimiento'),
+    ]
+
     codigo = models.CharField(db_column="CODIGO", max_length=255, primary_key=True)
     producto_id = models.TextField(db_column="Idproducto", null=True, blank=True)
     hoja_id = models.IntegerField(db_column="Idhoja", null=True, blank=True)
     descripcion = models.TextField(db_column="DESCRI", null=True, blank=True)
+    tipo = models.CharField(
+        db_column="tipo",
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default=TIPO_VIDRIO,
+        verbose_name="Tipo",
+    )
     precio = models.FloatField(db_column="PRECIO", null=True, blank=True)
     base = models.IntegerField(db_column="BASE", null=True, blank=True)
     altura = models.IntegerField(db_column="ALTURA", null=True, blank=True)

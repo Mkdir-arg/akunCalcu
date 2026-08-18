@@ -127,6 +127,42 @@ class ProductoFormTipoDibujoTest(SimpleTestCase):
         self.assertFalse(ProductoForm().fields['tipo_dibujo'].required)
 
 
+class VidrioTipoTest(SimpleTestCase):
+    """Campo `tipo` (Vidrio / Revestimiento) del catalogo de vidrios.
+
+    `Vidrio` es una tabla legacy con managed=False que no existe en SQLite, asi
+    que se verifica el contrato del modelo y de los forms sin tocar la base.
+    """
+
+    def test_el_default_del_modelo_es_vidrio(self):
+        from pricing.models import Vidrio
+        self.assertEqual(Vidrio._meta.get_field('tipo').default, 'vidrio')
+        self.assertEqual(Vidrio().tipo, 'vidrio')
+
+    def test_las_opciones_son_vidrio_y_revestimiento(self):
+        from pricing.models import Vidrio
+        self.assertEqual(
+            [c[0] for c in Vidrio._meta.get_field('tipo').choices],
+            ['vidrio', 'revestimiento'],
+        )
+
+    def test_la_columna_en_base_se_llama_tipo(self):
+        from pricing.models import Vidrio
+        self.assertEqual(Vidrio._meta.get_field('tipo').db_column, 'tipo')
+
+    def test_los_forms_exponen_el_selector_de_tipo(self):
+        from pricing.forms import VidrioCreateForm, VidrioEditForm
+        for form_class in (VidrioCreateForm, VidrioEditForm):
+            form = form_class()
+            self.assertIn('tipo', form.fields, form_class.__name__)
+            self.assertIsInstance(form.fields['tipo'].widget, forms.Select)
+            self.assertEqual(
+                [c[0] for c in form.fields['tipo'].choices],
+                ['vidrio', 'revestimiento'],
+                form_class.__name__,
+            )
+
+
 class MarcoViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -1052,6 +1088,115 @@ class TirantesSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)                       # 1500 = alto
         self.assertEqual(s.validated_data['tirantes']['orientacion'], 'horizontal')
         self.assertEqual(s.validated_data['tirantes']['secciones'][0]['medida_mm'], 600)
+
+
+class PriceCalculatorRevestimientoTest(SimpleTestCase):
+    """Los revestimientos de las secciones ciegas salen del catalogo de vidrios
+    (Vidrio.tipo='revestimiento') y se referencian por codigo."""
+
+    def _calc(self, vidrios=None, ciegos=None):
+        vidrios = vidrios or {}
+        ciegos = ciegos or {}
+        calc = PriceCalculator()
+        # Los stubs replican la guarda del metodo real: sin clave, no hay lookup.
+        calc._get_vidrio_opt = lambda codigo: vidrios.get(codigo) if codigo else None
+        calc._get_material_ciego = lambda mid: ciegos.get(mid) if mid else None
+        return calc
+
+    def test_revestimiento_se_cotiza_por_codigo(self):
+        calc = self._calc(vidrios={
+            'F6': SimpleNamespace(codigo='F6', descripcion='Float 6mm', precio=100.0),
+            'REV': SimpleNamespace(codigo='REV', descripcion='Chapa lisa', precio=200.0),
+        })
+        items = []
+        secciones = [
+            {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 500, 'material': {'tipo': 'ciego', 'codigo': 'REV'}},
+        ]
+
+        total = calc._calcular_secciones(secciones, 1000, 1500, 1, items)
+
+        # vidrio: 1.0 m2 x 100 = 100 ; revestimiento: 0.5 m2 x 200 = 100
+        self.assertAlmostEqual(total, 200.0, places=2)
+        self.assertEqual(
+            items[1]['material'],
+            {'tipo': 'ciego', 'codigo': 'REV', 'nombre': 'Chapa lisa'},
+        )
+
+    def test_seccion_ciega_vieja_se_resuelve_por_id(self):
+        """Presupuestos guardados antes del cambio referencian MaterialCiego."""
+        calc = self._calc(
+            vidrios={'F6': SimpleNamespace(codigo='F6', descripcion='Float', precio=100.0)},
+            ciegos={3: SimpleNamespace(id=3, codigo='CH', nombre='Chapa', precio_m2=200.0)},
+        )
+        items = []
+        secciones = [
+            {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 500, 'material': {'tipo': 'ciego', 'id': 3}},
+        ]
+
+        total = calc._calcular_secciones(secciones, 1000, 1500, 1, items)
+
+        self.assertAlmostEqual(total, 200.0, places=2)
+        self.assertEqual(items[1]['material']['codigo'], 'CH')
+
+    def test_el_codigo_gana_sobre_el_id_viejo(self):
+        calc = self._calc(
+            vidrios={'REV': SimpleNamespace(codigo='REV', descripcion='Chapa lisa', precio=200.0)},
+            ciegos={3: SimpleNamespace(id=3, codigo='CH', nombre='Chapa', precio_m2=999.0)},
+        )
+        items = []
+        secciones = [
+            {'alto_mm': 500, 'material': {'tipo': 'ciego', 'codigo': 'REV', 'id': 3}},
+            {'alto_mm': 1000, 'material': {'tipo': 'ciego', 'codigo': 'REV'}},
+        ]
+
+        calc._calcular_secciones(secciones, 1000, 1500, 1, items)
+
+        self.assertEqual(items[0]['material']['codigo'], 'REV')
+        self.assertNotIn('id', items[0]['material'])
+
+    def test_revestimiento_inexistente_falla(self):
+        calc = self._calc(vidrios={'F6': SimpleNamespace(codigo='F6', descripcion='Float', precio=100.0)})
+        secciones = [
+            {'alto_mm': 1000, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+            {'alto_mm': 500, 'material': {'tipo': 'ciego', 'codigo': 'NO-EXISTE'}},
+        ]
+
+        with self.assertRaises(PricingError) as ctx:
+            calc._calcular_secciones(secciones, 1000, 1500, 1, [])
+
+        self.assertIn('revestimiento', str(ctx.exception).lower())
+
+
+class VidriosListViewTipoTest(SimpleTestCase):
+    """La API filtra el catalogo por tipo para alimentar cada selector."""
+
+    def _get(self, params):
+        from rest_framework.request import Request
+        from rest_framework.test import APIRequestFactory
+        from pricing.catalog_views import VidriosListView
+        # query_params lo aporta el wrapper de DRF, que se saltea al invocar get() directo.
+        request = Request(APIRequestFactory().get('/pricing/api/pricing/vidrios/', params))
+        with patch('pricing.catalog_views.Vidrio.objects') as mock_objects:
+            qs = MagicMock()
+            mock_objects.exclude.return_value = qs
+            qs.filter.return_value = qs
+            qs.values.return_value = []
+            VidriosListView().get(request)
+        return qs
+
+    def test_filtra_por_tipo_cuando_se_pide(self):
+        qs = self._get({'tipo': 'revestimiento'})
+        qs.filter.assert_any_call(tipo='revestimiento')
+
+    def test_sin_tipo_no_filtra(self):
+        qs = self._get({})
+        self.assertFalse(qs.filter.called)
+
+    def test_expone_el_tipo_en_la_respuesta(self):
+        qs = self._get({})
+        qs.values.assert_called_once_with('codigo', 'descripcion', 'precio', 'tipo')
 
 
 class PriceCalculatorSeccionesTest(SimpleTestCase):

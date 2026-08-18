@@ -1211,6 +1211,7 @@ def vidrios_config(request):
     allowed_sort_fields = {
         'codigo': ('codigo',),
         'descripcion': ('descripcion', 'codigo'),
+        'tipo': ('tipo', 'codigo'),
         'precio': ('precio', 'codigo'),
         'estado': ('bloqueado', 'codigo'),
     }

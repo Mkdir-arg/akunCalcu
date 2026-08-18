@@ -23,6 +23,7 @@
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=tipo&dir={% if sort == 'tipo' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Tipo{% if sort == 'tipo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio&dir={% if sort == 'precio' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio{% if sort == 'precio' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
@@ -33,6 +34,7 @@
                     <tr class="hover:bg-slate-50 transition-colors" data-filter-row="vidrios-table" data-status="{% if vidrio.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ vidrio.codigo }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ vidrio.descripcion }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ vidrio.get_tipo_display }}</td>
                         <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ vidrio.precio|default:"-" }}</td>
                         <td class="hidden sm:table-cell px-6 py-4">
                             {% if vidrio.bloqueado == 'Si' %}
@@ -56,14 +58,14 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay vidrios registrados</p>
                         </td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="vidrios-table" class="hidden">
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay vidrios que coincidan con los filtros</p>
                         </td>
