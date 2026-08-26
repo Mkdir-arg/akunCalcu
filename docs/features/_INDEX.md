@@ -41,6 +41,7 @@
 | [FEAT-033](./FEAT-033-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | — |
 | [FEAT-034](./FEAT-034-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | — |
 | [FEAT-035](./FEAT-035-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) + latido de Gmail | Implementado | 2026-08-01 | — |
+| [FEAT-036](./FEAT-036-revestimientos-catalogo-vidrios.md) | Revestimientos en el catálogo de vidrios (campo Tipo, reemplaza MaterialCiego) | Implementado | 2026-08-18 | — |
 
 ---
 
@@ -55,6 +56,7 @@
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
+| `pricing` | FEAT-036 | 2026-08-18 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |

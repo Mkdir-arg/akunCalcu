@@ -20,6 +20,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { computarLayout } from './abertura-layout.js';
+import { crearOverlayCotas } from './cotas3d.js';
 
 const TIPOS = {
   ventana_corrediza:  { hojas: [2, 3, 4], modo: 'slide',   puerta: false, open: 0.22 },
@@ -49,10 +51,12 @@ const VIDRIOS = {
 let renderer, scene, camera, controls, host = null, ro = null, running = false;
 let perfilMat, glassMat, spacerMat, handleMat, grooveMat, mallaTex, mallaMat;
 let windowGroup = null, movers = [], curOpen = 0, targetOpen = 0, framed = false;
+let overlayCotas = null, layoutCotas = null;
 
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
                 mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco',
-                tirantes: null, tirantesOrientacion: 'horizontal' };
+                tirantes: null, tirantesOrientacion: 'horizontal',
+                cotas: true, vidrioComposicion: null, sentidos: null };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -360,6 +364,9 @@ function loop() {
   movers.forEach(m => m.apply(curOpen));
   controls.update();
   renderer.render(scene, camera);
+  if (overlayCotas && state.cotas) {
+    overlayCotas.update(layoutCotas, camera, host.clientWidth, host.clientHeight);
+  }
 }
 
 function applyParams(params) {
@@ -376,6 +383,18 @@ function applyParams(params) {
   state.color = PERFILES[params.color] ? params.color : 'blanco';
   state.tirantes = Array.isArray(params.tirantes) ? params.tirantes : null;
   state.tirantesOrientacion = params.tirantes_orientacion === 'vertical' ? 'vertical' : 'horizontal';
+  state.cotas = params.cotas !== false;
+  state.vidrioComposicion = params.vidrio_composicion || null;
+  state.sentidos = Array.isArray(params.sentidos) ? params.sentidos : null;
+  // El layout de cotas se recalcula acá (no en cada frame): solo depende de los
+  // params, no de la cámara.
+  layoutCotas = computarLayout({
+    tipo: state.tipo, ancho: state.ancho, alto: state.alto, hojas: state.hojas,
+    mosquitero: state.mosquitero, premarco: state.premarco,
+    tirantes: state.tirantes, tirantes_orientacion: state.tirantesOrientacion,
+    vidrio_composicion: state.vidrioComposicion, sentidos: state.sentidos,
+  });
+  if (overlayCotas) overlayCotas.setVisible(state.cotas);
   const p = PERFILES[state.color];
   perfilMat.color.setHex(p.color); perfilMat.metalness = p.metalness; perfilMat.roughness = p.roughness;
   curOpen = 0;
@@ -399,6 +418,8 @@ const AkunViewer = {
       renderer.domElement.style.width = '100%';
       renderer.domElement.style.height = '100%';
       renderer.domElement.style.display = 'block';
+      if (!overlayCotas) overlayCotas = crearOverlayCotas(THREE);
+      container.appendChild(overlayCotas.dom);
       if (ro) ro.disconnect();
       ro = new ResizeObserver(() => resize());
       ro.observe(container);
@@ -408,11 +429,15 @@ const AkunViewer = {
     if (!running) { running = true; loop(); }
   },
   setParams(params) { if (renderer) applyParams(params); },
+  setCotas(v) { state.cotas = !!v; if (overlayCotas) overlayCotas.setVisible(!!v); },
   dispose() {
     running = false;
     if (ro) { ro.disconnect(); ro = null; }
     if (renderer && renderer.domElement && renderer.domElement.parentNode) {
       renderer.domElement.parentNode.removeChild(renderer.domElement);
+    }
+    if (overlayCotas && overlayCotas.dom.parentNode) {
+      overlayCotas.dom.parentNode.removeChild(overlayCotas.dom);
     }
     host = null; framed = false;
   },

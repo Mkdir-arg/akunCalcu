@@ -22,6 +22,47 @@
 
 ## Fixes registrados
 
+### FIX-025 — El botón "Recalcular" del cotizador quedaba deshabilitado en silencio
+**Fecha**: 2026-08-18
+**Reportado por**: Usuario ("no está funcionando el botón de recalcular, tengo que cerrar y volver a abrir para ingresar los datos")
+**Severidad**: Media (no afecta precios guardados, pero obliga a rehacer el ítem desde cero)
+**Feature afectada**: FEAT-023 (cotizador React en presupuestos) / FIX-021 (botón Recalcular)
+
+**Síntoma**: Después de calcular, si el usuario cambiaba la configuración el botón **Recalcular** dejaba de responder. La única salida visible era cerrar el modal y volver a cargar todos los datos.
+
+**Causa raíz**: Dos cosas que se sumaban. (1) El botón era `disabled={loading || !config.marco_id}`, y cambiar **Extrusora, Línea o Producto** dispara la cascada de reseteo que pone `marco_id: null` — con `result` todavía cargado, el footer seguía mostrando Recalcular pero inerte. (2) `calcular()` ya tenía el mensaje `'Selecciona un marco primero'`, pero el bloque de error se pinta al pie de la **columna izquierda** de configuración, fuera de la vista de quien está mirando el footer. Botón muerto y sin explicación.
+
+**Solución**: El botón ya no se deshabilita por configuración incompleta, solo mientras calcula (`disabled={loading}`) — `calcular()` valida y explica qué falta. El error se muestra **también en el footer sticky**, donde está el ojo al apretar el botón. Y se volvió transitorio (`useEffect(() => setError(null), [config])`): al tocar cualquier dato desaparece, porque si quedara fijo taparía el total. Mismo criterio en el botón "Calcular precio" inicial.
+
+**Validación**: Verificado leyendo el JSX y el parseo del template. **No se pudo reproducir en navegador** (Docker abajo; Node disponible pero sin Babel para transpilar el JSX offline). El diagnóstico sale de la lectura del código.
+
+**Archivos modificados**:
+- `akuna_calc/presupuestos/templates/presupuestos/detalle.html`
+
+---
+
+### FIX-024 — El reporte de ventas daba $0,00 con ventas visibles en el listado
+**Fecha**: 2026-08-18
+**Reportado por**: Usuario (reporte desde 01/08 en blanco mientras `/comercial/ventas/` mostraba 13 ventas por $30.749.751,42)
+**Severidad**: Alta (el reporte que se usa para medir ventas mostraba cero)
+**Feature afectada**: Módulo `comercial` — Detalle de Ventas (`/comercial/reportes/`)
+
+**Síntoma**: Filtrando el reporte desde el 01/08 decía "No hay ventas registradas con los filtros seleccionados" y total $0,00, mientras el listado de ventas con el mismo rango devolvía 13 registros.
+
+**Causa raíz**: El listado y el reporte respondían **dos preguntas distintas con el mismo rótulo de filtro**. El listado incluye la venta si su `fecha_pago` **o la de cualquiera de sus `PagoVenta`** cae en el rango (`venta_q | pago_q`, deliberado). El reporte filtraba solo por `Venta.fecha_pago`, el campo de cabecera. Las 13 ventas tenían cobros de agosto registrados como pagos, pero su `fecha_pago` propia era de julio o estaba vacía. Agravante: `fecha_pago` es nullable y en SQL `NULL >= '2026-08-01'` no es verdadero, así que las ventas sin pago quedaban afuera con **cualquier** rango. Y el listado no muestra la fecha que usó para incluir la fila, así que en pantalla solo se veían fechas de julio.
+
+**Solución**: A pedido del usuario, el reporte pasa a filtrar por la **fecha del pedido** (`created_at`), que es la que el listado muestra debajo del número de pedido. Se cambiaron también el **orden** y la **fecha mostrada** al mismo campo: un filtro que usa un campo y una columna que muestra otro es justamente lo que hizo parecer roto al reporte. Se usa `created_at__date__gte/lte` (patrón ya presente en el módulo) y `timezone.localtime()` para la fecha mostrada. El export a Excel usa la misma función, así que quedó alineado solo.
+
+**Consecuencias esperadas**: las ventas sin fecha de pago ahora aparecen, y los totales dan distinto que antes para cualquier rango. Verificado en prod que `CONVERT_TZ` funciona (1795 zonas cargadas en `mysql.time_zone_name`), así que los lookups `__date` no devuelven vacío.
+
+**Validación**: 4 tests nuevos (filtra por fecha de pedido y no por fecha de pago · incluye ventas sin fecha de pago · `fecha_hasta` cubre todo el último día · la fecha mostrada es la del pedido). 340 tests contra 323 del baseline, sin regresiones.
+
+**Archivos modificados**:
+- `akuna_calc/comercial/views.py` (`construir_reporte_ventas`)
+- `akuna_calc/comercial/tests.py`
+
+---
+
 ### FIX-023 — El PDF decía "(TODO VIDRIO)" en ítems cotizados con travesaños y revestimiento
 **Fecha**: 2026-08-13
 **Reportado por**: Usuario (presupuesto 864 en producción: ítems con travesaño cuya descripción contradecía lo cotizado)

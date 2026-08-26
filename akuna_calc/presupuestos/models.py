@@ -291,20 +291,34 @@ class Presupuesto(models.Model):
 
     @classmethod
     def generar_numero(cls):
+        """Devuelve el siguiente número libre del año.
+
+        No se puede ordenar por `numero` en la base: es texto, y el orden
+        alfabético pone 'PRES-2026-999' por encima de 'PRES-2026-1000' (compara
+        '9' contra '1'). Con el padding de 3 dígitos, al pasar los 999 el último
+        detectado quedaba clavado en 999 y esto devolvía siempre un número ya
+        usado → IntegrityError al guardar, porque `numero` es unique.
+
+        Tampoco alcanza con mirar un solo registro: un número cargado a mano con
+        otro formato reiniciaba la secuencia en 001. Se comparan todos los
+        sufijos como entero y se saltea cualquier valor ya tomado.
+        """
         año = timezone.now().year
-        ultimo = (
-            cls.objects.filter(numero__startswith=f'PRES-{año}-')
-            .order_by('-numero')
-            .first()
+        prefijo = f'PRES-{año}-'
+        # Incluye los borrados lógicamente: el unique de la base no los distingue.
+        tomados = set(
+            cls.objects.filter(numero__startswith=prefijo).values_list('numero', flat=True)
         )
-        if ultimo:
+        secuencias = set()
+        for numero in tomados:
             try:
-                seq = int(ultimo.numero.split('-')[-1]) + 1
+                secuencias.add(int(numero.rsplit('-', 1)[-1]))
             except (ValueError, IndexError):
-                seq = 1
-        else:
-            seq = 1
-        return f'PRES-{año}-{seq:03d}'
+                continue
+        seq = max(secuencias) + 1 if secuencias else 1
+        while f'{prefijo}{seq:03d}' in tomados:
+            seq += 1
+        return f'{prefijo}{seq:03d}'
 
 
 class ItemPresupuesto(models.Model):

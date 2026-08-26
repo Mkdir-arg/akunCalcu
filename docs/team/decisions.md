@@ -184,6 +184,38 @@
 
 ---
 
+## ADR-018: Los revestimientos viven en el catálogo de vidrios, no en un modelo aparte
+
+**Fecha**: 2026-08-18 · **Estado**: Aceptada · **Reemplaza parcialmente**: ADR-016 (punto del catálogo de materiales ciegos)
+
+**Contexto**: ADR-016 creó `MaterialCiego` como catálogo propio para el relleno de las secciones
+ciegas. Nunca se puso en servicio: su ABM no tenía link desde ningún menú, el catálogo no se cargó y
+la migración que crea la tabla quedó sin aplicar mucho tiempo, así que en producción el botón "Ciego
+(chapa/panel)" ofrecía una lista vacía. Además obligaba a mantener dos ABMs y dos claves distintas
+(`Vidrio.codigo` string vs `MaterialCiego.id` entero) para alimentar dos selectores del mismo editor.
+
+**Decisión**: Los revestimientos pasan a ser registros del catálogo de vidrios, distinguidos por un
+campo `Vidrio.tipo` (`vidrio` / `revestimiento`). Un solo catálogo, un solo ABM, una sola clase de
+clave. `MaterialCiego` deja de tener consumidores.
+
+**Alternativa descartada**: que ambos convivan (el selector de ciego uniendo revestimientos y
+materiales ciegos). Se descartó porque el campo `tipo` quedaría redundante con el botón Vidrio/Ciego
+que ya existía, y seguirían siendo dos ABMs.
+
+**Consecuencias**:
+- La sección sigue guardando `tipo: 'ciego'` como discriminador —de él dependen el visor 3D y el
+  texto "VIDRIO Y REVESTIMIENTO" del PDF (FIX-023)— pero referencia `codigo` en vez de `id`.
+- El calculador y el PDF conservan un **fallback** que resuelve por `id` contra `MaterialCiego` para
+  los presupuestos guardados antes del cambio. Por eso **el modelo y la tabla no se borran**:
+  eliminarlos exigiría otra migración y mataría el fallback. Se limpian cuando se confirme que no
+  queda ningún registro con el formato viejo.
+- Quedan sin consumidor `MaterialesCiegosListView`, `MaterialCiegoForm`, `materiales_ciegos_config`
+  y sus dos templates. No hay nada visible que retirar de la UI porque nunca tuvieron link.
+- Al agregar un campo a un modelo `managed = False`, Django no emite DDL: hay que separar estado y
+  schema con `SeparateDatabaseAndState` y escribir el `ALTER TABLE` a mano.
+
+---
+
 ## ADR-017: Monitoreo de integraciones — latido positivo en vez de interpretar el silencio
 **Fecha**: 2026-08-01
 **Estado**: Activo

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.test import TestCase, Client
 from django.test import SimpleTestCase
+from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta, date
@@ -2128,6 +2129,115 @@ class TirantesNarrativaTest(SimpleTestCase):
         snap = {'descripcion_manual': 'Ventana', 'titulo_item': 'Ventana', 'cantidad': 1,
                 'ancho_mm': 1000, 'alto_mm': 1000}
         self.assertNotIn('tirante', build_narrative_from_snapshot(snap))
+
+
+class GenerarNumeroPresupuestoTest(TestCase):
+    """`numero` es unique: si generar_numero() devuelve uno usado, el POST de
+    /presupuestos/nuevo/ explota con IntegrityError (500)."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='numeros', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Ana', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+
+    def _crear(self, numero):
+        return Presupuesto.objects.create(
+            numero=numero, cliente=self.cliente, tipo_material='aluminio',
+            fecha_expiracion=date(2027, 1, 1), created_by=self.user,
+        )
+
+    def _anio(self):
+        from django.utils import timezone as tz
+        return tz.now().year
+
+    def test_pasa_de_999_a_1000(self):
+        anio = self._anio()
+        self._crear(f'PRES-{anio}-999')
+
+        self.assertEqual(Presupuesto.generar_numero(), f'PRES-{anio}-1000')
+
+    def test_no_repite_un_numero_ya_usado(self):
+        """El orden alfabético pone 999 por encima de 1000 y el número se repetía."""
+        anio = self._anio()
+        for n in ('999', '1000', '1001'):
+            self._crear(f'PRES-{anio}-{n}')
+
+        numero = Presupuesto.generar_numero()
+
+        self.assertFalse(
+            Presupuesto.objects.filter(numero=numero).exists(),
+            f'generar_numero() devolvió {numero}, que ya existe',
+        )
+        self.assertEqual(numero, f'PRES-{anio}-1002')
+
+    def test_ignora_numeros_de_otros_anios(self):
+        anio = self._anio()
+        self._crear(f'PRES-{anio - 1}-500')
+
+        self.assertEqual(Presupuesto.generar_numero(), f'PRES-{anio}-001')
+
+    def test_tolera_numeros_con_formato_raro(self):
+        anio = self._anio()
+        self._crear(f'PRES-{anio}-abc')
+        self._crear(f'PRES-{anio}-007')
+
+        self.assertEqual(Presupuesto.generar_numero(), f'PRES-{anio}-008')
+
+    def test_los_borrados_logicos_siguen_ocupando_el_numero(self):
+        """El borrado de presupuestos es lógico (`deleted_at`, desde la vista) y el
+        unique de la base no lo distingue: el número sigue tomado."""
+        from django.utils import timezone as tz
+
+        anio = self._anio()
+        p = self._crear(f'PRES-{anio}-1000')
+        self._crear(f'PRES-{anio}-999')
+        Presupuesto.objects.filter(pk=p.pk).update(deleted_at=tz.now())
+
+        self.assertEqual(Presupuesto.generar_numero(), f'PRES-{anio}-1001')
+
+
+class CrearPresupuestoPasado999Test(TestCase):
+    """FIX-026: con la secuencia del año pasada de 999, el POST de
+    /presupuestos/nuevo/ devolvía 500 (IntegrityError por `numero` duplicado)."""
+
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        self.user = User.objects.create_user(username='crea999', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.user, permisos=['presupuestos.view'])
+        self.client_http = Client()
+        self.client_http.login(username='crea999', password='testpass')
+        self.cliente = Cliente.objects.create(
+            nombre='Ana', apellido='Cliente',
+            condicion_iva='CF', direccion='Dir 1', localidad='CABA',
+        )
+        from django.utils import timezone as tz
+        anio = tz.now().year
+        # Estado real de producción: la secuencia ya pasó los 999.
+        for n in ('998', '999', '1000', '1001'):
+            Presupuesto.objects.create(
+                numero=f'PRES-{anio}-{n}', cliente=self.cliente, tipo_material='aluminio',
+                fecha_expiracion=date(2027, 1, 1), created_by=self.user,
+            )
+
+    def test_el_alta_no_revienta_y_numera_correlativo(self):
+        from django.utils import timezone as tz
+        anio = tz.now().year
+
+        response = self.client_http.post(reverse('presupuestos:presupuestos-crear'), {
+            'cliente': self.cliente.pk,
+            'tipo_material': 'aluminio',
+            'fecha_expiracion': '2027-01-01',
+            'notas': '',
+        })
+
+        self.assertEqual(response.status_code, 302, 'el alta tiene que redirigir, no fallar')
+        creado = Presupuesto.objects.exclude(
+            numero__in=[f'PRES-{anio}-{n}' for n in ('998', '999', '1000', '1001')]
+        ).get()
+        self.assertEqual(creado.numero, f'PRES-{anio}-1002')
 
 
 class SerializeTirantesTest(SimpleTestCase):

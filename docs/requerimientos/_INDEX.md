@@ -65,3 +65,4 @@
 | [REQ-043](./REQ-043-orden-manual-items-presupuesto.md) | Orden manual de los ítems del presupuesto (arrastrar) | Implementado | 2026-07-30 | FEAT-033 |
 | [REQ-044](./REQ-044-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | FEAT-034 |
 | [REQ-045](./REQ-045-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) | Implementado | 2026-08-01 | FEAT-035 |
+| [REQ-046](./REQ-046-revestimientos-catalogo-vidrios.md) | Revestimientos en el catálogo de vidrios (campo Tipo) | Implementado | 2026-08-18 | FEAT-036 |

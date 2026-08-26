@@ -28,6 +28,7 @@ _Se define en el sprint planning._
 | US-034 | Confirmar presupuesto pide seña y genera venta + pedido de fábrica | ✅ Completado | Implementado fuera de sprint activo; FEAT-019 (migración plantillas/0013 pendiente en prod) |
 | US-036 | Eliminar módulo de despiece; Pedidos de Fábrica queda solo | ✅ Completado | Implementado fuera de sprint activo; FEAT-020 (migración plantillas/0014 pendiente en prod — borra datos del despiece) |
 | US-035 | Órdenes de Fabricación en el pedido (planilla + PDF A4) | ✅ Completado | Etapa 1 (FEAT-021) + Etapa 2 PDF A4 (FEAT-022). Migraciones plantillas/0015 y configuracion/0003 pendientes en prod |
+| US-046 | Revestimientos en el catálogo de vidrios (campo Tipo) | ✅ Completado | Implementado fuera de sprint activo; FEAT-036 + ADR-018. Reemplaza MaterialCiego. Pendiente: cargar los revestimientos |
 | US-037 | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | ✅ Completado | App `solicitudes` nueva; FEAT-025. Migraciones solicitudes/0001, usuarios/0004 y usuarios/0005 pendientes en prod |
 | US-038 | Graficador 3D de aberturas en el cotizador de presupuestos | ✅ Completado | Three.js como módulo estático; clasificador de tipología; FEAT-030. Sin migración |
 | US-042 | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | ✅ Completado | Tipo `unidad` + campo `precio_unidad`; FEAT-032. Migración `plantillas/0016` pendiente en prod |

@@ -14,6 +14,42 @@
 
 ---
 
+## 2026-08-18 — Reporte por fecha de pedido, revestimientos en el catálogo de vidrios y el botón Recalcular (FIX-024, FEAT-036, FIX-025)
+
+**Sprint**: Sin sprint activo
+**Deploy**: commit `530552e`, Railway 2026-08-18 20:50 UTC — `pricing.0006_vidrio_tipo` aplicada al arrancar
+
+Tres entregas en la misma tanda:
+
+**FIX-024 — El Detalle de Ventas daba $0,00 con ventas visibles en el listado.** El listado incluye
+la venta si su `fecha_pago` **o la de cualquiera de sus pagos** cae en el rango; el reporte miraba
+solo el campo de cabecera, que en esas 13 ventas era de julio o estaba vacío (y `NULL >= fecha` nunca
+es verdadero). A pedido del usuario el reporte pasa a filtrar, ordenar y mostrar por la **fecha del
+pedido** (`created_at`), la misma que el listado muestra bajo el número. Los totales dan distinto que
+antes para cualquier rango, y las ventas sin pago ahora aparecen.
+
+**FEAT-036 / REQ-046 / ADR-018 — Revestimientos en el catálogo de vidrios.** Campo `Vidrio.tipo`
+(*Vidrio* / *Revestimiento*) que filtra los dos selectores del editor de secciones desde un solo
+catálogo. Reemplaza a `MaterialCiego`, que nunca se había puesto en servicio (su ABM no tenía link y
+el catálogo estaba vacío). La sección conserva el discriminador `tipo: 'ciego'` pero referencia
+`codigo` en vez de `id`; el calculador y el PDF mantienen un fallback por `id` para los presupuestos
+ya guardados. Migración `pricing/0006` con `SeparateDatabaseAndState` porque la tabla es legacy
+(`managed=False`) y Django no emite DDL: el `ALTER TABLE ... DEFAULT 'vidrio'` deja todo lo existente
+clasificado como Vidrio.
+
+**FIX-025 — El botón Recalcular del cotizador quedaba muerto.** Estaba `disabled` por
+`!config.marco_id`, y cambiar Producto/Línea/Extrusora resetea el marco: el botón seguía visible pero
+inerte, y el mensaje que lo explicaba se pintaba fuera de la vista. Ahora solo se deshabilita mientras
+calcula, el error se muestra en el footer sticky y es transitorio.
+
+**Verificado en producción**: `CONVERT_TZ` funciona (1795 zonas en `mysql.time_zone_name`), así que
+los lookups `__date` del reporte no devuelven vacío. Deploy sin tracebacks ni 500s.
+
+**Pendiente**: cargar los revestimientos en `/pricing/config/vidrios/` con Tipo = Revestimiento.
+Hasta entonces el botón "Ciego (chapa/panel)" muestra lista vacía.
+
+---
+
 ## 2026-08-13 — Los ítems con travesaño y revestimiento ya no dicen "(TODO VIDRIO)" (FIX-023)
 
 **Pedido:** "Las descripciones dicen (TODO VIDRIO) pero hay algunas que son con travesaño; esas tienen que decir vidrio y Revestimiento" (visto en el presupuesto 864 de producción).

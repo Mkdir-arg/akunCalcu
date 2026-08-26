@@ -21,9 +21,18 @@
   // se necesita (al calcular un ítem), no en la carga de la página.
   window.__loadAkunViewer = function () {
     if (!window.__akunViewerPromise) {
-      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=5").then(function () { return window.AkunViewer; });
+      window.__akunViewerPromise = import("{% static 'js/viewer3d.js' %}?v=6").then(function () { return window.AkunViewer; });
     }
     return window.__akunViewerPromise;
+  };
+  // La elevación 2D es SVG puro: no arrastra three.js, así que se puede pedir
+  // sola cuando el vendedor mira el plano técnico.
+  window.__loadAkunElevacion = function () {
+    if (!window.__akunElevacionPromise) {
+      window.__akunElevacionPromise = import("{% static 'js/elevacion.js' %}?v=1")
+        .then(function (m) { return m.svgElevacion; });
+    }
+    return window.__akunElevacionPromise;
   };
 </script>
 {% endblock %}
@@ -1566,6 +1575,9 @@ const CotizadorModal = () => {
     const [interiores, setInteriores] = useState([]);
     const [tratamientos, setTratamientos] = useState([]);
     const [opcionalesDisp, setOpcionalesDisp] = useState([]);
+    const [vista, setVista] = useState('3d');
+    const [svgPlano, setSvgPlano] = useState('');
+    const [cotas, setCotas] = useState(true);
     const [vidriosCatalogo, setVidriosCatalogo] = useState([]);
     const [revestimientos, setRevestimientos] = useState([]);
     const [perfilesTirante, setPerfilesTirante] = useState([]);
@@ -1603,26 +1615,36 @@ const CotizadorModal = () => {
     const _prod3d = productos.find(p => p.id === config.producto_id);
     const dibuja3d = !!result && !!_prod3d && (_prod3d.tipologia || 'pano_fijo') !== 'no_dibujo';
 
-    // Monta / actualiza el visor 3D cuando hay resultado calculado.
-    useEffect(() => {
-        if (!result || !viewerRef.current) return;
+    // Params de dibujo: los comparten el visor 3D y la elevación 2D, así las
+    // cotas de los dos salen de los mismos datos.
+    const paramsDibujo = () => {
         const prod = productos.find(p => p.id === config.producto_id);
-        if (!prod || (prod.tipologia || 'pano_fijo') === 'no_dibujo') return;
+        if (!prod || (prod.tipologia || 'pano_fijo') === 'no_dibujo') return null;
         const vid = vidrios.find(v => v.codigo === config.vidrio_codigo);
         const trat = tratamientos.find(t => t.id === config.tratamiento_id);
-        const params = {
+        return {
             tipo: prod.tipologia || 'pano_fijo',
             ancho: config.ancho_mm, alto: config.alto_mm,
             hojas: prod.cantidad_hojas || 1,
             mosquitero: (config.opcionales || []).some(o => o.tipo === 'mosquitero'),
             premarco: (config.opcionales || []).some(o => o.tipo === 'premarco'),
             vidrio: mapVidrio(vid && vid.descripcion),
+            // Texto tal cual está en el catálogo: es lo que se imprime dentro del paño.
+            vidrio_composicion: (vid && vid.descripcion) || null,
             color: mapColor(trat && trat.descripcion),
             tirantes: (config.tirantes && config.tirantes.activo && (config.tirantes.secciones || []).length >= 2)
                 ? config.tirantes.secciones.map(s => ({ medida_mm: parseInt(s.medida_mm) || 0, ciego: s.material.tipo === 'ciego' }))
                 : null,
             tirantes_orientacion: (config.tirantes && config.tirantes.orientacion) || 'horizontal',
         };
+    };
+
+    // Monta / actualiza el visor 3D cuando hay resultado calculado.
+    useEffect(() => {
+        if (!result || !viewerRef.current || vista !== '3d') return;
+        const params = paramsDibujo();
+        if (!params) return;
+        params.cotas = cotas;
         let cancel = false;
         if (window.__loadAkunViewer) {
             window.__loadAkunViewer()
@@ -1630,7 +1652,19 @@ const CotizadorModal = () => {
                 .catch(() => {});
         }
         return () => { cancel = true; };
-    }, [result, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, config.tirantes, productos, vidrios, tratamientos]);
+    }, [result, vista, cotas, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, config.tirantes, productos, vidrios, tratamientos]);
+
+    // Elevación técnica 2D: SVG puro, se regenera con la config.
+    useEffect(() => {
+        if (!result || vista !== 'plano') return;
+        const params = paramsDibujo();
+        if (!params) { setSvgPlano(''); return; }
+        let cancel = false;
+        window.__loadAkunElevacion()
+            .then(svgElevacion => { if (!cancel) setSvgPlano(svgElevacion(params)); })
+            .catch(() => { if (!cancel) setSvgPlano(''); });
+        return () => { cancel = true; };
+    }, [result, vista, config.producto_id, config.ancho_mm, config.alto_mm, config.vidrio_codigo, config.tratamiento_id, config.opcionales, config.tirantes, productos, vidrios, tratamientos]);
 
     // El error es transitorio: al tocar cualquier dato deja de aplicar, y si
     // quedara fijo taparia el total en el footer.
@@ -1824,6 +1858,9 @@ const CotizadorModal = () => {
 
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
     const set = (k, v, reset = {}) => setConfig(c => ({ ...c, [k]: v, ...reset }));
+    // OJO: este objeto NO puede ir inline en el JSX. Django parsea '{{' como
+    // variable de template y falla con "may not begin with underscores".
+    const htmlPlano = { __html: svgPlano };
     const _prodSel = productos.find(p => p.id === config.producto_id);
     const esTerc = _prodSel ? !!_prodSel.terciarizado : (editTipo === 'terciarizado');
 
@@ -1979,8 +2016,42 @@ const CotizadorModal = () => {
                             </div>
                         )}
                         {dibuja3d ? (
-                            <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
-                                className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
+                            <>
+                            {/* Pestañas 3D / Plano: comparten el mismo alto para no
+                                estirar el modal. El plano es la lectura fiable de las
+                                cotas; en perspectiva la medida se deforma. */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden">
+                                    <button type="button" onClick={() => setVista('3d')}
+                                        className={vista === '3d'
+                                            ? 'px-3 py-1 text-xs font-semibold bg-blue-600 text-white'
+                                            : 'px-3 py-1 text-xs font-semibold bg-white text-slate-500 hover:bg-slate-50'}>
+                                        <i className="fas fa-cube mr-1"></i>3D
+                                    </button>
+                                    <button type="button" onClick={() => setVista('plano')}
+                                        className={vista === 'plano'
+                                            ? 'px-3 py-1 text-xs font-semibold bg-blue-600 text-white'
+                                            : 'px-3 py-1 text-xs font-semibold bg-white text-slate-500 hover:bg-slate-50'}>
+                                        <i className="fas fa-ruler-combined mr-1"></i>Plano
+                                    </button>
+                                </div>
+                                {vista === '3d' && (
+                                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer">
+                                        <input type="checkbox" checked={cotas} onChange={e => setCotas(e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                        Cotas
+                                    </label>
+                                )}
+                            </div>
+                            {vista === '3d' ? (
+                                <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
+                                    className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
+                            ) : (
+                                <div title="Elevación técnica con cotas en mm"
+                                    className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-white border border-slate-200 p-2"
+                                    dangerouslySetInnerHTML={htmlPlano}></div>
+                            )}
+                            </>
                         ) : (
                             <div className="w-full h-72 rounded-2xl mb-4 flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-400 text-sm text-center px-6">
                                 <span><i className="fas fa-cube mr-2 opacity-50"></i>Sin vista previa 3D para este producto</span>

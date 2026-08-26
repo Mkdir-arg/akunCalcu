@@ -244,6 +244,15 @@ LOGGING = {
         },
     },
     'loggers': {
+        # Sin esto los 500 de producción no dejan rastro: el logger `django` que
+        # trae Django por defecto manda al handler `console` con el filtro
+        # `require_debug_true`, así que con DEBUG=False el traceback se descarta
+        # y en Railway solo queda la línea de acceso "500" de gunicorn.
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
         'django.security': {
             'handlers': ['console'],
             'level': 'WARNING',
