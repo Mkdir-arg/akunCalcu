@@ -1,5 +1,6 @@
 from django import forms
 from .models import Extrusora, Linea, Producto, Marco, Hoja, Interior, Perfil, Accesorio, Vidrio, Tratamiento, MaterialCiego
+from .aperturas import APERTURA_CHOICES
 from .tipologia import TIPO_DIBUJO_CHOICES
 
 _input_class = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -30,6 +31,16 @@ class ProductoForm(forms.ModelForm):
         label='Tipo de dibujo 3D',
         widget=forms.Select(attrs={'class': _select_class}),
     )
+    # REQ-047: no es campo del modelo (la tabla `productos` es legacy); se persiste
+    # en ProductoApertura desde la vista. Vacío = el cotizador ofrece todas las
+    # compatibles con la tipología.
+    aperturas = forms.MultipleChoiceField(
+        choices=APERTURA_CHOICES,
+        required=False,
+        label='Aperturas admitidas',
+        help_text='Qué aperturas puede tener este producto. Si no elegís ninguna, el cotizador ofrece todas las compatibles.',
+        widget=forms.SelectMultiple(attrs={'class': _select_class, 'id': 'id_aperturas'}),
+    )
 
     class Meta:
         model = Producto
@@ -51,6 +62,10 @@ class ProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance.pk and not self.is_bound:
+            self.fields['aperturas'].initial = list(
+                self.instance.aperturas_admitidas.values_list('apertura', flat=True)
+            )
         if self.instance.pk and self.instance.extrusora:
             self.fields['linea'].queryset = Linea.objects.filter(extrusora=self.instance.extrusora)
         elif self.data:

@@ -690,14 +690,14 @@
     <script type="module">
       // Elevación técnica con cotas por ítem, dibujada con el MISMO módulo del
       // cotizador. El PDF imprime por window.print() (ADR-006), así que el SVG
-      // inline entra tal cual. Va SIN flechas de apertura: el sentido por ítem
-      // todavía no está definido y esto lo lee el cliente.
-      import { svgElevacion } from "{% static 'js/elevacion.js' %}?v=1";
+      // inline entra tal cual. El símbolo de apertura sale del dato guardado en el
+      // ítem (REQ-047); los ítems sin apertura se dibujan sin símbolo.
+      import { svgElevacion } from "{% static 'js/elevacion.js' %}?v=2";
       document.querySelectorAll('.plano-dibujo[data-dibujo]').forEach(function (el) {
         var datos = document.getElementById(el.dataset.dibujo);
         if (!datos) { el.remove(); return; }
         try {
-          el.innerHTML = svgElevacion(JSON.parse(datos.textContent), { apertura: false });
+          el.innerHTML = svgElevacion(JSON.parse(datos.textContent), { apertura: true });
         } catch (e) {
           el.remove();
         }

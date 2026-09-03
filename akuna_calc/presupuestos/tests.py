@@ -2311,6 +2311,29 @@ class DibujoParamsPdfTest(SimpleTestCase):
         self.assertEqual(d['tirantes_orientacion'], 'vertical')
 
     @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_pasa_apertura_normalizada_y_terminacion(self, mock_filter):
+        """REQ-047: el dibujo recibe cómo abre y con qué terminación."""
+        mock_filter.return_value.first.return_value = SimpleNamespace(
+            tipo_dibujo='ventana_corrediza', descripcion='VENTANA CORREDIZA', cantidad_hojas=2)
+
+        d = build_dibujo_params(self._snapshot(
+            tratamiento={'id': 1, 'descripcion': 'NEGRO'},
+            apertura={'codigo': 'corrediza', 'hojas': [{'movimiento': 'izq', 'carril': 'ext'}]},
+        ))
+
+        self.assertEqual(d['color_terminacion'], 'NEGRO')
+        self.assertEqual(d['apertura']['codigo'], 'corrediza')
+        # la segunda hoja se completa con el default del producto (2 hojas)
+        self.assertEqual(len(d['apertura']['hojas']), 2)
+        self.assertEqual(d['apertura']['hojas'][0], {'movimiento': 'izq', 'carril': 'ext'})
+
+    def test_apertura_invalida_o_ausente_queda_none(self):
+        """Ítems viejos (sin apertura) o datos rotos: se dibuja sin símbolo, no explota."""
+        self.assertIsNone(build_dibujo_params(self._snapshot(producto=None))['apertura'])
+        self.assertIsNone(build_dibujo_params(self._snapshot(producto=None, apertura={'codigo': 'nada'}))['apertura'])
+        self.assertIsNone(build_dibujo_params(self._snapshot(producto=None))['color_terminacion'])
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
     def test_build_pdf_item_context_expone_dibujo(self, mock_filter):
         mock_filter.return_value.first.return_value = SimpleNamespace(
             tipo_dibujo='', descripcion='VENTANA CORREDIZA', cantidad_hojas=2)

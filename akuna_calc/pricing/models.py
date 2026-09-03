@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from django.db import models
 
+from .aperturas import APERTURA_CHOICES
+
 
 class Extrusora(models.Model):
     id = models.IntegerField(db_column="Id", primary_key=True)
@@ -335,6 +337,33 @@ class Vidrio(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.descripcion}" if self.descripcion else self.codigo
+
+
+class ProductoApertura(models.Model):
+    """Apertura que un producto admite (REQ-047). Se configura en el ABM y acota
+    lo que ofrece el cotizador. Un producto sin filas ofrece todas las aperturas
+    compatibles con su tipología.
+
+    Tabla gestionada por Django; la FK apunta a la tabla legacy `productos` sin
+    constraint en base, igual que `VidrioHoja` con `vidrios`.
+    """
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE,
+        db_constraint=False,
+        related_name='aperturas_admitidas',
+        verbose_name='Producto',
+    )
+    apertura = models.CharField(max_length=30, choices=APERTURA_CHOICES, verbose_name='Apertura')
+
+    class Meta:
+        verbose_name = 'Apertura admitida'
+        verbose_name_plural = 'Aperturas admitidas'
+        unique_together = [['producto', 'apertura']]
+        ordering = ['id']
+
+    def __str__(self):
+        return f'{self.producto_id} · {self.get_apertura_display()}'
 
 
 class Tratamiento(models.Model):

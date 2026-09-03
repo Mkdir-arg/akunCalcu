@@ -352,6 +352,14 @@ def _fields_item_desde_post(request, presupuesto):
             config['tirantes'] = tirantes
     except (json.JSONDecodeError, TypeError):
         pass
+    # REQ-047: apertura elegida (tipo, lado, hojas). No afecta el precio; viaja
+    # al snapshot para el 3D, el plano y el PDF.
+    try:
+        apertura = json.loads(data.get('apertura_json', '') or 'null')
+        if isinstance(apertura, dict) and apertura.get('codigo'):
+            config['apertura'] = apertura
+    except (json.JSONDecodeError, TypeError):
+        pass
 
     descripcion = descripcion or 'Abertura sin descripción'
     try:

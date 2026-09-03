@@ -66,6 +66,9 @@ class PricingCalculateSerializer(serializers.Serializer):
     cantidad_hojas = serializers.IntegerField(required=False, min_value=1)
     opcionales = serializers.ListField(child=serializers.DictField(), required=False, default=list)
     tirantes = TirantesSerializer(required=False)
+    # REQ-047: cómo abre la abertura. Dato de dibujo y fabricación, no de precio:
+    # se acepta y se deja pasar al snapshot sin tocar el cálculo.
+    apertura = serializers.DictField(required=False, allow_null=True)
 
     def validate_margen_porcentaje(self, value: float) -> float:
         if value < 0:

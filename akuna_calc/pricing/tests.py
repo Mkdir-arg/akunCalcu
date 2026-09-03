@@ -163,6 +163,101 @@ class VidrioTipoTest(SimpleTestCase):
             )
 
 
+class AperturasCatalogoTest(SimpleTestCase):
+    """REQ-047: catálogo de aperturas y normalización del dato del ítem."""
+
+    def test_los_11_tipos_estan_y_tienen_simbolo(self):
+        from pricing.aperturas import APERTURAS
+        codigos = [a['codigo'] for a in APERTURAS]
+        self.assertEqual(codigos, ['pano_fijo', 'corrediza', 'abrir_1', 'abrir_2', 'oscilobatiente',
+                                   'banderola', 'brazo_empuje', 'proyectante_tijera', 'puerta',
+                                   'puerta_doble', 'puerta_corrediza'])
+        for a in APERTURAS:
+            self.assertIn(a['simbolo'], ('ninguno', 'flechas', 'lateral', 'lateral_doble', 'oscilo',
+                                         'vertice_arriba', 'vertice_abajo', 'rombo'), a['codigo'])
+
+    def test_compatibles_por_familia(self):
+        from pricing.aperturas import aperturas_compatibles
+        self.assertEqual([a['codigo'] for a in aperturas_compatibles('ventana_proyectante')],
+                         ['banderola', 'brazo_empuje', 'proyectante_tijera'])
+        self.assertEqual([a['codigo'] for a in aperturas_compatibles('puerta_batiente')], ['puerta', 'puerta_doble'])
+        self.assertEqual(aperturas_compatibles('no_dibujo'), [])
+
+    def test_para_producto_manda_lo_admitido_y_si_no_lo_compatible(self):
+        from pricing.aperturas import aperturas_para_producto
+        self.assertEqual(aperturas_para_producto('ventana_batiente', ['abrir_2']), ['abrir_2'])
+        self.assertEqual(aperturas_para_producto('ventana_batiente', []), ['abrir_1', 'abrir_2', 'oscilobatiente'])
+        # lo admitido sale en el orden del catálogo, no en el que se cargó
+        self.assertEqual(aperturas_para_producto('x', ['puerta', 'corrediza']), ['corrediza', 'puerta'])
+
+    def test_normalizar_lado_default_y_valido(self):
+        from pricing.aperturas import normalizar_apertura
+        self.assertEqual(normalizar_apertura({'codigo': 'abrir_1'}), {'codigo': 'abrir_1', 'lado': 'izq'})
+        self.assertEqual(normalizar_apertura({'codigo': 'puerta', 'lado': 'DER'}), {'codigo': 'puerta', 'lado': 'der'})
+        self.assertEqual(normalizar_apertura({'codigo': 'puerta', 'lado': 'arriba'})['lado'], 'izq')
+        # sin bisagra no se guarda lado aunque venga
+        self.assertNotIn('lado', normalizar_apertura({'codigo': 'banderola', 'lado': 'der'}))
+
+    def test_normalizar_corrediza_completa_hojas_con_default(self):
+        from pricing.aperturas import normalizar_apertura
+        ap = normalizar_apertura({'codigo': 'corrediza', 'hojas': [{'movimiento': 'izq', 'carril': 'ext'}]}, hojas=2)
+        self.assertEqual(ap['hojas'], [{'movimiento': 'izq', 'carril': 'ext'},
+                                       {'movimiento': 'izq', 'carril': 'ext'}])
+        # 4 hojas default: par→der/int, impar→izq/ext, última→izq
+        ap4 = normalizar_apertura({'codigo': 'corrediza'}, hojas=4)
+        self.assertEqual([h['movimiento'] for h in ap4['hojas']], ['der', 'izq', 'der', 'izq'])
+        self.assertEqual([h['carril'] for h in ap4['hojas']], ['int', 'ext', 'int', 'ext'])
+
+    def test_normalizar_hojas_incompatibles_cae_al_primer_valido(self):
+        from pricing.aperturas import normalizar_apertura
+        self.assertEqual(len(normalizar_apertura({'codigo': 'puerta_corrediza'}, hojas=7)['hojas']), 2)
+
+    def test_normalizar_basura_devuelve_none(self):
+        from pricing.aperturas import normalizar_apertura
+        self.assertIsNone(normalizar_apertura(None))
+        self.assertIsNone(normalizar_apertura('corrediza'))
+        self.assertIsNone(normalizar_apertura({'codigo': 'inexistente'}))
+        self.assertIsNone(normalizar_apertura({}))
+
+    def test_publicas_no_exponen_familias(self):
+        from pricing.aperturas import aperturas_publicas
+        pub = aperturas_publicas(['abrir_1'])
+        self.assertEqual(pub[0]['codigo'], 'abrir_1')
+        self.assertTrue(pub[0]['lado'])
+        self.assertNotIn('familias', pub[0])
+
+    def test_describir(self):
+        from pricing.aperturas import describir_apertura
+        self.assertEqual(describir_apertura({'codigo': 'puerta', 'lado': 'der'}), 'Puerta 1 hoja, bisagra derecha')
+        self.assertEqual(describir_apertura({'codigo': 'banderola'}), 'Banderola')
+        self.assertEqual(describir_apertura(None), '')
+
+
+class ProductoAperturaModelTest(TestCase):
+    """Tabla gestionada por Django; la FK a `productos` no tiene constraint, así
+    que se puede crear con un producto_id cualquiera (la tabla legacy no existe en SQLite)."""
+
+    def test_str_y_unique(self):
+        from django.db import IntegrityError, transaction
+        from pricing.models import ProductoApertura
+        pa = ProductoApertura.objects.create(producto_id=9001, apertura='corrediza')
+        self.assertEqual(str(pa), '9001 · Corrediza')
+        with transaction.atomic():
+            with self.assertRaises(IntegrityError):
+                ProductoApertura.objects.create(producto_id=9001, apertura='corrediza')
+
+
+class ProductoFormAperturasTest(SimpleTestCase):
+    def test_el_form_expone_el_multiselect_con_el_catalogo(self):
+        from pricing.forms import ProductoForm
+        from pricing.aperturas import APERTURA_CHOICES
+        form = ProductoForm()
+        self.assertIn('aperturas', form.fields)
+        self.assertFalse(form.fields['aperturas'].required)
+        self.assertEqual(list(form.fields['aperturas'].choices), APERTURA_CHOICES)
+        self.assertIsInstance(form.fields['aperturas'].widget, forms.SelectMultiple)
+
+
 class MarcoViewsTest(TestCase):
     def setUp(self):
         self.client = Client()

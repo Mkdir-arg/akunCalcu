@@ -7,6 +7,7 @@ from plantillas.models import OpcionalFabrica
 from pricing.models import Hoja, Interior, Marco, MaterialCiego, Producto, Tratamiento, Vidrio
 from pricing.services.calculator import medida_seccion, orientacion_tirantes
 from pricing.tipologia import TIPO_NO_DIBUJO, clasificar_tipologia, resolver_tipologia
+from pricing.aperturas import normalizar_apertura
 
 
 _GENERIC_DESCRIPTIONS = {
@@ -447,6 +448,11 @@ def build_item_snapshot(config: Dict[str, Any], descripcion_manual: str, cantida
         'tratamiento': _serialize_entity(tratamiento, 'descripcion'),
         'opcionales': _serialize_options(config.get('opcionales') or []),
         'tirantes': _serialize_tirantes(config.get('tirantes')),
+        # REQ-047: cómo abre. Se normaliza contra el catálogo y la cantidad de
+        # hojas del producto para que el dato guardado siempre sea dibujable.
+        'apertura': normalizar_apertura(
+            config.get('apertura'), getattr(producto, 'cantidad_hojas', None)
+        ),
     }
 
     # Con tirantes el precio sale del relleno de cada sección y el vidrio único
@@ -569,6 +575,7 @@ def build_dibujo_params(snapshot: Dict[str, Any]) -> Dict[str, Any] | None:
 
     vidrio = snapshot.get('vidrio') or {}
     opcionales = snapshot.get('opcionales') or []
+    tratamiento = snapshot.get('tratamiento') or {}
 
     return {
         'tipo': tipo,
@@ -580,6 +587,10 @@ def build_dibujo_params(snapshot: Dict[str, Any]) -> Dict[str, Any] | None:
         'vidrio_composicion': _clean_text(vidrio.get('descripcion')) or None,
         'tirantes': secciones,
         'tirantes_orientacion': orientacion,
+        # REQ-047: el dibujo pinta el perfil con la terminación y el símbolo de
+        # apertura. Los ítems viejos no tienen apertura → sin símbolo.
+        'color_terminacion': _clean_text(tratamiento.get('descripcion')) or None,
+        'apertura': normalizar_apertura(snapshot.get('apertura'), hojas),
     }
 
 

@@ -401,6 +401,20 @@ def productos_config(request):
     })
 
 
+def _guardar_aperturas(producto, codigos):
+    """Sincroniza ProductoApertura con lo elegido en el ABM (REQ-047)."""
+    from .models import ProductoApertura
+    codigos = list(dict.fromkeys(codigos or []))
+    ProductoApertura.objects.filter(producto_id=producto.pk).exclude(apertura__in=codigos).delete()
+    existentes = set(
+        ProductoApertura.objects.filter(producto_id=producto.pk).values_list('apertura', flat=True)
+    )
+    ProductoApertura.objects.bulk_create([
+        ProductoApertura(producto_id=producto.pk, apertura=codigo)
+        for codigo in codigos if codigo not in existentes
+    ])
+
+
 @login_required
 @user_passes_test(is_staff)
 def producto_create(request):
@@ -408,6 +422,7 @@ def producto_create(request):
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
         _guardar_nuevo_con_id(obj, Producto)
+        _guardar_aperturas(obj, form.cleaned_data.get('aperturas'))
         messages.success(request, 'Producto creado correctamente.')
         return redirect('config-productos')
     return render(request, 'pricing/config/producto_form.html', {'form': form, 'titulo': 'Nuevo Producto', 'cancel_url': 'config-productos'})
@@ -420,6 +435,7 @@ def producto_edit(request, pk):
     form = ProductoForm(request.POST or None, instance=obj)
     if request.method == 'POST' and form.is_valid():
         form.save()
+        _guardar_aperturas(obj, form.cleaned_data.get('aperturas'))
         messages.success(request, 'Producto actualizado correctamente.')
         return redirect('config-productos')
     return render(request, 'pricing/config/producto_form.html', {'form': form, 'titulo': 'Editar Producto', 'cancel_url': 'config-productos', 'object': obj})
@@ -1508,6 +1524,7 @@ def api_get_producto(request, pk):
     try:
         producto = Producto.objects.select_related('extrusora', 'linea').get(pk=pk)
         from .tipologia import resolver_tipologia
+        from .aperturas import aperturas_para_producto, aperturas_publicas
         return JsonResponse({
             'extrusora_id': producto.extrusora.id,
             'extrusora_nombre': str(producto.extrusora),
@@ -1515,6 +1532,10 @@ def api_get_producto(request, pk):
             'linea_nombre': str(producto.linea),
             'cantidad_hojas': producto.cantidad_hojas or 1,
             'tipologia': resolver_tipologia(producto.tipo_dibujo, producto.descripcion, producto.cantidad_hojas),
+            'aperturas': aperturas_publicas(aperturas_para_producto(
+                resolver_tipologia(producto.tipo_dibujo, producto.descripcion, producto.cantidad_hojas),
+                producto.aperturas_admitidas.values_list('apertura', flat=True),
+            )),
         })
     except Producto.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)

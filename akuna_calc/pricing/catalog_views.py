@@ -32,9 +32,23 @@ class ProductosListView(APIView):
         if linea_id:
             qs = qs.filter(linea_id=linea_id)
         productos = list(qs.values('id', 'descripcion', 'linea_id', 'terciarizado', 'cantidad_hojas', 'tipo_dibujo'))
+        # REQ-047: aperturas admitidas en una sola consulta (sin N+1).
+        from collections import defaultdict
+        from .aperturas import aperturas_para_producto, aperturas_publicas
+        from .models import ProductoApertura
+        admitidas = defaultdict(list)
+        ids = [p['id'] for p in productos]
+        if ids:
+            for producto_id, apertura in ProductoApertura.objects.filter(
+                producto_id__in=ids
+            ).order_by('id').values_list('producto_id', 'apertura'):
+                admitidas[producto_id].append(apertura)
         for producto in productos:
             producto['tipologia'] = resolver_tipologia(
                 producto.get('tipo_dibujo'), producto.get('descripcion'), producto.get('cantidad_hojas')
+            )
+            producto['aperturas'] = aperturas_publicas(
+                aperturas_para_producto(producto['tipologia'], admitidas.get(producto['id']))
             )
         return Response(productos)
 
