@@ -4,8 +4,9 @@ import re
 from typing import Any, Dict, Iterable, List
 
 from plantillas.models import OpcionalFabrica
-from pricing.models import Hoja, Interior, Marco, MaterialCiego, Tratamiento, Vidrio
+from pricing.models import Hoja, Interior, Marco, MaterialCiego, Producto, Tratamiento, Vidrio
 from pricing.services.calculator import medida_seccion, orientacion_tirantes
+from pricing.tipologia import TIPO_NO_DIBUJO, clasificar_tipologia, resolver_tipologia
 
 
 _GENERIC_DESCRIPTIONS = {
@@ -496,6 +497,92 @@ def _build_legacy_snapshot(item: Any) -> Dict[str, Any]:
     return snapshot
 
 
+def _tiene_opcional(opcionales: Any, clave: str) -> bool:
+    """True si algún opcional es del tipo `clave`. Los snapshots viejos no guardan
+    `tipo`, así que también se mira el nombre/código (mosquitero → 'mosq')."""
+    for op in opcionales or []:
+        op = op or {}
+        if _clean_text(op.get('tipo')).lower() == clave:
+            return True
+        texto = (_clean_text(op.get('nombre')) + ' ' + _clean_text(op.get('codigo'))).lower()
+        if clave[:4] in texto:
+            return True
+    return False
+
+
+def build_dibujo_params(snapshot: Dict[str, Any]) -> Dict[str, Any] | None:
+    """Parámetros para `static/js/elevacion.js`: la elevación con cotas del PDF y
+    la miniatura de la página del presupuesto.
+
+    Devuelve None cuando el ítem no se dibuja: sin medidas (terciarizados, PVC
+    simple) o producto marcado `no_dibujo` (persianas, cortinas, cajones).
+
+    La tipología sale del Producto igual que en el cotizador: manda `tipo_dibujo`
+    del ABM y, si está vacío, la heurística por descripción. Un snapshot viejo sin
+    producto se clasifica por su descripción; `hojas` queda en None y el módulo
+    JS toma el default del tipo.
+    """
+    try:
+        ancho = int(snapshot.get('ancho_mm') or 0)
+        alto = int(snapshot.get('alto_mm') or 0)
+    except (TypeError, ValueError):
+        return None
+    if ancho <= 0 or alto <= 0:
+        return None
+
+    producto_snap = snapshot.get('producto') or {}
+    producto = None
+    if producto_snap.get('id') not in (None, ''):
+        try:
+            producto = Producto.objects.filter(pk=producto_snap['id']).first()
+        except Exception:
+            # Tabla legacy ausente (tests, bases nuevas): se cae a la heurística.
+            producto = None
+
+    if producto is not None:
+        tipo = resolver_tipologia(producto.tipo_dibujo, producto.descripcion, producto.cantidad_hojas)
+        hojas = producto.cantidad_hojas or 1
+    else:
+        descripcion = (
+            _clean_text(producto_snap.get('descripcion'))
+            or _clean_text(snapshot.get('titulo_item'))
+            or _clean_text(snapshot.get('descripcion_manual'))
+        )
+        tipo = clasificar_tipologia(descripcion)
+        hojas = None
+
+    if tipo == TIPO_NO_DIBUJO:
+        return None
+
+    tirantes_snap = snapshot.get('tirantes') if isinstance(snapshot.get('tirantes'), dict) else None
+    secciones = None
+    orientacion = 'horizontal'
+    if tirantes_snap and tirantes_snap.get('activo') and len(tirantes_snap.get('secciones') or []) >= 2:
+        secciones = [
+            {
+                'medida_mm': int(medida_seccion(s) or 0),
+                'ciego': (s.get('material') or {}).get('tipo') == 'ciego',
+            }
+            for s in tirantes_snap['secciones']
+        ]
+        orientacion = orientacion_tirantes(tirantes_snap)
+
+    vidrio = snapshot.get('vidrio') or {}
+    opcionales = snapshot.get('opcionales') or []
+
+    return {
+        'tipo': tipo,
+        'ancho': ancho,
+        'alto': alto,
+        'hojas': hojas,
+        'mosquitero': _tiene_opcional(opcionales, 'mosquitero'),
+        'premarco': _tiene_opcional(opcionales, 'premarco'),
+        'vidrio_composicion': _clean_text(vidrio.get('descripcion')) or None,
+        'tirantes': secciones,
+        'tirantes_orientacion': orientacion,
+    }
+
+
 def build_pdf_item_context(item: Any) -> Dict[str, Any]:
     result = item.resultado_json if isinstance(item.resultado_json, dict) else {}
     snapshot = result.get('snapshot_item') if isinstance(result, dict) else None
@@ -529,4 +616,5 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
         'resumen_tecnico': _ajustar_todo_vidrio(
             snapshot.get('resumen_tecnico') or build_technical_summary(snapshot), snapshot
         ),
+        'dibujo': build_dibujo_params(snapshot),
     }

@@ -1,4 +1,5 @@
 {% load custom_filters %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -271,6 +272,20 @@
             color: #111827;
         }
 
+        /* Elevación técnica con cotas por ítem (la dibuja static/js/elevacion.js) */
+        .concept-dibujo {
+            margin: 6px 0 2px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .concept-dibujo svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 150px;
+        }
+
         .empty-row td {
             text-align: center;
             color: #52606d;
@@ -515,6 +530,14 @@
                             {% if entry.resumen_tecnico %}
                             <p class="concept-text">{{ entry.resumen_tecnico }}.</p>
                             {% endif %}
+                            {% if entry.dibujo %}
+                            {% with entry.item.pk|stringformat:"s" as item_id %}
+                            {% with 'dibujo-item-'|add:item_id as dibujo_id %}
+                            {{ entry.dibujo|json_script:dibujo_id }}
+                            <div class="concept-dibujo" data-dibujo="{{ dibujo_id }}" aria-hidden="true"></div>
+                            {% endwith %}
+                            {% endwith %}
+                            {% endif %}
                         </td>
                         <td class="col-qty">{{ entry.item.cantidad }}</td>
                         {% if presupuesto.es_pvc %}
@@ -588,5 +611,21 @@
 
         </div>
     </div>
+    <script type="module">
+      // Elevación técnica con cotas por ítem, dibujada con el MISMO módulo del
+      // cotizador. El PDF imprime por window.print() (ADR-006), así que el SVG
+      // inline entra tal cual. Va SIN flechas de apertura: el sentido por ítem
+      // todavía no está definido y esto lo lee el cliente.
+      import { svgElevacion } from "{% static 'js/elevacion.js' %}?v=1";
+      document.querySelectorAll('.concept-dibujo[data-dibujo]').forEach(function (el) {
+        var datos = document.getElementById(el.dataset.dibujo);
+        if (!datos) { el.remove(); return; }
+        try {
+          el.innerHTML = svgElevacion(JSON.parse(datos.textContent), { apertura: false });
+        } catch (e) {
+          el.remove();
+        }
+      });
+    </script>
 </body>
 </html>

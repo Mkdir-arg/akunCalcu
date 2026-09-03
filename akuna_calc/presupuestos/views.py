@@ -64,6 +64,7 @@ def _build_detalle_context(presupuesto, comentario_form=None, configuracion_form
     for item in presupuesto.items.all():
         item_context = build_pdf_item_context(item)
         item.resumen_compacto = item_context.get('resumen_compacto', '')
+        item.dibujo = item_context.get('dibujo')
         items_detalle.append(item)
 
     return {

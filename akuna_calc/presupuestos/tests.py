@@ -14,7 +14,7 @@ from plantillas.models import PedidoFabrica
 from usuarios.models import PerfilAccesoUsuario, RolSistema
 from .forms import PresupuestoForm
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context, _serialize_tirantes
+from .pdf_descriptions import build_item_snapshot, build_narrative_from_snapshot, build_pdf_item_context, build_dibujo_params, _serialize_tirantes
 
 
 def crear_cliente():
@@ -2238,6 +2238,90 @@ class CrearPresupuestoPasado999Test(TestCase):
             numero__in=[f'PRES-{anio}-{n}' for n in ('998', '999', '1000', '1001')]
         ).get()
         self.assertEqual(creado.numero, f'PRES-{anio}-1002')
+
+
+class DibujoParamsPdfTest(SimpleTestCase):
+    """`dibujo` alimenta a static/js/elevacion.js con lo que hay en el snapshot.
+    Producto es tabla legacy (no existe en SQLite), así que se mockea."""
+
+    def _snapshot(self, **extra):
+        base = {
+            'descripcion_manual': 'Ventana cocina', 'cantidad': 1,
+            'ancho_mm': 1790, 'alto_mm': 1050,
+            'producto': {'id': 7, 'descripcion': 'VENTANA CORREDIZA 2 HOJAS'},
+            'vidrio': {'codigo': 'F6', 'descripcion': '3+3/9/3+3'},
+            'opcionales': [{'codigo': 'MOSQ', 'nombre': 'Mosquitero', 'tipo': 'mosquitero'}],
+            'tirantes': None,
+        }
+        base.update(extra)
+        return base
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_toma_tipologia_y_hojas_del_producto(self, mock_filter):
+        mock_filter.return_value.first.return_value = SimpleNamespace(
+            tipo_dibujo='ventana_corrediza', descripcion='VENTANA CORREDIZA 2 HOJAS', cantidad_hojas=2)
+
+        d = build_dibujo_params(self._snapshot())
+
+        self.assertEqual(d['tipo'], 'ventana_corrediza')
+        self.assertEqual(d['hojas'], 2)
+        self.assertEqual((d['ancho'], d['alto']), (1790, 1050))
+        self.assertTrue(d['mosquitero'])
+        self.assertFalse(d['premarco'])
+        self.assertEqual(d['vidrio_composicion'], '3+3/9/3+3')
+        self.assertIsNone(d['tirantes'])
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_no_dibujo_devuelve_none(self, mock_filter):
+        mock_filter.return_value.first.return_value = SimpleNamespace(
+            tipo_dibujo='no_dibujo', descripcion='PERSIANA', cantidad_hojas=1)
+        self.assertIsNone(build_dibujo_params(self._snapshot()))
+
+    def test_sin_medidas_devuelve_none(self):
+        """Terciarizados y PVC simple guardan 0x0: no hay nada que dibujar."""
+        self.assertIsNone(build_dibujo_params(self._snapshot(ancho_mm=0, alto_mm=0)))
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_sin_producto_clasifica_por_descripcion(self, mock_filter):
+        """Snapshot viejo sin producto: misma heurística que usa el cotizador."""
+        d = build_dibujo_params(self._snapshot(producto=None, titulo_item='Puerta corrediza balcón'))
+
+        self.assertEqual(d['tipo'], 'puerta_corrediza')
+        self.assertIsNone(d['hojas'])
+        self.assertFalse(mock_filter.called)
+
+    def test_mosquitero_por_nombre_en_snapshot_viejo_sin_tipo(self):
+        d = build_dibujo_params(self._snapshot(
+            producto=None, opcionales=[{'codigo': 'X1', 'nombre': 'Mosquitero corredizo'}]))
+        self.assertTrue(d['mosquitero'])
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_tirantes_pasan_secciones_y_orientacion(self, mock_filter):
+        mock_filter.return_value.first.return_value = SimpleNamespace(
+            tipo_dibujo='pano_fijo', descripcion='PAÑO FIJO', cantidad_hojas=1)
+
+        d = build_dibujo_params(self._snapshot(tirantes={
+            'activo': True, 'orientacion': 'vertical', 'perfil_codigo': 'T1',
+            'secciones': [
+                {'medida_mm': 900, 'material': {'tipo': 'vidrio', 'codigo': 'F6'}},
+                {'medida_mm': 600, 'material': {'tipo': 'ciego', 'codigo': 'REV'}},
+            ]}))
+
+        self.assertEqual(d['tirantes'], [{'medida_mm': 900, 'ciego': False}, {'medida_mm': 600, 'ciego': True}])
+        self.assertEqual(d['tirantes_orientacion'], 'vertical')
+
+    @patch('presupuestos.pdf_descriptions.Producto.objects.filter')
+    def test_build_pdf_item_context_expone_dibujo(self, mock_filter):
+        mock_filter.return_value.first.return_value = SimpleNamespace(
+            tipo_dibujo='', descripcion='VENTANA CORREDIZA', cantidad_hojas=2)
+        item = SimpleNamespace(
+            descripcion='V', cantidad=1, ancho_mm=1790, alto_mm=1050, margen_porcentaje=30,
+            precio_unitario=1, precio_total=1, resultado_json={'snapshot_item': self._snapshot()})
+
+        ctx = build_pdf_item_context(item)
+
+        self.assertEqual(ctx['dibujo']['tipo'], 'ventana_corrediza')
+        self.assertEqual(ctx['dibujo']['hojas'], 2)
 
 
 class SerializeTirantesTest(SimpleTestCase):

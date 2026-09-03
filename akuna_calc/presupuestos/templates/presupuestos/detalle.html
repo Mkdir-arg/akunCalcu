@@ -34,6 +34,22 @@
     }
     return window.__akunElevacionPromise;
   };
+  // Miniaturas de la lista de ítems: solo la silueta (sin cotas ni flechas),
+  // a 64 px las cotas no se leen y el sentido de apertura no está definido.
+  (function () {
+    var minis = document.querySelectorAll('.dibujo-mini[data-dibujo]');
+    if (!minis.length) return;
+    window.__loadAkunElevacion().then(function (svgElevacion) {
+      minis.forEach(function (el) {
+        var datos = document.getElementById(el.dataset.dibujo);
+        if (!datos) { el.remove(); return; }
+        try {
+          el.innerHTML = svgElevacion(JSON.parse(datos.textContent),
+                                      { cotas: false, apertura: false, composicion: false });
+        } catch (e) { el.remove(); }
+      });
+    }).catch(function () {});
+  })();
 </script>
 {% endblock %}
 
@@ -214,6 +230,15 @@
                     {% for item in items_detalle %}
                     <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
                         <div class="flex justify-between items-center gap-4">
+                            {% if item.dibujo %}
+                            {% with item.pk|stringformat:"s" as item_id %}
+                            {% with 'dibujo-mini-'|add:item_id as dibujo_id %}
+                            {{ item.dibujo|json_script:dibujo_id }}
+                            <div class="dibujo-mini shrink-0 w-16 h-12 rounded-lg bg-white border border-slate-200 p-1 overflow-hidden"
+                                 data-dibujo="{{ dibujo_id }}" title="Esquema de la abertura"></div>
+                            {% endwith %}
+                            {% endwith %}
+                            {% endif %}
                             <div class="flex-1 min-w-0">
                                 <p class="font-semibold text-slate-800 truncate">{{ item.descripcion }}</p>
                                 <p class="text-xs text-slate-500 mt-0.5">
