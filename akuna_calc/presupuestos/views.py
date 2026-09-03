@@ -792,6 +792,8 @@ def pdf(request, pk):
         'logo_url': _build_logo_data_url(),
         'presupuesto': presupuesto,
         'items_pdf': items_pdf,
+        # Numera los ítems y agrega la página de planos solo si algún ítem se dibuja.
+        'hay_planos': any(entry.get('dibujo') for entry in items_pdf),
         'pdf_subtotal': pdf_subtotal,
         'pdf_colocacion': pdf_colocacion,
         'pdf_iva': pdf_iva,

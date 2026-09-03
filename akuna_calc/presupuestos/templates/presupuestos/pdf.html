@@ -272,18 +272,74 @@
             color: #111827;
         }
 
-        /* Elevación técnica con cotas por ítem (la dibuja static/js/elevacion.js) */
-        .concept-dibujo {
-            margin: 6px 0 2px;
-            width: 100%;
-            max-width: 300px;
+        /* Numeración de ítems: enlaza cada renglón con su plano del anexo. */
+        .concept-num {
+            margin: 0 0 2px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #0a3f78;
         }
 
-        .concept-dibujo svg {
+        /* Anexo de planos: una página propia después de los totales, con la
+           elevación técnica de cada ítem a tamaño legible (static/js/elevacion.js). */
+        .planos-page {
+            page-break-before: always;
+            break-before: page;
+            padding-top: 8px;
+        }
+
+        .planos-title {
+            margin: 0 0 4px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a3f78;
+        }
+
+        .planos-sub {
+            margin: 0 0 18px;
+            font-size: 11px;
+            color: #52606d;
+        }
+
+        .planos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px 28px;
+        }
+
+        .plano {
+            margin: 0;
+            padding: 10px 12px 12px;
+            border: 1px solid #d5dbe2;
+            border-radius: 6px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .plano-cap {
+            margin: 0 0 8px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #2d3748;
+        }
+
+        .plano-cap strong {
+            color: #0a3f78;
+        }
+
+        .plano-med {
+            display: block;
+            font-size: 10px;
+            color: #52606d;
+        }
+
+        .plano-dibujo svg {
             display: block;
             width: 100%;
             height: auto;
-            max-height: 150px;
+            max-height: 300px;
         }
 
         .empty-row td {
@@ -524,19 +580,14 @@
                     {% for entry in items_pdf %}
                     <tr>
                         <td class="col-concept">
+                            {% if hay_planos %}
+                            <p class="concept-num">Ítem {{ forloop.counter }}</p>
+                            {% endif %}
                             {% if entry.titulo %}
                             <p class="concept-title">{{ entry.titulo }}</p>
                             {% endif %}
                             {% if entry.resumen_tecnico %}
                             <p class="concept-text">{{ entry.resumen_tecnico }}.</p>
-                            {% endif %}
-                            {% if entry.dibujo %}
-                            {% with entry.item.pk|stringformat:"s" as item_id %}
-                            {% with 'dibujo-item-'|add:item_id as dibujo_id %}
-                            {{ entry.dibujo|json_script:dibujo_id }}
-                            <div class="concept-dibujo" data-dibujo="{{ dibujo_id }}" aria-hidden="true"></div>
-                            {% endwith %}
-                            {% endwith %}
                             {% endif %}
                         </td>
                         <td class="col-qty">{{ entry.item.cantidad }}</td>
@@ -609,6 +660,31 @@
                 </tr>
             </table>
 
+            {% if hay_planos %}
+            <div class="planos-page">
+                <h2 class="planos-title">Planos de las aberturas</h2>
+                <p class="planos-sub">Elevaciones vistas de frente. Medidas en milímetros. El número de cada plano corresponde al ítem del detalle.</p>
+                <div class="planos-grid">
+                    {% for entry in items_pdf %}
+                    {% if entry.dibujo %}
+                    {% with entry.item.pk|stringformat:"s" as item_id %}
+                    {% with 'dibujo-item-'|add:item_id as dibujo_id %}
+                    <figure class="plano">
+                        <figcaption class="plano-cap">
+                            <strong>Ítem {{ forloop.counter }}</strong>{% if entry.titulo %} · {{ entry.titulo }}{% endif %}
+                            <span class="plano-med">{{ entry.dibujo.ancho }} × {{ entry.dibujo.alto }} mm{% if entry.item.cantidad > 1 %} · {{ entry.item.cantidad }} unidades{% endif %}</span>
+                        </figcaption>
+                        {{ entry.dibujo|json_script:dibujo_id }}
+                        <div class="plano-dibujo" data-dibujo="{{ dibujo_id }}" aria-hidden="true"></div>
+                    </figure>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
     <script type="module">
@@ -617,7 +693,7 @@
       // inline entra tal cual. Va SIN flechas de apertura: el sentido por ítem
       // todavía no está definido y esto lo lee el cliente.
       import { svgElevacion } from "{% static 'js/elevacion.js' %}?v=1";
-      document.querySelectorAll('.concept-dibujo[data-dibujo]').forEach(function (el) {
+      document.querySelectorAll('.plano-dibujo[data-dibujo]').forEach(function (el) {
         var datos = document.getElementById(el.dataset.dibujo);
         if (!datos) { el.remove(); return; }
         try {

@@ -2324,6 +2324,77 @@ class DibujoParamsPdfTest(SimpleTestCase):
         self.assertEqual(ctx['dibujo']['hojas'], 2)
 
 
+class PdfPlanosAnexoTest(SimpleTestCase):
+    """El dibujo va en un anexo 'Planos' al final del PDF, no dentro de la tabla
+    de precios; los ítems se numeran para enlazar renglón y plano."""
+
+    def _presupuesto(self):
+        return SimpleNamespace(
+            numero='PRES-2026-001', es_pvc=False, venta=None, notas='', total=1000,
+            created_at=date(2026, 8, 28), fecha_expiracion=None,
+            cliente=SimpleNamespace(nombre='Ana', apellido='Cliente', direccion='', telefono='',
+                                    email='', razon_social=''),
+            created_by=SimpleNamespace(get_full_name=lambda: 'V', username='v'),
+            get_observaciones_pdf=lambda: '', get_resumen_flete_colocacion=lambda: '',
+            aplicar_iva=False, tipo_obra='', modalidad_sena='50_50', validez_dias=30,
+            plazo_entrega_dias=None, get_monto_colocacion=lambda: 0,
+            get_recargo_obra_nueva_aplicado=lambda: 0, get_recargo_total_renovacion=lambda: 0,
+            get_total_items=lambda: 1000, tiene_cotizacion_usd=lambda: False, cotizacion_usd=None,
+            incluye_flete=False, incluye_colocacion=False, tipo_material='aluminio',
+            get_modalidad_sena_display=lambda: '50/50', get_tipo_obra_display=lambda: '',
+        )
+
+    def _entry(self, pk, dibujo):
+        item = SimpleNamespace(pk=pk, cantidad=2, precio_unitario=1000, precio_total=2000,
+                               get_precio_unitario_usd=lambda: 0, get_precio_total_usd=lambda: 0)
+        return {'item': item, 'titulo': f'Ventana {pk}', 'resumen_tecnico': 'Corrediza', 'dibujo': dibujo}
+
+    def _render(self, entries):
+        from django.template.loader import render_to_string
+        return render_to_string('presupuestos/pdf.html', {
+            'presupuesto': self._presupuesto(), 'items_pdf': entries,
+            'hay_planos': any(e.get('dibujo') for e in entries),
+            'pdf_subtotal': 1000, 'pdf_total': 1000,
+        })
+
+    def test_el_dibujo_va_en_el_anexo_y_no_en_la_tabla(self):
+        dibujo = {'tipo': 'ventana_corrediza', 'ancho': 1790, 'alto': 1050, 'hojas': 2,
+                  'mosquitero': False, 'premarco': False, 'vidrio_composicion': None,
+                  'tirantes': None, 'tirantes_orientacion': 'horizontal'}
+        html = self._render([self._entry(42, dibujo)])
+
+        self.assertIn('class="planos-page"', html)
+        self.assertIn('Planos de las aberturas', html)
+        self.assertIn('class="plano-dibujo" data-dibujo="dibujo-item-42"', html)
+        self.assertIn('id="dibujo-item-42"', html)
+        self.assertNotIn('concept-dibujo', html, 'el dibujo no debe quedar dentro de la celda')
+        self.assertIn('/static/js/elevacion.js', html)
+        self.assertIn("{ apertura: false }", html)
+
+    def test_numera_el_item_en_la_tabla_y_en_el_plano(self):
+        dibujo = {'tipo': 'pano_fijo', 'ancho': 950, 'alto': 1050, 'hojas': 1, 'mosquitero': False,
+                  'premarco': False, 'vidrio_composicion': None, 'tirantes': None,
+                  'tirantes_orientacion': 'horizontal'}
+        html = self._render([self._entry(7, None), self._entry(8, dibujo)])
+
+        # La tabla numera todos los items; el anexo solo dibuja el que tiene dibujo,
+        # pero conserva su numero real (Item 2), asi renglon y plano coinciden.
+        self.assertIn('<p class="concept-num">Ítem 1</p>', html)
+        self.assertIn('<p class="concept-num">Ítem 2</p>', html)
+        self.assertIn('<strong>Ítem 2</strong>', html)
+        self.assertNotIn('<strong>Ítem 1</strong>', html)
+        self.assertIn('950 × 1050 mm · 2 unidades', html)
+
+    def test_sin_dibujos_no_hay_anexo_ni_numeracion(self):
+        html = self._render([self._entry(7, None)])
+
+        # Se mira el markup, no el CSS: las reglas .planos-page / .concept-num
+        # viven siempre en el <style>; lo que no debe renderizarse es el bloque.
+        self.assertNotIn('class="planos-page"', html)
+        self.assertNotIn('class="concept-num"', html)
+        self.assertNotIn('Planos de las aberturas', html)
+
+
 class SerializeTirantesTest(SimpleTestCase):
     @patch('presupuestos.pdf_descriptions.MaterialCiego.objects.filter')
     @patch('presupuestos.pdf_descriptions.Vidrio.objects.filter')
