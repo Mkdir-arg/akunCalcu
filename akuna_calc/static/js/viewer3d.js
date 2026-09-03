@@ -20,7 +20,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { computarLayout } from './abertura-layout.js';
+import { computarLayout, normalizarApertura, APERTURA_POR_CODIGO } from './abertura-layout.js?v=2';
 import { crearOverlayCotas } from './cotas3d.js';
 
 const TIPOS = {
@@ -56,7 +56,7 @@ let overlayCotas = null, layoutCotas = null;
 const state = { tipo: 'pano_fijo', ancho: 1200, alto: 1500, hojas: 1,
                 mosquitero: false, premarco: false, vidrio: 'incoloro', color: 'blanco',
                 tirantes: null, tirantesOrientacion: 'horizontal',
-                cotas: true, vidrioComposicion: null, sentidos: null };
+                cotas: true, vidrioComposicion: null, sentidos: null, apertura: null };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -178,6 +178,25 @@ function build() {
   const g = new THREE.Group(); movers = [];
   const T = TIPOS[state.tipo] || TIPOS.pano_fijo;
   const W = state.ancho / 1000, H = state.alto / 1000, puerta = T.puerta;
+  // REQ-047: la apertura manda sobre la familia. Banderola/brazo/tijera comparten
+  // tipologia pero abren distinto; un paño de abrir puede tener la bisagra a la
+  // derecha; una corrediza define movimiento y carril por hoja.
+  const ap = state.apertura;
+  const apDef = ap ? APERTURA_POR_CODIGO[ap.codigo] : null;
+  let modo = T.modo;
+  if (apDef) {
+    switch (apDef.simbolo) {
+      case 'flechas':        modo = 'slide'; break;
+      case 'lateral':
+      case 'lateral_doble':  modo = 'swing'; break;
+      case 'oscilo':         modo = 'tilt'; break;
+      case 'vertice_arriba': modo = 'tilt'; break;      // bisagra abajo, abre por arriba
+      case 'vertice_abajo':
+      case 'rombo':          modo = 'project'; break;   // bisagra arriba, abre por abajo
+      case 'ninguno':        modo = 'none'; break;
+    }
+  }
+  const ladoBisagra = (ap && ap.lado === 'der') ? 'der' : 'izq';
   const pw = puerta ? 0.06 : 0.055, pd = puerta ? 0.085 : 0.075, lf = puerta ? 0.055 : 0.04, ld = puerta ? 0.055 : 0.05;
   const def = VIDRIOS[state.vidrio] || VIDRIOS.incoloro;
   setGlassMaterial(def);
@@ -287,24 +306,41 @@ function build() {
     });
   }
 
-  if (T.modo === 'none') {
+  if (modo === 'none') {
     g.add(frame(Wi, Hi, lf * 0.7, ld * 0.7, 0.004));
     if (tir3) { addSecciones(g, Wi - 2 * lf, Hi - 2 * lf, 0, 0.004, tir3); }
     else { g.add(glass(Wi - 2 * lf, Hi - 2 * lf, 0, def)); }
-  } else if (T.modo === 'slide') {
+  } else if (modo === 'slide') {
     const colW = Wi / nH, overlap = lf;
     for (let i = 0; i < nH; i++) {
-      const lw = colW + overlap, lh = Hi, cx = -Wi / 2 + colW * (i + 0.5), z = (i % 2 === 0) ? 0.017 : -0.017, moving = (i % 2 === 0);
-      const leaf = buildLeaf(lw, lh, false, 'der', true);
+      // Por hoja: carril interior = mas cerca de la camara (+z), exterior = atras;
+      // el movimiento define hacia donde corre. Sin apertura, el default historico
+      // (pares adelante y a la derecha) coincide con el default del catalogo.
+      const hoja = (ap && ap.hojas && ap.hojas[i]) || null;
+      const carril = hoja ? hoja.carril : (i % 2 === 0 ? 'int' : 'ext');
+      const mov = hoja ? hoja.movimiento : (i % 2 === 0 ? 'der' : null);
+      const lw = colW + overlap, lh = Hi, cx = -Wi / 2 + colW * (i + 0.5), z = carril === 'int' ? 0.017 : -0.017;
+      const leaf = buildLeaf(lw, lh, false, mov === 'izq' ? 'izq' : 'der', true);
       leaf.position.set(cx, 0, z); g.add(leaf);
-      if (moving) { const amt = colW * 0.85, base = cx; movers.push({ apply: t => { leaf.position.x = base + amt * t; } }); }
+      if (mov) {
+        const dir = mov === 'der' ? 1 : -1;
+        // No salirse del marco: hacia el borde, solo lo que queda de hueco.
+        const libre = mov === 'der' ? (Wi / 2 - (cx + lw / 2)) : ((cx - lw / 2) + Wi / 2);
+        const amt = Math.max(0, Math.min(colW * 0.85, libre + colW * 0.85)) * dir;
+        const base = cx; movers.push({ apply: t => { leaf.position.x = base + amt * t; } });
+      }
     }
-  } else if (T.modo === 'swing') {
+  } else if (modo === 'swing') {
     if (nH === 1) {
-      // Bisagra a la izquierda → manija en el borde opuesto (derecho)
-      const leaf = buildLeaf(Wi, Hi, true, 'der', false, tir3);
-      const hinge = new THREE.Group(); hinge.position.set(-Wi / 2, 0, 0.01); leaf.position.set(Wi / 2, 0, 0); hinge.add(leaf); g.add(hinge);
-      movers.push({ apply: t => { hinge.rotation.y = -(Math.PI * 0.44) * t; } });
+      // Bisagra del lado elegido (REQ-047; default izquierda) → manija en el borde opuesto.
+      const der = ladoBisagra === 'der';
+      const leaf = buildLeaf(Wi, Hi, true, der ? 'izq' : 'der', false, tir3);
+      const hinge = new THREE.Group();
+      hinge.position.set(der ? Wi / 2 : -Wi / 2, 0, 0.01);
+      leaf.position.set(der ? -Wi / 2 : Wi / 2, 0, 0);
+      hinge.add(leaf); g.add(hinge);
+      const sign = der ? 1 : -1;
+      movers.push({ apply: t => { hinge.rotation.y = sign * (Math.PI * 0.44) * t; } });
     } else {
       const colW = Wi / 2;
       for (let i = 0; i < 2; i++) {
@@ -315,17 +351,17 @@ function build() {
         const sign = i === 0 ? -1 : 1; movers.push({ apply: t => { hinge.rotation.y = sign * (Math.PI * 0.42) * t; } });
       }
     }
-  } else if (T.modo === 'tilt') {
+  } else if (modo === 'tilt') {
     const leaf = buildLeaf(Wi, Hi, true, 'izq', false, tir3);
     const hinge = new THREE.Group(); hinge.position.set(0, -Hi / 2, 0.01); leaf.position.set(0, Hi / 2, 0); hinge.add(leaf); g.add(hinge);
     movers.push({ apply: t => { hinge.rotation.x = -(Math.PI * 0.09) * t; } });
-  } else if (T.modo === 'project') {
+  } else if (modo === 'project') {
     const leaf = buildLeaf(Wi, Hi, true, 'izq', false, tir3);
     const hinge = new THREE.Group(); hinge.position.set(0, Hi / 2, 0.01); leaf.position.set(0, -Hi / 2, 0); hinge.add(leaf); g.add(hinge);
     movers.push({ apply: t => { hinge.rotation.x = (Math.PI * 0.11) * t; } });
   }
 
-  if (state.mosquitero && T.modo !== 'none') {
+  if (state.mosquitero && modo !== 'none') {
     const mg = new THREE.Group();
     mg.add(frame(Wi, Hi, 0.028, 0.02, 0));
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(Wi - 0.05, Hi - 0.05), mallaMat);
@@ -386,6 +422,8 @@ function applyParams(params) {
   state.cotas = params.cotas !== false;
   state.vidrioComposicion = params.vidrio_composicion || null;
   state.sentidos = Array.isArray(params.sentidos) ? params.sentidos : null;
+  // REQ-047: como abre. Normalizada contra las hojas del producto; null si no vino.
+  state.apertura = normalizarApertura(params.apertura, state.hojas);
   // El layout de cotas se recalcula acá (no en cada frame): solo depende de los
   // params, no de la cámara.
   layoutCotas = computarLayout({
