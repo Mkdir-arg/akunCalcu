@@ -247,6 +247,42 @@ class ProductoAperturaModelTest(TestCase):
                 ProductoApertura.objects.create(producto_id=9001, apertura='corrediza')
 
 
+class ProductosListViewAperturasTest(TestCase):
+    """La API que consume el cotizador manda las aperturas como objetos: las
+    admitidas del producto si las tiene, o todas las compatibles si no."""
+
+    def _get(self):
+        from rest_framework.request import Request
+        from rest_framework.test import APIRequestFactory
+        from pricing.catalog_views import ProductosListView
+        request = Request(APIRequestFactory().get('/pricing/api/pricing/productos/', {'linea_id': 1}))
+        return ProductosListView().get(request).data
+
+    @patch('pricing.catalog_views.Producto.objects')
+    def test_admitidas_o_compatibles(self, mock_objects):
+        from pricing.models import ProductoApertura
+        qs = MagicMock()
+        mock_objects.exclude.return_value = qs
+        qs.filter.return_value = qs
+        qs.values.return_value = [
+            {'id': 5, 'descripcion': 'VENTANA DE ABRIR 1 HOJA', 'linea_id': 1, 'terciarizado': False,
+             'cantidad_hojas': 1, 'tipo_dibujo': ''},
+            {'id': 6, 'descripcion': 'VENTANA CORREDIZA', 'linea_id': 1, 'terciarizado': False,
+             'cantidad_hojas': 2, 'tipo_dibujo': ''},
+        ]
+        ProductoApertura.objects.create(producto_id=5, apertura='oscilobatiente')
+
+        data = {p['id']: p for p in self._get()}
+
+        # producto 5: configurado -> solo lo admitido, como objeto con sus flags
+        self.assertEqual([a['codigo'] for a in data[5]['aperturas']], ['oscilobatiente'])
+        self.assertTrue(data[5]['aperturas'][0]['lado'])
+        self.assertNotIn('familias', data[5]['aperturas'][0])
+        # producto 6: sin configurar -> todas las compatibles con su tipologia (corrediza)
+        self.assertEqual([a['codigo'] for a in data[6]['aperturas']], ['corrediza'])
+        self.assertTrue(data[6]['aperturas'][0]['por_hoja'])
+
+
 class ProductoFormAperturasTest(SimpleTestCase):
     def test_el_form_expone_el_multiselect_con_el_catalogo(self):
         from pricing.forms import ProductoForm

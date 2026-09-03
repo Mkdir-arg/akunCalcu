@@ -29,7 +29,7 @@
   // sola cuando el vendedor mira el plano técnico.
   window.__loadAkunElevacion = function () {
     if (!window.__akunElevacionPromise) {
-      window.__akunElevacionPromise = import("{% static 'js/elevacion.js' %}?v=1")
+      window.__akunElevacionPromise = import("{% static 'js/elevacion.js' %}?v=2")
         .then(function (m) { return m.svgElevacion; });
     }
     return window.__akunElevacionPromise;
@@ -688,6 +688,7 @@
     <input type="hidden" name="cantidad" id="f-cantidad">
     <input type="hidden" name="opcionales_json" id="f-opcionales_json">
     <input type="hidden" name="tirantes_json" id="f-tirantes_json">
+    <input type="hidden" name="apertura_json" id="f-apertura_json">
     <input type="hidden" name="precio_terciarizado" id="f-precio_terciarizado">
 </form>
 {% endif %}
@@ -1585,6 +1586,7 @@ const CotizadorModal = () => {
         ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30,
         opcionales: [],
         tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] },
+        apertura: null,   // REQ-047: { codigo, lado?, hojas?: [{movimiento, carril}] }
     });
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
@@ -1640,6 +1642,32 @@ const CotizadorModal = () => {
     const _prod3d = productos.find(p => p.id === config.producto_id);
     const dibuja3d = !!result && !!_prod3d && (_prod3d.tipologia || 'pano_fijo') !== 'no_dibujo';
 
+    // REQ-047 — Apertura. Izquierda/derecha = la abertura vista de frente.
+    // Default por hoja igual que pricing/aperturas.py y abertura-layout.js.
+    const hojaDefault = (i, n) => i === n - 1
+        ? { movimiento: 'izq', carril: i % 2 ? 'ext' : 'int' }
+        : { movimiento: i % 2 === 0 ? 'der' : 'izq', carril: i % 2 === 0 ? 'int' : 'ext' };
+    const aperturaDefault = (codigo, prod) => {
+        const def = ((prod && prod.aperturas) || []).find(a => a.codigo === codigo);
+        if (!def) return null;
+        const n = def.hojas.includes(prod.cantidad_hojas) ? prod.cantidad_hojas : def.hojas[0];
+        const ap = { codigo };
+        if (def.lado) ap.lado = 'izq';
+        if (def.por_hoja) ap.hojas = Array.from({ length: n }, (_, i) => hojaDefault(i, n));
+        return ap;
+    };
+    const setHoja = (i, patch) => setConfig(c => ({
+        ...c,
+        apertura: { ...c.apertura, hojas: (c.apertura.hojas || []).map((h, j) => j === i ? { ...h, ...patch } : h) },
+    }));
+    // Al elegir producto (o al cargar uno viejo sin apertura) se propone la primera admitida.
+    useEffect(() => {
+        if (!config.producto_id || config.apertura) return;
+        const prod = productos.find(p => p.id === config.producto_id);
+        if (!prod || !(prod.aperturas || []).length) return;
+        setConfig(c => c.apertura ? c : ({ ...c, apertura: aperturaDefault(prod.aperturas[0].codigo, prod) }));
+    }, [config.producto_id, config.apertura, productos]);
+
     // Params de dibujo: los comparten el visor 3D y la elevación 2D, así las
     // cotas de los dos salen de los mismos datos.
     const paramsDibujo = () => {
@@ -1656,6 +1684,7 @@ const CotizadorModal = () => {
             vidrio: mapVidrio(vid && vid.descripcion),
             // Texto tal cual está en el catálogo: es lo que se imprime dentro del paño.
             vidrio_composicion: (vid && vid.descripcion) || null,
+            apertura: config.apertura || null,
             color: mapColor(trat && trat.descripcion),
             tirantes: (config.tirantes && config.tirantes.activo && (config.tirantes.secciones || []).length >= 2)
                 ? config.tirantes.secciones.map(s => ({ medida_mm: parseInt(s.medida_mm) || 0, ciego: s.material.tipo === 'ciego' }))
@@ -1757,6 +1786,7 @@ const CotizadorModal = () => {
                     vidrio_codigo: (s.vidrio && s.vidrio.codigo) || null,
                     interior_id: (s.interior && s.interior.id) || null,
                     tratamiento_id: (s.tratamiento && s.tratamiento.id) || null,
+                    apertura: s.apertura || null,
                     ancho_mm: s.ancho_mm || 1200,
                     alto_mm: s.alto_mm || 1500,
                     margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
@@ -1858,6 +1888,7 @@ const CotizadorModal = () => {
         document.getElementById('f-opcionales_json').value = JSON.stringify(config.opcionales.map(o => ({ id: o.id, cantidad: o.cantidad || 1 })));
         const _t = config.tirantes;
         document.getElementById('f-tirantes_json').value = JSON.stringify((_t && _t.activo) ? _t : { activo: false });
+        document.getElementById('f-apertura_json').value = JSON.stringify(config.apertura || null);
         enviarItemForm();
     };
 
@@ -1888,6 +1919,9 @@ const CotizadorModal = () => {
     const htmlPlano = { __html: svgPlano };
     const _prodSel = productos.find(p => p.id === config.producto_id);
     const esTerc = _prodSel ? !!_prodSel.terciarizado : (editTipo === 'terciarizado');
+    const aperturaDef = (config.apertura && _prodSel)
+        ? ((_prodSel.aperturas || []).find(a => a.codigo === config.apertura.codigo) || null)
+        : null;
 
     return (
         <div>
@@ -1914,13 +1948,13 @@ const CotizadorModal = () => {
                 <Block title="Producto" icon="fa-box" hint={_prodSel ? _prodSel.descripcion : null}>
                 <div className="grid grid-cols-2 gap-x-4">
                     <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id}
-                        onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
+                        onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder="Seleccionar..." />
                     <Sel label="Linea" options={lineas} value={config.linea_id} disabled={!config.extrusora_id}
-                        onChange={v => set('linea_id', v, { producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
+                        onChange={v => set('linea_id', v, { producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder={config.extrusora_id ? "Seleccionar..." : "Primero extrusora"} />
                     <Sel label="Producto" options={productos} value={config.producto_id} disabled={!config.linea_id}
-                        onChange={v => set('producto_id', v, { marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[] })}
+                        onChange={v => set('producto_id', v, { marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder={config.linea_id ? "Seleccionar..." : "Primero linea"} />
                     {!esTerc && <>
                     <Sel label="Marco *" options={marcos} value={config.marco_id} disabled={!config.producto_id}
@@ -1971,6 +2005,43 @@ const CotizadorModal = () => {
                     ))}
                 </div>
                 </Block>
+                )}
+
+                {/* Apertura (REQ-047): solo las que admite el producto */}
+                {!esTerc && _prodSel && (_prodSel.aperturas || []).length > 0 && (
+                    <Block title="Apertura" icon="fa-door-open" hint="Izquierda y derecha: la abertura vista de frente">
+                        <Sel label="Tipo de apertura"
+                            options={(_prodSel.aperturas || []).map(a => ({ codigo: a.codigo, nombre: a.nombre }))}
+                            value={config.apertura ? config.apertura.codigo : null}
+                            onChange={v => setConfig(c => ({ ...c, apertura: aperturaDefault(v, _prodSel) }))}
+                            placeholder="Elegí cómo abre..." />
+                        {aperturaDef && aperturaDef.lado && (
+                            <div className="flex gap-1.5 mb-3">
+                                {[['izq', 'Bisagra izquierda'], ['der', 'Bisagra derecha']].map(([k, l]) => (
+                                    <button key={k} type="button"
+                                        onClick={() => setConfig(c => ({ ...c, apertura: { ...c.apertura, lado: k } }))}
+                                        className={config.apertura && config.apertura.lado === k
+                                            ? 'flex-1 py-1.5 rounded text-xs font-semibold border bg-blue-600 border-blue-600 text-white'
+                                            : 'flex-1 py-1.5 rounded text-xs font-semibold border bg-white border-gray-200 text-gray-500 hover:bg-slate-50'}>
+                                        {l}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {aperturaDef && aperturaDef.por_hoja && (config.apertura.hojas || []).map((h, i) => (
+                            <div key={i} className="flex items-center gap-2 mb-1.5 text-xs">
+                                <span className="w-14 font-bold text-slate-500">Hoja {i + 1}</span>
+                                <button type="button" onClick={() => setHoja(i, { movimiento: h.movimiento === 'der' ? 'izq' : 'der' })}
+                                    className="px-2 py-1 rounded border border-gray-200 bg-white text-slate-700 font-semibold hover:bg-slate-50">
+                                    {h.movimiento === 'der' ? 'Corre a la derecha →' : '← Corre a la izquierda'}
+                                </button>
+                                <button type="button" onClick={() => setHoja(i, { carril: h.carril === 'int' ? 'ext' : 'int' })}
+                                    className="px-2 py-1 rounded border border-gray-200 bg-white text-slate-700 font-semibold hover:bg-slate-50">
+                                    {h.carril === 'int' ? 'Carril interior' : 'Carril exterior'}
+                                </button>
+                            </div>
+                        ))}
+                    </Block>
                 )}
 
                 {/* Tirantes divisores */}

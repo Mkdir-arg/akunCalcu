@@ -2392,7 +2392,8 @@ class PdfPlanosAnexoTest(SimpleTestCase):
         self.assertIn('id="dibujo-item-42"', html)
         self.assertNotIn('concept-dibujo', html, 'el dibujo no debe quedar dentro de la celda')
         self.assertIn('/static/js/elevacion.js', html)
-        self.assertIn("{ apertura: false }", html)
+        # REQ-047: el símbolo de apertura sale del dato del ítem, así que va prendido.
+        self.assertIn("{ apertura: true }", html)
 
     def test_numera_el_item_en_la_tabla_y_en_el_plano(self):
         dibujo = {'tipo': 'pano_fijo', 'ancho': 950, 'alto': 1050, 'hojas': 1, 'mosquitero': False,
