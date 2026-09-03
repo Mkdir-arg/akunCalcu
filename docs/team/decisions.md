@@ -184,6 +184,67 @@
 
 ---
 
+## ADR-019: Apertura ≠ familia — catálogo en código, tabla propia para lo admitido, dato en el snapshot
+
+**Fecha**: 2026-09-03 · **Estado**: Aceptada · **Feature**: FEAT-037 / REQ-047
+
+**Contexto**: el sistema conocía la *familia* de una abertura (`Producto.tipo_dibujo` + heurística
+en `pricing/tipologia.py`, que define la malla 3D) pero no *cómo abre* cada ítem: lado de bisagra,
+sentido y carril de cada hoja. Los planos de referencia mostraban que eso varía por ítem. Una
+especificación externa proponía un catálogo de tipos fijos (`SLIDING_2`, `CASEMENT_SINGLE`…), un
+componente React `<OpeningDiagram>` y un campo `cantidadGuias`.
+
+**Decisión**:
+1. **Separar apertura de familia.** La familia sigue en `tipo_dibujo` y no se parte: banderola,
+   brazo de empuje y proyectante con tijera comparten malla; la *apertura* carga el símbolo.
+2. **El catálogo de 11 aperturas vive en código** (`pricing/aperturas.py`, espejo en
+   `static/js/abertura-layout.js`): son símbolos fijos de carpintería, no un ABM.
+3. **Lo que admite cada producto va en una tabla gestionada** (`ProductoApertura`, FK sin
+   constraint a la legacy `productos`, patrón `VidrioHoja`), no en una columna de la tabla legacy.
+4. **La apertura elegida por ítem va en el snapshot** (`snapshot_item.apertura`), sin migración,
+   como los tirantes. No afecta el precio: el serializer la deja pasar.
+5. **Convención única**: izquierda/derecha = abertura vista de frente. "Int./Ext." = carril.
+
+**Descartado de la especificación externa**: el componente React (acá React vive solo en el modal
+del cotizador vía Babel sin build, ADR-015; la unidad reutilizable es una función JS que devuelve
+SVG y sirve también en templates Django y el PDF), el catálogo de nombres fijos (reemplazado por
+tipología + propiedades), `cantidadGuias` (no cambia el símbolo de frente) y `width/height` en el
+símbolo (los mm reales viven en la elevación).
+
+**Consecuencias**: cero cambios en `tipologia.py`; un producto sin aperturas cargadas ofrece todas
+las compatibles con su tipología (nada cambia hasta configurarlo); los ítems viejos se dibujan sin
+símbolo. Combinaciones (fijo + abrir) entran después por propiedades, sin rehacer el catálogo.
+
+---
+
+## ADR-020: El plano técnico es un SVG puro compartido, y en el PDF va en un anexo
+
+**Fecha**: 2026-09-03 · **Estado**: Aceptada · **Feature**: FEAT-038 / REQ-048
+
+**Contexto**: se pidió agregar cotas "más profesionales" al diseño 3D del cotizador. Los planos de
+referencia eran elevaciones 2D. Poner cotas en una perspectiva 3D que rota deforma las medidas
+(dos paños iguales se proyectan con largos distintos). El visor 3D es interno; el PDF es lo que
+ve el cliente y no tenía ningún dibujo.
+
+**Decisión**:
+1. **Un módulo de layout puro** (`abertura-layout.js`) es la única fuente de la aritmética de
+   cotas; lo consumen la elevación 2D y el overlay del 3D. No se portó a Python para no tener dos
+   fuentes de verdad: el PDF imprime por `window.print()` (ADR-006), así que el mismo módulo JS
+   corre en la página del PDF y devuelve SVG inline.
+2. **El overlay 3D se desvanece** pasados ~57° del frente, en vez de mostrar cotas que mienten.
+3. **En el PDF el plano va en un anexo "Planos"** después de los totales, no en la celda de la
+   tabla: la primera versión en la celda estiraba la fila y las cotas no se leían. Los ítems se
+   numeran ("Ítem N") para enlazar renglón y plano.
+4. **Las cotas de paño parten el ancho total** (borde exterior → eje del travesaño), como en los
+   planos de la fábrica, y el último segmento absorbe el redondeo.
+
+**Consecuencias**: el dibujo corre en el navegador del que imprime (si el JS no carga, el recuadro
+queda vacío, no rompe el PDF); una consulta a `Producto` por ítem para resolver la tipología
+(acotado, pocos ítems por presupuesto); y el dibujo **destapa datos mal cargados** (una sección
+ciega guardada donde el texto decía vidrio simple), lo cual es una virtud aunque incomode.
+
+---
+
 ## ADR-018: Los revestimientos viven en el catálogo de vidrios, no en un modelo aparte
 
 **Fecha**: 2026-08-18 · **Estado**: Aceptada · **Reemplaza parcialmente**: ADR-016 (punto del catálogo de materiales ciegos)

@@ -1,8 +1,9 @@
 # REQ-047 — Aperturas configurables por producto y por ítem
 
-- **Estado:** En desarrollo
+- **Estado:** Implementado
 - **Fecha:** 2026-09-03
 - **Complejidad:** Grande
+- **Feature:** [FEAT-037](../features/FEAT-037-aperturas-configurables.md)
 - **Apps afectadas:** `pricing`, `presupuestos`
 
 ## User Story
@@ -48,17 +49,17 @@ exterior de una corrediza) y no se mezcla con izquierda/derecha.
 
 ## Criterios de Aceptación
 
-- [ ] En el ABM de productos hay un **selector múltiple "Aperturas admitidas"** con el catálogo completo
-- [ ] Un producto sin aperturas configuradas sigue funcionando: el cotizador ofrece todas las compatibles con su tipología
-- [ ] En el cotizador aparece un campo **Apertura** que ofrece solo las aperturas admitidas por el producto elegido
-- [ ] Para aperturas con bisagra, el cotizador pide el **lado** (izquierda/derecha)
-- [ ] Para corredizas, el cotizador permite definir **el movimiento y el carril de cada hoja**, con un default razonable
-- [ ] La apertura elegida se guarda en el snapshot del ítem y **se restaura al editarlo**
-- [ ] El **3D** refleja la apertura: bisagra del lado elegido, hojas móviles según el movimiento
-- [ ] La **elevación 2D** dibuja el símbolo técnico de cada apertura (los 11 del catálogo)
-- [ ] El **PDF** muestra el símbolo en el plano de cada ítem, y **el color del perfil según la terminación**
-- [ ] Los ítems anteriores (sin apertura guardada) siguen imprimiendo igual que hoy, sin símbolo
-- [ ] Tests por cada tipo de apertura y por cada lado (izq/der), en Python y en la auditoría JS
+- [x] En el ABM de productos hay un **selector múltiple "Aperturas admitidas"** con el catálogo completo
+- [x] Un producto sin aperturas configuradas sigue funcionando: el cotizador ofrece todas las compatibles con su tipología
+- [x] En el cotizador aparece un campo **Apertura** que ofrece solo las aperturas admitidas por el producto elegido
+- [x] Para aperturas con bisagra, el cotizador pide el **lado** (izquierda/derecha)
+- [x] Para corredizas, el cotizador permite definir **el movimiento y el carril de cada hoja**, con un default razonable
+- [x] La apertura elegida se guarda en el snapshot del ítem y **se restaura al editarlo**
+- [x] El **3D** refleja la apertura: bisagra del lado elegido, hojas móviles según el movimiento
+- [x] La **elevación 2D** dibuja el símbolo técnico de cada apertura (los 11 del catálogo)
+- [x] El **PDF** muestra el símbolo en el plano de cada ítem, y **el color del perfil según la terminación**
+- [x] Los ítems anteriores (sin apertura guardada) siguen imprimiendo igual que hoy, sin símbolo
+- [x] Tests por cada tipo de apertura y por cada lado (izq/der), en Python y en la auditoría JS
 
 ## Fuera de alcance
 

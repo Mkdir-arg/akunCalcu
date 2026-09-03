@@ -42,6 +42,8 @@
 | [FEAT-034](./FEAT-034-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | — |
 | [FEAT-035](./FEAT-035-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) + latido de Gmail | Implementado | 2026-08-01 | — |
 | [FEAT-036](./FEAT-036-revestimientos-catalogo-vidrios.md) | Revestimientos en el catálogo de vidrios (campo Tipo, reemplaza MaterialCiego) | Implementado | 2026-08-18 | — |
+| [FEAT-037](./FEAT-037-aperturas-configurables.md) | Aperturas configurables por producto y por ítem: catálogo, ABM, cotizador, 3D, símbolo 2D y color en el PDF | Implementado | 2026-09-03 | — |
+| [FEAT-038](./FEAT-038-elevacion-tecnica-cotas.md) | Elevación técnica con cotas: pestaña Plano en el cotizador, anexo de planos en el PDF, miniatura por ítem | Implementado | 2026-09-03 | — |
 
 ---
 
@@ -56,7 +58,8 @@
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
-| `pricing` | FEAT-036 | 2026-08-18 |
+| `pricing` | FEAT-036, FEAT-037 | 2026-09-03 |
+| `presupuestos` (dibujo) | FEAT-037, FEAT-038 | 2026-09-03 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |

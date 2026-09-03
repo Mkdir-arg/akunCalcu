@@ -14,6 +14,34 @@
 
 ---
 
+## 2026-09-03 — Aperturas configurables (FEAT-037) y el plano técnico con cotas en cotizador, PDF y presupuesto (FEAT-038)
+
+**Sprint**: Sin sprint activo
+**Deploys**: `0bdec4e` (26/08, pestaña Plano) · `994adf9` y `63c9afc` (PDF: primero en la celda, después anexo) · `42c1fb9`, `7a7d4bb`, `321bad3` (aperturas; migración `pricing/0007` aplicada al arrancar)
+
+**FEAT-038 / REQ-048 / ADR-020 — Elevación técnica con cotas.** Un módulo JS puro calcula las cotas
+(alto, paños y total: los paños parten el ancho total, 895 + 895 = 1790 como en los planos de la
+fábrica) y otro devuelve el plano en SVG. Se ve en el cotizador (pestañas 3D / Plano, overlay de
+cotas sobre el 3D que se desvanece al girar), en el PDF como **anexo "Planos de las aberturas"**
+con los ítems numerados, y como miniatura en la página del presupuesto. La versión con el dibujo
+dentro de la celda de la tabla se descartó el mismo día por ilegible.
+
+**FEAT-037 / REQ-047 / ADR-019 — Aperturas configurables.** Catálogo de 11 aperturas en código
+(corrediza, abrir 1 y 2 hojas, oscilobatiente, banderola, brazo de empuje, proyectante con
+tijera, puerta 1 y 2 hojas, puerta corrediza, paño fijo); selector múltiple "Aperturas admitidas"
+en el ABM de productos (tabla nueva `ProductoApertura`); bloque **Apertura** en el cotizador con
+lado de bisagra y movimiento/carril por hoja; el dato viaja en el snapshot sin migración; el 3D,
+el plano 2D y el PDF lo siguen, y el perfil se pinta con el color de la terminación. La tipología
+**no se partió**: la apertura carga la distinción del símbolo. Convención única: izquierda y
+derecha vista de frente; Int./Ext. es el carril.
+
+**Sobre el proceso**: mitad de FEAT-037 salió a producción por un commit del usuario desde el IDE
+(`42c1fb9`) antes de que el cotizador tuviera el campo; quedó consistente y retrocompatible, y se
+completó en `7a7d4bb`. Verificado en prod: migración aplicada, APIs y ABM sin 500, módulos JS
+servidos. El visor 3D con apertura es lo único que no se verificó fuera del navegador.
+
+---
+
 ## 2026-08-18 — Reporte por fecha de pedido, revestimientos en el catálogo de vidrios y el botón Recalcular (FIX-024, FEAT-036, FIX-025)
 
 **Sprint**: Sin sprint activo

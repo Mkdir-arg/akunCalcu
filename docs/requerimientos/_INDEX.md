@@ -66,4 +66,5 @@
 | [REQ-044](./REQ-044-orientacion-tirantes-divisores.md) | Orientación de los tirantes divisores (vertical u horizontal) | Implementado | 2026-08-01 | FEAT-034 |
 | [REQ-045](./REQ-045-panel-salud-integraciones.md) | Panel de salud de las integraciones (n8n, backups, migraciones) | Implementado | 2026-08-01 | FEAT-035 |
 | [REQ-046](./REQ-046-revestimientos-catalogo-vidrios.md) | Revestimientos en el catálogo de vidrios (campo Tipo) | Implementado | 2026-08-18 | FEAT-036 |
-| [REQ-047](./REQ-047-aperturas-configurables.md) | Aperturas configurables por producto y por ítem (símbolo 2D, 3D, PDF) | En desarrollo | 2026-09-03 | — |
+| [REQ-047](./REQ-047-aperturas-configurables.md) | Aperturas configurables por producto y por ítem (símbolo 2D, 3D, PDF) | Implementado | 2026-09-03 | FEAT-037 |
+| [REQ-048](./REQ-048-elevacion-tecnica-cotas.md) | Elevación técnica con cotas en cotizador, PDF (anexo) y presupuesto | Implementado | 2026-08-26 | FEAT-038 |
