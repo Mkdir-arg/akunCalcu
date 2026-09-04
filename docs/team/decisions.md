@@ -184,6 +184,38 @@
 
 ---
 
+## ADR-021: Las cotizaciones REHAU se importan con un parser determinista sobre el texto del PDF, con vista previa sin estado
+
+**Fecha**: 2026-09-04 · **Estado**: Aceptada · **Feature**: FEAT-039 / REQ-049
+
+**Contexto**: los presupuestos PVC se cotizan en el software de REHAU, que entrega un PDF; en
+AkunCalcu cada ítem se tipeaba a mano. Tres muestras reales confirmaron que el PDF tiene siempre la
+misma estructura (cabecera, "Tipología: Vn", descripción, fila `UNITARIO · UNIDADES · TOTAL`, pie).
+Las medidas están solo en el dibujo, que es una imagen.
+
+**Decisión**:
+1. **Leer el texto con `pypdf`**, que ya estaba instalado como dependencia de xhtml2pdf; se declara
+   explícito en `requirements.txt`. Sin OCR: un PDF escaneado da "no tiene texto" y no se importa.
+2. **Parser determinista con regex**, separado de la extracción (`parsear_cotizacion(texto)`), anclado
+   en la fila de precio y con las tipologías asociadas por conteo para no depender del orden del
+   texto. Sin IA: el formato es fijo y un cambio de REHAU debe fallar en voz alta, no adivinar.
+3. **Vista previa editable y sin estado en el servidor**: el archivo se lee en memoria y se descarta;
+   los ítems detectados viajan en un formset hasta la confirmación. Sin sesión, sin archivo temporal,
+   sin tabla de importaciones.
+4. **El ítem importado es un `pvc_simple` idéntico al manual**, creado con la misma función
+   (`_fields_item_pvc`) y con un bloque `origen` en `resultado_json`. Ningún consumidor del ítem cambia.
+5. **Los PDF reales de clientes no entran al repo** (`test_data/*.pdf` ignorado): traen datos
+   personales. El pipeline se testea con un PDF generado con reportlab y el texto de las muestras.
+
+**Alternativas descartadas**: Excel/CSV (REHAU no lo exporta); leer las medidas del dibujo (imagen,
+exigiría OCR y sería frágil); guardar el PDF adjunto al presupuesto (no se pidió y agrega storage).
+
+**Consecuencias**: la importación depende del formato de REHAU; si cambia, el parser avisa y hay que
+ajustar regex (con test sobre el nuevo texto). El unitario se asume **costo** al que se aplica el
+margen; si es precio final, margen 0.
+
+---
+
 ## ADR-019: Apertura ≠ familia — catálogo en código, tabla propia para lo admitido, dato en el snapshot
 
 **Fecha**: 2026-09-03 · **Estado**: Aceptada · **Feature**: FEAT-037 / REQ-047

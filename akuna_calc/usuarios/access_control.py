@@ -223,7 +223,7 @@ for module in ACCESS_MODULES:
         _register_route(item['code'], item['route_name'])
 
 
-_register_route('presupuestos.view', 'presupuestos:presupuestos-crear', 'presupuestos:presupuestos-detalle', 'presupuestos:presupuestos-editar', 'presupuestos:presupuestos-configuracion-obra', 'presupuestos:presupuestos-item-agregar', 'presupuestos:presupuestos-item-eliminar', 'presupuestos:presupuestos-comentar', 'presupuestos:presupuestos-estado', 'presupuestos:presupuestos-recibo', 'presupuestos:presupuestos-pdf')
+_register_route('presupuestos.view', 'presupuestos:presupuestos-crear', 'presupuestos:presupuestos-detalle', 'presupuestos:presupuestos-editar', 'presupuestos:presupuestos-configuracion-obra', 'presupuestos:presupuestos-item-agregar', 'presupuestos:presupuestos-importar', 'presupuestos:presupuestos-item-eliminar', 'presupuestos:presupuestos-comentar', 'presupuestos:presupuestos-estado', 'presupuestos:presupuestos-recibo', 'presupuestos:presupuestos-pdf')
 
 _register_route('comercial.clientes', 'comercial:cliente_create', 'comercial:cliente_detail', 'comercial:cliente_edit', 'comercial:cliente_delete', 'comercial:clientes_list_api')
 _register_route('comercial.ventas', 'comercial:venta_create', 'comercial:venta_detail', 'comercial:venta_edit', 'comercial:venta_delete', 'comercial:registrar_pago', 'comercial:generar_pdf_venta', 'comercial:descargar_pdf_recibo_venta', 'comercial:descargar_pdf_recibo', 'comercial:exportar_ventas_excel', 'comercial:editar_pago', 'comercial:eliminar_pago', 'comercial:agregar_retencion_pago', 'comercial:editar_fecha_sena', 'comercial:cambiar_estado_venta', 'comercial:guardar_nota_venta', 'comercial:duplicar_venta')

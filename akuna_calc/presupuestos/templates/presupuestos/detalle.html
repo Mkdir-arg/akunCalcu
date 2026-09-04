@@ -85,6 +85,13 @@
                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-edit mr-2"></i>Editar
             </a>
+            {% if es_pvc and presupuesto.tipo_obra %}
+            <a href="{% url 'presupuestos:presupuestos-importar' presupuesto.pk %}"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center"
+                title="Cargar los ítems desde el PDF de la cotización REHAU">
+                <i class="fas fa-file-import mr-2"></i>Importar cotización
+            </a>
+            {% endif %}
             {% if presupuesto.tipo_obra %}
             <button onclick="abrirModalItem()"
                 class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">

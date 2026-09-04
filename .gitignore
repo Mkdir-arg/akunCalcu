@@ -66,3 +66,6 @@ akuna_calc/audit_tirantes.py
 akuna_calc/diagnostico_hojas.py
 akuna_calc/diagnostico_color.py
 akuna_calc/diagnostico_componentes.py
+
+# PDF reales de clientes usados solo para tests locales (REQ-049)
+akuna_calc/presupuestos/test_data/*.pdf

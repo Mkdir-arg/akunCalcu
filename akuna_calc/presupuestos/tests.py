@@ -2622,3 +2622,400 @@ class ReordenarItemsTest(TestCase):
         res = self.client.get(f'/presupuestos/{self.presupuesto.pk}/')
         self.assertNotContains(res, 'onclick="abrirModalOrden()"')
         self.assertNotContains(res, 'id="orden-lista"')
+
+
+# ---------------------------------------------------------------------------
+# REQ-049 — Importación de cotizaciones REHAU (PDF) a presupuestos PVC
+# ---------------------------------------------------------------------------
+import io as _io
+from pathlib import Path as _Path
+from unittest import skipUnless
+
+from .importar_rehau import ImportacionError, extraer_texto, parsear_cotizacion
+
+# Texto tal como lo extrae pypdf de las tres muestras reales (presupuestos 481, 462 y 458).
+TEXTO_REHAU_481 = """AKUN ABERTURAS
+Elpidio González 5326
+ - -
+TEL:114482992 FAX:
+akunaberturas@gmail.com
+DOMICILIO:
+LOCALIDAD:
+CP: PROVINCIA:
+TEL: 11 3645-4252
+MAIL:
+VERSIÓN Nº: 1
+NOMBRE DEL CLIENTE:HERNAN BARBERMAN PRESUPUESTO Nº: 481
+FECHA: 31/08/2026
+De acuerdo a su requerimiento e información proporcionada detallamos la valorización y características de las ventanas solicitadas:
+Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color
+Rob/Rob.Vidrio 3+3/9/4 .
+Marco 3 Euro-Design Slide
+Hoja1 Euro-Design Slide
+Cuarto caña 17 mm
+Contramarco 60 mm
+Con mosquitero
+ 1.469,56U$S 1 1.469,56U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V1
+Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color
+Rob/Rob.Vidrio 3+3/9/4 .
+Marco 3 Euro-Design Slide
+Hoja1 Euro-Design Slide
+Cuarto caña 17 mm
+Contramarco 60 mm
+Con mosquitero
+ 1.357,16U$S 1 1.357,16U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V2
+TOTAL UNIDADES: 2
+TOTAL M2: 7,85
+TOTAL NETO: 2.826,71U$S
+TOTAL PROYECTO:3.420,32U$S
+ 21 % I.V.A : 593,61U$S
+TOTAL ML:16
+Pag 1
+"""
+
+TEXTO_REHAU_462 = """AKUN ABERTURAS
+Elpidio González 5326
+ - -
+TEL:114482992 FAX:
+akunaberturas@gmail.com
+DOMICILIO:
+LOCALIDAD:
+CP: PROVINCIA:
+TEL: 11 5492-2487
+MAIL:
+VERSIÓN Nº: 1
+NOMBRE DEL CLIENTE:ESTELA VILLA URQUIZA PRESUPUESTO Nº: 462
+FECHA: 25/08/2026
+De acuerdo a su requerimiento e información proporcionada detallamos la valorización y características de las ventanas solicitadas:
+Ventana ap. Interior Sistema Euro-Design 60 en color Negro M./Negro
+M..Vidrio 3+3/9/4 .
+Cuarto caña 17 mm
+Marco 64 Euro-Desig 60
+Contramarco 60 mm
+ 407,84U$S 1 407,84U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V1
+Perfileria Abatible Sistema Euro-Design 60 en color Negro M./Negro M..Vidrio
+4/9/4 .
+Cuarto caña 17 mm
+Marco 64 Euro-Desig 60
+Hoja Z60 Euro-Design 60
+Contramarco 60 mm
+ 863,26U$S 1 863,26U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V2
+Puerta ap. Interior Sistema Euro-Design 60 en color Negro M./Negro M..Vidrio
+3+3/9/4 .
+Cuarto caña 17 mm
+Marco 64 Euro-Desig 60
+Hoja Z74 Euro-Design
+Contramarco 60 mm
+ 998,22U$S 1 998,22U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V1
+Pag 1
+TOTAL UNIDADES: 3
+TOTAL M2: 5,33
+TOTAL NETO: 2.269,32U$S
+TOTAL PROYECTO:2.745,88U$S
+ 21 % I.V.A : 476,56U$S
+TOTAL ML:17
+Pag 2
+"""
+
+TEXTO_REHAU_458 = """AKUN ABERTURAS
+Elpidio González 5326
+ - -
+TEL:114482992 FAX:
+akunaberturas@gmail.com
+DOMICILIO:
+LOCALIDAD:
+CP: PROVINCIA:
+TEL: 11 6535-2418
+MAIL:
+VERSIÓN Nº: 1
+NOMBRE DEL CLIENTE:FLORENCIA BALMACEDA PRESUPUESTO Nº: 458
+FECHA: 24/08/2026
+De acuerdo a su requerimiento e información proporcionada detallamos la valorización y características de las ventanas solicitadas:
+Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color Blanco.Vidrio
+3+3/9/4 .
+Marco 3 Euro-Design Slide
+Hoja 1 Euro-Design Slide
+Cuarto caña 17 mm
+ 914,49U$S 1 914,49U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V1
+Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color Blanco.Vidrio
+4/9/4 .
+Marco 3 Euro-Design Slide
+Hoja 1 Euro-Design Slide
+Cuarto caña 17 mm
+Contramarco 60 mm
+ 471,13U$S 1 471,13U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V2
+Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color Blanco.Vidrio
+4/9/4 .
+Marco 3 Euro-Design Slide
+Hoja 1 Euro-Design Slide
+Cuarto caña 17 mm
+Contramarco 60 mm
+ 458,08U$S 1 458,08U$S
+ UNITARIO UNIDADES TOTAL
+Tipología: V3
+Pag 1
+TOTAL UNIDADES: 3
+TOTAL M2: 5,29
+TOTAL NETO: 1.843,70U$S
+TOTAL PROYECTO:2.230,88U$S
+ 21 % I.V.A : 387,18U$S
+TOTAL ML:15
+Pag 2
+"""
+
+_TEST_DATA_DIR = _Path(__file__).resolve().parent / 'test_data'
+
+
+def _pdf_desde_texto(texto):
+    """Arma un PDF real en memoria con una línea de texto por renglón (reportlab)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+
+    buffer = _io.BytesIO()
+    lienzo = canvas.Canvas(buffer, pagesize=A4)
+    y = 800
+    for linea in texto.splitlines():
+        if y < 40:
+            lienzo.showPage()
+            y = 800
+        lienzo.drawString(40, y, linea)
+        y -= 14
+    lienzo.save()
+    return buffer.getvalue()
+
+
+class ParserRehauTest(SimpleTestCase):
+    def test_cabecera_e_items_del_481(self):
+        cot = parsear_cotizacion(TEXTO_REHAU_481)
+        self.assertEqual(cot.numero, '481')
+        self.assertEqual(cot.cliente, 'HERNAN BARBERMAN')
+        self.assertEqual(cot.fecha, '31/08/2026')
+        self.assertEqual(cot.total_neto, Decimal('2826.71'))
+        self.assertEqual([i.tipologia for i in cot.items], ['V1', 'V2'])
+        self.assertEqual([i.valor_usd for i in cot.items], [Decimal('1469.56'), Decimal('1357.16')])
+        self.assertEqual([i.cantidad for i in cot.items], [1, 1])
+        self.assertTrue(all(i.total_coincide for i in cot.items))
+        # 2.826,72 vs 2.826,71 es redondeo del propio REHAU: dentro de la tolerancia, sin advertencia.
+        self.assertEqual(cot.advertencias, [])
+
+    def test_descripcion_legible_con_titulo_y_componentes(self):
+        cot = parsear_cotizacion(TEXTO_REHAU_481)
+        self.assertEqual(
+            cot.items[0].descripcion,
+            'V1 · Corredera Ventana Lineal EURO-DESIGN SLIDE S920 en color Rob/Rob. Vidrio 3+3/9/4. '
+            'Marco 3 Euro-Design Slide, Hoja1 Euro-Design Slide, Cuarto caña 17 mm, Contramarco 60 mm, Con mosquitero',
+        )
+        self.assertLessEqual(len(cot.items[0].descripcion), 300)
+
+    def test_tres_items_en_dos_paginas_con_tipologias_repetidas(self):
+        cot = parsear_cotizacion(TEXTO_REHAU_462)
+        self.assertEqual(cot.numero, '462')
+        self.assertEqual([i.tipologia for i in cot.items], ['V1', 'V2', 'V1'])
+        self.assertTrue(cot.items[2].descripcion.startswith('V1 · Puerta ap. Interior Sistema Euro-Design 60 en color Negro M./Negro M. Vidrio 3+3/9/4. Cuarto caña 17 mm'))
+        self.assertEqual(cot.suma_items, Decimal('2269.32'))
+        self.assertEqual(cot.advertencias, [])
+
+    def test_458_tres_corredizas(self):
+        cot = parsear_cotizacion(TEXTO_REHAU_458)
+        self.assertEqual([i.tipologia for i in cot.items], ['V1', 'V2', 'V3'])
+        self.assertEqual(cot.suma_items, Decimal('1843.70'))
+        self.assertEqual(cot.total_neto, Decimal('1843.70'))
+        self.assertIn('Blanco. Vidrio 3+3/9/4', cot.items[0].descripcion)
+        self.assertNotIn('Contramarco', cot.items[0].descripcion)
+        self.assertIn('Contramarco 60 mm', cot.items[1].descripcion)
+
+    def test_total_neto_distinto_advierte(self):
+        texto = TEXTO_REHAU_481.replace('TOTAL NETO: 2.826,71U$S', 'TOTAL NETO: 9.999,99U$S')
+        cot = parsear_cotizacion(texto)
+        self.assertEqual(len(cot.advertencias), 1)
+        self.assertIn('9.999,99', cot.advertencias[0])
+        self.assertIn('2.826,72', cot.advertencias[0])
+
+    def test_unitario_por_cantidad_distinto_del_total_advierte(self):
+        texto = TEXTO_REHAU_481.replace(' 1.469,56U$S 1 1.469,56U$S', ' 1.469,56U$S 2 1.469,56U$S')
+        cot = parsear_cotizacion(texto)
+        self.assertEqual(cot.items[0].cantidad, 2)
+        self.assertFalse(cot.items[0].total_coincide)
+        self.assertTrue(any('V1' in a for a in cot.advertencias))
+
+    def test_sin_items_lanza_error(self):
+        with self.assertRaises(ImportacionError):
+            parsear_cotizacion('Factura de otra cosa\nTOTAL: 100\n')
+
+    def test_pdf_real_generado_se_lee_y_parsea(self):
+        """Pipeline completo pypdf → parser sobre un PDF con el texto de la muestra."""
+        cot = parsear_cotizacion(extraer_texto(_io.BytesIO(_pdf_desde_texto(TEXTO_REHAU_481))))
+        self.assertEqual(cot.numero, '481')
+        self.assertEqual(len(cot.items), 2)
+        self.assertEqual(cot.items[1].valor_usd, Decimal('1357.16'))
+
+    def test_pdf_sin_texto_o_roto_lanza_error(self):
+        with self.assertRaises(ImportacionError):
+            extraer_texto(_io.BytesIO(b'%PDF-1.4 basura sin estructura'))
+
+    @skipUnless(any(_TEST_DATA_DIR.glob('*.pdf')), 'copiar los PDF reales en presupuestos/test_data/')
+    def test_pdfs_reales_de_la_carpeta(self):
+        for ruta in sorted(_TEST_DATA_DIR.glob('*.pdf')):
+            with self.subTest(pdf=ruta.name), open(ruta, 'rb') as fh:
+                cot = parsear_cotizacion(extraer_texto(fh))
+                self.assertGreaterEqual(len(cot.items), 1, ruta.name)
+                self.assertTrue(cot.numero, ruta.name)
+                self.assertTrue(all(i.tipologia for i in cot.items), ruta.name)
+                self.assertTrue(all(i.total_coincide for i in cot.items), ruta.name)
+                self.assertEqual(cot.advertencias, [], ruta.name)
+
+
+class ImportarCotizacionViewTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('importador', password='testpass')
+        rol, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'Acceso total', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=rol)
+        self.client.login(username='importador', password='testpass')
+        self.presupuesto = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+        self.url = reverse('presupuestos:presupuestos-importar', args=[self.presupuesto.pk])
+        self.detalle = reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk])
+
+    def _post_confirmar(self, filas, margen='30', extra=None):
+        data = {
+            'confirmar': '1', 'margen_porcentaje': margen,
+            'origen_numero': '481', 'origen_cliente': 'HERNAN BARBERMAN', 'origen_fecha': '31/08/2026',
+            'form-TOTAL_FORMS': str(len(filas)), 'form-INITIAL_FORMS': '0',
+            'form-MIN_NUM_FORMS': '0', 'form-MAX_NUM_FORMS': '1000',
+        }
+        for i, fila in enumerate(filas):
+            for clave, valor in fila.items():
+                data[f'form-{i}-{clave}'] = valor
+        data.update(extra or {})
+        return self.client.post(self.url, data)
+
+    def test_sin_login_redirige(self):
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+    def test_get_muestra_formulario_de_archivo(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Importar cotización PVC')
+        self.assertContains(response, 'name="archivo"')
+
+    def test_aluminio_redirige_con_error(self):
+        aluminio = crear_presupuesto(self.user)
+        aluminio.tipo_obra = 'obra_nueva'
+        aluminio.save()
+        response = self.client.get(reverse('presupuestos:presupuestos-importar', args=[aluminio.pk]))
+        self.assertRedirects(response, reverse('presupuestos:presupuestos-detalle', args=[aluminio.pk]))
+
+    def test_bloqueado_redirige(self):
+        Presupuesto.objects.filter(pk=self.presupuesto.pk).update(estado='confirmado')
+        response = self.client.get(self.url)
+        self.assertRedirects(response, self.detalle)
+
+    def test_sin_cotizacion_usd_redirige(self):
+        Presupuesto.objects.filter(pk=self.presupuesto.pk).update(cotizacion_usd=None)
+        response = self.client.get(self.url)
+        self.assertRedirects(response, self.detalle)
+
+    def test_boton_importar_en_detalle_solo_para_pvc(self):
+        self.assertContains(self.client.get(self.detalle), 'Importar cotización')
+        aluminio = crear_presupuesto(self.user)
+        aluminio.tipo_obra = 'obra_nueva'
+        aluminio.save()
+        self.assertNotContains(
+            self.client.get(reverse('presupuestos:presupuestos-detalle', args=[aluminio.pk])), 'Importar cotización',
+        )
+
+    def test_subir_pdf_muestra_vista_previa_sin_crear_items(self):
+        archivo = _io.BytesIO(_pdf_desde_texto(TEXTO_REHAU_481))
+        archivo.name = 'presupuesto_481.pdf'
+        response = self.client.post(self.url, {'archivo': archivo, 'margen_porcentaje': '25'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cotización REHAU Nº 481')
+        self.assertContains(response, 'V1 · Corredera Ventana Lineal')
+        self.assertContains(response, 'name="form-TOTAL_FORMS" value="2"')
+        self.assertContains(response, 'name="confirmar"')
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+    def test_archivo_que_no_es_pdf_muestra_error(self):
+        archivo = _io.BytesIO(b'hola, no soy un pdf')
+        archivo.name = 'cotizacion.pdf'
+        response = self.client.post(self.url, {'archivo': archivo, 'margen_porcentaje': '30'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'El archivo no es un PDF')
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+    def test_pdf_sin_items_muestra_error(self):
+        archivo = _io.BytesIO(_pdf_desde_texto('Factura de otra cosa\nTOTAL: 100'))
+        archivo.name = 'otra.pdf'
+        response = self.client.post(self.url, {'archivo': archivo, 'margen_porcentaje': '30'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No se encontraron ítems')
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+    def test_confirmar_crea_items_con_la_cuenta_de_la_carga_manual(self):
+        ItemPresupuesto.objects.create(
+            presupuesto=self.presupuesto, descripcion='Ya estaba', cantidad=1,
+            ancho_mm=0, alto_mm=0, margen_porcentaje=30, precio_unitario=100, orden=5,
+        )
+        response = self._post_confirmar([
+            {'incluir': 'on', 'tipologia': 'V1', 'descripcion': 'V1 · Corredera', 'cantidad': '1', 'valor_usd': '1469.56'},
+            {'tipologia': 'V2', 'descripcion': 'V2 · Corredera', 'cantidad': '1', 'valor_usd': '1357.16'},
+            {'incluir': 'on', 'tipologia': 'V3', 'descripcion': 'V3 · Puerta', 'cantidad': '2', 'valor_usd': '100'},
+        ])
+        self.assertRedirects(response, self.detalle)
+        items = list(self.presupuesto.items.filter(descripcion__startswith='V'))
+        self.assertEqual([i.descripcion for i in items], ['V1 · Corredera', 'V3 · Puerta'])
+        self.assertEqual([i.orden for i in items], [6, 7])
+        # Misma cuenta que la carga manual: valor_usd × cotización × (1 + margen)
+        self.assertEqual(items[0].precio_unitario, Decimal('1910428.00'))
+        self.assertEqual(items[1].cantidad, 2)
+        self.assertEqual(items[1].precio_total, Decimal('260000.00'))
+        rj = items[0].resultado_json
+        self.assertEqual(rj['tipo'], 'pvc_simple')
+        self.assertEqual(rj['valor_usd'], 1469.56)
+        self.assertEqual(rj['origen'], {
+            'sistema': 'rehau', 'numero': '481', 'cliente': 'HERNAN BARBERMAN', 'fecha': '31/08/2026', 'tipologia': 'V1',
+        })
+        self.presupuesto.refresh_from_db()
+        self.assertEqual(self.presupuesto.total, Decimal('100.00') + Decimal('1910428.00') + Decimal('260000.00'))
+        comentario = ComentarioPresupuesto.objects.get(presupuesto=self.presupuesto)
+        self.assertEqual(comentario.autor, self.user)
+        self.assertIn('Se importaron 2 ítems desde la cotización REHAU Nº 481', comentario.texto)
+        self.assertIn('HERNAN BARBERMAN', comentario.texto)
+
+    def test_confirmar_aplica_recargo_renovacion(self):
+        Presupuesto.objects.filter(pk=self.presupuesto.pk).update(tipo_obra='renovacion', recargo_renovacion_unitario=Decimal('5000'))
+        self._post_confirmar([{'incluir': 'on', 'descripcion': 'V1', 'cantidad': '1', 'valor_usd': '100'}], margen='0')
+        item = self.presupuesto.items.get()
+        self.assertEqual(item.precio_unitario, Decimal('105000.00'))
+        self.assertEqual(item.resultado_json['recargo_renovacion_unitario_aplicado'], 5000.0)
+
+    def test_confirmar_sin_items_marcados_no_crea_nada(self):
+        response = self._post_confirmar([{'descripcion': 'V1', 'cantidad': '1', 'valor_usd': '100'}])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.presupuesto.items.count(), 0)
+        self.assertFalse(ComentarioPresupuesto.objects.filter(presupuesto=self.presupuesto).exists())
+
+    def test_confirmar_con_valor_invalido_reenvia_la_previa(self):
+        response = self._post_confirmar([{'incluir': 'on', 'descripcion': 'V1', 'cantidad': '0', 'valor_usd': 'abc'}])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="confirmar"')
+        self.assertEqual(self.presupuesto.items.count(), 0)

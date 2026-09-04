@@ -14,6 +14,22 @@
 
 ---
 
+## 2026-09-04 — Importar cotizaciones REHAU (PDF) a presupuestos PVC (FEAT-039)
+
+**Sprint**: Sin sprint activo
+**Deploy**: pendiente (sin migración)
+
+**FEAT-039 / REQ-049 / ADR-021.** En un presupuesto PVC, el botón **Importar cotización** lee el PDF
+que genera el software de REHAU y muestra una vista previa editable (tipología, descripción,
+cantidad, unitario USD, precio en pesos en vivo, advertencia si el total neto del PDF no cierra).
+Al confirmar crea los ítems con la misma cuenta que la carga manual (`_fields_item_pvc`, extraída
+de `_fields_item_desde_post`) y deja constancia en el Historial. Sin librería nueva: `pypdf` ya
+venía con xhtml2pdf. Las medidas no se importan (están solo en el dibujo). Ruta registrada en el
+control de acceso bajo `presupuestos.view`. 22 tests nuevos; el de PDF reales espera los archivos
+en `presupuestos/test_data/` (fuera del repo por datos personales).
+
+---
+
 ## 2026-09-03 — Aperturas configurables (FEAT-037) y el plano técnico con cotas en cotizador, PDF y presupuesto (FEAT-038)
 
 **Sprint**: Sin sprint activo

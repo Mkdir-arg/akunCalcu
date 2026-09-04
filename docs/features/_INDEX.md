@@ -44,6 +44,7 @@
 | [FEAT-036](./FEAT-036-revestimientos-catalogo-vidrios.md) | Revestimientos en el catálogo de vidrios (campo Tipo, reemplaza MaterialCiego) | Implementado | 2026-08-18 | — |
 | [FEAT-037](./FEAT-037-aperturas-configurables.md) | Aperturas configurables por producto y por ítem: catálogo, ABM, cotizador, 3D, símbolo 2D y color en el PDF | Implementado | 2026-09-03 | — |
 | [FEAT-038](./FEAT-038-elevacion-tecnica-cotas.md) | Elevación técnica con cotas: pestaña Plano en el cotizador, anexo de planos en el PDF, miniatura por ítem | Implementado | 2026-09-03 | — |
+| [FEAT-039](./FEAT-039-importar-cotizacion-rehau-pvc.md) | Importar los ítems de una cotización REHAU (PDF) a un presupuesto PVC, con vista previa editable | Implementado | 2026-09-04 | — |
 
 ---
 
@@ -60,6 +61,7 @@
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
 | `pricing` | FEAT-036, FEAT-037 | 2026-09-03 |
 | `presupuestos` (dibujo) | FEAT-037, FEAT-038 | 2026-09-03 |
+| `presupuestos` (PVC) | FEAT-015, FEAT-039 | 2026-09-04 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |
 | `facturacion` | FEAT-011 | 2026-05-17 |

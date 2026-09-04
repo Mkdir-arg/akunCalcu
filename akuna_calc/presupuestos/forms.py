@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django import forms
+from django.forms import formset_factory
 from django.utils import timezone
 from datetime import timedelta
 
@@ -130,3 +133,68 @@ class ComentarioForm(forms.ModelForm):
                 'class': 'prioridad-radio',
             }),
         }
+
+
+INPUT_CLASS = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+
+
+class ImportarCotizacionForm(forms.Form):
+    """Paso 1 de la importación REHAU: el PDF y el margen a aplicar."""
+
+    MAX_BYTES = 10 * 1024 * 1024
+
+    archivo = forms.FileField(
+        label='Cotización en PDF',
+        widget=forms.FileInput(attrs={
+            'accept': 'application/pdf,.pdf',
+            'class': 'block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg '
+                     'file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold',
+        }),
+    )
+    margen_porcentaje = forms.DecimalField(
+        label='Margen a aplicar (%)', initial=30, min_value=0, max_value=500,
+        max_digits=6, decimal_places=2,
+        widget=forms.NumberInput(attrs={'step': '0.01', 'class': INPUT_CLASS}),
+    )
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data['archivo']
+        if archivo.size > self.MAX_BYTES:
+            raise forms.ValidationError('El archivo supera los 10 MB.')
+        cabecera = archivo.read(5)
+        archivo.seek(0)
+        if cabecera != b'%PDF-':
+            raise forms.ValidationError('El archivo no es un PDF.')
+        return archivo
+
+
+class ItemImportadoForm(forms.Form):
+    """Una fila de la vista previa: el vendedor puede corregirla o destildarla."""
+
+    incluir = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={
+        'class': 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500',
+    }))
+    tipologia = forms.CharField(required=False, max_length=20, widget=forms.HiddenInput())
+    descripcion = forms.CharField(max_length=300, widget=forms.TextInput(attrs={'class': INPUT_CLASS}))
+    cantidad = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={
+        'min': 1, 'class': 'w-20 px-2 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500',
+    }))
+    valor_usd = forms.DecimalField(min_value=Decimal('0.01'), max_digits=12, decimal_places=2, widget=forms.NumberInput(attrs={
+        'step': '0.01', 'class': 'w-32 px-2 py-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-blue-500',
+    }))
+
+
+ItemImportadoFormSet = formset_factory(ItemImportadoForm, extra=0)
+
+
+class ConfirmarImportacionForm(forms.Form):
+    """Paso 2: el margen (editable en la vista previa) y el origen del PDF, que viaja oculto."""
+
+    margen_porcentaje = forms.DecimalField(
+        label='Margen a aplicar (%)', initial=30, min_value=0, max_value=500,
+        max_digits=6, decimal_places=2,
+        widget=forms.NumberInput(attrs={'step': '0.01', 'class': INPUT_CLASS}),
+    )
+    origen_numero = forms.CharField(required=False, max_length=20, widget=forms.HiddenInput())
+    origen_cliente = forms.CharField(required=False, max_length=120, widget=forms.HiddenInput())
+    origen_fecha = forms.CharField(required=False, max_length=10, widget=forms.HiddenInput())

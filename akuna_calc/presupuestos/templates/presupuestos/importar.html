@@ -1,0 +1,186 @@
+{% extends 'core/base.html' %}
+{% load custom_filters %}
+{% load l10n %}
+{% block title %}Importar cotización — {{ presupuesto.numero }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Importar cotización PVC</h1>
+            <p class="text-slate-500 font-medium mt-1">
+                {{ presupuesto.numero }} · {{ presupuesto.cliente }} ·
+                <i class="fas fa-coins text-blue-500 ml-1"></i> cotización US$ {{ presupuesto.cotizacion_usd|formato_numero }}
+            </p>
+        </div>
+        <a href="{% url 'presupuestos:presupuestos-detalle' presupuesto.pk %}"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>Volver al presupuesto
+        </a>
+    </div>
+
+    {% if paso == 'archivo' %}
+    <div class="bg-white rounded-2xl shadow-lg p-6 max-w-2xl">
+        <p class="text-sm text-slate-600 mb-6">
+            Subí el PDF que genera el software de REHAU. El sistema lee sus ítems y te los muestra en una vista
+            previa antes de agregarlos al presupuesto. El archivo no se guarda.
+        </p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.archivo.label }}</label>
+                    {{ form.archivo }}
+                    {% for e in form.archivo.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                </div>
+                <div class="max-w-xs">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.margen_porcentaje.label }}</label>
+                    {{ form.margen_porcentaje }}
+                    <p class="text-xs text-slate-400 mt-1">Se aplica sobre el unitario en dólares de cada ítem, igual que en la carga manual.</p>
+                    {% for e in form.margen_porcentaje.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <a href="{% url 'presupuestos:presupuestos-detalle' presupuesto.pk %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
+                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                    <i class="fas fa-file-pdf mr-2"></i>Leer PDF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% else %}
+    <form method="post" id="form-previa">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for hidden in confirmacion.hidden_fields %}{{ hidden }}{% endfor %}
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">
+                        Cotización REHAU{% if cotizacion.numero %} Nº {{ cotizacion.numero }}{% endif %}
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        {% if cotizacion.cliente %}{{ cotizacion.cliente }}{% endif %}
+                        {% if cotizacion.fecha %} · {{ cotizacion.fecha }}{% endif %}
+                        {% if cotizacion.total_neto %} · Total neto del PDF: US$ {{ cotizacion.total_neto|formato_numero }}{% endif %}
+                    </p>
+                </div>
+                <div class="max-w-xs">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ confirmacion.margen_porcentaje.label }}</label>
+                    {{ confirmacion.margen_porcentaje }}
+                    {% for e in confirmacion.margen_porcentaje.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                </div>
+            </div>
+            {% if items_existentes %}
+            <div class="mt-4 inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold bg-blue-100 text-blue-800 mr-2">
+                <i class="fas fa-info-circle mr-2"></i>El presupuesto ya tiene {{ items_existentes }} ítem{{ items_existentes|pluralize }}: los importados se agregan a continuación.
+            </div>
+            {% endif %}
+            {% for adv in advertencias %}
+            <div class="mt-4 inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold bg-yellow-100 text-yellow-800 mr-2">
+                <i class="fas fa-triangle-exclamation mr-2"></i>{{ adv }}
+            </div>
+            {% endfor %}
+            {% if formset.non_form_errors %}
+            <div class="mt-4 text-sm text-red-600">{{ formset.non_form_errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+                        <tr>
+                            <th class="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Incluir</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tip.</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider w-1/2">Descripción</th>
+                            <th class="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Cant.</th>
+                            <th class="px-4 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Unitario US$</th>
+                            <th class="px-4 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Total US$</th>
+                            <th class="px-4 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Unitario $ (con margen)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for f in formset %}
+                        <tr class="hover:bg-slate-50 transition-colors" data-fila>
+                            <td class="px-4 py-3 text-center">{{ f.incluir }}{{ f.tipologia }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-slate-700">{{ f.tipologia.value|default:'—' }}</td>
+                            <td class="px-4 py-3">
+                                {{ f.descripcion }}
+                                {% for e in f.descripcion.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {{ f.cantidad }}
+                                {% for e in f.cantidad.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                {{ f.valor_usd }}
+                                {% for e in f.valor_usd.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+                            </td>
+                            <td class="px-4 py-3 text-right text-sm text-slate-700 whitespace-nowrap" data-total-usd></td>
+                            <td class="px-4 py-3 text-right text-sm font-semibold text-slate-800 whitespace-nowrap" data-unit-ars></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-slate-50">
+                        <tr>
+                            <td colspan="3" class="px-4 py-3 text-sm font-bold text-slate-700">Se van a importar <span data-resumen-items>0</span> ítems</td>
+                            <td class="px-4 py-3 text-center text-sm font-bold text-slate-700" data-resumen-cant>0</td>
+                            <td></td>
+                            <td class="px-4 py-3 text-right text-sm font-bold text-slate-800 whitespace-nowrap" data-resumen-usd></td>
+                            <td class="px-4 py-3 text-right text-sm font-bold text-slate-800 whitespace-nowrap" data-resumen-ars></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'presupuestos:presupuestos-importar' presupuesto.pk %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">
+                <i class="fas fa-arrow-left mr-2"></i>Elegir otro archivo
+            </a>
+            <button type="submit" name="confirmar" value="1" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
+                <i class="fas fa-file-import mr-2"></i>Confirmar importación
+            </button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if paso == 'previa' %}
+<script>
+(function () {
+    const COTIZACION = Number('{{ presupuesto.cotizacion_usd|unlocalize }}') || 0;
+    const RECARGO = Number('{{ recargo_unitario|default:0|unlocalize }}') || 0;
+    const fmt = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const margenInput = document.getElementById('id_margen_porcentaje');
+
+    function recalcular() {
+        const margen = parseFloat(margenInput && margenInput.value) || 0;
+        let items = 0, cantidades = 0, totalUsd = 0, totalArs = 0;
+        document.querySelectorAll('tr[data-fila]').forEach((tr) => {
+            const incluir = tr.querySelector('input[type=checkbox]').checked;
+            const cant = parseInt(tr.querySelector('input[name$="-cantidad"]').value, 10) || 0;
+            const usd = parseFloat(tr.querySelector('input[name$="-valor_usd"]').value) || 0;
+            const unitArs = usd * COTIZACION * (1 + margen / 100) + RECARGO;
+            tr.querySelector('[data-total-usd]').textContent = 'US$ ' + fmt(usd * cant);
+            tr.querySelector('[data-unit-ars]').textContent = '$ ' + fmt(unitArs);
+            tr.classList.toggle('opacity-40', !incluir);
+            if (incluir) { items += 1; cantidades += cant; totalUsd += usd * cant; totalArs += unitArs * cant; }
+        });
+        document.querySelector('[data-resumen-items]').textContent = items;
+        document.querySelector('[data-resumen-cant]').textContent = cantidades;
+        document.querySelector('[data-resumen-usd]').textContent = 'US$ ' + fmt(totalUsd);
+        document.querySelector('[data-resumen-ars]').textContent = '$ ' + fmt(totalArs);
+    }
+    document.getElementById('form-previa').addEventListener('input', recalcular);
+    document.getElementById('form-previa').addEventListener('change', recalcular);
+    recalcular();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,6 +1,6 @@
 # Product Backlog — AkunCalcu
 
-> Actualizado: 2026-03-04
+> Actualizado: 2026-09-04
 
 ## Leyenda
 - 🟡 Pendiente
@@ -27,6 +27,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-037 | Como responsable comercial, quiero que los pedidos de presupuesto que llegan por email se repartan automáticamente y por turnos entre los vendedores para que ninguno quede sin atender | Grande ✅ |
 | US-038 | Como vendedor, quiero ver un diseño 3D de la abertura al calcular cada ítem del presupuesto para confirmar visualmente la configuración antes de guardarla | Grande ✅ |
 | US-045 | Como responsable del sistema, quiero ver en una sola pantalla el estado de las integraciones para detectar en minutos una caída que hoy tarda días en descubrirse | Grande ✅ |
+| US-049 | Como vendedor que arma un presupuesto en PVC, quiero subir el PDF de la cotización REHAU y que se carguen solos todos sus ítems, para no tipearlos uno por uno | Mediano ✅ |
 
 ---
 

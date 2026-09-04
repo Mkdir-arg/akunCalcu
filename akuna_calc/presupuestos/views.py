@@ -29,7 +29,11 @@ from pricing.services.calculator import calcular_precio, medida_seccion, orienta
 from pricing.models import Producto
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
-from .forms import PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm
+from .forms import (
+    PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm,
+    ImportarCotizacionForm, ItemImportadoFormSet, ConfirmarImportacionForm,
+)
+from .importar_rehau import ImportacionError, extraer_texto, parsear_cotizacion
 
 
 def _presupuestos_list_url():
@@ -266,6 +270,34 @@ def editar(request, pk):
     return render(request, 'presupuestos/form.html', {'form': form, 'titulo': 'Editar Presupuesto', 'presupuesto': presupuesto, 'return_url': return_url})
 
 
+def _fields_item_pvc(presupuesto, descripcion, cantidad, valor_usd, margen_porcentaje, origen=None):
+    """Campos de un ItemPresupuesto PVC (valor manual en dólares).
+
+    Única cuenta para la carga manual y para la importación desde PDF: pesos con
+    la cotización del presupuesto, margen y recargo de renovación. `origen`
+    (opcional) describe de dónde salió el ítem y se guarda en resultado_json.
+    """
+    valor_usd = float(valor_usd or 0)
+    margen_porcentaje = float(margen_porcentaje if margen_porcentaje is not None else 30)
+    valor_base = valor_usd * float(presupuesto.cotizacion_usd)
+    precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
+    recargo_unitario = float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0
+    resultado = {
+        'precio_unitario_base': precio_unitario_base, 'valor_base': valor_base,
+        'valor_usd': valor_usd, 'margen': margen_porcentaje,
+        'recargo_renovacion_unitario_aplicado': recargo_unitario,
+        'tipo': 'pvc_simple',
+    }
+    if origen:
+        resultado['origen'] = origen
+    return {
+        'descripcion': (descripcion or '').strip() or 'Item sin descripción',
+        'cantidad': cantidad, 'ancho_mm': 0, 'alto_mm': 0,
+        'margen_porcentaje': margen_porcentaje, 'precio_unitario': precio_unitario_base + recargo_unitario,
+        'resultado_json': resultado,
+    }
+
+
 def _fields_item_desde_post(request, presupuesto):
     """Construye los campos de un ItemPresupuesto desde el POST del cotizador.
 
@@ -286,22 +318,7 @@ def _fields_item_desde_post(request, presupuesto):
             return None, 'Configurá la cotización USD del presupuesto antes de agregar ítems.'
         valor_usd = float(data.get('valor_usd', 0) or 0)
         margen_porcentaje = float(data.get('margen_porcentaje', 30) or 30)
-        valor_base = valor_usd * float(presupuesto.cotizacion_usd)
-        precio_unitario_base = valor_base * (1 + margen_porcentaje / 100)
-        precio_unitario = precio_unitario_base
-        if presupuesto.tipo_obra == 'renovacion':
-            precio_unitario = precio_unitario_base + float(presupuesto.recargo_renovacion_unitario or 0)
-        return {
-            'descripcion': descripcion or 'Item sin descripción',
-            'cantidad': cantidad, 'ancho_mm': 0, 'alto_mm': 0,
-            'margen_porcentaje': margen_porcentaje, 'precio_unitario': precio_unitario,
-            'resultado_json': {
-                'precio_unitario_base': precio_unitario_base, 'valor_base': valor_base,
-                'valor_usd': valor_usd, 'margen': margen_porcentaje,
-                'recargo_renovacion_unitario_aplicado': float(presupuesto.recargo_renovacion_unitario or 0) if presupuesto.tipo_obra == 'renovacion' else 0,
-                'tipo': 'pvc_simple',
-            },
-        }, None
+        return _fields_item_pvc(presupuesto, descripcion, cantidad, valor_usd, margen_porcentaje), None
 
     # Producto terciarizado: precio final manual, sin marco ni despiece
     producto_id_raw = data.get('producto_id')
@@ -806,3 +823,113 @@ def pdf(request, pk):
         'pdf_colocacion': pdf_colocacion,
         'pdf_iva': pdf_iva,
     })
+
+
+# ---------------------------------------------------------------------------
+# Importación de cotizaciones REHAU (PDF) a presupuestos PVC — REQ-049
+# ---------------------------------------------------------------------------
+
+def _motivo_no_importable(presupuesto):
+    if not presupuesto.es_pvc():
+        return 'La importación de cotizaciones es solo para presupuestos en PVC.'
+    if presupuesto.esta_bloqueado():
+        return 'No se pueden agregar ítems a un presupuesto confirmado o cancelado.'
+    if not presupuesto.tipo_obra:
+        return 'Debes definir si el presupuesto es obra nueva o renovación antes de agregar ítems.'
+    if not presupuesto.tiene_cotizacion_usd():
+        return 'Configurá la cotización USD del presupuesto antes de importar ítems.'
+    return None
+
+
+def _contexto_previa(presupuesto, formset, confirmacion, advertencias, cotizacion):
+    return {
+        'presupuesto': presupuesto, 'paso': 'previa', 'formset': formset,
+        'confirmacion': confirmacion, 'advertencias': advertencias, 'cotizacion': cotizacion,
+        'recargo_unitario': presupuesto.recargo_renovacion_unitario if presupuesto.tipo_obra == 'renovacion' else 0,
+        'items_existentes': presupuesto.items.count(),
+    }
+
+
+@login_required
+def importar_cotizacion(request, pk):
+    """Importa los ítems de una cotización PDF de REHAU a un presupuesto PVC.
+
+    Dos pasos en la misma página: subir el PDF (se lee en memoria y se descarta)
+    y confirmar la vista previa, donde cada ítem puede corregirse o destildarse.
+    Los ítems se crean con `_fields_item_pvc`, la misma cuenta que la carga manual.
+    """
+    presupuesto = get_object_or_404(Presupuesto.objects.filter(deleted_at__isnull=True), pk=pk)
+    motivo = _motivo_no_importable(presupuesto)
+    if motivo:
+        messages.error(request, motivo)
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    if request.method == 'POST' and 'confirmar' in request.POST:
+        return _confirmar_importacion(request, presupuesto)
+
+    form = ImportarCotizacionForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            cotizacion = parsear_cotizacion(extraer_texto(form.cleaned_data['archivo']))
+        except ImportacionError as exc:
+            form.add_error('archivo', str(exc))
+        else:
+            formset = ItemImportadoFormSet(initial=[
+                {'incluir': True, 'tipologia': item.tipologia, 'descripcion': item.descripcion[:300],
+                 'cantidad': item.cantidad, 'valor_usd': item.valor_usd}
+                for item in cotizacion.items
+            ])
+            confirmacion = ConfirmarImportacionForm(initial={
+                'margen_porcentaje': form.cleaned_data['margen_porcentaje'],
+                'origen_numero': cotizacion.numero or '',
+                'origen_cliente': (cotizacion.cliente or '')[:120],
+                'origen_fecha': cotizacion.fecha or '',
+            })
+            resumen = {
+                'numero': cotizacion.numero, 'cliente': cotizacion.cliente, 'fecha': cotizacion.fecha,
+                'total_neto': cotizacion.total_neto,
+            }
+            return render(request, 'presupuestos/importar.html',
+                          _contexto_previa(presupuesto, formset, confirmacion, cotizacion.advertencias, resumen))
+    return render(request, 'presupuestos/importar.html', {'presupuesto': presupuesto, 'form': form, 'paso': 'archivo'})
+
+
+def _confirmar_importacion(request, presupuesto):
+    formset = ItemImportadoFormSet(request.POST)
+    confirmacion = ConfirmarImportacionForm(request.POST)
+    resumen = {clave: request.POST.get(f'origen_{clave}', '') for clave in ('numero', 'cliente', 'fecha')}
+    contexto = _contexto_previa(presupuesto, formset, confirmacion, [], resumen)
+
+    if not (formset.is_valid() and confirmacion.is_valid()):
+        messages.error(request, 'Revisá los ítems: hay valores inválidos.')
+        return render(request, 'presupuestos/importar.html', contexto)
+    elegidos = [f.cleaned_data for f in formset if f.cleaned_data.get('incluir')]
+    if not elegidos:
+        messages.error(request, 'No hay ítems marcados para importar.')
+        return render(request, 'presupuestos/importar.html', contexto)
+
+    datos = confirmacion.cleaned_data
+    origen_base = {
+        'sistema': 'rehau', 'numero': datos['origen_numero'],
+        'cliente': datos['origen_cliente'], 'fecha': datos['origen_fecha'],
+    }
+    referencia = f"Nº {datos['origen_numero']}" if datos['origen_numero'] else 'sin número'
+    detalle = ', '.join(x for x in (datos['origen_fecha'], datos['origen_cliente']) if x)
+    cuantos = f"{len(elegidos)} {'ítem' if len(elegidos) == 1 else 'ítems'}"
+
+    with transaction.atomic():
+        ultimo_orden = presupuesto.items.aggregate(m=Max('orden'))['m'] or 0
+        for offset, cd in enumerate(elegidos, start=1):
+            fields = _fields_item_pvc(
+                presupuesto, cd['descripcion'], cd['cantidad'], cd['valor_usd'], datos['margen_porcentaje'],
+                origen=dict(origen_base, tipologia=cd.get('tipologia') or ''),
+            )
+            ItemPresupuesto.objects.create(presupuesto=presupuesto, orden=ultimo_orden + offset, **fields)
+        presupuesto.recalcular_total()
+        ComentarioPresupuesto.objects.create(
+            presupuesto=presupuesto, autor=request.user, prioridad='normal',
+            texto=f'Se importaron {cuantos} desde la cotización REHAU {referencia}'
+                  + (f' ({detalle})' if detalle else '') + '.',
+        )
+    messages.success(request, f'Se importaron {cuantos} desde la cotización REHAU {referencia}.')
+    return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
