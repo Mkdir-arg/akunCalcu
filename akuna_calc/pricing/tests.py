@@ -1625,3 +1625,99 @@ class MaterialesCiegosListViewTest(TestCase):
         self.assertIn('A', codigos)
         self.assertNotIn('B', codigos)
         self.assertIsInstance(resp.data[0]['precio_m2'], float)
+
+
+# ---------------------------------------------------------------------------
+# REQ-051 — Inactivar / activar productos desde el ABM
+# ---------------------------------------------------------------------------
+from types import SimpleNamespace as _NS
+from unittest.mock import MagicMock as _MagicMock, patch as _patch
+
+from django.contrib.auth.models import User as _User
+from django.test import TestCase as _TestCase
+from django.urls import reverse as _reverse
+
+
+class ProductoActivarInactivarTest(_TestCase):
+    """La tabla `productos` es legacy (managed=False) y no existe en la base de test:
+    se mockea el acceso al modelo, como en el resto de los tests de pricing."""
+
+    def setUp(self):
+        self.admin = _User.objects.create_superuser('staffprod', 'a@a.com', 'x')
+        self.client.force_login(self.admin)
+
+    @_patch('pricing.config_views.get_object_or_404')
+    def test_inactivar_pone_bloqueado_si(self, mock_get):
+        producto = _MagicMock()
+        producto.bloqueado = 'No'
+        mock_get.return_value = producto
+        response = self.client.post(_reverse('config-producto-delete', args=[5]))
+        self.assertRedirects(response, _reverse('config-productos'), fetch_redirect_response=False)
+        self.assertEqual(producto.bloqueado, 'Si')
+        producto.save.assert_called_once()
+
+    @_patch('pricing.config_views.get_object_or_404')
+    def test_activar_limpia_bloqueado(self, mock_get):
+        producto = _MagicMock()
+        producto.bloqueado = 'Si'
+        mock_get.return_value = producto
+        response = self.client.post(_reverse('config-producto-activate', args=[5]))
+        self.assertRedirects(response, _reverse('config-productos'), fetch_redirect_response=False)
+        self.assertEqual(producto.bloqueado, 'No')
+        producto.save.assert_called_once()
+
+    @_patch('pricing.config_views.get_object_or_404')
+    def test_activar_por_get_no_cambia_nada(self, mock_get):
+        producto = _MagicMock()
+        producto.bloqueado = 'Si'
+        mock_get.return_value = producto
+        response = self.client.get(_reverse('config-producto-activate', args=[5]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(producto.bloqueado, 'Si')
+        producto.save.assert_not_called()
+
+    def test_activar_sin_login_redirige(self):
+        self.client.logout()
+        response = self.client.post(_reverse('config-producto-activate', args=[5]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+    @_patch('pricing.config_views.Linea.objects')
+    @_patch('pricing.config_views.Producto.objects')
+    def test_listado_muestra_activos_e_inactivos_con_sus_botones(self, mock_prod, mock_linea):
+        qs = _MagicMock()
+        mock_prod.select_related.return_value = qs
+        qs.order_by.return_value = [
+            _NS(pk=1, id=1, descripcion='VENTANA ACTIVA', bloqueado='No',
+                extrusora=_NS(nombre='EXT'), linea=_NS(nombre='LIN')),
+            _NS(pk=2, id=2, descripcion='PUERTA INACTIVA', bloqueado='Si',
+                extrusora=_NS(nombre='EXT'), linea=_NS(nombre='LIN')),
+        ]
+        mock_linea.exclude.return_value = []
+
+        response = self.client.get(_reverse('config-productos'))
+
+        self.assertEqual(response.status_code, 200)
+        # Ya no se excluyen los bloqueados del listado
+        qs.exclude.assert_not_called()
+        self.assertContains(response, 'VENTANA ACTIVA')
+        self.assertContains(response, 'PUERTA INACTIVA')
+        self.assertContains(response, 'data-status="activo"')
+        self.assertContains(response, 'data-status="inactivo"')
+        self.assertContains(response, _reverse('config-producto-delete', args=[1]))
+        self.assertContains(response, _reverse('config-producto-activate', args=[2]))
+        self.assertNotContains(response, _reverse('config-producto-activate', args=[1]))
+        self.assertNotContains(response, _reverse('config-producto-delete', args=[2]))
+
+    @_patch('pricing.catalog_views.Producto.objects')
+    def test_api_del_cotizador_excluye_inactivos(self, mock_objects):
+        from rest_framework.request import Request
+        from rest_framework.test import APIRequestFactory
+        from pricing.catalog_views import ProductosListView
+        qs = _MagicMock()
+        mock_objects.exclude.return_value = qs
+        qs.filter.return_value = qs
+        qs.values.return_value = []
+        request = Request(APIRequestFactory().get('/pricing/api/pricing/productos/'))
+        ProductosListView().get(request)
+        mock_objects.exclude.assert_called_once_with(bloqueado='Si')

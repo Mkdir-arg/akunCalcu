@@ -391,7 +391,9 @@ def productos_config(request):
         'estado': ('bloqueado', 'descripcion', 'id'),
     }
     sort, dir_, ordering = _resolve_ordering(request, allowed_sort_fields, 'descripcion')
-    productos = Producto.objects.select_related('linea', 'extrusora').exclude(bloqueado='Si').order_by(*ordering)
+    # REQ-051: se listan activos e inactivos; el inactivo se ve con su badge y se puede
+    # reactivar. El cotizador (ProductosListView) sigue excluyendo bloqueado='Si'.
+    productos = Producto.objects.select_related('linea', 'extrusora').order_by(*ordering)
     lineas = Linea.objects.exclude(bloqueado='Si')
     return render(request, 'pricing/config/productos.html', {
         'productos': productos,
@@ -444,11 +446,24 @@ def producto_edit(request, pk):
 @login_required
 @user_passes_test(is_staff)
 def producto_delete(request, pk):
+    """Inactiva el producto: deja de ofrecerse en el cotizador, sigue en el ABM (REQ-051)."""
     obj = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
         obj.bloqueado = 'Si'
         obj.save()
-        messages.success(request, 'Producto desactivado.')
+        messages.success(request, 'Producto inactivado: ya no se ofrece en el cotizador.')
+    return redirect('config-productos')
+
+
+@login_required
+@user_passes_test(is_staff)
+def producto_activate(request, pk):
+    """Vuelve a activar un producto inactivado (REQ-051)."""
+    obj = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        obj.bloqueado = 'No'
+        obj.save()
+        messages.success(request, 'Producto activado: vuelve a ofrecerse en el cotizador.')
     return redirect('config-productos')
 
 

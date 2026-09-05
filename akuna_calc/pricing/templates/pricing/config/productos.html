@@ -91,9 +91,16 @@
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {% if producto.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-producto-delete' producto.pk %}', '{{ producto.descripcion }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
+                                <button onclick="confirmarDesactivar('{% url 'config-producto-delete' producto.pk %}', '{{ producto.descripcion|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Inactivar: deja de ofrecerse en el cotizador">
+                                    <i class="fas fa-ban mr-1"></i>Inactivar
                                 </button>
+                                {% else %}
+                                <form method="post" action="{% url 'config-producto-activate' producto.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Activar: vuelve a ofrecerse en el cotizador">
+                                        <i class="fas fa-check mr-1"></i>Activar
+                                    </button>
+                                </form>
                                 {% endif %}
                             </div>
                         </td>
@@ -121,13 +128,13 @@
 <script>
 function confirmarDesactivar(url, nombre) {
     Swal.fire({
-        title: '¿Desactivar producto?',
-        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
+        title: '¿Inactivar producto?',
+        html: `<p>¿Inactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">Deja de ofrecerse en el cotizador. Sigue en este listado como Inactivo y podés volver a activarlo cuando quieras.</p>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, desactivar',
+        confirmButtonText: 'Sí, inactivar',
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {

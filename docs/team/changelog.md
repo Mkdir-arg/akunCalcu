@@ -14,6 +14,20 @@
 
 ---
 
+## 2026-09-05 — Inactivar y reactivar productos desde el ABM (FEAT-041)
+
+**Sprint**: Sin sprint activo
+**Deploy**: sin migración
+
+**FEAT-041 / REQ-051.** El tacho del ABM de productos ya era una baja lógica (`bloqueado='Si'`) que
+el cotizador excluía, pero el listado ocultaba al producto y no había forma de reactivarlo. Ahora el
+listado muestra activos e inactivos con su badge (el filtro Activos/Inactivos pasa a servir), el botón
+se llama **Inactivar** y explica que se puede volver atrás, y el inactivo tiene **Activar**. Sin campo
+nuevo: se reutiliza `bloqueado`. Efecto visible: los productos "eliminados" hasta hoy reaparecen como
+Inactivos. 6 tests con mocks (tabla legacy).
+
+---
+
 ## 2026-09-04 — Colocación en dólares en presupuestos PVC (FEAT-040)
 
 **Sprint**: Sin sprint activo

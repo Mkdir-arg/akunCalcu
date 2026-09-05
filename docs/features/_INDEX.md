@@ -46,6 +46,7 @@
 | [FEAT-038](./FEAT-038-elevacion-tecnica-cotas.md) | Elevación técnica con cotas: pestaña Plano en el cotizador, anexo de planos en el PDF, miniatura por ítem | Implementado | 2026-09-03 | — |
 | [FEAT-039](./FEAT-039-importar-cotizacion-rehau-pvc.md) | Importar los ítems de una cotización REHAU (PDF) a un presupuesto PVC, con vista previa editable | Implementado | 2026-09-04 | — |
 | [FEAT-040](./FEAT-040-colocacion-en-dolares-pvc.md) | Colocación y recargo por unidad en US$ en presupuestos PVC (se guardan en pesos; los existentes no cambian) | Implementado | 2026-09-04 | — |
+| [FEAT-041](./FEAT-041-inactivar-productos-abm.md) | Inactivar y reactivar productos desde el ABM; los inactivos no se ofrecen en el cotizador | Implementado | 2026-09-05 | — |
 
 ---
 
@@ -60,7 +61,7 @@
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
-| `pricing` | FEAT-036, FEAT-037 | 2026-09-03 |
+| `pricing` | FEAT-036, FEAT-037, FEAT-041 | 2026-09-05 |
 | `presupuestos` (dibujo) | FEAT-037, FEAT-038 | 2026-09-03 |
 | `presupuestos` (PVC) | FEAT-015, FEAT-039, FEAT-040 | 2026-09-04 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
