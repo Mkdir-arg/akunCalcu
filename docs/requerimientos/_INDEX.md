@@ -69,3 +69,4 @@
 | [REQ-047](./REQ-047-aperturas-configurables.md) | Aperturas configurables por producto y por ítem (símbolo 2D, 3D, PDF) | Implementado | 2026-09-03 | FEAT-037 |
 | [REQ-048](./REQ-048-elevacion-tecnica-cotas.md) | Elevación técnica con cotas en cotizador, PDF (anexo) y presupuesto | Implementado | 2026-08-26 | FEAT-038 |
 | [REQ-049](./REQ-049-importar-cotizacion-pvc.md) | Importar los ítems de una cotización PVC externa al presupuesto | Implementado | 2026-09-04 | FEAT-039 |
+| [REQ-050](./REQ-050-colocacion-en-dolares-pvc.md) | Colocación en dólares en los presupuestos PVC (entrada en US$, persistencia en pesos) | Implementado | 2026-09-04 | FEAT-040 |

@@ -170,6 +170,12 @@
 
 **Consecuencias**: Si se cambia la cotización de un presupuesto PVC después de cargar ítems, el USD mostrado de todos los ítems se recalcula automáticamente (es el comportamiento esperado, no un bug). Los presupuestos en Aluminio no se ven afectados. Cualquier nuevo lugar que muestre montos de un presupuesto PVC debe usar los getters `_usd` en lugar de leer `precio_unitario`/`total` directamente, para no mezclar monedas.
 
+**Extensión (2026-09-04, FEAT-040 / REQ-050)**: la colocación y el recargo por unidad de un
+presupuesto PVC se **cargan en US$** en el formulario de Configuración de obra, pero se **guardan en
+pesos** (conversión con la cotización de cabecera al validar; al reabrir se muestra pesos ÷ cotización).
+Se mantiene la regla: la base y los totales siguen en pesos, los USD se derivan. Los presupuestos
+existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalente.
+
 ---
 
 ## ADR-005: Chart.js para gráficos en detalle de cliente

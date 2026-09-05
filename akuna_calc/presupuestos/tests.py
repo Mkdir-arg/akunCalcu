@@ -3019,3 +3019,93 @@ class ImportarCotizacionViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'name="confirmar"')
         self.assertEqual(self.presupuesto.items.count(), 0)
+
+
+# ---------------------------------------------------------------------------
+# REQ-050 — Colocación en dólares en presupuestos PVC (se guarda en pesos)
+# ---------------------------------------------------------------------------
+from core.templatetags.custom_filters import formato_numero as _formato_numero
+from .forms import PresupuestoConfiguracionObraForm
+
+
+class ColocacionEnDolaresPvcTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('colocador', password='testpass')
+        rol, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'Acceso total', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=rol)
+        self.client.login(username='colocador', password='testpass')
+        self.pvc = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
+
+    def _data(self, **extra):
+        data = {
+            'tipo_obra': 'obra_nueva', 'modalidad_sena': '50_50', 'validez_dias': '30',
+            'recargo_obra_nueva': '5', 'recargo_renovacion_unitario': '0',
+        }
+        data.update(extra)
+        return data
+
+    def test_form_pvc_convierte_colocacion_usd_a_pesos(self):
+        form = PresupuestoConfiguracionObraForm(self._data(), instance=self.pvc)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['recargo_obra_nueva'], Decimal('5000.00'))
+        self.assertEqual(form.fields['recargo_obra_nueva'].label, 'Colocación (US$)')
+        self.assertEqual(form.fields['recargo_renovacion_unitario'].label, 'Recargo renovación por unidad (US$)')
+
+    def test_form_pvc_muestra_el_equivalente_en_usd_de_los_pesos_guardados(self):
+        # Presupuesto existente con la colocación cargada en pesos: no cambia, se ve en US$.
+        Presupuesto.objects.filter(pk=self.pvc.pk).update(recargo_obra_nueva=Decimal('7500'))
+        self.pvc.refresh_from_db()
+        form = PresupuestoConfiguracionObraForm(instance=self.pvc)
+        self.assertEqual(form.initial['recargo_obra_nueva'], Decimal('7.50'))
+        self.assertEqual(self.pvc.recargo_obra_nueva, Decimal('7500'))
+
+    def test_form_aluminio_sigue_en_pesos(self):
+        aluminio = crear_presupuesto(self.user)
+        aluminio.recargo_obra_nueva = Decimal('7500')
+        aluminio.save()
+        form = PresupuestoConfiguracionObraForm(instance=aluminio)
+        self.assertEqual(form.fields['recargo_obra_nueva'].label, 'Colocación')
+        self.assertEqual(Decimal(form.initial['recargo_obra_nueva']), Decimal('7500'))
+        form = PresupuestoConfiguracionObraForm(self._data(), instance=aluminio)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['recargo_obra_nueva'], Decimal('5'))
+
+    def test_form_pvc_sin_cotizacion_no_convierte(self):
+        Presupuesto.objects.filter(pk=self.pvc.pk).update(cotizacion_usd=None)
+        self.pvc.refresh_from_db()
+        form = PresupuestoConfiguracionObraForm(self._data(), instance=self.pvc)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['recargo_obra_nueva'], Decimal('5'))
+
+    def test_view_guarda_pesos_y_el_detalle_muestra_usd(self):
+        url = reverse('presupuestos:presupuestos-configuracion-obra', args=[self.pvc.pk])
+        response = self.client.post(url, self._data())
+        self.assertRedirects(response, reverse('presupuestos:presupuestos-detalle', args=[self.pvc.pk]))
+        self.pvc.refresh_from_db()
+        self.assertEqual(self.pvc.recargo_obra_nueva, Decimal('5000.00'))
+        self.assertEqual(self.pvc.total, Decimal('5000.00'))
+        self.assertEqual(self.pvc.get_recargo_obra_nueva_aplicado_usd(), Decimal('5'))
+        detalle = self.client.get(reverse('presupuestos:presupuestos-detalle', args=[self.pvc.pk]))
+        self.assertContains(detalle, 'Colocación (US$)')
+        self.assertContains(detalle, 'US$' + _formato_numero(Decimal('5')))
+        self.assertContains(detalle, 'data-es-pvc="1"')
+
+    def test_renovacion_por_unidad_en_usd_se_aplica_a_los_items_en_pesos(self):
+        Presupuesto.objects.filter(pk=self.pvc.pk).update(tipo_obra='renovacion')
+        self.pvc.refresh_from_db()
+        self.client.post(
+            reverse('presupuestos:presupuestos-item-agregar', args=[self.pvc.pk]),
+            {'descripcion': 'Ventana PVC', 'cantidad': '1', 'valor_usd': '100', 'margen_porcentaje': '0'},
+        )
+        item = self.pvc.items.get()
+        self.assertEqual(item.precio_unitario, Decimal('100000.00'))
+        url = reverse('presupuestos:presupuestos-configuracion-obra', args=[self.pvc.pk])
+        self.client.post(url, self._data(tipo_obra='renovacion', recargo_obra_nueva='0', recargo_renovacion_unitario='2'))
+        self.pvc.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(self.pvc.recargo_renovacion_unitario, Decimal('2000.00'))
+        self.assertEqual(item.precio_unitario, Decimal('102000.00'))
+        self.assertEqual(self.pvc.get_recargo_renovacion_unitario_usd(), Decimal('2'))

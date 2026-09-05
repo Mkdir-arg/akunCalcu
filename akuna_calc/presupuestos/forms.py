@@ -75,6 +75,22 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
         self.fields['plazo_entrega_dias'].required = False
         self.fields['recargo_obra_nueva'].required = False
         self.fields['recargo_renovacion_unitario'].required = False
+        # PVC: la colocación y el recargo por unidad se cargan en US$ pero se guardan en
+        # pesos, como todo el presupuesto (ADR-010: los USD siempre se derivan de los pesos).
+        # Los presupuestos existentes no se tocan: sus pesos se muestran como US$ equivalentes.
+        self.recargos_en_usd = bool(
+            self.instance and self.instance.pk
+            and self.instance.es_pvc() and self.instance.tiene_cotizacion_usd()
+        )
+        if self.recargos_en_usd:
+            self.fields['recargo_obra_nueva'].label = 'Colocación (US$)'
+            self.fields['recargo_renovacion_unitario'].label = 'Recargo renovación por unidad (US$)'
+            if not self.is_bound:
+                for campo in self.CAMPOS_RECARGO:
+                    pesos = Decimal(getattr(self.instance, campo) or 0)
+                    self.initial[campo] = (pesos / self.instance.cotizacion_usd).quantize(Decimal('0.01'))
+
+    CAMPOS_RECARGO = ('recargo_obra_nueva', 'recargo_renovacion_unitario')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -100,6 +116,12 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
             if recargo_renovacion_unitario is None:
                 self.add_error('recargo_renovacion_unitario', 'Ingresa el valor fijo por unidad para renovación.')
             cleaned_data['recargo_obra_nueva'] = 0
+
+        if self.recargos_en_usd:
+            for campo in self.CAMPOS_RECARGO:
+                valor = cleaned_data.get(campo)
+                if valor not in (None, ''):
+                    cleaned_data[campo] = (Decimal(valor) * self.instance.cotizacion_usd).quantize(Decimal('0.01'))
 
         return cleaned_data
 

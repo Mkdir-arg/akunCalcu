@@ -14,6 +14,19 @@
 
 ---
 
+## 2026-09-04 — Colocación en dólares en presupuestos PVC (FEAT-040)
+
+**Sprint**: Sin sprint activo
+**Deploy**: sin migración
+
+**FEAT-040 / REQ-050 (extiende ADR-010).** En Configuración de obra de un presupuesto PVC, la
+colocación (obra nueva) y el recargo por unidad (renovación) se cargan en **US$** y se guardan en
+pesos convertidos con la cotización del presupuesto; al reabrir se ve el equivalente en US$. Los
+resúmenes del detalle y la advertencia de "colocación baja" muestran US$ en PVC. **Los presupuestos
+existentes conservan sus pesos exactos**: sin migración de datos. Aluminio sin cambios. 6 tests.
+
+---
+
 ## 2026-09-04 — Importar cotizaciones REHAU (PDF) a presupuestos PVC (FEAT-039)
 
 **Sprint**: Sin sprint activo
