@@ -2,7 +2,7 @@
 
 - **Estado:** Implementado
 - **Fecha:** 2026-09-05
-- **Requerimiento:** [REQ-051](../requerimientos/REQ-051-inactivar-productos-abm.md)
+- **Requerimientos:** [REQ-051](../requerimientos/REQ-051-inactivar-productos-abm.md) · [REQ-052](../requerimientos/REQ-052-inactivar-productos-masivo.md) (acción masiva)
 - **Apps:** `pricing`
 - **Migración:** ninguna
 
@@ -29,6 +29,15 @@ imprimiendo igual: la API por id no filtra por estado.
 **Efecto en los datos existentes**: los productos que se habían "eliminado" con el tacho reaparecen
 en el listado como Inactivos. Nada cambia de estado; es la misma marca que ya tenían.
 
+## Acción masiva (REQ-052)
+
+Cada fila tiene una casilla y la cabecera una casilla "seleccionar todos" que marca **solo las filas
+visibles** con el filtro y la búsqueda actuales. Con una o más marcadas aparece una barra con la
+cantidad y los botones **Inactivar seleccionados**, **Activar seleccionados** y **Limpiar**. Cada acción
+confirma con SweetAlert2 y manda un único POST a `config/productos/estado-masivo/`
+(`productos_estado_masivo`: valida la acción, descarta ids no numéricos, un solo `UPDATE` sobre
+`bloqueado`, mensaje con la cantidad). Solo POST, login y staff.
+
 ## Cómo está armado
 
 - `pricing/config_views.py`: `productos_config` deja de excluir `bloqueado='Si'`; `producto_delete`
@@ -49,9 +58,11 @@ en el listado como Inactivos. Nada cambia de estado; es la misma marca que ya te
 
 ## Verificación
 
-- 6 tests nuevos (`ProductoActivarInactivarTest`, con mocks porque la tabla legacy no existe en la
+- 6 tests (`ProductoActivarInactivarTest`, con mocks porque la tabla legacy no existe en la
   base de test): inactivar, activar, GET no cambia nada, sin login, listado con ambos estados y sus
   botones, la API del cotizador excluye inactivos.
+- 7 tests (`ProductosEstadoMasivoTest`): inactivar/activar masivo con los ids válidos, ids no
+  numéricos ignorados, sin ids, acción inválida, GET, sin login, casillas y barra en el listado.
 - Suite `pricing` sin regresiones respecto del baseline. `makemigrations --check`: sin cambios.
 
 ## Pendiente

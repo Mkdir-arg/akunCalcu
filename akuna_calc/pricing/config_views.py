@@ -467,6 +467,35 @@ def producto_activate(request, pk):
     return redirect('config-productos')
 
 
+@login_required
+@user_passes_test(is_staff)
+def productos_estado_masivo(request):
+    """Inactiva o activa varios productos con un solo POST (REQ-052)."""
+    if request.method != 'POST':
+        return redirect('config-productos')
+    accion = request.POST.get('accion')
+    if accion not in ('inactivar', 'activar'):
+        messages.error(request, 'Acción no reconocida.')
+        return redirect('config-productos')
+    ids = []
+    for raw in request.POST.getlist('ids'):
+        try:
+            ids.append(int(raw))
+        except (TypeError, ValueError):
+            continue
+    if not ids:
+        messages.error(request, 'No seleccionaste ningún producto.')
+        return redirect('config-productos')
+    inactivar = accion == 'inactivar'
+    afectados = Producto.objects.filter(id__in=ids).update(bloqueado='Si' if inactivar else 'No')
+    plural = '' if afectados == 1 else 's'
+    if inactivar:
+        messages.success(request, f'Se inactivaron {afectados} producto{plural}: ya no se ofrecen en el cotizador.')
+    else:
+        messages.success(request, f'Se activaron {afectados} producto{plural}: vuelven a ofrecerse en el cotizador.')
+    return redirect('config-productos')
+
+
 # ─── MARCOS ───────────────────────────────────────────────────────────────────
 
 @login_required

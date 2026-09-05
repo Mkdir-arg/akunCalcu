@@ -1721,3 +1721,70 @@ class ProductoActivarInactivarTest(_TestCase):
         request = Request(APIRequestFactory().get('/pricing/api/pricing/productos/'))
         ProductosListView().get(request)
         mock_objects.exclude.assert_called_once_with(bloqueado='Si')
+
+
+# ---------------------------------------------------------------------------
+# REQ-052 — Inactivar / activar varios productos de una vez
+# ---------------------------------------------------------------------------
+class ProductosEstadoMasivoTest(_TestCase):
+    def setUp(self):
+        self.admin = _User.objects.create_superuser('staffmasivo', 'a@a.com', 'x')
+        self.client.force_login(self.admin)
+        self.url = _reverse('config-productos-estado-masivo')
+
+    @_patch('pricing.config_views.Producto.objects')
+    def test_inactivar_masivo_actualiza_los_ids_validos(self, mock_objects):
+        mock_objects.filter.return_value.update.return_value = 2
+        response = self.client.post(self.url, {'accion': 'inactivar', 'ids': ['5', '7', 'x', '']})
+        self.assertRedirects(response, _reverse('config-productos'), fetch_redirect_response=False)
+        mock_objects.filter.assert_called_once_with(id__in=[5, 7])
+        mock_objects.filter.return_value.update.assert_called_once_with(bloqueado='Si')
+
+    @_patch('pricing.config_views.Producto.objects')
+    def test_activar_masivo(self, mock_objects):
+        mock_objects.filter.return_value.update.return_value = 1
+        response = self.client.post(self.url, {'accion': 'activar', 'ids': ['9']})
+        self.assertEqual(response.status_code, 302)
+        mock_objects.filter.assert_called_once_with(id__in=[9])
+        mock_objects.filter.return_value.update.assert_called_once_with(bloqueado='No')
+
+    @_patch('pricing.config_views.Producto.objects')
+    def test_sin_ids_no_toca_nada(self, mock_objects):
+        response = self.client.post(self.url, {'accion': 'inactivar'})
+        self.assertEqual(response.status_code, 302)
+        mock_objects.filter.assert_not_called()
+
+    @_patch('pricing.config_views.Producto.objects')
+    def test_accion_invalida_no_toca_nada(self, mock_objects):
+        response = self.client.post(self.url, {'accion': 'borrar', 'ids': ['5']})
+        self.assertEqual(response.status_code, 302)
+        mock_objects.filter.assert_not_called()
+
+    @_patch('pricing.config_views.Producto.objects')
+    def test_get_redirige_sin_tocar(self, mock_objects):
+        response = self.client.get(self.url)
+        self.assertRedirects(response, _reverse('config-productos'), fetch_redirect_response=False)
+        mock_objects.filter.assert_not_called()
+
+    def test_sin_login_redirige(self):
+        self.client.logout()
+        response = self.client.post(self.url, {'accion': 'inactivar', 'ids': ['5']})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+    @_patch('pricing.config_views.Linea.objects')
+    @_patch('pricing.config_views.Producto.objects')
+    def test_listado_tiene_casillas_y_barra_masiva(self, mock_prod, mock_linea):
+        qs = _MagicMock()
+        mock_prod.select_related.return_value = qs
+        qs.order_by.return_value = [
+            _NS(pk=1, id=1, descripcion='VENTANA ACTIVA', bloqueado='No',
+                extrusora=_NS(nombre='EXT'), linea=_NS(nombre='LIN')),
+        ]
+        mock_linea.exclude.return_value = []
+        response = self.client.get(_reverse('config-productos'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-select-all')
+        self.assertContains(response, 'data-select-id="1"')
+        self.assertContains(response, 'id="acciones-masivas"')
+        self.assertContains(response, self.url)

@@ -17,10 +17,29 @@
 
     <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
         {% include 'core/includes/table_filters.html' with table_filter_id='productos-fabrica-table' show_status_filter=True table_filter_placeholder='Buscar por producto, linea o extrusora...' %}
+        <div id="acciones-masivas" class="hidden flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-3 bg-blue-50 border-b border-blue-100">
+            <span class="text-sm font-semibold text-blue-900"><i class="fas fa-check-square mr-1"></i><span data-seleccionados>0</span> seleccionado<span data-seleccionados-plural>s</span></span>
+            <div class="flex flex-wrap gap-2 sm:ml-auto">
+                <button type="button" onclick="accionMasiva('inactivar')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">
+                    <i class="fas fa-ban mr-1"></i>Inactivar seleccionados
+                </button>
+                <button type="button" onclick="accionMasiva('activar')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">
+                    <i class="fas fa-check mr-1"></i>Activar seleccionados
+                </button>
+                <button type="button" onclick="limpiarSeleccion()" class="inline-flex items-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold text-xs">
+                    <i class="fas fa-times mr-1"></i>Limpiar
+                </button>
+            </div>
+        </div>
+        <form id="form-estado-masivo" method="post" action="{% url 'config-productos-estado-masivo' %}" class="hidden">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="">
+        </form>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
+                        <th class="px-4 py-4 w-10 text-center"><input type="checkbox" data-select-all class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" title="Seleccionar todos los visibles"></th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                             <a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">
                                 Descripción
@@ -75,6 +94,7 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for producto in productos %}
                     <tr class="hover:bg-slate-50 transition-colors" data-filter-row="productos-fabrica-table" data-status="{% if producto.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="px-4 py-4 text-center"><input type="checkbox" data-select-id="{{ producto.pk }}" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"></td>
                         <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ producto.descripcion }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.extrusora.nombre }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.linea.nombre }}</td>
@@ -107,14 +127,14 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay productos registrados</p>
                         </td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="productos-fabrica-table" class="hidden">
-                        <td colspan="5" class="px-6 py-8 text-center">
+                        <td colspan="6" class="px-6 py-8 text-center">
                             <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay productos que coincidan con los filtros</p>
                         </td>
@@ -148,5 +168,72 @@ function confirmarDesactivar(url, nombre) {
         }
     });
 }
+
+// REQ-052: selección múltiple. "Seleccionar todos" marca solo las filas visibles con el filtro actual.
+(function () {
+    const barra = document.getElementById('acciones-masivas');
+    const selectAll = document.querySelector('[data-select-all]');
+    if (!barra || !selectAll) return;
+    const contador = barra.querySelector('[data-seleccionados]');
+    const plural = barra.querySelector('[data-seleccionados-plural]');
+    const casillas = () => Array.from(document.querySelectorAll('input[data-select-id]'));
+    const visibles = () => casillas().filter((cb) => !cb.closest('tr').classList.contains('hidden'));
+    const seleccionadas = () => casillas().filter((cb) => cb.checked);
+
+    function refrescar() {
+        const n = seleccionadas().length;
+        contador.textContent = n;
+        plural.textContent = n === 1 ? '' : 's';
+        barra.classList.toggle('hidden', n === 0);
+        const vis = visibles();
+        selectAll.checked = vis.length > 0 && vis.every((cb) => cb.checked);
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target === selectAll) {
+            visibles().forEach((cb) => { cb.checked = selectAll.checked; });
+            refrescar();
+        } else if (e.target.matches && e.target.matches('input[data-select-id]')) {
+            refrescar();
+        }
+    });
+
+    window.limpiarSeleccion = function () {
+        casillas().forEach((cb) => { cb.checked = false; });
+        refrescar();
+    };
+
+    window.accionMasiva = function (accion) {
+        const ids = seleccionadas().map((cb) => cb.dataset.selectId);
+        if (!ids.length) return;
+        const inactivar = accion === 'inactivar';
+        const cuantos = ids.length === 1 ? '1 producto' : ids.length + ' productos';
+        Swal.fire({
+            title: (inactivar ? '¿Inactivar ' : '¿Activar ') + cuantos + '?',
+            html: inactivar
+                ? '<p class="text-sm text-gray-600">Dejan de ofrecerse en el cotizador. Podés volver a activarlos desde este listado.</p>'
+                : '<p class="text-sm text-gray-600">Vuelven a ofrecerse en el cotizador.</p>',
+            icon: inactivar ? 'warning' : 'question',
+            showCancelButton: true,
+            confirmButtonColor: inactivar ? '#dc2626' : '#16a34a',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: inactivar ? 'Sí, inactivar' : 'Sí, activar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            const form = document.getElementById('form-estado-masivo');
+            form.querySelector('input[name="accion"]').value = accion;
+            form.querySelectorAll('input[name="ids"]').forEach((i) => i.remove());
+            ids.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids';
+                input.value = id;
+                form.appendChild(input);
+            });
+            form.submit();
+        });
+    };
+})();
 </script>
 {% endblock %}

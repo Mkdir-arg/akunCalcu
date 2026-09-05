@@ -30,6 +30,7 @@ _El backlog se completa a medida que se proponen ideas._
 | US-049 | Como vendedor que arma un presupuesto en PVC, quiero subir el PDF de la cotización REHAU y que se carguen solos todos sus ítems, para no tipearlos uno por uno | Mediano ✅ |
 | US-050 | Como vendedor que arma un presupuesto en PVC, quiero cargar la colocación en dólares para no convertirla a pesos a mano | Pequeño ✅ |
 | US-051 | Como administrador del catálogo, quiero inactivar y reactivar productos para que el cotizador no los ofrezca sin perder su configuración | Pequeño ✅ |
+| US-052 | Como administrador del catálogo, quiero seleccionar varios productos e inactivarlos o activarlos de una vez | Pequeño ✅ |
 
 ---
 

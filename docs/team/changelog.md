@@ -14,6 +14,17 @@
 
 ---
 
+## 2026-09-05 — Inactivar o activar varios productos de una vez (REQ-052, extiende FEAT-041)
+
+**Sprint**: Sin sprint activo
+**Deploy**: sin migración
+
+Casillas por fila y "seleccionar todos los visibles" en el ABM de productos; barra con la cantidad y
+los botones Inactivar / Activar seleccionados / Limpiar; confirmación y un único POST
+(`productos_estado_masivo`). 7 tests con mocks.
+
+---
+
 ## 2026-09-05 — Inactivar y reactivar productos desde el ABM (FEAT-041)
 
 **Sprint**: Sin sprint activo

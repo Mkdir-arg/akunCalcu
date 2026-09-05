@@ -71,3 +71,4 @@
 | [REQ-049](./REQ-049-importar-cotizacion-pvc.md) | Importar los ítems de una cotización PVC externa al presupuesto | Implementado | 2026-09-04 | FEAT-039 |
 | [REQ-050](./REQ-050-colocacion-en-dolares-pvc.md) | Colocación en dólares en los presupuestos PVC (entrada en US$, persistencia en pesos) | Implementado | 2026-09-04 | FEAT-040 |
 | [REQ-051](./REQ-051-inactivar-productos-abm.md) | Inactivar y reactivar productos desde el ABM (ocultos en el cotizador) | Implementado | 2026-09-05 | FEAT-041 |
+| [REQ-052](./REQ-052-inactivar-productos-masivo.md) | Inactivar o activar varios productos de una vez desde el ABM | Implementado | 2026-09-05 | FEAT-041 |

@@ -34,6 +34,7 @@ _Se define en el sprint planning._
 | US-049 | Importar cotización REHAU (PDF) a presupuesto PVC con vista previa | ✅ Completado | FEAT-039 + ADR-021. Sin migración. Pendiente: copiar PDF reales a `test_data/` y confirmar costo vs precio final |
 | US-050 | Colocación en US$ en presupuestos PVC (persistencia en pesos) | ✅ Completado | FEAT-040, extiende ADR-010. Sin migración; los existentes no cambian |
 | US-051 | Inactivar / activar productos desde el ABM (ocultos en el cotizador) | ✅ Completado | FEAT-041. Reutiliza `bloqueado`; los "eliminados" reaparecen como Inactivos |
+| US-052 | Inactivar / activar varios productos de una vez | ✅ Completado | REQ-052, dentro de FEAT-041. Sin migración |
 | US-037 | Reparto automático de solicitudes de presupuesto (n8n + round-robin) | ✅ Completado | App `solicitudes` nueva; FEAT-025. Migraciones solicitudes/0001, usuarios/0004 y usuarios/0005 pendientes en prod |
 | US-038 | Graficador 3D de aberturas en el cotizador de presupuestos | ✅ Completado | Three.js como módulo estático; clasificador de tipología; FEAT-030. Sin migración |
 | US-042 | Opcional de tipo "unidad" (cantidad × precio en el cotizador) | ✅ Completado | Tipo `unidad` + campo `precio_unidad`; FEAT-032. Migración `plantillas/0016` pendiente en prod |
