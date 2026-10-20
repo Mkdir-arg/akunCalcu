@@ -1,14 +1,26 @@
 # Sprint Actual — AkunCalcu
 
-> Estado: Sin sprint activo
-> Inicio: —
-> Fin: —
+> Estado: Sprint 1 activo (plan RF Akun, ver [plan-rf-akun-2026-10.md](./plan-rf-akun-2026-10.md))
+> Inicio: 2026-10-20
+> Fin: 2026-10-27
 
 ## Objetivo del sprint
 
-_Se define en el sprint planning._
+Clientes: ID de cliente visible en todo el sistema, provincia del cliente, alta rápida desde
+Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que usan los PDFs del Sprint 2.
 
-## Items del sprint
+**Tareas en paralelo del día 1:** pedir a Meta la aprobación del template `alerta_ventas_sin_facturar`
+(REQ-061) y enviar al cliente las preguntas de la sección 6 del plan.
+
+## Sprint 1 — en curso
+
+| ID | User Story | Estado | Notas |
+|----|-----------|--------|-------|
+| US-053 | Filtros siempre visibles en Ventas (REQ-053, RF-025) | 🟡 Pendiente | Solo template |
+| US-054 | ID de cliente + Provincia (REQ-054, RF-023) | 🟡 Pendiente | Migraciones `core/0002` (datos) + `comercial/0024` |
+| US-055 | Alta rápida de cliente desde Presupuesto (REQ-055, RF-024) | 🟡 Pendiente | Depende de US-054 |
+
+## Items completados (sprints anteriores)
 
 | ID | User Story | Estado | Notas |
 |----|-----------|--------|-------|
