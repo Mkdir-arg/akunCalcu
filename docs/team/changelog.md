@@ -14,6 +14,17 @@
 
 ---
 
+## 2026-10-20 — Sprint 1 plan RF Akun: clientes (REQ-053/054/055 → FEAT-042/043/044)
+
+**Sprint**: Sprint 1 — plan RF Akun
+**Deploy**: migraciones `core/0002_seed_provincias` + `comercial/0024_cliente_provincia`
+
+- **FEAT-042** (RF-025): el panel de filtros de Ventas queda siempre visible; sin botón ni chips.
+- **FEAT-043** (RF-023): ID de cliente `C-00123` (pk formateado, sin migración) en listados, detalles, selects, búsquedas, Excel de ventas y PDF del presupuesto; Provincia opcional del cliente con las 24 jurisdicciones cargadas. `Cliente.datos_documento()` como fuente única para documentos.
+- **FEAT-044** (RF-024): botón "+" en el formulario de presupuesto con el modal de alta compartido con Ventas y ruta `cliente_create_rapido` para quien tiene Clientes, Ventas o Presupuestos. Arregla el aviso de éxito y los errores del modal de Ventas.
+
+---
+
 ## 2026-09-05 — Inactivar o activar varios productos de una vez (REQ-052, extiende FEAT-041)
 
 **Sprint**: Sin sprint activo

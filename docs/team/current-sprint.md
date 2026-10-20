@@ -16,9 +16,9 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 
 | ID | User Story | Estado | Notas |
 |----|-----------|--------|-------|
-| US-053 | Filtros siempre visibles en Ventas (REQ-053, RF-025) | 🟡 Pendiente | Solo template |
-| US-054 | ID de cliente + Provincia (REQ-054, RF-023) | 🟡 Pendiente | Migraciones `core/0002` (datos) + `comercial/0024` |
-| US-055 | Alta rápida de cliente desde Presupuesto (REQ-055, RF-024) | 🟡 Pendiente | Depende de US-054 |
+| US-053 | Filtros siempre visibles en Ventas (REQ-053, RF-025) | ✅ Completado | Solo template |
+| US-054 | ID de cliente + Provincia (REQ-054, RF-023) | ✅ Completado | Migraciones `core/0002` (datos) + `comercial/0024` |
+| US-055 | Alta rápida de cliente desde Presupuesto (REQ-055, RF-024) | ✅ Completado | Depende de US-054 |
 
 ## Items completados (sprints anteriores)
 

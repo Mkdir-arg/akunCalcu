@@ -15,9 +15,9 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 
 | ID | User Story | Complejidad | Estado |
 |----|-----------|-------------|--------|
-| US-053 | Como administrativo quiero ver siempre el panel de filtros de Ventas para buscar sin abrirlo cada vez (RF-025) | Pequeño | 🔵 Sprint 1 |
-| US-054 | Como administrativo quiero un ID único de cliente visible en Clientes, Presupuestos y Ventas, y su provincia (RF-023) | Mediano | 🔵 Sprint 1 |
-| US-055 | Como vendedor quiero dar de alta un cliente sin salir del formulario de presupuesto (RF-024) | Pequeño / Mediano | 🔵 Sprint 1 |
+| US-053 | Como administrativo quiero ver siempre el panel de filtros de Ventas para buscar sin abrirlo cada vez (RF-025) | Pequeño | ✅ Sprint 1 |
+| US-054 | Como administrativo quiero un ID único de cliente visible en Clientes, Presupuestos y Ventas, y su provincia (RF-023) | Mediano | ✅ Sprint 1 |
+| US-055 | Como vendedor quiero dar de alta un cliente sin salir del formulario de presupuesto (RF-024) | Pequeño / Mediano | ✅ Sprint 1 |
 | US-056 | Como vendedor quiero generar la planilla de Medición en PDF desde el presupuesto (RF-03) | Mediano | 🟡 Sprint 2 |
 | US-057 | Como coordinador quiero generar la planilla de Colocación en PDF desde el presupuesto confirmado (RF-02) | Mediano | 🟡 Sprint 2 |
 | US-058 | Como administrativo quiero que el recibo de Presupuestos sea el mismo que el de Ventas (RF-01) | Mediano | 🟡 Sprint 2 |

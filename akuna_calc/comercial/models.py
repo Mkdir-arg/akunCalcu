@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 from django.db.models import Max, Sum
 from decimal import Decimal
 from pathlib import Path
+import re
 
 
 _UNIDADES = {
@@ -85,6 +86,10 @@ class Cliente(models.Model):
     condicion_iva = models.CharField(max_length=4, choices=CONDICION_IVA_CHOICES, default='CF')
     direccion = models.TextField()
     localidad = models.CharField(max_length=100)
+    provincia = models.ForeignKey(
+        'core.Provincia', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='clientes', verbose_name='Provincia',
+    )
     telefono = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,6 +97,35 @@ class Cliente(models.Model):
     
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
+
+    @property
+    def codigo(self):
+        if self.pk is None:
+            return ''
+        return f"C-{self.pk:05d}"
+
+    def etiqueta_selector(self):
+        return f"{self} · {self.codigo}"
+
+    @staticmethod
+    def pk_desde_codigo(texto, permitir_numero=False):
+        match = re.fullmatch(r'\s*c\s*-?\s*(\d{1,9})\s*', texto or '', re.IGNORECASE)
+        if match is None and permitir_numero:
+            match = re.fullmatch(r'\s*(\d{1,9})\s*', texto or '')
+        return int(match.group(1)) if match else None
+
+    def datos_documento(self):
+        return {
+            'codigo': self.codigo,
+            'nombre_completo': self.get_nombre_completo(),
+            'direccion': self.direccion or '',
+            'localidad': self.localidad or '',
+            'provincia': self.provincia.nombre if self.provincia_id else '',
+            'cuit': _formatear_cuit(self.cuit),
+            'condicion_iva': self.get_condicion_iva_display(),
+            'telefono': self.telefono or '',
+            'email': self.email or '',
+        }
     
     def get_nombre_completo(self):
         if self.razon_social:
@@ -513,7 +547,7 @@ class Recibo(models.Model):
         from django.template.loader import render_to_string
         from xhtml2pdf import pisa
 
-        cliente = self.venta.cliente
+        cliente = self.venta.cliente.datos_documento()
         venta = self.venta
         retenciones = {ret.tipo: ret.importe_retenido for ret in self.pago.retenciones.all()}
         logo_candidates = [
@@ -560,12 +594,12 @@ class Recibo(models.Model):
         context = {
             'recibo': self,
             'logo_url': logo_url,
-            'cliente_nombre': cliente.get_nombre_completo(),
-            'cliente_direccion': cliente.direccion,
-            'cliente_localidad': cliente.localidad,
+            'cliente_nombre': cliente['nombre_completo'],
+            'cliente_direccion': cliente['direccion'],
+            'cliente_localidad': cliente['localidad'],
             'cliente_cp': '',
-            'cliente_cuit': _formatear_cuit(cliente.cuit),
-            'cliente_condicion_iva': cliente.get_condicion_iva_display(),
+            'cliente_cuit': cliente['cuit'],
+            'cliente_condicion_iva': cliente['condicion_iva'],
             'fecha_texto': date_filter(self.fecha, 'd/m/Y'),
             'ret_ganancias': retenciones.get('ganancias'),
             'ret_iibb': retenciones.get('iibb'),

@@ -1,6 +1,7 @@
 # REQ-053 — Panel de filtros siempre visible en Ventas
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
+- **Feature:** [FEAT-042](../features/FEAT-042-filtros-ventas-siempre-visibles.md)
 - **Fecha:** 2026-10-20
 - **Complejidad:** Pequeño
 - **Origen:** RF-025 (documento de requerimientos de Akun, prioridad Alta)

@@ -516,6 +516,7 @@
                 <tr>
                     <td class="contact-cell">
                         <p class="contact-title">Datos del cliente</p>
+                        <p class="contact-line"><span class="summary-label">ID:</span> {{ presupuesto.cliente.codigo }}</p>
                         <p class="contact-line"><span class="summary-label">Nombre:</span> {{ presupuesto.cliente.get_nombre_completo }}</p>
                         <p class="contact-line"><span class="summary-label">Dirección:</span> {% if presupuesto.cliente.direccion %}{{ presupuesto.cliente.direccion }}{% else %}-{% endif %}</p>
                         <p class="contact-line"><span class="summary-label">Localidad:</span> {% if presupuesto.cliente.localidad %}{{ presupuesto.cliente.localidad }}{% else %}-{% endif %}</p>

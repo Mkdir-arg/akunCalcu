@@ -1,6 +1,7 @@
 # REQ-054 — ID de cliente visible en todo el sistema + Provincia del cliente
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
+- **Feature:** [FEAT-043](../features/FEAT-043-id-cliente-y-provincia.md)
 - **Fecha:** 2026-10-20
 - **Complejidad:** Mediano
 - **Origen:** RF-023 (prioridad Alta). La provincia la pide RF-02 (PDF de Colocación, REQ-057); se resuelve acá porque es un dato del cliente.

@@ -1,6 +1,7 @@
 # REQ-055 — Alta rápida de cliente desde el formulario de Presupuesto
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
+- **Feature:** [FEAT-044](../features/FEAT-044-alta-rapida-cliente-compartida.md)
 - **Fecha:** 2026-10-20
 - **Complejidad:** Pequeño / Mediano
 - **Origen:** RF-024 (prioridad Alta)

@@ -27,6 +27,7 @@ class PresupuestoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['cliente'].queryset = Cliente.objects.filter(deleted_at__isnull=True).order_by('apellido', 'nombre')
+        self.fields['cliente'].label_from_instance = Cliente.etiqueta_selector
         self.fields['notas'].required = False
         self.fields['cotizacion_usd'].required = False
         self.fields['cotizacion_usd'].label = 'Cotización USD'

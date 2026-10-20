@@ -22,7 +22,7 @@
     <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
         <form method="get" class="flex flex-col sm:flex-row gap-3">
             <div class="flex-1">
-                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar por nombre, razón social, localidad..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar por nombre, razón social, localidad o ID (C-123)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="flex gap-2">
                 <button type="submit" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">
@@ -40,6 +40,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
                     <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">ID</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
                         <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Razón Social</th>
                         <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Localidad</th>
@@ -51,6 +52,7 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for cliente in clientes %}
                     <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 text-sm font-mono text-slate-500 whitespace-nowrap">{{ cliente.codigo }}</td>
                         <td class="px-6 py-4">
                             <div class="flex items-center">
                                 <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
@@ -81,7 +83,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center">
+                        <td colspan="7" class="px-6 py-8 text-center">
                             <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
                             <p class="text-slate-500 font-medium">No hay clientes registrados</p>
                         </td>

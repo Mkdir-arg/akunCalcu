@@ -76,7 +76,7 @@
                     <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelado</span>
                 {% endif %}
             </div>
-            <p class="text-slate-500 font-medium pl-7">{{ presupuesto.cliente.get_nombre_completo }}</p>
+            <p class="text-slate-500 font-medium pl-7">{{ presupuesto.cliente.get_nombre_completo }} · <span class="font-mono">{{ presupuesto.cliente.codigo }}</span></p>
         </div>
         <div class="flex gap-2 flex-wrap">
             {% if not presupuesto.esta_bloqueado %}
@@ -136,6 +136,7 @@
                     <div>
                         <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Cliente</p>
                         <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.cliente.get_nombre_completo }}</p>
+                        <p class="text-slate-400 text-xs font-mono">{{ presupuesto.cliente.codigo }}</p>
                         {% if presupuesto.cliente.telefono %}<p class="text-slate-500 text-xs">{{ presupuesto.cliente.telefono }}</p>{% endif %}
                     </div>
                     <div>

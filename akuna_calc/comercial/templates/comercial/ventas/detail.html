@@ -27,7 +27,7 @@
                         Venta #{{ venta.numero_pedido }}
                     </h1>
                     <p class="text-slate-300 mt-2 text-sm lg:text-base">
-                        {{ venta.cliente.get_nombre_completo }}
+                        {{ venta.cliente.get_nombre_completo }} · <span class="font-mono">{{ venta.cliente.codigo }}</span>
                     </p>
                     <div class="flex flex-wrap items-center gap-3 mt-4 text-sm">
                         <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100">
@@ -141,6 +141,7 @@
                 <div class="min-w-0">
                     <p class="text-[11px] uppercase tracking-[0.14em] text-slate-400 font-semibold">Cliente</p>
                     <p class="text-sm font-bold text-slate-800 truncate">{{ venta.cliente }}</p>
+                    <p class="text-xs font-mono text-slate-400">{{ venta.cliente.codigo }}</p>
                     <p class="text-xs text-slate-400">{{ venta.cliente.get_condicion_iva_display }}</p>
                 </div>
             </div>

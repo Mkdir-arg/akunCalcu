@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.db.models import Exists, OuterRef, Q
+from core.models import Provincia
 from .models import Cliente, Venta, Cuenta, Compra, TipoCuenta, TipoGasto
 
 
@@ -37,7 +38,7 @@ def _resolver_importe_formulario_usd(form, cleaned_data, *, enabled_field, ars_f
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = '__all__'
+        exclude = ['deleted_at']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'apellido': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
@@ -47,9 +48,17 @@ class ClienteForm(forms.ModelForm):
             'condicion_iva': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'direccion': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'rows': 3}),
             'localidad': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
+            'provincia': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500', 'data-placeholder': 'Sin especificar'}),
             'telefono': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
             'email': forms.EmailInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['provincia'].queryset = Provincia.objects.filter(
+            Q(activo=True) | Q(pk=self.instance.provincia_id)
+        )
+        self.fields['provincia'].empty_label = 'Sin especificar'
 
     def clean_email(self):
         """Evita clientes duplicados por email (case-insensitive). En edición ignora
@@ -71,6 +80,7 @@ class ClienteForm(forms.ModelForm):
 class VentaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['cliente'].label_from_instance = Cliente.etiqueta_selector
         self.fields['valor_total'].required = False
         self.fields['sena'].required = False
         # El input[type=date] necesita YYYY-MM-DD para renderizar el valor inicial.

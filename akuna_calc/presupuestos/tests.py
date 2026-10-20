@@ -91,6 +91,19 @@ class CrearPresupuestoDesdeSolicitudTest(TestCase):
         self.assertIsNone(Presupuesto.objects.latest('id').solicitud_id)
 
 
+    def test_form_incluye_modal_y_link_crear_cliente(self):
+        from django.urls import reverse
+        from solicitudes.models import SolicitudPresupuesto
+        sol = SolicitudPresupuesto.objects.create(
+            nombre_cliente='Cli', email='cli@x.com', vendedor=self.admin, estado='asignada',
+        )
+        resp = self.client.get(reverse('presupuestos:presupuestos-crear'))
+        self.assertContains(resp, 'id="clienteModal"')
+        self.assertContains(resp, 'openClienteModal()')
+        resp = self.client.get(reverse('presupuestos:presupuestos-crear'), {'solicitud': sol.pk})
+        self.assertContains(resp, 'Crear cliente con estos datos')
+
+
 class PresupuestoModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('testuser', password='testpass')

@@ -46,6 +46,59 @@ class ClienteCreatePrefillTest(TestCase):
         self.assertEqual(initial.get('email'), 'j@x.com')
 
 
+class ClienteCreateRapidoTest(TestCase):
+    DATOS = {
+        'nombre': 'Ana', 'apellido': 'Lopez', 'condicion_iva': 'CF',
+        'direccion': 'Calle 1', 'localidad': 'Rosario', 'email': 'ana@x.com',
+    }
+
+    def _usuario(self, nombre, permisos):
+        from usuarios.models import PerfilAccesoUsuario
+        u = User.objects.create_user(nombre, f'{nombre}@x.com', 'x')
+        PerfilAccesoUsuario.objects.create(usuario=u, permisos=permisos)
+        return u
+
+    def _post(self, datos=None):
+        return self.client.post(
+            reverse('comercial:cliente_create_rapido'), datos or self.DATOS,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+    def test_solo_presupuestos_puede_crear(self):
+        self.client.force_login(self._usuario('vend_pres', ['presupuestos.view']))
+        resp = self._post()
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['cliente']['codigo'])
+        self.assertIn('Lopez', data['cliente']['etiqueta'])
+        self.assertTrue(Cliente.objects.filter(pk=data['cliente']['id']).exists())
+
+    def test_sin_permisos_403(self):
+        self.client.force_login(self._usuario('sin_perm', ['agenda.view']))
+        self.assertEqual(self._post().status_code, 403)
+        self.assertEqual(Cliente.objects.count(), 0)
+
+    def test_email_duplicado_400(self):
+        Cliente.objects.create(nombre='X', apellido='Y', condicion_iva='CF',
+                               direccion='x', localidad='y', email='ana@x.com')
+        self.client.force_login(self._usuario('vend_dup', ['presupuestos.view']))
+        resp = self._post()
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('email', resp.json()['errors'])
+
+    def test_solo_post(self):
+        self.client.force_login(self._usuario('vend_get', ['presupuestos.view']))
+        resp = self.client.get(reverse('comercial:cliente_create_rapido'))
+        self.assertEqual(resp.status_code, 405)
+
+    def test_form_venta_incluye_modal(self):
+        self.client.force_login(self._usuario('vend_venta', ['comercial.ventas']))
+        resp = self.client.get(reverse('comercial:venta_create'))
+        self.assertContains(resp, 'id="clienteModal"')
+        self.assertContains(resp, 'data-error-for="provincia"')
+
+
 class ClienteEmailUnicoTest(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser('admin_dup', 'a@a.com', 'x')
@@ -1746,3 +1799,197 @@ class ReportesGastosTest(TestCase):
         self.assertIsNone(response.context['reporte_data'])
         self.assertContains(response, 'Usá los filtros para generar el reporte')
         self.assertNotContains(response, 'COMP-GET-001')
+
+
+class VentasListFiltrosVisiblesTest(TestCase):
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        user = User.objects.create_user(username='filtrosvis', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=user, permisos=['comercial.ventas'])
+        self.client_http = Client()
+        self.client_http.login(username='filtrosvis', password='testpass')
+
+    def test_panel_de_filtros_siempre_visible_sin_toggle(self):
+        response = self.client_http.get(reverse('comercial:ventas_list'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('id="panel-filtros"', html)
+        panel_tag = html[html.index('id="panel-filtros"'):].split('>', 1)[0]
+        self.assertNotIn('hidden', panel_tag)
+        self.assertNotIn('toggleFiltros', html)
+        self.assertNotIn('btn-filtros', html)
+
+
+class ClienteCodigoTest(TestCase):
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        self.cliente = Cliente.objects.create(
+            nombre='Ana', apellido='Gomez', condicion_iva='CF', direccion='Calle 1', localidad='Rosario',
+        )
+        self.otro = Cliente.objects.create(
+            nombre='Ana', apellido='Gomez', condicion_iva='CF', direccion='Calle 2', localidad='Rosario',
+        )
+        user = self.user = User.objects.create_user(username='codigos', password='testpass')
+        PerfilAccesoUsuario.objects.create(
+            usuario=user, permisos=['comercial.ventas', 'comercial.clientes', 'presupuestos.view'],
+        )
+        self.client_http = Client()
+        self.client_http.login(username='codigos', password='testpass')
+
+    def test_codigo_tiene_cinco_digitos(self):
+        self.assertEqual(self.cliente.codigo, f'C-{self.cliente.pk:05d}')
+
+    def test_str_no_cambia(self):
+        self.assertEqual(str(self.cliente), 'Ana Gomez')
+
+    def test_pk_desde_codigo_variantes(self):
+        for texto in ('C-00012', 'c12', 'C 12', ' c-12 '):
+            self.assertEqual(Cliente.pk_desde_codigo(texto), 12, texto)
+        self.assertIsNone(Cliente.pk_desde_codigo('12'))
+        self.assertEqual(Cliente.pk_desde_codigo('12', permitir_numero=True), 12)
+        for texto in ('', None, 'abc', 'C-', 'C-1a'):
+            self.assertIsNone(Cliente.pk_desde_codigo(texto, permitir_numero=True), texto)
+
+    def test_etiqueta_selector_incluye_codigo(self):
+        self.assertEqual(self.cliente.etiqueta_selector(), f'Ana Gomez · {self.cliente.codigo}')
+
+    def test_select_de_ventas_y_presupuestos_muestran_el_codigo(self):
+        from comercial.forms import VentaForm
+        from presupuestos.forms import PresupuestoForm
+
+        for form in (VentaForm(), PresupuestoForm()):
+            labels = [label for _, label in form.fields['cliente'].choices]
+            self.assertIn(self.cliente.etiqueta_selector(), labels)
+
+    def test_clientes_list_busca_por_codigo_y_numero(self):
+        for q in (self.cliente.codigo, f'c{self.cliente.pk}', str(self.cliente.pk)):
+            response = self.client_http.get(reverse('comercial:clientes_list'), {'q': q})
+            self.assertEqual(list(response.context['clientes']), [self.cliente], q)
+
+    def test_ventas_list_filtra_por_codigo_con_prefijo(self):
+        v1 = Venta.objects.create(numero_pedido='A1', cliente=self.cliente, valor_total=Decimal('100'))
+        Venta.objects.create(numero_pedido='B2', cliente=self.otro, valor_total=Decimal('100'))
+        response = self.client_http.get(reverse('comercial:ventas_list'), {'q': self.cliente.codigo})
+        self.assertEqual([v.pk for v in response.context['ventas']], [v1.pk])
+
+    def test_presupuestos_lista_filtra_por_codigo_con_prefijo(self):
+        from presupuestos.models import Presupuesto
+
+        p1 = Presupuesto.objects.create(cliente=self.cliente, numero='PRE-T1', created_by=self.user, fecha_expiracion=date(2030, 1, 1))
+        Presupuesto.objects.create(cliente=self.otro, numero='PRE-T2', created_by=self.user, fecha_expiracion=date(2030, 1, 1))
+        response = self.client_http.get(reverse('presupuestos:presupuestos-lista'), {'q': self.cliente.codigo})
+        self.assertEqual([p.pk for p in response.context['presupuestos']], [p1.pk])
+
+    def test_listados_y_detalles_muestran_el_codigo(self):
+        venta = Venta.objects.create(numero_pedido='A1', cliente=self.cliente, valor_total=Decimal('100'))
+        urls = [
+            reverse('comercial:clientes_list'),
+            reverse('comercial:cliente_detail', args=[self.cliente.pk]),
+            reverse('comercial:cliente_edit', args=[self.cliente.pk]),
+            reverse('comercial:ventas_list'),
+            reverse('comercial:venta_detail', args=[venta.pk]),
+        ]
+        for url in urls:
+            response = self.client_http.get(url)
+            self.assertContains(response, self.cliente.codigo, msg_prefix=url)
+
+    def test_excel_de_ventas_tiene_columna_id_cliente_y_totales_alineados(self):
+        import io
+        from openpyxl import load_workbook
+
+        Venta.objects.create(numero_pedido='X1', cliente=self.cliente, valor_total=Decimal('100'), sena=Decimal('30'))
+        Venta.objects.create(numero_pedido='X2', cliente=self.otro, valor_total=Decimal('50'), sena=Decimal('0'))
+        response = self.client_http.get(reverse('comercial:exportar_ventas_excel'))
+        self.assertEqual(response.status_code, 200)
+        ws = load_workbook(io.BytesIO(response.content)).active
+        headers = [c.value for c in ws[1]]
+        self.assertEqual(len(headers), 11)
+        self.assertEqual(headers[2:4], ['Cliente', 'ID Cliente'])
+        self.assertEqual(headers[5], 'Valor Total')
+        filas = {ws.cell(row=r, column=1).value: r for r in range(2, ws.max_row + 1)}
+        fila = filas['X1']
+        self.assertEqual(ws.cell(row=fila, column=4).value, self.cliente.codigo)
+        self.assertEqual(ws.cell(row=fila, column=6).value, 100)
+        self.assertEqual(ws.cell(row=fila, column=6).number_format, '#,##0.00')
+        totales = filas['TOTALES']
+        self.assertEqual(ws.cell(row=totales, column=6).value, 150)
+        self.assertEqual(ws.cell(row=totales, column=7).value, 30)
+        self.assertEqual(ws.cell(row=totales, column=8).value, 120)
+
+    def test_cliente_create_ajax_devuelve_codigo_y_etiqueta(self):
+        response = self.client_http.post(
+            reverse('comercial:cliente_create'),
+            {'nombre': 'Luis', 'apellido': 'Paz', 'condicion_iva': 'CF', 'direccion': 'X 1', 'localidad': 'Salta'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        data = response.json()
+        nuevo = Cliente.objects.get(nombre='Luis')
+        self.assertEqual(data['cliente']['nombre'], 'Luis Paz')
+        self.assertEqual(data['cliente']['codigo'], nuevo.codigo)
+        self.assertEqual(data['cliente']['etiqueta'], f'Luis Paz · {nuevo.codigo}')
+
+
+class ClienteProvinciaTest(TestCase):
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+
+        user = User.objects.create_user(username='provs', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=user, permisos=['comercial.clientes'])
+        self.client_http = Client()
+        self.client_http.login(username='provs', password='testpass')
+        self.datos = {'nombre': 'Eva', 'apellido': 'Sol', 'condicion_iva': 'CF', 'direccion': 'X 1', 'localidad': 'Salta'}
+
+    def test_migracion_carga_24_provincias(self):
+        import importlib
+        from django.apps import apps
+        from core.models import Provincia
+
+        migracion = importlib.import_module('core.migrations.0002_seed_provincias')
+        migracion.cargar_provincias(apps, None)
+        migracion.cargar_provincias(apps, None)
+        self.assertEqual(Provincia.objects.count(), 24)
+        self.assertTrue(Provincia.objects.filter(codigo='AR-C').exists())
+
+    def test_alta_sin_provincia_funciona(self):
+        response = self.client_http.post(reverse('comercial:cliente_create'), self.datos)
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNone(Cliente.objects.get(nombre='Eva').provincia)
+
+    def test_alta_con_provincia_se_guarda_y_se_ve_en_detalle(self):
+        from core.models import Provincia
+
+        prov = Provincia.objects.create(nombre='Salta', codigo='AR-A')
+        response = self.client_http.post(reverse('comercial:cliente_create'), {**self.datos, 'provincia': prov.pk})
+        self.assertEqual(response.status_code, 302)
+        cliente = Cliente.objects.get(nombre='Eva')
+        self.assertEqual(cliente.provincia, prov)
+        detalle = self.client_http.get(reverse('comercial:cliente_detail', args=[cliente.pk]))
+        self.assertContains(detalle, 'Salta, Salta')
+
+    def test_form_no_expone_deleted_at_ni_provincias_inactivas(self):
+        from core.models import Provincia
+        from comercial.forms import ClienteForm
+
+        Provincia.objects.create(nombre='Activa', codigo='AR-A')
+        Provincia.objects.create(nombre='Inactiva', codigo='AR-B', activo=False)
+        form = ClienteForm()
+        self.assertNotIn('deleted_at', form.fields)
+        self.assertEqual([p.nombre for p in form.fields['provincia'].queryset], ['Activa'])
+
+    def test_datos_documento_provincia_vacia_si_es_null(self):
+        from core.models import Provincia
+
+        cliente = Cliente.objects.create(**self.datos)
+        self.assertEqual(cliente.datos_documento()['provincia'], '')
+        cliente.provincia = Provincia.objects.create(nombre='Salta', codigo='AR-A')
+        self.assertEqual(cliente.datos_documento()['provincia'], 'Salta')
+
+    def test_admin_de_cliente_no_ofrece_eliminar_seleccionados(self):
+        from django.contrib import admin
+        from django.test import RequestFactory
+
+        request = RequestFactory().get('/')
+        request.user = User.objects.create_superuser('adm', 'a@a.com', 'x')
+        self.assertNotIn('delete_selected', admin.site._registry[Cliente].get_actions(request))

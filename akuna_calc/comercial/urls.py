@@ -22,6 +22,7 @@ urlpatterns = [
     # Clientes
     path('clientes/', views.clientes_list, name='clientes_list'),
     path('clientes/nuevo/', views.cliente_create, name='cliente_create'),
+    path('clientes/nuevo/rapido/', views.cliente_create_rapido, name='cliente_create_rapido'),
     path('clientes/<int:pk>/ver/', views.cliente_detail, name='cliente_detail'),
     path('clientes/<int:pk>/editar/', views.cliente_edit, name='cliente_edit'),
     path('clientes/<int:pk>/eliminar/', views.cliente_delete, name='cliente_delete'),

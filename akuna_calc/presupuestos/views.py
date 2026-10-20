@@ -22,7 +22,7 @@ from xhtml2pdf import pisa
 
 from core.navigation import append_return_to, resolve_return_url
 from usuarios.access_control import get_access_profile, user_has_full_access
-from comercial.models import Venta, _formatear_cuit
+from comercial.models import Cliente, Venta
 from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
 from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
@@ -151,6 +151,9 @@ def lista(request):
             Q(cliente__razon_social__icontains=q) |
             Q(estado__icontains=q)
         )
+        cliente_pk = Cliente.pk_desde_codigo(q)
+        if cliente_pk is not None:
+            filtros |= Q(cliente_id=cliente_pk)
         # La columna Usuario/creador solo es visible (y buscable) con permiso.
         if puede_ver_creador:
             filtros |= (
@@ -757,16 +760,16 @@ def eliminar(request, pk):
 
 
 def _build_blank_recibo_context(presupuesto):
-    cliente = presupuesto.cliente
+    cliente = presupuesto.cliente.datos_documento()
     return {
         'copias': range(2),
         'logo_url': _build_logo_data_url(),
-        'cliente_nombre': cliente.get_nombre_completo(),
-        'cliente_direccion': cliente.direccion or '',
-        'cliente_localidad': cliente.localidad or '',
+        'cliente_nombre': cliente['nombre_completo'],
+        'cliente_direccion': cliente['direccion'],
+        'cliente_localidad': cliente['localidad'],
         'cliente_cp': '',
-        'cliente_cuit': _formatear_cuit(cliente.cuit),
-        'cliente_condicion_iva': cliente.get_condicion_iva_display(),
+        'cliente_cuit': cliente['cuit'],
+        'cliente_condicion_iva': cliente['condicion_iva'],
         'filas_vacias': range(4),
     }
 

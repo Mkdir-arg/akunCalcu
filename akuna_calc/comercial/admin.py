@@ -14,6 +14,11 @@ class ClienteAdmin(admin.ModelAdmin):
     search_fields = ['nombre', 'apellido', 'razon_social']
     list_filter = ['localidad', 'created_at']
 
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop('delete_selected', None)
+        return actions
+
 
 @admin.register(Venta)
 class VentaAdmin(admin.ModelAdmin):

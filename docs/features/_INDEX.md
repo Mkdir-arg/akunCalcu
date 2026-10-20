@@ -47,6 +47,9 @@
 | [FEAT-039](./FEAT-039-importar-cotizacion-rehau-pvc.md) | Importar los ítems de una cotización REHAU (PDF) a un presupuesto PVC, con vista previa editable | Implementado | 2026-09-04 | — |
 | [FEAT-040](./FEAT-040-colocacion-en-dolares-pvc.md) | Colocación y recargo por unidad en US$ en presupuestos PVC (se guardan en pesos; los existentes no cambian) | Implementado | 2026-09-04 | — |
 | [FEAT-041](./FEAT-041-inactivar-productos-abm.md) | Inactivar y reactivar productos desde el ABM, de a uno o varios a la vez; los inactivos no se ofrecen en el cotizador | Implementado | 2026-09-05 | — |
+| [FEAT-042](./FEAT-042-filtros-ventas-siempre-visibles.md) | Panel de filtros siempre visible en el listado de Ventas | Implementado | 2026-10-20 | Sprint 1 RF Akun |
+| [FEAT-043](./FEAT-043-id-cliente-y-provincia.md) | ID de cliente C-00123 en Clientes, Ventas, Presupuestos, selects, Excel y PDF + Provincia del cliente | Implementado | 2026-10-20 | Sprint 1 RF Akun |
+| [FEAT-044](./FEAT-044-alta-rapida-cliente-compartida.md) | Alta rápida de cliente desde Presupuestos con modal compartido con Ventas | Implementado | 2026-10-20 | Sprint 1 RF Akun |
 
 ---
 

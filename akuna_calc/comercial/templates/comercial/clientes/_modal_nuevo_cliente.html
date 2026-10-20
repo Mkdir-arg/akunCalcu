@@ -1,0 +1,87 @@
+<div id="clienteModal" data-select2-dropdown-parent data-url="{{ url }}" data-target="{{ target }}" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-slate-800">Nuevo Cliente</h2>
+            <button type="button" data-cliente-modal-close class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <form id="clienteForm" class="p-6 space-y-4" novalidate>
+            {% csrf_token %}
+            <p class="text-red-600 text-sm" data-error-for="__all__"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                {{ form.nombre }}
+                <span class="text-red-600 text-sm" data-error-for="nombre"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                {{ form.apellido }}
+                <span class="text-red-600 text-sm" data-error-for="apellido"></span>
+            </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
+                {{ form.razon_social }}
+                <span class="text-red-600 text-sm" data-error-for="razon_social"></span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+                {{ form.cuit }}
+                <span class="text-red-600 text-sm" data-error-for="cuit"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                {{ form.dni }}
+                <span class="text-red-600 text-sm" data-error-for="dni"></span>
+            </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Condición IVA</label>
+                {{ form.condicion_iva }}
+                <span class="text-red-600 text-sm" data-error-for="condicion_iva"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                {{ form.direccion }}
+                <span class="text-red-600 text-sm" data-error-for="direccion"></span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Localidad *</label>
+                {{ form.localidad }}
+                <span class="text-red-600 text-sm" data-error-for="localidad"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
+                {{ form.provincia }}
+                <span class="text-red-600 text-sm" data-error-for="provincia"></span>
+            </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                {{ form.telefono }}
+                <span class="text-red-600 text-sm" data-error-for="telefono"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                {{ form.email }}
+                <span class="text-red-600 text-sm" data-error-for="email"></span>
+            </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" data-cliente-modal-close class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                    <i class="fas fa-save mr-2"></i>Guardar Cliente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

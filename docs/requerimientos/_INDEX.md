@@ -72,9 +72,9 @@
 | [REQ-050](./REQ-050-colocacion-en-dolares-pvc.md) | Colocación en dólares en los presupuestos PVC (entrada en US$, persistencia en pesos) | Implementado | 2026-09-04 | FEAT-040 |
 | [REQ-051](./REQ-051-inactivar-productos-abm.md) | Inactivar y reactivar productos desde el ABM (ocultos en el cotizador) | Implementado | 2026-09-05 | FEAT-041 |
 | [REQ-052](./REQ-052-inactivar-productos-masivo.md) | Inactivar o activar varios productos de una vez desde el ABM | Implementado | 2026-09-05 | FEAT-041 |
-| [REQ-053](./REQ-053-filtros-ventas-siempre-visibles.md) | Panel de filtros siempre visible en Ventas (RF-025) | Aprobado | 2026-10-20 | — |
-| [REQ-054](./REQ-054-id-cliente-y-provincia.md) | ID de cliente visible en todo el sistema + Provincia del cliente (RF-023) | Aprobado | 2026-10-20 | — |
-| [REQ-055](./REQ-055-nuevo-cliente-desde-presupuesto.md) | Alta rápida de cliente desde el formulario de Presupuesto (RF-024) | Aprobado | 2026-10-20 | — |
+| [REQ-053](./REQ-053-filtros-ventas-siempre-visibles.md) | Panel de filtros siempre visible en Ventas (RF-025) | Implementado | 2026-10-20 | FEAT-042 |
+| [REQ-054](./REQ-054-id-cliente-y-provincia.md) | ID de cliente visible en todo el sistema + Provincia del cliente (RF-023) | Implementado | 2026-10-20 | FEAT-043 |
+| [REQ-055](./REQ-055-nuevo-cliente-desde-presupuesto.md) | Alta rápida de cliente desde el formulario de Presupuesto (RF-024) | Implementado | 2026-10-20 | FEAT-044 |
 | [REQ-056](./REQ-056-pdf-medicion-y-base-pdf-comun.md) | Planilla de Medición (PDF) + base común de PDFs internos A4 (RF-03) | Aprobado | 2026-10-20 | — |
 | [REQ-057](./REQ-057-pdf-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado (RF-02) | Aprobado | 2026-10-20 | — |
 | [REQ-058](./REQ-058-recibo-unificado.md) | Recibo unificado entre Presupuestos y Ventas (RF-01) | Aprobado | 2026-10-20 | — |

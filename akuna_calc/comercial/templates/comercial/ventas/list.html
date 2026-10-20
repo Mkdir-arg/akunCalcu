@@ -32,15 +32,6 @@
                 </button>
             </div>
 
-            <!-- Filtros toggle -->
-            <button onclick="toggleFiltros()" id="btn-filtros"
-                    class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-blue-400 text-slate-700 px-3 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm">
-                <i class="fas fa-filter text-xs"></i>Filtros
-                {% if buscar or filtro_estado or filtro_factura or filtro_con_saldo or fecha_desde or fecha_hasta or razon_social or direccion %}
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                {% endif %}
-            </button>
-
             <!-- Acciones secundarias -->
             <button onclick="mostrarCotizacionDolar()" class="inline-flex items-center bg-white border border-gray-200 hover:bg-green-50 hover:border-green-300 text-slate-600 px-3 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm">
                 <i class="fas fa-dollar-sign text-green-500 mr-1.5"></i>Dólar
@@ -57,21 +48,8 @@
         </div>
     </div>
 
-    <!-- Chips de filtros activos -->
-    {% if buscar or filtro_estado or filtro_factura or filtro_con_saldo or fecha_desde or fecha_hasta or razon_social or direccion %}
-    <div class="flex flex-wrap gap-2 mb-4">
-        {% if buscar %}<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full"><i class="fas fa-search text-xs"></i>{{ buscar }}<a href="?{% if filtro_estado %}estado={{ filtro_estado }}&{% endif %}{% if filtro_factura %}con_factura={{ filtro_factura }}&{% endif %}{% if filtro_con_saldo %}con_saldo={{ filtro_con_saldo }}&{% endif %}{% if fecha_desde %}fecha_desde={{ fecha_desde }}&{% endif %}{% if fecha_hasta %}fecha_hasta={{ fecha_hasta }}&{% endif %}{% if razon_social %}razon_social={{ razon_social }}{% endif %}" class="ml-1 hover:text-blue-900"><i class="fas fa-times"></i></a></span>{% endif %}
-        {% if filtro_estado %}<span class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full"><i class="fas fa-tag text-xs"></i>{{ filtro_estado|capfirst }}<a href="?{% if buscar %}q={{ buscar }}&{% endif %}{% if filtro_factura %}con_factura={{ filtro_factura }}&{% endif %}{% if filtro_con_saldo %}con_saldo={{ filtro_con_saldo }}&{% endif %}{% if fecha_desde %}fecha_desde={{ fecha_desde }}&{% endif %}{% if fecha_hasta %}fecha_hasta={{ fecha_hasta }}{% endif %}" class="ml-1 hover:text-purple-900"><i class="fas fa-times"></i></a></span>{% endif %}
-        {% if filtro_con_saldo %}<span class="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full"><i class="fas fa-exclamation-circle text-xs"></i>Con saldo pendiente<a href="?{% if buscar %}q={{ buscar }}&{% endif %}{% if filtro_estado %}estado={{ filtro_estado }}&{% endif %}{% if filtro_factura %}con_factura={{ filtro_factura }}&{% endif %}{% if fecha_desde %}fecha_desde={{ fecha_desde }}&{% endif %}{% if fecha_hasta %}fecha_hasta={{ fecha_hasta }}{% endif %}" class="ml-1 hover:text-red-900"><i class="fas fa-times"></i></a></span>{% endif %}
-        {% if fecha_desde or fecha_hasta %}<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full"><i class="fas fa-calendar text-xs"></i>{{ fecha_desde|default:"..." }} → {{ fecha_hasta|default:"..." }}</span>{% endif %}
-        <a href="{% url 'comercial:ventas_list' %}" class="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 font-semibold px-2 py-1 rounded-full hover:bg-slate-100 transition-all">
-            <i class="fas fa-times-circle"></i>Limpiar todo
-        </a>
-    </div>
-    {% endif %}
-
-    <!-- ═══ PANEL DE FILTROS (colapsable) ════════════════════════════════ -->
-    <div id="panel-filtros" class="{% if not buscar and not filtro_estado and not filtro_factura and not filtro_con_saldo and not fecha_desde and not fecha_hasta and not razon_social and not direccion %}hidden{% endif %} bg-white rounded-2xl shadow-md border border-gray-100 p-4 mb-4">
+    <!-- ═══ PANEL DE FILTROS ════════════════════════════════ -->
+    <div id="panel-filtros" class="bg-white rounded-2xl shadow-lg p-4 mb-6">
         <form method="get" class="space-y-3">
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 <div class="col-span-2">
@@ -224,6 +202,7 @@
                             <td class="px-4 py-3">
                                 {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
                                 <a href="{% with_return_to cliente_detail_url request.get_full_path %}" class="text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors block">{{ venta.cliente }}</a>
+                                <span class="text-xs font-mono text-slate-400 block">{{ venta.cliente.codigo }}</span>
                                 {% if venta.cliente.razon_social %}<span class="text-xs text-slate-400">{{ venta.cliente.razon_social }}</span>{% endif %}
                             </td>
                             <td class="px-4 py-3 text-right">
@@ -380,7 +359,7 @@
                             <span class="text-xs text-slate-400">{{ venta.created_at|date:"d/m" }}</span>
                         </div>
                         {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_mobile_url %}
-                        <a href="{% with_return_to cliente_detail_mobile_url request.get_full_path %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">{{ venta.cliente }}</a>
+                        <a href="{% with_return_to cliente_detail_mobile_url request.get_full_path %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold block mb-2 truncate">{{ venta.cliente }} <span class="font-mono text-slate-400 font-normal">{{ venta.cliente.codigo }}</span></a>
                         {% if venta.venta_en_dolares or venta.sena_en_dolares %}
                         <div class="flex flex-wrap gap-1 mb-2">
                             {% if venta.venta_en_dolares %}
@@ -433,11 +412,6 @@
 
 <script>
 const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-// ── Toggle filtros ────────────────────────────────────────────────────────
-function toggleFiltros() {
-    document.getElementById('panel-filtros').classList.toggle('hidden');
-}
 
 // ── Toggle tabla / kanban ─────────────────────────────────────────────────
 function setVista(vista) {

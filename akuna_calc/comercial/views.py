@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
+from django.views.decorators.http import require_POST
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from datetime import datetime
 from decimal import Decimal
@@ -301,14 +302,18 @@ def ventas_list(request):
         ventas = ventas.filter(con_factura=False)
 
     if buscar:
-        ventas = ventas.filter(
+        filtro_buscar = (
             Q(numero_pedido__icontains=buscar) |
             Q(cliente__nombre__icontains=buscar) |
             Q(cliente__apellido__icontains=buscar) |
             Q(cliente__razon_social__icontains=buscar) |
             Q(numero_factura__icontains=buscar) |
             Q(pagos__numero_factura__icontains=buscar)
-        ).distinct()
+        )
+        cliente_pk = Cliente.pk_desde_codigo(buscar)
+        if cliente_pk is not None:
+            filtro_buscar |= Q(cliente_id=cliente_pk)
+        ventas = ventas.filter(filtro_buscar).distinct()
 
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
@@ -821,12 +826,16 @@ def clientes_list(request):
     # Filtros
     buscar = request.GET.get('q', '')
     if buscar:
-        clientes = clientes.filter(
-            Q(nombre__icontains=buscar) | 
-            Q(apellido__icontains=buscar) | 
+        filtro_buscar = (
+            Q(nombre__icontains=buscar) |
+            Q(apellido__icontains=buscar) |
             Q(razon_social__icontains=buscar) |
             Q(localidad__icontains=buscar)
         )
+        cliente_pk = Cliente.pk_desde_codigo(buscar, permitir_numero=True)
+        if cliente_pk is not None:
+            filtro_buscar |= Q(pk=cliente_pk)
+        clientes = clientes.filter(filtro_buscar)
     
     return render(request, 'comercial/clientes/list.html', {'clientes': clientes})
 
@@ -850,7 +859,9 @@ def cliente_create(request):
                     'success': True,
                     'cliente': {
                         'id': cliente.id,
-                        'nombre': str(cliente)
+                        'nombre': str(cliente),
+                        'codigo': cliente.codigo,
+                        'etiqueta': cliente.etiqueta_selector(),
                     }
                 })
             
@@ -873,6 +884,24 @@ def cliente_create(request):
         }
         form = ClienteForm(initial={k: v for k, v in prefill.items() if v})
     return render(request, 'comercial/clientes/form.html', {'form': form, 'title': 'Nuevo Cliente', 'return_url': return_url})
+
+
+@login_required
+@require_POST
+def cliente_create_rapido(request):
+    form = ClienteForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    cliente = form.save()
+    return JsonResponse({
+        'success': True,
+        'cliente': {
+            'id': cliente.id,
+            'nombre': str(cliente),
+            'codigo': cliente.codigo,
+            'etiqueta': cliente.etiqueta_selector(),
+        },
+    })
 
 
 @login_required
@@ -935,13 +964,17 @@ def exportar_ventas_excel(request):
     elif con_factura == 'no':
         ventas = ventas.filter(con_factura=False)
     if buscar:
-        ventas = ventas.filter(
+        filtro_buscar = (
             Q(numero_pedido__icontains=buscar) |
             Q(cliente__nombre__icontains=buscar) |
             Q(cliente__apellido__icontains=buscar) |
             Q(cliente__razon_social__icontains=buscar) |
             Q(numero_factura__icontains=buscar)
         )
+        cliente_pk = Cliente.pk_desde_codigo(buscar)
+        if cliente_pk is not None:
+            filtro_buscar |= Q(cliente_id=cliente_pk)
+        ventas = ventas.filter(filtro_buscar)
     if razon_social:
         ventas = ventas.filter(cliente__razon_social__icontains=razon_social)
     if fecha_desde:
@@ -963,8 +996,8 @@ def exportar_ventas_excel(request):
     thin = Side(style='thin', color='CBD5E1')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    headers = ['N� Pedido', 'Fecha', 'Cliente', 'Raz�n Social', 'Valor Total', 'Se�a', 'Saldo Pendiente', 'Estado', 'Tipo', 'N� Factura']
-    col_widths = [14, 14, 28, 28, 16, 14, 18, 14, 10, 18]
+    headers = ['N� Pedido', 'Fecha', 'Cliente', 'ID Cliente', 'Raz�n Social', 'Valor Total', 'Se�a', 'Saldo Pendiente', 'Estado', 'Tipo', 'N� Factura']
+    col_widths = [14, 14, 28, 12, 28, 16, 14, 18, 14, 10, 18]
 
     for i, (h, w) in enumerate(zip(headers, col_widths), 1):
         cell = ws.cell(row=1, column=i, value=h)
@@ -981,6 +1014,7 @@ def exportar_ventas_excel(request):
             venta.numero_pedido,
             venta.created_at.strftime('%d/%m/%Y'),
             str(venta.cliente),
+            venta.cliente.codigo,
             venta.cliente.razon_social or '',
             float(venta.valor_total),
             float(venta.sena),
@@ -993,16 +1027,16 @@ def exportar_ventas_excel(request):
             cell = ws.cell(row=row_num, column=col_num, value=valor)
             cell.border = border
             cell.alignment = Alignment(vertical='center')
-            if col_num in [5, 6, 7]:
+            if col_num in [6, 7, 8]:
                 cell.number_format = '#,##0.00'
 
     # Fila de totales
     total_row = ws.max_row + 1
     ws.cell(row=total_row, column=1, value='TOTALES').font = total_font
-    ws.cell(row=total_row, column=5, value=sum(float(v.valor_total) for v in ventas)).number_format = '#,##0.00'
-    ws.cell(row=total_row, column=6, value=sum(float(v.sena) for v in ventas)).number_format = '#,##0.00'
-    ws.cell(row=total_row, column=7, value=sum(float(v.saldo) for v in ventas)).number_format = '#,##0.00'
-    for col in range(1, 11):
+    ws.cell(row=total_row, column=6, value=sum(float(v.valor_total) for v in ventas)).number_format = '#,##0.00'
+    ws.cell(row=total_row, column=7, value=sum(float(v.sena) for v in ventas)).number_format = '#,##0.00'
+    ws.cell(row=total_row, column=8, value=sum(float(v.saldo) for v in ventas)).number_format = '#,##0.00'
+    for col in range(1, 12):
         ws.cell(row=total_row, column=col).fill = total_fill
         ws.cell(row=total_row, column=col).font = total_font
         ws.cell(row=total_row, column=col).border = border
