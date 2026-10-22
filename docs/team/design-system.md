@@ -335,3 +335,17 @@ El cotizador de presupuestos incluye un **visor 3D** de la abertura (FEAT-030 / 
 - **params:** `{ tipo, ancho, alto, hojas, mosquitero, premarco, vidrio }`.
 
 **Regla:** dentro de un template Django, **no usar `style={{ }}` de JSX** (choca con `{{ }}` del motor de plantillas) → usar clases Tailwind (ej. `h-72` en vez de `style={{height:'300px'}}`).
+
+---
+
+## Modales apilados y editor de plano SVG interactivo (FEAT-045 / ADR-022)
+
+**Modales apilados.** El editor de estructura `#modal-estructura` vive en `z-50`. Cuando se abre el cotizador `#modal-item` en "modo módulo" encima del editor, sube a `z-[60]`. **Escape cierra solo el modal de más arriba** (el handler de `detalle.html` mira cuál está abierto). Para otro modal sobre un modal, usar el mismo esquema: `z-50` el de abajo, `z-[60]` el de arriba.
+
+**Editor de plano SVG interactivo** (`static/js/estructura.js` + `_estructura_editor.html`):
+- Arrastre con **pointer events** y conversión a coordenadas del plano con `getScreenCTM().inverse()` (sirve con cualquier escala del SVG).
+- **Grilla de 10 mm** e **imán de ~12 px** a bordes de la pared y de otras piezas, con **guías punteadas** mientras se arrastra.
+- Mientras se arrastra se dibuja `soloContorno` (sin el detalle interno de cada abertura) para que el movimiento sea fluido.
+- Si se suelta en una posición inválida (superpuesta) la pieza vuelve a su lugar.
+- Los mismos campos se pueden cargar a mano en mm; el arrastre no es la única vía.
+

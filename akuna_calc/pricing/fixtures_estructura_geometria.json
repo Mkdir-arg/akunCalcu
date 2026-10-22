@@ -1,0 +1,114 @@
+[
+  {
+    "nombre": "junta vertical",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 1000, "alto": 2000}, {"x": 1000, "y": 0, "ancho": 800, "alto": 1500}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [{"a": "M1", "b": "M2", "orientacion": "vertical", "largo_mm": 1500}],
+    "errores_count": 0
+  },
+  {
+    "nombre": "junta horizontal",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 500, "y": 0, "ancho": 1200, "alto": 900}, {"x": 500, "y": 900, "ancho": 1200, "alto": 600}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [{"a": "M1", "b": "M2", "orientacion": "horizontal", "largo_mm": 1200}],
+    "errores_count": 0
+  },
+  {
+    "nombre": "solape parcial (puerta + ventana con antepecho)",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 900, "alto": 2050}, {"x": 900, "y": 900, "ancho": 1500, "alto": 1100}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [{"a": "M1", "b": "M2", "orientacion": "vertical", "largo_mm": 1100}],
+    "errores_count": 0
+  },
+  {
+    "nombre": "solo esquina no es junta",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 1000, "alto": 1000}, {"x": 1000, "y": 1000, "ancho": 1000, "alto": 1000}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [],
+    "errores_count": 0
+  },
+  {
+    "nombre": "separadas",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 900, "alto": 2000}, {"x": 1500, "y": 900, "ancho": 1000, "alto": 1000}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [],
+    "errores_count": 0
+  },
+  {
+    "nombre": "maqueta: tres aberturas, dos pegadas",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 600, "y": 0, "ancho": 900, "alto": 2050}, {"x": 1800, "y": 900, "ancho": 1500, "alto": 1100}, {"x": 3300, "y": 900, "ancho": 700, "alto": 1100}],
+    "etiquetas": ["M1", "M2", "M3"],
+    "juntas": [{"a": "M2", "b": "M3", "orientacion": "vertical", "largo_mm": 1100}],
+    "errores_count": 0
+  },
+  {
+    "nombre": "orden de etiquetas: x, despues y desde el piso",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 2000, "y": 0, "ancho": 800, "alto": 2000}, {"x": 0, "y": 900, "ancho": 1000, "alto": 1000}, {"x": 0, "y": 0, "ancho": 1000, "alto": 900}],
+    "etiquetas": ["M3", "M2", "M1"],
+    "juntas": [{"a": "M1", "b": "M2", "orientacion": "horizontal", "largo_mm": 1000}],
+    "errores_count": 0
+  },
+  {
+    "nombre": "superpuestas",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 1000, "alto": 1000}, {"x": 500, "y": 500, "ancho": 1000, "alto": 1000}],
+    "etiquetas": ["M1", "M2"],
+    "juntas": [],
+    "errores_count": 1
+  },
+  {
+    "nombre": "fuera de la pared",
+    "pared": {"ancho": 3000, "alto": 2600},
+    "modulos": [{"x": 2500, "y": 0, "ancho": 1000, "alto": 1000}],
+    "etiquetas": ["M1"],
+    "juntas": [],
+    "errores_count": 1
+  },
+  {
+    "nombre": "lado menor a 200 mm",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 150, "alto": 1000}],
+    "etiquetas": ["M1"],
+    "juntas": [],
+    "errores_count": 1
+  },
+  {
+    "nombre": "pared menor a 500 mm",
+    "pared": {"ancho": 400, "alto": 2600},
+    "modulos": [{"x": 0, "y": 0, "ancho": 300, "alto": 300}],
+    "etiquetas": ["M1"],
+    "juntas": [],
+    "errores_count": 1
+  },
+  {
+    "nombre": "sin aberturas",
+    "pared": {"ancho": 5000, "alto": 2600},
+    "modulos": [],
+    "etiquetas": [],
+    "juntas": [],
+    "errores_count": 1
+  },
+  {
+    "nombre": "trece aberturas (maximo 12)",
+    "pared": {"ancho": 13000, "alto": 2600},
+    "modulos": [
+      {"x": 0, "y": 0, "ancho": 500, "alto": 500}, {"x": 1000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 2000, "y": 0, "ancho": 500, "alto": 500}, {"x": 3000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 4000, "y": 0, "ancho": 500, "alto": 500}, {"x": 5000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 6000, "y": 0, "ancho": 500, "alto": 500}, {"x": 7000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 8000, "y": 0, "ancho": 500, "alto": 500}, {"x": 9000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 10000, "y": 0, "ancho": 500, "alto": 500}, {"x": 11000, "y": 0, "ancho": 500, "alto": 500},
+      {"x": 12000, "y": 0, "ancho": 500, "alto": 500}
+    ],
+    "etiquetas": ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13"],
+    "juntas": [],
+    "errores_count": 1
+  }
+]

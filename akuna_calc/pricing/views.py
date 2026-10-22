@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from .serializers import PricingCalculateSerializer
 from .services.calculator import PricingError, calcular_precio
+from .services.estructura import EstructuraError, calcular_estructura
 
 logger = logging.getLogger(__name__)
 
@@ -31,4 +32,18 @@ class PricingCalculateView(APIView):
         except PricingError as exc:
             logger.warning("Error de pricing: %s", exc)
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class EstructuraCalculateView(APIView):
+    """POST: vista previa del precio de una estructura (REQ-062). No guarda nada."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            result = calcular_estructura(request.data)
+        except EstructuraError as exc:
+            return Response({"error": exc.errores[0], "errores": exc.errores}, status=status.HTTP_400_BAD_REQUEST)
+        except PricingError as exc:
+            logger.warning("Error de pricing en estructura: %s", exc)
+            return Response({"error": str(exc), "errores": [str(exc)]}, status=status.HTTP_400_BAD_REQUEST)
         return Response(result, status=status.HTTP_200_OK)

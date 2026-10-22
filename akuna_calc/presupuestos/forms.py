@@ -221,3 +221,20 @@ class ConfirmarImportacionForm(forms.Form):
     origen_numero = forms.CharField(required=False, max_length=20, widget=forms.HiddenInput())
     origen_cliente = forms.CharField(required=False, max_length=120, widget=forms.HiddenInput())
     origen_fecha = forms.CharField(required=False, max_length=10, widget=forms.HiddenInput())
+
+
+class EstructuraItemForm(forms.Form):
+    """Alta o edición de un ítem estructura (REQ-062): el editor manda todo en un JSON."""
+
+    estructura_json = forms.JSONField()
+    descripcion = forms.CharField(required=False, max_length=300)
+    cantidad = forms.IntegerField(required=False, min_value=1)
+
+    def clean_estructura_json(self):
+        data = self.cleaned_data['estructura_json']
+        if not isinstance(data, dict):
+            raise forms.ValidationError('La estructura enviada no es válida.')
+        return data
+
+    def clean_cantidad(self):
+        return self.cleaned_data.get('cantidad') or 1

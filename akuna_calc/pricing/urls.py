@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from .views import PricingCalculateView, cotizador_view
+from .views import EstructuraCalculateView, PricingCalculateView, cotizador_view
 from .catalog_views import (
     ExtrusorasListView, LineasListView, ProductosListView,
     MarcosListView, HojasListView, InterioresListView, VidriosListView,
@@ -35,6 +35,7 @@ urlpatterns = [
     
     # API Endpoints
     path("api/pricing/calculate/", PricingCalculateView.as_view(), name="pricing-calculate"),
+    path("api/pricing/estructura/calculate/", EstructuraCalculateView.as_view(), name="pricing-estructura-calculate"),
     path("api/producto/<int:pk>/", api_get_producto, name="api-get-producto"),
     path("api/marco/<int:pk>/", api_get_marco, name="api-get-marco"),
     path("api/hoja/<int:pk>/", api_get_hoja, name="api-get-hoja"),

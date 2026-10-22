@@ -1788,3 +1788,326 @@ class ProductosEstadoMasivoTest(_TestCase):
         self.assertContains(response, 'data-select-id="1"')
         self.assertContains(response, 'id="acciones-masivas"')
         self.assertContains(response, self.url)
+
+
+# ---------------------------------------------------------------------------
+# REQ-062 Estructuras
+# ---------------------------------------------------------------------------
+import json as _json
+from pathlib import Path as _Path
+
+from pricing.services import estructura as _est
+from pricing.services.calculator import precio_perfil_por_largo as _precio_perfil_por_largo
+
+
+def _modulo_est(x, y, ancho, alto, marco_id=21, **extra):
+    config = {'producto_id': 11, 'marco_id': marco_id, 'hoja_id': None, 'vidrio_codigo': 'F4'}
+    config.update(extra)
+    return {'x': x, 'y': y, 'ancho': ancho, 'alto': alto, 'config': config}
+
+
+def _payload_est(modulos=None, perfil=None, **extra):
+    data = {
+        'version': 1, 'nombre': 'Frente living',
+        'pared': {'ancho': 5000, 'alto': 2600},
+        'comun': {'extrusora_id': 1, 'linea_id': 3, 'tratamiento_id': None, 'margen_porcentaje': 30},
+        'perfil_union_codigo': perfil,
+        'modulos': modulos if modulos is not None else [
+            _modulo_est(0, 0, 1000, 2000), _modulo_est(1000, 0, 800, 1500, marco_id=22),
+        ],
+    }
+    data.update(extra)
+    return data
+
+
+def _marco_est(pk, linea_id=3, terciarizado=False, tipo_dibujo='', descripcion='VENTANA'):
+    producto = SimpleNamespace(
+        linea_id=linea_id, terciarizado=terciarizado, tipo_dibujo=tipo_dibujo,
+        descripcion=descripcion, cantidad_hojas=1,
+    )
+    return SimpleNamespace(pk=pk, producto=producto)
+
+
+def _precio_falso(config):
+    base = float(config['ancho_mm'])
+    return {
+        'precio_total': base * 13, 'subtotal': base * 10, 'margen': base * 3,
+        'desglose': {'perfiles': []}, 'resumen': {'total_perfiles': base * 10},
+    }
+
+
+class GeometriaEstructuraFixturesTest(SimpleTestCase):
+    """Los mismos casos que verifica `audit_estructura.mjs` para la geometría en JS."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        ruta = _Path(__file__).resolve().parent / 'fixtures_estructura_geometria.json'
+        cls.casos = _json.loads(ruta.read_text(encoding='utf-8'))
+
+    def test_etiquetas(self):
+        for caso in self.casos:
+            with self.subTest(caso['nombre']):
+                self.assertEqual(_est.etiquetar_modulos(caso['modulos']), caso['etiquetas'])
+
+    def test_juntas(self):
+        for caso in self.casos:
+            with self.subTest(caso['nombre']):
+                etiquetas = _est.etiquetar_modulos(caso['modulos'])
+                juntas = [
+                    {'a': etiquetas[j['a']], 'b': etiquetas[j['b']],
+                     'orientacion': j['orientacion'], 'largo_mm': j['largo_mm']}
+                    for j in _est.detectar_juntas(caso['modulos'])
+                ]
+                self.assertEqual(juntas, caso['juntas'])
+
+    def test_cantidad_de_errores(self):
+        for caso in self.casos:
+            with self.subTest(caso['nombre']):
+                errores = _est.validar_geometria(caso['pared'], caso['modulos'])
+                self.assertEqual(len(errores), caso['errores_count'], errores)
+
+    def test_pared_chica_suma_su_error_aun_sin_modulos_o_con_demasiados(self):
+        chica = {'ancho': 400, 'alto': 2600}
+        self.assertEqual(len(_est.validar_geometria(chica, [])), 2)
+        trece = [{'x': i * 20, 'y': 0, 'ancho': 20, 'alto': 20} for i in range(13)]
+        self.assertEqual(len(_est.validar_geometria(chica, trece)), 2)
+
+    def test_coordenadas_de_la_junta(self):
+        modulos = [{'x': 1800, 'y': 900, 'ancho': 1500, 'alto': 1100}, {'x': 3300, 'y': 900, 'ancho': 700, 'alto': 1100}]
+        junta = _est.detectar_juntas(modulos)[0]
+        self.assertEqual((junta['x1'], junta['y1'], junta['x2'], junta['y2']), (3300, 900, 3300, 2000))
+
+    def test_envolvente(self):
+        modulos = [{'x': 600, 'y': 0, 'ancho': 900, 'alto': 2050}, {'x': 1800, 'y': 900, 'ancho': 1500, 'alto': 1100}]
+        self.assertEqual(_est.envolvente(modulos), {'x': 600, 'y': 0, 'ancho': 2700, 'alto': 2050})
+
+    def test_mensajes_nombran_la_abertura(self):
+        errores = _est.validar_geometria(
+            {'ancho': 3000, 'alto': 2600}, [{'x': 2500, 'y': 0, 'ancho': 1000, 'alto': 1000}])
+        self.assertEqual(errores, ['M1 se sale de la pared. Movela o agrandá la pared.'])
+
+
+class CalcularEstructuraTest(SimpleTestCase):
+    def setUp(self):
+        marcos = {21: _marco_est(21), 22: _marco_est(22), 23: _marco_est(23)}
+        patch('pricing.services.estructura._cargar_marcos', side_effect=lambda ids: {i: marcos[i] for i in ids}).start()
+        self.mock_calc = patch('pricing.services.estructura.calcular_precio', side_effect=_precio_falso).start()
+        self.addCleanup(patch.stopall)
+
+    def test_sin_perfil_el_total_es_la_suma(self):
+        r = _est.calcular_estructura(_payload_est())
+        self.assertEqual(r['precio_total'], 1000 * 13 + 800 * 13)
+        self.assertEqual(r['subtotal'], 1000 * 10 + 800 * 10)
+        self.assertEqual(r['margen'], 1000 * 3 + 800 * 3)
+        self.assertIsNone(r['union']['perfil'])
+        self.assertEqual(r['union']['precio_total'], 0)
+        self.assertEqual(len(r['juntas']), 1)
+        self.assertEqual(r['juntas'][0]['precio_total'], 0)
+        self.assertEqual(r['envolvente'], {'x': 0, 'y': 0, 'ancho': 1800, 'alto': 2000})
+
+    def test_modulos_en_orden_de_entrada_con_etiqueta(self):
+        modulos = [_modulo_est(2000, 0, 800, 2000), _modulo_est(0, 0, 1000, 2000, marco_id=22)]
+        r = _est.calcular_estructura(_payload_est(modulos))
+        self.assertEqual([(m['indice'], m['etiqueta']) for m in r['modulos']], [(0, 'M2'), (1, 'M1')])
+
+    def test_con_perfil_sigue_la_formula(self):
+        perfil = SimpleNamespace(codigo='6110', descripcion='Acople', peso_metro=2.0, precio_kg=10.0)
+        tratamiento = SimpleNamespace(precio_kg=4.0)
+        payload = _payload_est(perfil='6110')
+        payload['comun']['tratamiento_id'] = 5
+        with patch.object(PriceCalculator, '_get_perfil', return_value=perfil), \
+                patch.object(PriceCalculator, '_get_tratamiento', return_value=tratamiento):
+            r = _est.calcular_estructura(payload)
+        union = r['union']
+        # junta de 1500 mm: 1,5 m x 2 kg/m = 3 kg ; perfil 30 ; tratamiento 12 ; margen 30 % de 42
+        self.assertEqual(union['perfil'], {'codigo': '6110', 'descripcion': 'Acople'})
+        self.assertEqual(union['largo_total_mm'], 1500)
+        self.assertAlmostEqual(union['peso_kg'], 3.0, places=4)
+        self.assertAlmostEqual(union['perfiles_total'], 30.0, places=2)
+        self.assertAlmostEqual(union['tratamiento_total'], 12.0, places=2)
+        self.assertAlmostEqual(union['subtotal'], 42.0, places=2)
+        self.assertAlmostEqual(union['margen'], 12.6, places=2)
+        self.assertAlmostEqual(union['precio_total'], 54.6, places=2)
+        self.assertAlmostEqual(r['juntas'][0]['precio_total'], 54.6, places=2)
+        self.assertAlmostEqual(r['precio_total'], 1000 * 13 + 800 * 13 + 54.6, places=2)
+
+    def test_el_precio_de_la_junta_se_prorratea_por_largo(self):
+        perfil = SimpleNamespace(codigo='6110', descripcion='Acople', peso_metro=1.0, precio_kg=10.0)
+        modulos = [
+            _modulo_est(0, 0, 1000, 2000), _modulo_est(1000, 0, 800, 1000, marco_id=22),
+            _modulo_est(1800, 0, 500, 500, marco_id=23),
+        ]
+        with patch.object(PriceCalculator, '_get_perfil', return_value=perfil):
+            r = _est.calcular_estructura(_payload_est(modulos, perfil='6110'))
+        largos = {(j['a'], j['b']): j['largo_mm'] for j in r['juntas']}
+        self.assertEqual(largos, {('M1', 'M2'): 1000, ('M2', 'M3'): 500})
+        self.assertAlmostEqual(sum(j['precio_total'] for j in r['juntas']), r['union']['precio_total'], places=1)
+        self.assertAlmostEqual(r['juntas'][0]['precio_total'], r['juntas'][1]['precio_total'] * 2, places=1)
+
+    def test_error_de_calculo_lleva_el_prefijo_del_modulo(self):
+        def falla(config):
+            if config['ancho_mm'] == 800:
+                raise PricingError('Marco inexistente.')
+            return _precio_falso(config)
+        self.mock_calc.side_effect = falla
+        with self.assertRaisesMessage(PricingError, 'Módulo M2: Marco inexistente.'):
+            _est.calcular_estructura(_payload_est())
+
+    def test_ignora_el_precio_que_manda_el_cliente_y_inyecta_lo_comun(self):
+        payload = _payload_est(precio_total=1, subtotal=1)
+        payload['modulos'][0]['precio_total'] = 1
+        payload['modulos'][0]['config']['precio_total'] = 1
+        payload['modulos'][0]['config']['margen_porcentaje'] = 0
+        payload['modulos'][0]['config']['ancho_mm'] = 5
+        payload['comun']['tratamiento_id'] = 5
+        r = _est.calcular_estructura(payload)
+        self.assertEqual(r['precio_total'], 1000 * 13 + 800 * 13)
+        config = self.mock_calc.call_args_list[0][0][0]
+        self.assertNotIn('precio_total', config)
+        self.assertEqual((config['ancho_mm'], config['alto_mm']), (1000, 2000))
+        self.assertEqual((config['tratamiento_id'], config['margen_porcentaje']), (5, 30.0))
+
+    def test_falta_marco(self):
+        modulos = [{'x': 0, 'y': 0, 'ancho': 1000, 'alto': 2000, 'config': {}}]
+        with self.assertRaises(_est.EstructuraError) as ctx:
+            _est.calcular_estructura(_payload_est(modulos))
+        self.assertEqual(ctx.exception.errores, ['Módulo M1: falta configurar la abertura.'])
+        self.mock_calc.assert_not_called()
+
+    def test_producto_terciarizado_otra_linea_y_no_dibujo(self):
+        casos = {
+            21: (_marco_est(21, terciarizado=True), 'terciarizados'),
+            22: (_marco_est(22, linea_id=9), 'otra línea'),
+            23: (_marco_est(23, tipo_dibujo='no_dibujo'), 'complemento'),
+        }
+        for marco_id, (marco, texto) in casos.items():
+            with self.subTest(texto), patch(
+                    'pricing.services.estructura._cargar_marcos', return_value={marco_id: marco}):
+                modulos = [_modulo_est(0, 0, 1000, 2000, marco_id=marco_id)]
+                with self.assertRaises(_est.EstructuraError) as ctx:
+                    _est.calcular_estructura(_payload_est(modulos))
+                self.assertIn('Módulo M1:', ctx.exception.errores[0])
+                self.assertIn(texto, ctx.exception.errores[0])
+
+    def test_geometria_invalida_no_calcula(self):
+        modulos = [_modulo_est(0, 0, 1000, 2000), _modulo_est(500, 0, 1000, 2000, marco_id=22)]
+        with self.assertRaises(_est.EstructuraError) as ctx:
+            _est.calcular_estructura(_payload_est(modulos))
+        self.assertEqual(len(ctx.exception.errores), 1)
+        self.assertIn('se superponen', ctx.exception.errores[0])
+        self.mock_calc.assert_not_called()
+
+    def test_payload_con_basura_no_revienta(self):
+        for data in (None, [], {'pared': {'ancho': 'x', 'alto': 1}}):
+            with self.subTest(data=data), self.assertRaises(_est.EstructuraError):
+                _est.calcular_estructura(data)
+
+    def test_tirantes_y_opcionales_mal_formados_no_llegan_al_calculo(self):
+        material = {'tipo': 'vidrio', 'codigo': 'F4'}
+        casos = {
+            'tirantes sin secciones': {'tirantes': {'activo': True, 'cantidad': 'x'}},
+            'seccion sin numero': {'tirantes': {'activo': True, 'secciones': [
+                {'medida_mm': 'x', 'material': material}, {'medida_mm': 1000, 'material': material}]}},
+            'secciones que no suman': {'tirantes': {'activo': True, 'secciones': [
+                {'medida_mm': 500, 'material': material}, {'medida_mm': 500, 'material': material}]}},
+            'opcional con id de texto': {'opcionales': [{'id': 'abc'}]},
+            'opcional con cantidad infinita': {'opcionales': [{'id': 1, 'cantidad': float('inf')}]},
+        }
+        for nombre, extra in casos.items():
+            with self.subTest(nombre):
+                modulos = [_modulo_est(0, 0, 1000, 2000, **extra)]
+                with self.assertRaises(_est.EstructuraError) as ctx:
+                    _est.calcular_estructura(_payload_est(modulos))
+                if 'tirantes' in extra:
+                    self.assertTrue(ctx.exception.errores[0].startswith('Módulo M1: '))
+        self.mock_calc.assert_not_called()
+
+    def test_tirantes_validos_llegan_al_calculo_como_en_el_cotizador(self):
+        material = {'tipo': 'vidrio', 'codigo': 'F4'}
+        tirantes = {'activo': True, 'orientacion': 'horizontal', 'secciones': [
+            {'medida_mm': 1200, 'material': material}, {'medida_mm': 800, 'material': material}]}
+        _est.calcular_estructura(_payload_est([_modulo_est(0, 0, 1000, 2000, tirantes=tirantes)]))
+        config = self.mock_calc.call_args_list[0][0][0]
+        self.assertTrue(config['tirantes']['activo'])
+        self.assertEqual([s['medida_mm'] for s in config['tirantes']['secciones']], [1200, 800])
+
+
+class PrecioPerfilPorLargoTest(SimpleTestCase):
+    def test_misma_cuenta_que_los_tirantes(self):
+        perfil = SimpleNamespace(codigo='T1', descripcion='Acople', peso_metro=2.0, precio_kg=10.0)
+        with patch.object(PriceCalculator, '_get_perfil', return_value=perfil):
+            r = _precio_perfil_por_largo('T1', 1000, cantidad=2)
+        self.assertAlmostEqual(r['peso_kg'], 4.0, places=4)
+        self.assertAlmostEqual(r['item']['precio_total'], 40.0, places=2)
+        self.assertEqual(r['item']['segmento'], 'union')
+
+    def test_largo_cero_devuelve_el_perfil_sin_renglon(self):
+        perfil = SimpleNamespace(codigo='T1', descripcion='Acople', peso_metro=2.0, precio_kg=10.0)
+        with patch.object(PriceCalculator, '_get_perfil', return_value=perfil):
+            r = _precio_perfil_por_largo('T1', 0)
+        self.assertEqual(r['peso_kg'], 0.0)
+        self.assertIsNone(r['item'])
+        self.assertEqual(r['perfil']['codigo'], 'T1')
+
+    def test_el_tirante_sigue_marcando_segmento_tirante(self):
+        calc = PriceCalculator()
+        calc._get_perfil = lambda codigo, color_id: SimpleNamespace(
+            codigo=codigo, descripcion='Travesaño', peso_metro=2.0, precio_kg=10.0)
+        items = []
+        calc._calcular_tirantes_perfil('T1', 1, 1000, None, items)
+        self.assertEqual(items[0]['segmento'], 'tirante')
+
+
+class EstructuraCalculateViewTest(TestCase):
+    URL = '/pricing/api/pricing/estructura/calculate/'
+
+    def setUp(self):
+        from usuarios.models import PerfilAccesoUsuario
+        self.con_permiso = User.objects.create_user('conpermiso', password='x')
+        PerfilAccesoUsuario.objects.create(usuario=self.con_permiso, permisos=['presupuestos.view'])
+        self.sin_permiso = User.objects.create_user('sinpermiso', password='x')
+        PerfilAccesoUsuario.objects.create(usuario=self.sin_permiso, permisos=[])
+
+    def _post(self, data):
+        return self.client.post(self.URL, data=_json.dumps(data), content_type='application/json')
+
+    def test_url_por_nombre(self):
+        from django.urls import reverse
+        self.assertEqual(reverse('pricing-estructura-calculate'), self.URL)
+
+    def test_200(self):
+        self.client.force_login(self.con_permiso)
+        with patch('pricing.views.calcular_estructura', return_value={'precio_total': 10.0}):
+            res = self._post(_payload_est())
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['precio_total'], 10.0)
+
+    def test_400_con_todos_los_errores(self):
+        self.client.force_login(self.con_permiso)
+        res = self._post(_payload_est(modulos=[]))
+        self.assertEqual(res.status_code, 400)
+        cuerpo = res.json()
+        self.assertEqual(cuerpo['error'], cuerpo['errores'][0])
+        self.assertIn('al menos una abertura', cuerpo['error'])
+
+    def test_400_cuando_falla_el_calculo(self):
+        self.client.force_login(self.con_permiso)
+        with patch('pricing.views.calcular_estructura', side_effect=PricingError('Módulo M2: Marco inexistente.')):
+            res = self._post(_payload_est())
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['errores'], ['Módulo M2: Marco inexistente.'])
+
+    def test_usuario_sin_permiso_no_entra(self):
+        self.client.force_login(self.sin_permiso)
+        with patch('pricing.views.calcular_estructura', return_value={'precio_total': 10.0}) as mock_calc:
+            res = self._post(_payload_est())
+        self.assertEqual(res.status_code, 403)
+        mock_calc.assert_not_called()
+
+    def test_anonimo_va_al_login(self):
+        with patch('pricing.views.calcular_estructura', return_value={'precio_total': 10.0}) as mock_calc:
+            res = self._post(_payload_est())
+        self.assertEqual(res.status_code, 302)
+        self.assertIn('/login/', res['Location'])
+        mock_calc.assert_not_called()

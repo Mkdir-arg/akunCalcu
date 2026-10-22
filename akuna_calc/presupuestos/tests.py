@@ -2404,7 +2404,8 @@ class PdfPlanosAnexoTest(SimpleTestCase):
         self.assertIn('class="plano-dibujo" data-dibujo="dibujo-item-42"', html)
         self.assertIn('id="dibujo-item-42"', html)
         self.assertNotIn('concept-dibujo', html, 'el dibujo no debe quedar dentro de la celda')
-        self.assertIn('/static/js/elevacion.js', html)
+        # REQ-062: el anexo dibuja con svgDibujo de estructura.js, que reusa elevacion.js.
+        self.assertIn('/static/js/estructura.js', html)
         # REQ-047: el símbolo de apertura sale del dato del ítem, así que va prendido.
         self.assertIn("{ apertura: true }", html)
 
@@ -3122,3 +3123,307 @@ class ColocacionEnDolaresPvcTest(TestCase):
         self.assertEqual(self.pvc.recargo_renovacion_unitario, Decimal('2000.00'))
         self.assertEqual(item.precio_unitario, Decimal('102000.00'))
         self.assertEqual(self.pvc.get_recargo_renovacion_unitario_usd(), Decimal('2'))
+
+
+# ---------------------------------------------------------------------------
+# REQ-062 Estructuras
+# ---------------------------------------------------------------------------
+import json as _json
+
+from plantillas.models import OrdenFabricacion
+from presupuestos.pdf_descriptions import build_dibujo_estructura
+
+
+def _marco_est(pk, descripcion='PUERTA 1 HOJA'):
+    producto = SimpleNamespace(
+        linea_id=3, terciarizado=False, tipo_dibujo='', descripcion=descripcion, cantidad_hojas=1)
+    return SimpleNamespace(pk=pk, producto=producto)
+
+
+def _payload_estructura(n=3, **extra):
+    modulos = [
+        {'x': 600, 'y': 0, 'ancho': 900, 'alto': 2050, 'config': {'marco_id': 21, 'producto_id': 11}},
+        {'x': 1800, 'y': 900, 'ancho': 1500, 'alto': 1100, 'config': {'marco_id': 22, 'producto_id': 12}},
+        {'x': 3300, 'y': 900, 'ancho': 700, 'alto': 1100, 'config': {'marco_id': 23, 'producto_id': 13}},
+    ][:n]
+    data = {
+        'version': 1, 'nombre': 'Frente living',
+        'pared': {'ancho': 5000, 'alto': 2600},
+        'comun': {'extrusora_id': 1, 'linea_id': 3, 'tratamiento_id': None, 'margen_porcentaje': 30},
+        'perfil_union_codigo': None, 'modulos': modulos,
+    }
+    data.update(extra)
+    return data
+
+
+def _snapshot_falso(config, descripcion, cantidad=1):
+    return {
+        'descripcion_manual': descripcion, 'cantidad': cantidad,
+        'ancho_mm': config['ancho_mm'], 'alto_mm': config['alto_mm'],
+        'linea': {'id': 3, 'nombre': 'Módena'}, 'extrusora': {'id': 1, 'nombre': 'Extrusora'},
+        'tratamiento': {'id': 5, 'descripcion': 'Blanco'},
+        'producto': {'id': config['producto_id'], 'descripcion': 'PUERTA 1 HOJA'},
+        'vidrio': {'codigo': 'F4', 'descripcion': 'Float 4mm'},
+        'apertura': {'codigo': 'puerta', 'lado': 'izq'},
+    }
+
+
+class EstructuraPresupuestoBase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('estructurauser', password='testpass')
+        admin, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'Acceso total.', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=admin)
+        self.client = Client()
+        self.client.login(username='estructurauser', password='testpass')
+
+        marcos = {21: _marco_est(21), 22: _marco_est(22), 23: _marco_est(23)}
+        patch('pricing.services.estructura._cargar_marcos',
+              side_effect=lambda ids: {i: marcos[i] for i in ids}).start()
+        patch('pricing.services.estructura.calcular_precio', side_effect=lambda c: {
+            'precio_total': float(c['ancho_mm']) * 13, 'subtotal': float(c['ancho_mm']) * 10,
+            'margen': float(c['ancho_mm']) * 3, 'desglose': {}, 'resumen': {},
+        }).start()
+        self.mock_snapshot = patch('presupuestos.estructuras.build_item_snapshot', side_effect=_snapshot_falso).start()
+        patch('presupuestos.estructuras.build_dibujo_params',
+              side_effect=lambda snap: {'tipo': 'pano_fijo', 'ancho': snap['ancho_mm'], 'alto': snap['alto_mm']}).start()
+        self.addCleanup(patch.stopall)
+
+        self.presupuesto = crear_presupuesto(self.user)
+        self.presupuesto.tipo_obra = 'obra_nueva'
+        self.presupuesto.save(update_fields=['tipo_obra'])
+
+    def _agregar(self, presupuesto=None, estructura=None, **extra):
+        presupuesto = presupuesto or self.presupuesto
+        data = {
+            'estructura_json': _json.dumps(estructura or _payload_estructura()),
+            'descripcion': 'Frente living', 'cantidad': '1',
+        }
+        data.update(extra)
+        return self.client.post(reverse('presupuestos:presupuestos-item-agregar', args=[presupuesto.pk]), data)
+
+    def _crear_estructura(self, **extra):
+        self._agregar(**extra)
+        return self.presupuesto.items.get()
+
+
+# 3 módulos: 900 + 1500 + 700 de ancho x 13 = 41.600; sin perfil de unión.
+PRECIO_ESTRUCTURA = (900 + 1500 + 700) * 13
+
+
+class EstructuraAltaItemTest(EstructuraPresupuestoBase):
+    def test_alta_guarda_la_medida_del_conjunto_y_el_precio_del_servidor(self):
+        res = self._agregar(estructura=_payload_estructura(precio_total=1, precio_unitario=1), cantidad='2')
+        self.assertEqual(res.status_code, 302)
+        item = self.presupuesto.items.get()
+        self.assertEqual((item.ancho_mm, item.alto_mm), (3400, 2050))
+        self.assertEqual(item.descripcion, 'Frente living')
+        self.assertEqual(item.cantidad, 2)
+        self.assertEqual(float(item.precio_unitario), PRECIO_ESTRUCTURA)
+        self.assertEqual(float(item.precio_total), PRECIO_ESTRUCTURA * 2)
+        self.assertEqual(float(item.margen_porcentaje), 30)
+        r = item.resultado_json
+        self.assertEqual((r['tipo'], r['version']), ('estructura', 1))
+        self.assertEqual(r['precio_unitario_base'], PRECIO_ESTRUCTURA)
+        self.assertEqual([m['etiqueta'] for m in r['estructura']['modulos']], ['M1', 'M2', 'M3'])
+        self.assertEqual(r['estructura']['envolvente'], {'x': 600, 'y': 0, 'ancho': 3400, 'alto': 2050})
+        self.assertEqual(len(r['estructura']['juntas']), 1)
+        self.assertEqual(r['snapshot_item']['titulo_item'], 'Frente living — Estructura de 3 aberturas · conjunto 3400×2050')
+        self.presupuesto.refresh_from_db()
+        self.assertEqual(self.presupuesto.get_total_items(), item.precio_total)
+
+    def test_los_modulos_guardan_snapshot_y_dibujo_sin_la_palabra_estructura(self):
+        item = self._crear_estructura()
+        for modulo in item.resultado_json['estructura']['modulos']:
+            self.assertIn('snapshot_item', modulo)
+            self.assertEqual(modulo['dibujo']['tipo'], 'pano_fijo')
+            self.assertNotIn('estructura', modulo['snapshot_item']['descripcion_manual'].lower())
+            self.assertNotIn('ancho_mm', modulo['config'])
+        descripciones = [c[0][1] for c in self.mock_snapshot.call_args_list]
+        self.assertEqual(descripciones, ['PUERTA 1 HOJA — M1', 'PUERTA 1 HOJA — M2', 'PUERTA 1 HOJA — M3'])
+        config_m2 = self.mock_snapshot.call_args_list[1][0][0]
+        self.assertEqual((config_m2['ancho_mm'], config_m2['alto_mm']), (1500, 1100))
+
+    def test_renovacion_suma_el_recargo_una_vez_por_unidad(self):
+        self.presupuesto.tipo_obra = 'renovacion'
+        self.presupuesto.recargo_renovacion_unitario = Decimal('5000')
+        self.presupuesto.save(update_fields=['tipo_obra', 'recargo_renovacion_unitario'])
+        item = self._crear_estructura(cantidad='3')
+        r = item.resultado_json
+        self.assertEqual(r['recargo_renovacion_unitario_aplicado'], 5000)
+        self.assertEqual(r['recargo_renovacion_total_aplicado'], 15000)
+        self.assertEqual(float(item.precio_unitario), PRECIO_ESTRUCTURA + 5000)
+        self.assertEqual(float(item.precio_total), (PRECIO_ESTRUCTURA + 5000) * 3)
+
+    def test_cambiar_a_renovacion_despues_recarga_una_sola_vez(self):
+        item = self._crear_estructura(cantidad='2')
+        self.presupuesto.tipo_obra = 'renovacion'
+        self.presupuesto.recargo_renovacion_unitario = Decimal('5000')
+        self.presupuesto.save(update_fields=['tipo_obra', 'recargo_renovacion_unitario'])
+        self.presupuesto.actualizar_items_por_configuracion()
+        item.refresh_from_db()
+        self.assertEqual(float(item.precio_unitario), PRECIO_ESTRUCTURA + 5000)
+        self.assertEqual(item.resultado_json['precio_unitario_base'], PRECIO_ESTRUCTURA)
+
+    def test_pvc_rechaza_la_estructura(self):
+        pvc = crear_presupuesto_pvc(self.user)
+        res = self._agregar(presupuesto=pvc)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(pvc.items.count(), 0)
+
+    def test_json_invalido_no_crea_el_item(self):
+        self.client.post(
+            reverse('presupuestos:presupuestos-item-agregar', args=[self.presupuesto.pk]),
+            {'estructura_json': '{no es json', 'descripcion': 'x', 'cantidad': '1'},
+        )
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+    def test_estructura_con_error_de_geometria_no_crea_el_item(self):
+        data = _payload_estructura()
+        data['modulos'][1]['x'] = 1000
+        self._agregar(estructura=data)
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+    def test_requiere_login(self):
+        self.client.logout()
+        res = self._agregar()
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(self.presupuesto.items.count(), 0)
+
+
+class EstructuraEditarItemTest(EstructuraPresupuestoBase):
+    def _editar(self, item, **data):
+        return self.client.post(
+            reverse('presupuestos:presupuestos-item-editar', args=[self.presupuesto.pk, item.pk]), data)
+
+    def test_editar_reemplaza_la_estructura(self):
+        item = self._crear_estructura()
+        self._editar(item, estructura_json=_json.dumps(_payload_estructura(n=2, nombre='Otra')),
+                     descripcion='Otra', cantidad='1')
+        item.refresh_from_db()
+        self.assertEqual(self.presupuesto.items.count(), 1)
+        self.assertEqual(item.descripcion, 'Otra')
+        self.assertEqual(len(item.resultado_json['estructura']['modulos']), 2)
+        self.assertEqual(float(item.precio_unitario), (900 + 1500) * 13)
+
+    def test_editar_sin_estructura_json_no_toca_el_item(self):
+        item = self._crear_estructura()
+        antes = item.resultado_json
+        res = self._editar(item, descripcion='Pisada', cantidad='1', marco_id='21', ancho_mm='1000', alto_mm='1000')
+        self.assertEqual(res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.descripcion, 'Frente living')
+        self.assertEqual(item.resultado_json, antes)
+
+    def test_presupuesto_bloqueado_no_se_edita(self):
+        item = self._crear_estructura()
+        antes = item.resultado_json
+        self.presupuesto.estado = 'confirmado'
+        self.presupuesto.save(update_fields=['estado'])
+        self._editar(item, estructura_json=_json.dumps(_payload_estructura(n=2, nombre='Otra')),
+                     descripcion='Otra', cantidad='1')
+        item.refresh_from_db()
+        self.assertEqual(item.descripcion, 'Frente living')
+        self.assertEqual(item.resultado_json, antes)
+
+    def test_item_de_otro_presupuesto_da_404(self):
+        otro = crear_presupuesto(self.user)
+        otro.tipo_obra = 'obra_nueva'
+        otro.save(update_fields=['tipo_obra'])
+        self._agregar(presupuesto=otro)
+        ajeno = otro.items.get()
+        res = self._editar(ajeno, estructura_json=_json.dumps(_payload_estructura(n=2)),
+                           descripcion='Otra', cantidad='1')
+        self.assertEqual(res.status_code, 404)
+        ajeno.refresh_from_db()
+        self.assertEqual(ajeno.descripcion, 'Frente living')
+
+
+class EstructuraPdfContextTest(EstructuraPresupuestoBase):
+    def test_contexto_del_pdf(self):
+        item = self._crear_estructura(cantidad='2')
+        ctx = build_pdf_item_context(item)
+        self.assertEqual(ctx['titulo'], 'Frente living — Estructura de 3 aberturas · conjunto 3400×2050')
+        self.assertIn('M1 PUERTA 1 HOJA', ctx['resumen_tecnico'])
+        self.assertIn('M2', ctx['resumen_tecnico'])
+        self.assertIn('antepecho 900', ctx['resumen_tecnico'])
+        self.assertIn('Sin perfil de unión', ctx['resumen_tecnico'])
+        self.assertIn('Línea Módena', ctx['resumen_tecnico'])
+        self.assertIn('2 unidades', ctx['resumen_compacto'])
+        self.assertEqual(ctx['dibujo']['tipo'], 'estructura')
+
+    def test_dibujo_de_la_estructura(self):
+        item = self._crear_estructura()
+        d = build_dibujo_estructura(item.resultado_json)
+        self.assertEqual(d['pared'], {'ancho': 5000, 'alto': 2600})
+        self.assertFalse(d['perfil_union'])
+        self.assertEqual(d['color_terminacion'], 'Blanco')
+        self.assertEqual([m['etiqueta'] for m in d['modulos']], ['M1', 'M2', 'M3'])
+        self.assertEqual(d['modulos'][0]['dibujo']['tipo'], 'pano_fijo')
+        self.assertEqual(
+            d['juntas'], [{'x1': 3300, 'y1': 900, 'x2': 3300, 'y2': 2000, 'orientacion': 'vertical', 'largo_mm': 1100}])
+
+    def test_el_detalle_y_el_pdf_responden_200(self):
+        self._crear_estructura()
+        res = self.client.get(reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk]))
+        self.assertEqual(res.status_code, 200)
+        item = res.context['items_detalle'][0]
+        self.assertEqual(item.dibujo['tipo'], 'estructura')
+        self.assertIn('Estructura de 3 aberturas', item.resumen_compacto + ' ' + build_pdf_item_context(item)['titulo'])
+        pdf = self.client.get(reverse('presupuestos:presupuestos-pdf', args=[self.presupuesto.pk]))
+        self.assertEqual(pdf.status_code, 200)
+        self.assertTrue(pdf.context['hay_planos'])
+
+
+class EstructuraConfirmarTest(EstructuraPresupuestoBase):
+    def test_confirmar_un_item_comun_y_una_estructura_de_tres_modulos_genera_cuatro_ordenes(self):
+        ItemPresupuesto.objects.create(
+            presupuesto=self.presupuesto, descripcion='Ventana', cantidad=2, ancho_mm=1000, alto_mm=1100,
+            margen_porcentaje=30, precio_unitario=Decimal('50000'), orden=1,
+            resultado_json={'snapshot_item': {'producto': {'descripcion': 'VENTANA'}}},
+        )
+        self._agregar(cantidad='3')
+        self.presupuesto.refresh_from_db()
+
+        res = self.client.post(f'/presupuestos/{self.presupuesto.pk}/estado/', {'estado': 'confirmado'})
+
+        self.assertEqual(res.status_code, 302)
+        self.presupuesto.refresh_from_db()
+        self.assertEqual(self.presupuesto.estado, 'confirmado')
+        ordenes = list(OrdenFabricacion.objects.filter(pedido__presupuesto=self.presupuesto).order_by('orden'))
+        self.assertEqual(len(ordenes), 4)
+        numeros = [o.numero for o in ordenes]
+        self.assertEqual(numeros, list(range(numeros[0], numeros[0] + 4)))
+        self.assertEqual([o.orden for o in ordenes], [1, 2, 3, 4])
+
+        comun = ordenes[0]
+        self.assertEqual(comun.estructura, '')
+        medida = comun.medidas.get()
+        self.assertEqual((medida.item, medida.cantidad, medida.medida), ('1', 2, '1000 x 1100'))
+
+        for orden, etiqueta, medida_esperada in zip(ordenes[1:], ['M1', 'M2', 'M3'], ['900 x 2050', '1500 x 1100', '700 x 1100']):
+            m = orden.medidas.get()
+            self.assertEqual((m.item, m.cantidad, m.medida), (etiqueta, 3, medida_esperada))
+            self.assertIn('Estructura «Frente living»', orden.estructura)
+            self.assertIn(f'módulo {etiqueta} de 3', orden.estructura)
+            self.assertIn('(ítem 2,', orden.estructura)
+            self.assertIn('Pared 5000×2600; conjunto 3400×2050', orden.estructura)
+            self.assertIn('Juntas: M2-M3 vertical 1100', orden.estructura)
+            self.assertIn('Sin perfil de unión', orden.estructura)
+            self.assertEqual(orden.item_presupuesto.descripcion, 'Frente living')
+        self.assertIn('M2 a 1800 mm del borde izq., 900 mm del piso', ordenes[2].estructura)
+
+    def test_confirmar_solo_items_comunes_numera_como_antes(self):
+        for i in range(2):
+            ItemPresupuesto.objects.create(
+                presupuesto=self.presupuesto, descripcion=f'Ventana {i}', cantidad=1, ancho_mm=1000, alto_mm=1000,
+                margen_porcentaje=30, precio_unitario=Decimal('1000'), orden=i + 1, resultado_json={},
+            )
+        self.presupuesto.recalcular_total()
+        self.client.post(f'/presupuestos/{self.presupuesto.pk}/estado/', {'estado': 'confirmado'})
+        ordenes = list(OrdenFabricacion.objects.order_by('orden'))
+        self.assertEqual([o.orden for o in ordenes], [1, 2])
+        self.assertEqual(ordenes[1].numero, ordenes[0].numero + 1)
+        self.assertEqual([o.medidas.get().item for o in ordenes], ['1', '1'])

@@ -29,23 +29,33 @@
   // sola cuando el vendedor mira el plano técnico.
   window.__loadAkunElevacion = function () {
     if (!window.__akunElevacionPromise) {
-      window.__akunElevacionPromise = import("{% static 'js/elevacion.js' %}?v=2")
+      window.__akunElevacionPromise = import("{% static 'js/elevacion.js' %}?v=3")
         .then(function (m) { return m.svgElevacion; });
     }
     return window.__akunElevacionPromise;
+  };
+  // Plano de estructuras (REQ-062). Importa elevacion.js con el mismo ?v= para
+  // que el navegador cargue una sola copia del módulo.
+  window.__loadAkunEstructura = function () {
+    if (!window.__akunEstructuraPromise) {
+      window.__akunEstructuraPromise = import("{% static 'js/estructura.js' %}?v=1");
+    }
+    return window.__akunEstructuraPromise;
   };
   // Miniaturas de la lista de ítems: solo la silueta (sin cotas ni flechas),
   // a 64 px las cotas no se leen y el sentido de apertura no está definido.
   (function () {
     var minis = document.querySelectorAll('.dibujo-mini[data-dibujo]');
     if (!minis.length) return;
-    window.__loadAkunElevacion().then(function (svgElevacion) {
-      minis.forEach(function (el) {
+    window.__loadAkunEstructura().then(function (mod) {
+      minis.forEach(function (el, i) {
         var datos = document.getElementById(el.dataset.dibujo);
         if (!datos) { el.remove(); return; }
         try {
-          el.innerHTML = svgElevacion(JSON.parse(datos.textContent),
-                                      { cotas: false, apertura: false, composicion: false });
+          var p = JSON.parse(datos.textContent);
+          el.innerHTML = p && p.tipo === 'estructura'
+            ? mod.svgDibujo(p, { pared: false, cotas: false, etiquetas: false, apertura: false, idPrefijo: 'mini' + i + '-' })
+            : mod.svgDibujo(p, { cotas: false, apertura: false, composicion: false });
         } catch (e) { el.remove(); }
       });
     }).catch(function () {});
@@ -58,12 +68,12 @@
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
+        <div class="sm:shrink-0">
             <div class="flex items-center gap-3 mb-1">
                 <a href="{{ return_url }}" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <i class="fas fa-arrow-left"></i>
                 </a>
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">{{ presupuesto.numero }}</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 whitespace-nowrap">{{ presupuesto.numero }}</h1>
                 {% if presupuesto.estado == 'borrador' %}
                     <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Borrador</span>
                 {% elif presupuesto.estado == 'enviado' %}
@@ -78,7 +88,7 @@
             </div>
             <p class="text-slate-500 font-medium pl-7">{{ presupuesto.cliente.get_nombre_completo }} · <span class="font-mono">{{ presupuesto.cliente.codigo }}</span></p>
         </div>
-        <div class="flex gap-2 flex-wrap">
+        <div class="flex gap-2 flex-wrap sm:justify-end">
             {% if not presupuesto.esta_bloqueado %}
             {% url 'presupuestos:presupuestos-editar' presupuesto.pk as presupuesto_edit_url %}
             <a href="{% with_return_to presupuesto_edit_url request.get_full_path %}"
@@ -97,12 +107,26 @@
                 class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
                 <i class="fas fa-plus mr-2"></i>Agregar item
             </button>
+            {% if not es_pvc %}
+            <button type="button" onclick="abrirModalEstructura()" id="btn-agregar-estructura"
+                class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center"
+                title="Varias aberturas sobre una pared, cotizadas como un conjunto">
+                <i class="fas fa-object-group mr-2"></i>Agregar estructura
+            </button>
+            {% endif %}
             {% else %}
             <button type="button" disabled
                 class="bg-gray-200 text-gray-400 px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center cursor-not-allowed"
                 title="Define primero si el presupuesto es obra nueva o renovación">
                 <i class="fas fa-plus mr-2"></i>Agregar item
             </button>
+            {% if not es_pvc %}
+            <button type="button" disabled
+                class="bg-gray-200 text-gray-400 px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center cursor-not-allowed"
+                title="Define primero si el presupuesto es obra nueva o renovación">
+                <i class="fas fa-object-group mr-2"></i>Agregar estructura
+            </button>
+            {% endif %}
             {% endif %}
             {% endif %}
             <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank"
@@ -210,9 +234,9 @@
 
             <!-- Items -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="px-5 py-4 border-b flex justify-between items-center">
+                <div class="px-5 py-4 border-b flex justify-between items-center gap-2 flex-wrap">
                     <h2 class="text-lg font-bold text-slate-800">Items</h2>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
                         <span class="text-slate-400 text-sm">{{ presupuesto.items.count }} item{{ presupuesto.items.count|pluralize:"s" }}</span>
                         {% if not presupuesto.esta_bloqueado %}
                         {% if presupuesto.items.count > 1 %}
@@ -226,6 +250,12 @@
                             class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
                             <i class="fas fa-plus mr-1"></i>Agregar
                         </button>
+                        {% if not es_pvc %}
+                        <button onclick="abrirModalEstructura()"
+                            class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
+                            <i class="fas fa-object-group mr-1"></i>Estructura
+                        </button>
+                        {% endif %}
                         {% else %}
                         <span class="text-xs font-semibold text-amber-600">Define el tipo de obra para habilitar la carga</span>
                         {% endif %}
@@ -365,6 +395,11 @@
                     <button onclick="abrirModalItem()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold text-sm inline-flex items-center transition-colors">
                         <i class="fas fa-plus mr-2"></i>Agregar el primer item
                     </button>
+                    {% if not es_pvc %}
+                    <button onclick="abrirModalEstructura()" class="mt-3 ml-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-semibold text-sm inline-flex items-center transition-colors">
+                        <i class="fas fa-object-group mr-2"></i>Agregar estructura
+                    </button>
+                    {% endif %}
                     {% else %}
                     <p class="mt-3 text-sm font-semibold text-amber-600">Define la configuración de obra para cargar el primer ítem.</p>
                     {% endif %}
@@ -914,6 +949,17 @@ function editarItemBtn(btn) {
     try {
         resultado = JSON.parse(document.getElementById('resultado-item-' + pk).textContent || '{}');
     } catch (e) {}
+    if (resultado && resultado.tipo === 'estructura') {
+        if (typeof window.__estructuraEditar === 'function') {
+            window.__estructuraEditar({
+                itemId: pk,
+                descripcion: btn.dataset.desc,
+                cantidad: parseInt(btn.dataset.cant) || 1,
+                resultado: resultado,
+            });
+        }
+        return;
+    }
     if (typeof window.__cotizadorEditar === 'function') {
         window.__cotizadorEditar({
             itemId: pk,
@@ -939,9 +985,33 @@ function abrirModalItem() {
     document.getElementById('modal-item').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
+function abrirModalEstructura() {
+    const tipoObraSelect = document.getElementById('id_tipo_obra');
+    if (tipoObraSelect && !tipoObraSelect.value) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Falta configurar la obra',
+            text: 'Debes indicar si el presupuesto es obra nueva o renovación antes de agregar ítems.'
+        });
+        return;
+    }
+    if (typeof window.__estructuraNueva === 'function') window.__estructuraNueva();
+}
+
+function modalAbierto(id) {
+    const el = document.getElementById(id);
+    return !!el && !el.classList.contains('hidden');
+}
+
 function cerrarModalItem() {
-    document.getElementById('modal-item').classList.add('hidden');
-    document.body.style.overflow = '';
+    const m = document.getElementById('modal-item');
+    if (!m) return;
+    m.classList.add('hidden');
+    // Si estaba abierto encima del editor de estructuras (modo módulo), vuelve a su capa normal.
+    m.classList.remove('z-[60]');
+    m.classList.add('z-50');
+    if (typeof window.__cotizadorModuloCerrar === 'function') window.__cotizadorModuloCerrar();
+    document.body.style.overflow = modalAbierto('modal-estructura') ? 'hidden' : '';
 }
 
 function syncCamposRecargo() {
@@ -1050,6 +1120,17 @@ function guardarOrden() {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        // Con modales encimados (estructura > cotizador en modo módulo), Escape cierra solo el de arriba.
+        const mi = document.getElementById('modal-item');
+        if (mi && !mi.classList.contains('hidden') && mi.classList.contains('z-[60]')) {
+            cerrarModalItem();
+            return;
+        }
+        if (modalAbierto('modal-estructura')) {
+            if (window.Swal && Swal.isVisible && Swal.isVisible()) return;
+            if (typeof window.__estructuraCerrar === 'function') window.__estructuraCerrar();
+            return;
+        }
         cerrarModalItem();
         cerrarModalDesglose();
         cerrarModalOrden();
@@ -1073,6 +1154,7 @@ function verDetalleItemDesdeScript(scriptId, descripcion) {
 
 // -- Ver desglose de un item guardado --
 function verDetalleItem(resultado, descripcion) {
+    if (resultado && resultado.tipo === 'estructura') { verDetalleEstructura(resultado, descripcion); return; }
     document.getElementById('desglose-titulo').textContent = 'Desglose: ' + descripcion;
     const cont = document.getElementById('desglose-contenido');
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1167,6 +1249,95 @@ function verDetalleItem(resultado, descripcion) {
     cont.innerHTML = html;
     document.getElementById('modal-desglose').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+}
+
+// -- Desglose de una estructura (REQ-062): módulos, juntas y colocación --
+let __desgloseEstructuraActual = null;
+
+function escHtml(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function verDetalleEstructura(resultado, descripcion) {
+    __desgloseEstructuraActual = { resultado: resultado, descripcion: descripcion };
+    document.getElementById('desglose-titulo').textContent = 'Desglose: ' + descripcion;
+    const cont = document.getElementById('desglose-contenido');
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const e = resultado.estructura || {};
+    const mods = e.modulos || [];
+    const juntas = e.juntas || [];
+    const union = e.union || {};
+    const res = resultado.resumen || {};
+    const recargo = parseFloat(resultado.recargo_renovacion_unitario_aplicado) || 0;
+    const th = (t, right) => '<th class="py-1.5 pr-3 font-semibold whitespace-nowrap ' + (right ? 'text-right pr-0' : '') + '">' + t + '</th>';
+    const td = (t, right) => '<td class="py-1.5 pr-3 align-top ' + (right ? 'text-right pr-0 font-semibold' : '') + '">' + t + '</td>';
+
+    let html = '<div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">';
+    html += '<p class="text-sm opacity-80 mb-1">Precio Total</p>';
+    html += '<p class="text-3xl font-bold">$' + fmt(resultado.precio_total) + '</p>';
+    html += '<div class="flex gap-x-6 gap-y-1 mt-2 text-sm opacity-80 flex-wrap">';
+    html += '<span>Aberturas: $' + fmt(res.total_modulos) + '</span>';
+    html += '<span>Juntas: $' + fmt(res.total_union) + '</span>';
+    if (recargo > 0) html += '<span>Recargo renovación: $' + fmt(recargo) + '</span>';
+    html += '</div></div>';
+
+    const filasMod = mods.map((m, i) => {
+        const sn = m.snapshot_item || {};
+        const prod = (sn.producto && sn.producto.descripcion) || sn.titulo_item || '';
+        const vid = sn.vidrio && sn.vidrio.descripcion ? ' · ' + sn.vidrio.descripcion : '';
+        const precio = (m.resultado && m.resultado.precio_total) || 0;
+        return '<tr class="border-t border-white/70">' +
+            td('<b>' + escHtml(m.etiqueta) + '</b>') +
+            td(escHtml(prod + vid)) +
+            td(m.ancho + ' × ' + m.alto) +
+            td(m.x + ' / ' + m.y) +
+            td('$' + fmt(precio) + ' <button type="button" onclick="verModuloDesglose(' + i + ')" class="ml-1 text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50" title="Ver desglose de ' + escHtml(m.etiqueta) + '"><i class="fas fa-list-ul text-xs"></i></button>', true) +
+            '</tr>';
+    }).join('');
+    html += buildSection('Aberturas (' + mods.length + ')', 'fa-object-group', 'blue', res.total_modulos, [
+        '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500">' +
+        th('M') + th('Producto') + th('Medida') + th('Izq. / piso') + th('Precio', true) +
+        '</tr></thead><tbody>' + filasMod + '</tbody></table></div>'
+    ]);
+
+    let cuerpoJuntas;
+    if (juntas.length) {
+        const filasJ = juntas.map(j =>
+            '<tr class="border-t border-white/70">' +
+            td(escHtml(j.a) + ' | ' + escHtml(j.b)) + td(escHtml(j.orientacion)) + td(j.largo_mm + ' mm') +
+            td('$' + fmt(j.precio_total), true) + '</tr>').join('');
+        cuerpoJuntas = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-left text-slate-500">' +
+            th('Entre') + th('Sentido') + th('Largo') + th('Precio', true) + '</tr></thead><tbody>' + filasJ + '</tbody></table></div>' +
+            '<div class="text-xs text-gray-500 mt-1">' + (e.perfil_union
+                ? escHtml(e.perfil_union.codigo + ' - ' + (e.perfil_union.descripcion || '')) + ' · ' + (union.peso_kg || 0) + ' kg x $' + fmt(union.precio_kg) + '/kg · Total unión $' + fmt(union.precio_total)
+                : 'Sin perfil de unión: las juntas no se cobran.') + '</div>';
+    } else {
+        cuerpoJuntas = '<div class="text-xs text-gray-500">Ninguna abertura está pegada a otra: no hay juntas.</div>';
+    }
+    html += buildSection('Juntas (' + juntas.length + ')', 'fa-link', 'orange', res.total_union, [cuerpoJuntas]);
+
+    if (recargo > 0) {
+        html += buildSection('Colocación (renovación)', 'fa-hard-hat', 'indigo', recargo,
+            ['<div class="text-xs text-gray-500">Se cobra una sola vez por estructura, no por abertura.</div>']);
+    }
+
+    cont.innerHTML = html;
+    document.getElementById('modal-desglose').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Abre el desglose de un módulo con el mismo visor de ítems y deja un "volver".
+function verModuloDesglose(i) {
+    const actual = __desgloseEstructuraActual;
+    if (!actual) return;
+    const m = ((actual.resultado.estructura || {}).modulos || [])[i];
+    if (!m) return;
+    verDetalleItem(m.resultado, m.etiqueta + ' · ' + actual.descripcion);
+    const cont = document.getElementById('desglose-contenido');
+    cont.insertAdjacentHTML('afterbegin',
+        '<button type="button" onclick="verDetalleEstructura(__desgloseEstructuraActual.resultado, __desgloseEstructuraActual.descripcion)" ' +
+        'class="mb-3 text-sm font-semibold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">' +
+        '<i class="fas fa-arrow-left text-xs"></i>Volver a la estructura</button>');
 }
 
 function buildSection(title, icon, color, total, items) {
@@ -1325,7 +1496,7 @@ root.render(<FormularioPVC />);
 const { useState, useEffect, useRef } = React;
 
 // -- Componente Select con busqueda --
-const Sel = ({ label, options, value, onChange, placeholder, disabled = false }) => {
+const Sel = ({ label, options, value, onChange, placeholder, disabled = false, lock = false }) => {
     const [search, setSearch] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const filtered = options.filter(opt => (opt.nombre || opt.descripcion || opt.codigo || '').toLowerCase().includes(search.toLowerCase()));
@@ -1340,6 +1511,7 @@ const Sel = ({ label, options, value, onChange, placeholder, disabled = false })
                     className={`w-full px-3 py-2 text-left border rounded-lg bg-white text-sm transition-colors ${disabled ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50' : 'border-gray-300 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500'}`}>
                     <span className={selected ? 'text-gray-900' : 'text-gray-400'}>{selectedText}</span>
                     {!disabled && <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none"></i>}
+                    {lock && <i className="fas fa-lock absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none"></i>}
                 </button>
                 {isOpen && (
                     <>
@@ -1366,6 +1538,7 @@ const Sel = ({ label, options, value, onChange, placeholder, disabled = false })
                     </>
                 )}
             </div>
+            {lock && <p className="text-[10px] font-semibold text-blue-600 mt-1 flex items-center gap-1"><i className="fas fa-link"></i>Viene de la estructura</p>}
         </div>
     );
 };
@@ -1591,6 +1764,42 @@ const TirantesEditor = ({ ancho, alto, tirantes, vidrios, materiales, perfiles, 
     );
 };
 
+// Snapshot guardado de un ítem → campos del config del cotizador. Lo usan
+// "Editar ítem" y el editor de estructuras (REQ-062) para reabrir un módulo.
+const configDesdeSnapshot = (s) => {
+    s = s || {};
+    return {
+        extrusora_id: (s.extrusora && s.extrusora.id) || null,
+        linea_id: (s.linea && s.linea.id) || null,
+        producto_id: (s.producto && s.producto.id) || null,
+        marco_id: (s.marco && s.marco.id) || null,
+        hoja_id: (s.hoja && s.hoja.id) || null,
+        vidrio_codigo: (s.vidrio && s.vidrio.codigo) || null,
+        interior_id: (s.interior && s.interior.id) || null,
+        tratamiento_id: (s.tratamiento && s.tratamiento.id) || null,
+        apertura: s.apertura || null,
+        ancho_mm: s.ancho_mm || 1200,
+        alto_mm: s.alto_mm || 1500,
+        margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
+        opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2, precio_unidad: o.precio_unidad, cantidad: o.cantidad || 1 })),
+        tirantes: (s.tirantes && s.tirantes.activo)
+            ? {
+                activo: true,
+                // Los ítems anteriores a REQ-044 no guardaron orientación ni
+                // `medida_mm`: eran siempre horizontales con `alto_mm`.
+                orientacion: s.tirantes.orientacion === 'vertical' ? 'vertical' : 'horizontal',
+                perfil_codigo: s.tirantes.perfil_codigo || null,
+                secciones: (s.tirantes.secciones || []).map(sec => ({
+                    medida_mm: sec.medida_mm != null ? sec.medida_mm : sec.alto_mm,
+                    material: (sec.material && sec.material.tipo === 'ciego')
+                        ? { tipo: 'ciego', codigo: sec.material.codigo || null, id: sec.material.id != null ? sec.material.id : null }
+                        : { tipo: 'vidrio', codigo: (sec.material ? sec.material.codigo : null), id: null },
+                })),
+            }
+            : { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] },
+    };
+};
+
 // -- Componente principal --
 const CotizadorModal = () => {
     const [config, setConfig] = useState({
@@ -1607,6 +1816,8 @@ const CotizadorModal = () => {
     const [precioTerc, setPrecioTerc] = useState('');
     const [editId, setEditId] = useState(null);
     const [editTipo, setEditTipo] = useState(null);
+    // REQ-062: null = cotizador normal. Con valor = modo módulo (ver window.__cotizadorModulo).
+    const [modulo, setModulo] = useState(null);
     const [extrusoras, setExtrusoras] = useState([]);
     const [lineas, setLineas] = useState([]);
     const [productos, setProductos] = useState([]);
@@ -1779,7 +1990,7 @@ const CotizadorModal = () => {
             setEditTipo(rj.tipo === 'terciarizado' ? 'terciarizado' : null);
             setDescripcion(payload.descripcion || '');
             setCantidad(payload.cantidad || 1);
-            setResult(null); setResultSig(null); setError(null);
+            setResult(null); setResultSig(null); setError(null); setModulo(null);
             if (rj.tipo === 'terciarizado') {
                 setPrecioTerc(payload.precio || '');
                 const pid = rj.producto_id || null;
@@ -1789,49 +2000,43 @@ const CotizadorModal = () => {
                     }).catch(() => setConfig(c => ({ ...c, producto_id: pid })));
                 }
             } else {
-                const s = rj.snapshot_item || {};
-                setConfig(c => ({
-                    ...c,
-                    extrusora_id: (s.extrusora && s.extrusora.id) || null,
-                    linea_id: (s.linea && s.linea.id) || null,
-                    producto_id: (s.producto && s.producto.id) || null,
-                    marco_id: (s.marco && s.marco.id) || null,
-                    hoja_id: (s.hoja && s.hoja.id) || null,
-                    vidrio_codigo: (s.vidrio && s.vidrio.codigo) || null,
-                    interior_id: (s.interior && s.interior.id) || null,
-                    tratamiento_id: (s.tratamiento && s.tratamiento.id) || null,
-                    apertura: s.apertura || null,
-                    ancho_mm: s.ancho_mm || 1200,
-                    alto_mm: s.alto_mm || 1500,
-                    margen_porcentaje: s.margen_porcentaje != null ? s.margen_porcentaje : 30,
-                    opcionales: (s.opcionales || []).map(o => ({ id: o.id, codigo: o.codigo, nombre: o.nombre || o.descripcion, tipo: o.tipo, precio_m2: o.precio_m2, precio_unidad: o.precio_unidad, cantidad: o.cantidad || 1 })),
-                    tirantes: (s.tirantes && s.tirantes.activo)
-                        ? {
-                            activo: true,
-                            // Los ítems anteriores a REQ-044 no guardaron orientación ni
-                            // `medida_mm`: eran siempre horizontales con `alto_mm`.
-                            orientacion: s.tirantes.orientacion === 'vertical' ? 'vertical' : 'horizontal',
-                            perfil_codigo: s.tirantes.perfil_codigo || null,
-                            secciones: (s.tirantes.secciones || []).map(sec => ({
-                                medida_mm: sec.medida_mm != null ? sec.medida_mm : sec.alto_mm,
-                                material: (sec.material && sec.material.tipo === 'ciego')
-                                    ? { tipo: 'ciego', codigo: sec.material.codigo || null, id: sec.material.id != null ? sec.material.id : null }
-                                    : { tipo: 'vidrio', codigo: (sec.material ? sec.material.codigo : null), id: null },
-                            })),
-                        }
-                        : { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] },
-                }));
+                setConfig(c => ({ ...c, ...configDesdeSnapshot(rj.snapshot_item) }));
             }
             document.getElementById('modal-item').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         };
         window.__cotizadorReset = () => {
             const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
-            setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null);
+            setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null); setModulo(null);
             setDescripcion(''); setCantidad(1);
             setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [], tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] } });
         };
-        return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; } catch (e) {} };
+        // REQ-062 — Modo módulo: el mismo cotizador, abierto desde el editor de estructuras.
+        // Extrusora, línea, tratamiento y margen vienen de la estructura; las medidas son
+        // de solo lectura; en vez de agregar al presupuesto devuelve la config con onAplicar.
+        window.__cotizadorModulo = (o) => {
+            const comun = o.comun || {};
+            const _t = document.getElementById('modal-item-title');
+            if (_t) _t.textContent = 'Configurar abertura' + (o.etiqueta ? ' ' + o.etiqueta : '');
+            setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null);
+            setDescripcion(''); setCantidad(1); setVista('3d');
+            setConfig({
+                extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null,
+                interior_id: null, opcionales: [], tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] },
+                ...(o.config || {}),
+                extrusora_id: comun.extrusora_id || null,
+                linea_id: comun.linea_id || null,
+                tratamiento_id: comun.tratamiento_id || null,
+                margen_porcentaje: comun.margen_porcentaje != null ? comun.margen_porcentaje : 30,
+                ancho_mm: o.ancho, alto_mm: o.alto,
+            });
+            setModulo({ comun, ancho: o.ancho, alto: o.alto, etiqueta: o.etiqueta || '', nombre: o.nombre || '', onAplicar: o.onAplicar });
+            const m = document.getElementById('modal-item');
+            m.classList.remove('z-50'); m.classList.add('z-[60]'); m.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+        window.__cotizadorModuloCerrar = () => setModulo(null);
+        return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; delete window.__cotizadorModulo; delete window.__cotizadorModuloCerrar; } catch (e) {} };
     }, []);
 
     // Valida los tirantes; devuelve un mensaje de error o null si está OK.
@@ -1932,10 +2137,50 @@ const CotizadorModal = () => {
     // variable de template y falla con "may not begin with underscores".
     const htmlPlano = { __html: svgPlano };
     const _prodSel = productos.find(p => p.id === config.producto_id);
+    // En modo módulo no se ofrecen terciarizados ni complementos sin dibujo.
+    const productosVisibles = modulo
+        ? productos.filter(p => !p.terciarizado && (p.tipologia || 'pano_fijo') !== 'no_dibujo')
+        : productos;
     const esTerc = _prodSel ? !!_prodSel.terciarizado : (editTipo === 'terciarizado');
     const aperturaDef = (config.apertura && _prodSel)
         ? ((_prodSel.aperturas || []).find(a => a.codigo === config.apertura.codigo) || null)
         : null;
+
+    // REQ-062: devuelve al editor de estructuras la config de esta abertura.
+    const aplicarModulo = () => {
+        if (!modulo) return;
+        if (!result) { setError('Calcula el precio primero'); return; }
+        const tErr = tirantesInvalido();
+        if (tErr) { setError(tErr); return; }
+        const t = config.tirantes;
+        const marcoSel = marcos.find(x => x.id === config.marco_id);
+        const hojaSel = hojas.find(x => x.id === config.hoja_id);
+        const interiorSel = interiores.find(x => x.id === config.interior_id);
+        const vidSel = vidrios.find(x => x.codigo === config.vidrio_codigo) || vidriosCatalogo.find(x => x.codigo === config.vidrio_codigo);
+        const cfg = {
+            producto_id: config.producto_id || null,
+            marco_id: config.marco_id || null,
+            hoja_id: config.hoja_id || null,
+            interior_id: config.interior_id || null,
+            vidrio_codigo: config.vidrio_codigo || null,
+            opcionales: (config.opcionales || []).map(o => ({ id: o.id, cantidad: o.cantidad || 1 })),
+            tirantes: (t && t.activo) ? t : null,
+            apertura: config.apertura || null,
+        };
+        const nombres = {
+            producto: _prodSel ? _prodSel.descripcion : '',
+            marco: marcoSel ? marcoSel.descripcion : '',
+            hoja: hojaSel ? hojaSel.descripcion : '',
+            interior: interiorSel ? interiorSel.descripcion : '',
+            vidrio: vidSel ? vidSel.descripcion : '',
+            apertura: aperturaDef ? aperturaDef.nombre : '',
+        };
+        const aplicar = modulo.onAplicar;
+        if (typeof aplicar === 'function') {
+            aplicar({ config: cfg, ui: config, dibujo: paramsDibujo(), nombres: nombres, precio: result.precio_total });
+        }
+        cerrarModalItem();
+    };
 
     return (
         <div>
@@ -1943,6 +2188,13 @@ const CotizadorModal = () => {
 
             {/* Configuracion */}
             <div className="space-y-4">
+                {modulo && (
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-lg text-xs flex items-start gap-2">
+                        <i className="fas fa-link mt-0.5"></i>
+                        <span>Estás configurando la abertura <b>{modulo.etiqueta}</b> de la estructura <b>«{modulo.nombre || 'sin nombre'}»</b>. Extrusora, línea, tratamiento y margen vienen de la estructura; las medidas se cambian en su plano.</span>
+                    </div>
+                )}
+                {!modulo && (
                 <Block title="Descripción" icon="fa-pen">
                 <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-2">
@@ -1958,16 +2210,17 @@ const CotizadorModal = () => {
                     </div>
                 </div>
                 </Block>
+                )}
 
                 <Block title="Producto" icon="fa-box" hint={_prodSel ? _prodSel.descripcion : null}>
                 <div className="grid grid-cols-2 gap-x-4">
-                    <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id}
+                    <Sel label="Extrusora" options={extrusoras} value={config.extrusora_id} disabled={!!modulo} lock={!!modulo}
                         onChange={v => set('extrusora_id', v, { linea_id:null, producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder="Seleccionar..." />
-                    <Sel label="Linea" options={lineas} value={config.linea_id} disabled={!config.extrusora_id}
+                    <Sel label="Linea" options={lineas} value={config.linea_id} disabled={!config.extrusora_id || !!modulo} lock={!!modulo}
                         onChange={v => set('linea_id', v, { producto_id:null, marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder={config.extrusora_id ? "Seleccionar..." : "Primero extrusora"} />
-                    <Sel label="Producto" options={productos} value={config.producto_id} disabled={!config.linea_id}
+                    <Sel label="Producto" options={productosVisibles} value={config.producto_id} disabled={!config.linea_id}
                         onChange={v => set('producto_id', v, { marco_id:null, hoja_id:null, vidrio_codigo:null, interior_id:null, opcionales:[], apertura:null })}
                         placeholder={config.linea_id ? "Seleccionar..." : "Primero linea"} />
                     {!esTerc && <>
@@ -1987,7 +2240,7 @@ const CotizadorModal = () => {
                             onChange={v => set('interior_id', v)} placeholder="Seleccionar..." />
                         : <div />
                     }
-                    <Sel label="Tratamiento (opcional)" options={tratamientos} value={config.tratamiento_id}
+                    <Sel label="Tratamiento (opcional)" options={tratamientos} value={config.tratamiento_id} disabled={!!modulo} lock={!!modulo}
                         onChange={v => set('tratamiento_id', v)} placeholder="Sin tratamiento" />
                     </>}
                 </div>
@@ -2012,12 +2265,15 @@ const CotizadorModal = () => {
                     {[['Ancho (mm)', 'ancho_mm'], ['Alto (mm)', 'alto_mm'], ['Margen (%)', 'margen_porcentaje']].map(([lbl, key]) => (
                         <div key={key}>
                             <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{lbl}</label>
-                            <input type="number" value={config[key]}
+                            <input type="number" value={config[key]} readOnly={!!modulo}
                                 onChange={e => setConfig(c => ({ ...c, [key]: parseFloat(e.target.value) || 0 }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                className={modulo
+                                    ? 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed'
+                                    : 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500'} />
                         </div>
                     ))}
                 </div>
+                {modulo && <p className="text-[11px] font-semibold text-blue-600 mt-2 flex items-center gap-1"><i className="fas fa-lock"></i>Solo lectura: se cambian en el plano de la estructura (el margen, en sus datos).</p>}
                 </Block>
                 )}
 
@@ -2296,7 +2552,9 @@ const CotizadorModal = () => {
                         <i className="fas fa-triangle-exclamation"></i>Precio desactualizado — recalculá
                     </span>
                 ) : (
-                    <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
+                    modulo
+                    ? <span className="text-xs text-slate-500">Precio de la abertura: <strong className="text-slate-800">${fmt(result.precio_total)}</strong></span>
+                    : <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
                 )
             )}
             <span className="flex-1"></span>
@@ -2316,10 +2574,17 @@ const CotizadorModal = () => {
                             : 'border border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
                         {loading ? <><i className="fas fa-spinner fa-spin"></i>Calculando...</> : <><i className="fas fa-arrows-rotate"></i>Recalcular</>}
                     </button>
+                    {modulo ? (
+                        <button onClick={aplicarModulo} disabled={desactualizado}
+                            className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                            <i className="fas fa-check"></i>Aplicar a la abertura
+                        </button>
+                    ) : (
                     <button onClick={guardar} disabled={saving}
                         className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
                         {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
                     </button>
+                    )}
                 </>
             ) : (
                 <button onClick={calcular} disabled={loading}
@@ -2332,9 +2597,13 @@ const CotizadorModal = () => {
     );
 };
 
+// Piezas compartidas con el editor de estructuras (REQ-062, _estructura_editor.html).
+window.AkunUI = { Sel, Block, configDesdeSnapshot };
+
 const root = ReactDOM.createRoot(document.getElementById('cotizador-modal-root'));
 root.render(<CotizadorModal />);
 })();
 </script>
+{% include 'presupuestos/_estructura_editor.html' %}
 {% endif %}
 {% endblock %}

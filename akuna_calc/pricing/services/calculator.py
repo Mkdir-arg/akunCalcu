@@ -1176,6 +1176,7 @@ class PriceCalculator:
         longitud_mm: float,
         color_id: Optional[int],
         items: List[Dict[str, Any]],
+        segmento: str = "tirante",
     ) -> float:
         """Perfil de cada tirante divisor: cruza la abertura de lado a lado, así que
         su longitud es el ancho si el tirante es horizontal y el alto si es vertical.
@@ -1198,9 +1199,36 @@ class PriceCalculator:
             "precio_kg": _to_float(perfil.precio_kg),
             "precio_total": round(precio_total, 2),
             "angulo": "",
-            "segmento": "tirante",
+            "segmento": segmento,
         })
         return peso_kg
+
+
+def precio_perfil_por_largo(
+    perfil_codigo: str,
+    longitud_mm: float,
+    color_id: Optional[int] = None,
+    cantidad: int = 1,
+    segmento: str = "union",
+) -> Dict[str, Any]:
+    """Precio de un perfil cortado a un largo: longitud × cantidad × peso/m × precio/kg.
+
+    Es la misma cuenta del perfil de los tirantes, expuesta para otros usos (el perfil
+    de unión de las estructuras). Devuelve el perfil (siempre, aunque el largo sea 0, y
+    falla si no existe), el peso sin redondear y el renglón calculado (None si largo 0).
+    """
+    calculadora = PriceCalculator()
+    perfil = calculadora._get_perfil(perfil_codigo, color_id)
+    items: List[Dict[str, Any]] = []
+    peso_kg = calculadora._calcular_tirantes_perfil(
+        perfil_codigo, cantidad, longitud_mm, color_id, items, segmento=segmento,
+    )
+    return {
+        "perfil": {"codigo": perfil.codigo, "descripcion": perfil.descripcion},
+        "peso_kg": peso_kg,
+        "precio_kg": _to_float(perfil.precio_kg),
+        "item": items[0] if items else None,
+    }
 
 
 def calcular_precio(configuracion: Dict[str, Any]) -> Dict[str, Any]:

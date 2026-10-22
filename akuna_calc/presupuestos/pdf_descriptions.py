@@ -7,7 +7,7 @@ from plantillas.models import OpcionalFabrica
 from pricing.models import Hoja, Interior, Marco, MaterialCiego, Producto, Tratamiento, Vidrio
 from pricing.services.calculator import medida_seccion, orientacion_tirantes
 from pricing.tipologia import TIPO_NO_DIBUJO, clasificar_tipologia, resolver_tipologia
-from pricing.aperturas import normalizar_apertura
+from pricing.aperturas import describir_apertura, normalizar_apertura
 
 
 _GENERIC_DESCRIPTIONS = {
@@ -594,9 +594,115 @@ def build_dibujo_params(snapshot: Dict[str, Any]) -> Dict[str, Any] | None:
     }
 
 
+ESTRUCTURA_SIN_NOMBRE = 'Estructura sin nombre'
+
+
+def _plural_aberturas(n: int) -> str:
+    return f'{n} abertura' if n == 1 else f'{n} aberturas'
+
+
+def texto_modulo_estructura(modulo: Dict[str, Any]) -> str:
+    snap = modulo.get('snapshot_item') or {}
+    partes = [_clean_text((snap.get('producto') or {}).get('descripcion')) or 'Abertura']
+    apertura = describir_apertura(snap.get('apertura'))
+    if apertura:
+        partes.append(apertura)
+    texto = f"{modulo.get('etiqueta')} {', '.join(partes)} {modulo.get('ancho')}×{modulo.get('alto')}"
+    if int(modulo.get('y') or 0) > 0:
+        texto += f", antepecho {modulo['y']}"
+    vidrio = _clean_text((snap.get('vidrio') or {}).get('descripcion'))
+    if vidrio:
+        texto += f', vidrio {vidrio}'
+    return texto
+
+
+def describir_estructura(resultado: Dict[str, Any], cantidad: Any = 1) -> Dict[str, str]:
+    """Título y resúmenes de un ítem estructura (REQ-062), calculados siempre desde
+    `resultado['estructura']` para que el detalle, el PDF y lo guardado digan lo mismo."""
+    estructura = resultado.get('estructura') or {}
+    snapshot = resultado.get('snapshot_item') or {}
+    modulos = estructura.get('modulos') or []
+    env = estructura.get('envolvente') or {}
+    conjunto = f"{env.get('ancho')}×{env.get('alto')}"
+    nombre = _clean_text(estructura.get('nombre'))
+    if nombre == ESTRUCTURA_SIN_NOMBRE:
+        nombre = ''
+
+    base = f'Estructura de {_plural_aberturas(len(modulos))} · conjunto {conjunto}'
+    titulo = f'{nombre} — {base}' if nombre else base
+
+    linea = _clean_text((snapshot.get('linea') or {}).get('nombre'))
+    tratamiento = _clean_text((snapshot.get('tratamiento') or {}).get('descripcion'))
+    perfil = estructura.get('perfil_union') or {}
+    if perfil:
+        union = _clean_text(f"Perfil de unión {perfil.get('codigo') or ''} {perfil.get('descripcion') or ''}")
+    else:
+        union = 'Sin perfil de unión'
+    partes = ([f'Línea {linea}'] if linea else []) + ([tratamiento] if tratamiento else [])
+    partes += [texto_modulo_estructura(m) for m in modulos] + [union]
+
+    try:
+        unidades = int(cantidad or 1)
+    except (TypeError, ValueError):
+        unidades = 1
+    compacto = [f"{unidades} {'unidad' if unidades == 1 else 'unidades'}"]
+    if linea:
+        compacto.append(linea)
+    compacto += [_plural_aberturas(len(modulos)), f'conjunto {conjunto} mm']
+    if tratamiento:
+        compacto.append(f'Terminación {tratamiento}')
+
+    return {
+        'titulo': titulo,
+        'resumen_tecnico': ' · '.join(partes),
+        'resumen_compacto': ' · '.join(compacto),
+    }
+
+
+def build_dibujo_estructura(resultado: Dict[str, Any]) -> Dict[str, Any] | None:
+    """Dibujo de una estructura para `static/js/estructura.js` (miniatura y anexo de
+    planos del PDF). Usa el dibujo ya guardado en cada módulo: la estructura NUNCA
+    pasa por `build_dibujo_params` (tipologia.py clasifica 'estructura' como no_dibujo)."""
+    estructura = resultado.get('estructura') if isinstance(resultado, dict) else None
+    if not isinstance(estructura, dict) or not estructura.get('modulos'):
+        return None
+    env = estructura.get('envolvente') or {}
+    snapshot = resultado.get('snapshot_item') or {}
+    return {
+        'tipo': 'estructura',
+        'pared': estructura.get('pared'),
+        'ancho': env.get('ancho'),
+        'alto': env.get('alto'),
+        'perfil_union': bool(estructura.get('perfil_union')),
+        'color_terminacion': _clean_text((snapshot.get('tratamiento') or {}).get('descripcion')) or None,
+        'modulos': [
+            {
+                'etiqueta': m.get('etiqueta'), 'x': m.get('x'), 'y': m.get('y'),
+                'ancho': m.get('ancho'), 'alto': m.get('alto'), 'dibujo': m.get('dibujo'),
+            }
+            for m in estructura['modulos']
+        ],
+        'juntas': [
+            {k: j.get(k) for k in ('x1', 'y1', 'x2', 'y2', 'orientacion', 'largo_mm')}
+            for j in (estructura.get('juntas') or [])
+        ],
+    }
+
+
 def build_pdf_item_context(item: Any) -> Dict[str, Any]:
     result = item.resultado_json if isinstance(item.resultado_json, dict) else {}
     snapshot = result.get('snapshot_item') if isinstance(result, dict) else None
+
+    if result.get('tipo') == 'estructura' and isinstance(result.get('estructura'), dict):
+        textos = describir_estructura(result, item.cantidad)
+        return {
+            'item': item,
+            'titulo': textos['titulo'],
+            'descripcion_narrativa': textos['resumen_tecnico'],
+            'resumen_compacto': textos['resumen_compacto'],
+            'resumen_tecnico': textos['resumen_tecnico'],
+            'dibujo': build_dibujo_estructura(result),
+        }
 
     if not isinstance(snapshot, dict):
         snapshot = _build_legacy_snapshot(item)

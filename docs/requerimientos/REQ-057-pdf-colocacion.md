@@ -70,6 +70,8 @@ El total sale de la **venta** a propósito: así total = seña + saldo cierra au
 
 FK nuevas: ninguna. Datos existentes: solo lectura. URL name nuevo. Form nuevo sin modelo.
 
+**Nota (2026-10-22):** si [REQ-062](./REQ-062-estructuras.md) (estructuras) se implementa antes, `build_ficha_item` tiene que contemplar `resultado_json['tipo'] == 'estructura'`. Ese ítem no tiene `producto` en el snapshot: la tipología sale del título de la estructura, las medidas son las del conjunto y el color sale de `snapshot.tratamiento`.
+
 ## Tests
 
 - Sin venta → redirige con mensaje; con venta → 200 y PDF por GET y por POST

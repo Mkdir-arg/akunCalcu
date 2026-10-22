@@ -50,6 +50,7 @@
 | [FEAT-042](./FEAT-042-filtros-ventas-siempre-visibles.md) | Panel de filtros siempre visible en el listado de Ventas | Implementado | 2026-10-20 | Sprint 1 RF Akun |
 | [FEAT-043](./FEAT-043-id-cliente-y-provincia.md) | ID de cliente C-00123 en Clientes, Ventas, Presupuestos, selects, Excel y PDF + Provincia del cliente | Implementado | 2026-10-20 | Sprint 1 RF Akun |
 | [FEAT-044](./FEAT-044-alta-rapida-cliente-compartida.md) | Alta rápida de cliente desde Presupuestos con modal compartido con Ventas | Implementado | 2026-10-20 | Sprint 1 RF Akun |
+| [FEAT-045](./FEAT-045-estructuras.md) | Estructuras: varias aberturas sobre una pared cotizadas como un conjunto (Etapa 1) | Implementado | 2026-10-22 | Fuera de plan |
 
 ---
 
@@ -64,8 +65,8 @@
 | `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
-| `pricing` | FEAT-036, FEAT-037, FEAT-041 | 2026-09-05 |
-| `presupuestos` (dibujo) | FEAT-037, FEAT-038 | 2026-09-03 |
+| `pricing` | FEAT-036, FEAT-037, FEAT-041, FEAT-045 | 2026-10-22 |
+| `presupuestos` (dibujo) | FEAT-037, FEAT-038, FEAT-045 | 2026-10-22 |
 | `presupuestos` (PVC) | FEAT-015, FEAT-039, FEAT-040 | 2026-09-04 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
 | `core` | FEAT-009, FEAT-011 | 2026-05-17 |

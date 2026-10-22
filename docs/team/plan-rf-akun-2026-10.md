@@ -68,7 +68,7 @@
 | 3 | [REQ-061](../requerimientos/REQ-061-alerta-ventas-sin-facturar.md) | Alerta de ventas sin facturar: banner, después WhatsApp cuando Meta apruebe el template (RF-012) | No |
 
 ### Después (requiere definición del cliente)
-- **Estructuras** ("necesito poder armar las estructuras"): concepto inexistente en el cotizador; hoy "Estructura" es solo un texto libre de la Orden de Fabricación. Pasa por `/idea`
+- ~~**Estructuras**~~: definida por el usuario el 2026-10-22 (varias aberturas ubicadas sobre una pared, precio = suma + perfil de unión opcional) → [REQ-062](../requerimientos/REQ-062-estructuras.md), aprobado, sin sprint asignado
 - **Luzo**: con un PDF de muestra se decide si sirve el importador de REHAU o hace falta otro
 - **Puertas**: qué falta concretamente
 - **Dibujos**: si lo pendiente es la imagen 3D por ítem en el PDF, se retoma REQ-039
@@ -87,7 +87,7 @@
 
 ## 6. Preguntas para enviar al cliente
 
-1. **Estructuras:** ¿qué es "armar una estructura"? ¿Varias aberturas unidas en un solo conjunto (por ejemplo, una ventana con paños fijos al costado), con un precio y un dibujo conjunto? Un ejemplo real (foto o presupuesto) ayuda mucho.
+1. **Estructuras** *(definida internamente el 2026-10-22 en [REQ-062](../requerimientos/REQ-062-estructuras.md): conviene validarla con el cliente mostrándole la maqueta del editor)*: ¿qué es "armar una estructura"? ¿Varias aberturas unidas en un solo conjunto (por ejemplo, una ventana con paños fijos al costado), con un precio y un dibujo conjunto? Un ejemplo real (foto o presupuesto) ayuda mucho.
 2. **Luzo:** ¿nos mandan uno o dos PDF de presupuestos de Luzo? Con eso vemos si sirve el importador que ya usamos para REHAU.
 3. **Puertas:** el cotizador ya tiene puertas de abrir, dobles y corredizas. ¿Qué es lo que falta: tipologías, precios, accesorios, el dibujo?
 4. **Dibujos:** ya están los planos con medidas en el PDF. ¿Lo que falta es la imagen 3D de cada abertura en el presupuesto?

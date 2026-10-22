@@ -342,6 +342,10 @@
             max-height: 300px;
         }
 
+        .plano-estructura .plano-dibujo svg {
+            max-height: 440px;
+        }
+
         .empty-row td {
             text-align: center;
             color: #52606d;
@@ -670,7 +674,7 @@
                     {% if entry.dibujo %}
                     {% with entry.item.pk|stringformat:"s" as item_id %}
                     {% with 'dibujo-item-'|add:item_id as dibujo_id %}
-                    <figure class="plano">
+                    <figure class="plano{% if entry.dibujo.tipo == 'estructura' %} plano-estructura{% endif %}"{% if entry.dibujo.tipo == 'estructura' %} style="grid-column:1/-1"{% endif %}>
                         <figcaption class="plano-cap">
                             <strong>Ítem {{ forloop.counter }}</strong>{% if entry.titulo %} · {{ entry.titulo }}{% endif %}
                             <span class="plano-med">{{ entry.dibujo.ancho }} × {{ entry.dibujo.alto }} mm{% if entry.item.cantidad > 1 %} · {{ entry.item.cantidad }} unidades{% endif %}</span>
@@ -693,12 +697,15 @@
       // cotizador. El PDF imprime por window.print() (ADR-006), así que el SVG
       // inline entra tal cual. El símbolo de apertura sale del dato guardado en el
       // ítem (REQ-047); los ítems sin apertura se dibujan sin símbolo.
-      import { svgElevacion } from "{% static 'js/elevacion.js' %}?v=2";
-      document.querySelectorAll('.plano-dibujo[data-dibujo]').forEach(function (el) {
+      import { svgDibujo } from "{% static 'js/estructura.js' %}?v=1";
+      document.querySelectorAll('.plano-dibujo[data-dibujo]').forEach(function (el, n) {
         var datos = document.getElementById(el.dataset.dibujo);
         if (!datos) { el.remove(); return; }
         try {
-          el.innerHTML = svgElevacion(JSON.parse(datos.textContent), { apertura: true });
+          var d = JSON.parse(datos.textContent);
+          el.innerHTML = svgDibujo(d, d.tipo === 'estructura'
+            ? { pared: true, cotas: true, etiquetas: true, apertura: true, idPrefijo: 'pdf' + n }
+            : { apertura: true });
         } catch (e) {
           el.remove();
         }

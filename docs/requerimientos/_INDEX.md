@@ -81,3 +81,4 @@
 | [REQ-059](./REQ-059-cuenta-corriente-proveedores-usd.md) | Cuenta corriente de proveedores en pesos y en dólares (RF-004 + RF-017) | Aprobado | 2026-10-20 | — |
 | [REQ-060](./REQ-060-gastos-por-moneda-en-reportes.md) | Gastos diferenciados por moneda en los reportes (RF-011) | Aprobado | 2026-10-20 | — |
 | [REQ-061](./REQ-061-alerta-ventas-sin-facturar.md) | Alerta de ventas en blanco sin facturar al cierre del mes, sistema + WhatsApp (RF-012) | Aprobado | 2026-10-20 | — |
+| [REQ-062](./REQ-062-estructuras.md) | Estructuras: varias aberturas ubicadas sobre una pared, cotizadas como un conjunto | Implementado (Etapa 1) | 2026-10-22 | [FEAT-045](../features/FEAT-045-estructuras.md) |

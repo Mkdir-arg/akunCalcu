@@ -14,6 +14,23 @@
 
 ---
 
+## 2026-10-22 — Estructuras: aberturas sobre una pared cotizadas como un conjunto, Etapa 1 (REQ-062 → FEAT-045)
+
+**Sprint**: Fuera de plan (Sprint 1 RF Akun en curso)
+**Deploy**: sin migración
+
+Botón "Agregar estructura" en presupuestos de aluminio: editor con pared, hasta 12 aberturas
+arrastrables (grilla de 10 mm e imán), medidas exactas en mm y perfil de unión opcional que cobra las
+juntas como tirantes. Cada abertura se configura con el cotizador existente en "modo módulo". El
+precio se recalcula siempre en el servidor. La estructura es un renglón del presupuesto (miniatura,
+desglose, editar, eliminar, reordenar), suma el recargo de renovación una vez, sale en el PDF con
+plano en el anexo y al confirmar genera una orden de fabricación por módulo (M1..Mn) con numeración
+corrida. Ítem con JSON, sin modelo nuevo (ADR-022). 424 tests (solo las 4 fallas de baseline) y 14
+escenarios probados en Chrome. Sin probar con el catálogo real de producción. Etapa 2 (cotas
+encadenadas, antepechos, duplicar abertura, flechas del teclado) pendiente.
+
+---
+
 ## 2026-10-20 — Sprint 1 plan RF Akun: clientes (REQ-053/054/055 → FEAT-042/043/044)
 
 **Sprint**: Sprint 1 — plan RF Akun

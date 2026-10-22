@@ -109,21 +109,10 @@ function simbolo(pano, v, size) {
   }
 }
 
-/**
- * @param {object} params  los del visor 3D, más `apertura`, `color` /
- *   `color_terminacion` y `vidrio_composicion`.
- * @param {object} [opts]  { cotas, apertura, composicion } — todo true por defecto.
- */
-export function svgElevacion(params, opts) {
-  const o = Object.assign({ cotas: true, apertura: true, composicion: true }, opts || {});
-  const L = computarLayout(params || {});
+/** Dibujo de un layout ya calculado: marco, hojas, vidrio, tirantes, mosquitero y símbolos. */
+function partesAbertura(L, { ox, oy, size, apertura, composicion, idPrefijo }) {
   const W = L.ancho_mm, H = L.alto_mm;
-  const size = Math.max(W, H) / 52;
   const perfil = L.colorPerfil;
-
-  const mIzq = o.cotas ? M.izq : 20, mAbajo = o.cotas ? M.abajo : 20;
-  const vbW = W + mIzq + M.der, vbH = H + M.arriba + mAbajo;
-  const ox = mIzq, oy = M.arriba;
   const partes = [];
 
   partes.push(perfilRect(ox, oy, W, H, L.pw, perfil, size));
@@ -143,21 +132,52 @@ export function svgElevacion(params, opts) {
     }
     if (L.modo !== 'none') partes.push(perfilRect(px, py, pano.w, pano.h, L.lf, perfil, size));
 
-    if (o.apertura && pano.simbolo) partes.push(simbolo(pano, v, size));
+    if (apertura && pano.simbolo) partes.push(simbolo(pano, v, size));
 
-    if (o.composicion && pano.composicion) {
+    if (composicion && pano.composicion) {
       partes.push(etiqueta(v.x + size * 0.6, v.y + v.h - size * 1.8, pano.composicion, size));
     }
   });
 
   if (L.mosquitero) {
     const m = L.mosquitero, paso = Math.max(size * 0.7, 14);
-    const id = 'malla' + Math.round(W) + 'x' + Math.round(H);
+    const id = idPrefijo + 'malla' + Math.round(W) + 'x' + Math.round(H);
     partes.push(`<defs><pattern id="${id}" width="${paso}" height="${paso}" patternUnits="userSpaceOnUse">`
       + linea(0, 0, 0, paso, COLOR.malla, size * 0.16) + `</pattern></defs>`);
     partes.push(`<rect x="${ox + m.x}" y="${oy + m.y}" width="${m.w}" height="${m.h}"`
       + ` fill="url(#${id})" stroke="${COLOR.contorno}" stroke-width="${size * 0.1}"/>`);
   }
+  return partes;
+}
+
+/**
+ * Una abertura sin cotas ni <svg>, posicionada en (ox, oy) del viewBox del llamador.
+ * `size` es la unidad de trazo/texto (svgElevacion usa max(ancho, alto) / 52).
+ * `idPrefijo` evita ids repetidos (patrón del mosquitero) entre varias aberturas de un SVG.
+ * @returns {string}
+ */
+export function dibujarAbertura(params, opts) {
+  const L = computarLayout(params || {});
+  const o = Object.assign({ ox: 0, oy: 0, apertura: true, composicion: true, idPrefijo: '' }, opts || {});
+  if (!(o.size > 0)) o.size = Math.max(L.ancho_mm, L.alto_mm) / 52;
+  return partesAbertura(L, o).join('');
+}
+
+/**
+ * @param {object} params  los del visor 3D, más `apertura`, `color` /
+ *   `color_terminacion` y `vidrio_composicion`.
+ * @param {object} [opts]  { cotas, apertura, composicion } — todo true por defecto.
+ */
+export function svgElevacion(params, opts) {
+  const o = Object.assign({ cotas: true, apertura: true, composicion: true }, opts || {});
+  const L = computarLayout(params || {});
+  const W = L.ancho_mm, H = L.alto_mm;
+  const size = Math.max(W, H) / 52;
+
+  const mIzq = o.cotas ? M.izq : 20, mAbajo = o.cotas ? M.abajo : 20;
+  const vbW = W + mIzq + M.der, vbH = H + M.arriba + mAbajo;
+  const ox = mIzq, oy = M.arriba;
+  const partes = partesAbertura(L, { ox, oy, size, apertura: o.apertura, composicion: o.composicion, idPrefijo: '' });
 
   if (o.cotas) {
     partes.push(cotaV(oy, oy + H, ox - size * 3.2, L.cotas.alto, size));
@@ -172,4 +192,4 @@ export function svgElevacion(params, opts) {
     + ` aria-label="Elevacion tecnica ${W} x ${H} mm">${partes.join('')}</svg>`;
 }
 
-export default { svgElevacion };
+export default { svgElevacion, dibujarAbertura };

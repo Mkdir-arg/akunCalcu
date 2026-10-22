@@ -190,6 +190,47 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-022: Estructuras como ítem con JSON (sin modelo nuevo) y geometría duplicada Python/JS con fixtures compartidos
+
+**Fecha**: 2026-10-22 · **Estado**: Aceptada · **Feature**: FEAT-045 / REQ-062
+
+**Contexto**: una estructura son varias aberturas ubicadas sobre una pared, cotizadas como conjunto,
+con plano, PDF y una orden de fabricación por abertura. El presupuesto es una lista plana de
+`ItemPresupuesto` y el cotizador calcula una abertura por llamada. El editor necesita validar y
+dibujar en vivo (arrastre, imán, juntas), pero el precio no puede depender del navegador.
+
+**Decisión**:
+1. **La estructura es un `ItemPresupuesto`** con `resultado_json['tipo'] = 'estructura'` + `version`;
+   módulos, juntas y snapshots viajan en el JSON. Sin modelo y sin migración. `ancho_mm/alto_mm` del
+   ítem = envolvente del conjunto y `precio_unitario_base` queda en el primer nivel, así que lo que ya
+   lee el ítem (recargo de renovación, totales, reordenar) sigue funcionando.
+2. **El precio se recalcula siempre en el servidor** (`pricing/services/estructura.py`): lista blanca
+   de config por módulo, medidas/tratamiento/margen inyectados por el servidor y cada módulo validado
+   con el mismo `PricingCalculateSerializer` del cotizador suelto.
+3. **La geometría (etiquetas, juntas, solapes, envolvente) existe en Python y en JS**, porque el
+   editor la necesita en vivo y el servidor la necesita para validar. Un archivo de fixtures
+   (`fixtures_estructura_geometria.json`, 13 casos) lo corren los tests de Python y
+   `audit_estructura.mjs` con node: si una versión se desvía, falla.
+4. **Se reutiliza el cotizador existente en "modo módulo"** (campos comunes bloqueados) en vez de
+   duplicarlo, y el dibujo de una abertura se extrajo a `dibujarAbertura` en `elevacion.js`.
+5. **Al confirmar, una orden por módulo** con numeración corrida; el `descripcion_manual` de cada
+   módulo nunca lleva la palabra "estructura" (`tipologia.py` la clasificaría `no_dibujo`).
+
+**Alternativas descartadas**:
+- Modelos `Estructura` + `ModuloEstructura` con FK: obliga a migración y a que totales, renovación,
+  PDF y reordenar lean otra tabla; el cambio de esquema pesa más que el beneficio en la Etapa 1.
+- Calcular la geometría solo en el servidor: cada arrastre sería un viaje y no habría imán ni
+  validación inmediata. Un solo cálculo en JS sin validar en el servidor deja pasar payloads armados
+  a mano.
+
+**Consecuencias**: no se puede consultar por SQL "qué módulos tiene" ni hacer reportes sobre
+módulos sin parsear JSON. Cualquier regla geométrica nueva (Etapa 2: antepechos, separaciones menores a
+5 mm) hay que escribirla en las dos versiones y sumarle un caso al fixture. El JSON lleva `version`
+para poder migrar el formato. Si más adelante hacen falta reportes por módulo, se puede promover a
+modelo leyendo el JSON.
+
+---
+
 ## ADR-021: Las cotizaciones REHAU se importan con un parser determinista sobre el texto del PDF, con vista previa sin estado
 
 **Fecha**: 2026-09-04 · **Estado**: Aceptada · **Feature**: FEAT-039 / REQ-049

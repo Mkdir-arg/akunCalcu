@@ -1,6 +1,6 @@
 # Product Backlog — AkunCalcu
 
-> Actualizado: 2026-10-20
+> Actualizado: 2026-10-22
 
 ## Leyenda
 - 🟡 Pendiente
@@ -24,6 +24,7 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-059 | Como administrativo quiero la cuenta corriente de proveedores separada en pesos y en dólares (RF-004 + RF-017) | Grande | 🟡 Sprint 3 |
 | US-060 | Como administrativo quiero ver los gastos por tipo separados en pesos y en dólares (RF-011) | Pequeño / Mediano | 🟡 Sprint 3 |
 | US-061 | Como administración quiero que me avisen al cierre del mes las ventas en blanco sin facturar, en el sistema y por WhatsApp (RF-012) | Mediano | 🟡 Sprint 3 |
+| US-062 | Como vendedor quiero ubicar varias aberturas sobre una pared y cotizarlas como una sola estructura, con plano y precio total ([REQ-062](../requerimientos/REQ-062-estructuras.md)) | Grande | ✅ Etapa 1 completada (FEAT-045); Etapa 2 pendiente |
 
 ---
 
@@ -55,3 +56,13 @@ _Acá van las ideas crudas antes de convertirlas en user stories._
 - **Presupuestos de Luzo a PVC**: esperando un PDF de muestra para decidir si sirve el importador REHAU (REQ-049)
 - **Puertas**: el cotizador ya tiene puertas (REQ-047); esperando qué falta según el cliente
 - **Dibujos**: si lo pendiente es la imagen 3D por ítem en el PDF, retomar REQ-039
+
+---
+
+## Deuda técnica / fixes pendientes
+
+_Detectados durante REQ-062 (2026-10-22); no se tocaron para no mezclar alcance._
+
+- **Rutas sin registrar en `usuarios/access_control.py`** (`presupuestos-item-editar`, `presupuestos-items-reordenar`, `presupuestos-observaciones`, `perfiles-list`): dejan pasar a cualquier usuario logueado. Candidato a `/fix`
+- **Ícono `fa-arrow-up-arrow-down`** del botón "Orden" en `presupuestos/detalle.html`: no existe en FontAwesome 6.4.0, el botón se ve sin ícono
+- **`pricing/services/formula_parser.py:32` usa `ast.Num`**, que no existe en Python 3.14. Prod usa 3.12 y hoy anda; rompe el día que se suba de versión

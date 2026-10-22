@@ -1,0 +1,717 @@
+{% load l10n %}
+{# REQ-062 editor de estructuras: se incluye desde detalle.html tras el script del cotizador (usa window.AkunUI y window.__cotizadorModulo). El JSX va en verbatim; los datos viajan en data-* de #estructura-root. #}
+<style>
+    #estructura-plano { touch-action: none; user-select: none; -webkit-user-select: none; }
+    #estructura-plano svg { display: block; max-width: 100%; }
+    #estructura-plano .mod { cursor: grab; outline: none; }
+    #estructura-plano.arrastrando .mod { cursor: grabbing; }
+</style>
+
+<!-- ===== MODAL EDITOR DE ESTRUCTURA ===== -->
+<div id="modal-estructura" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
+        <div id="estructura-root"
+             class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+             data-calcular-url="{% url 'pricing-estructura-calculate' %}"
+             data-agregar-url="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}"
+             data-editar-url="{% url 'presupuestos:presupuestos-item-editar' presupuesto.pk 0 %}"
+             data-numero="{{ presupuesto.numero }}"
+             data-cliente="{{ presupuesto.cliente.get_nombre_completo }}"
+             data-tipo-obra="{{ presupuesto.tipo_obra|default:'' }}"
+             data-recargo-renovacion="{{ presupuesto.recargo_renovacion_unitario|default:0|unlocalize }}"></div>
+    </div>
+</div>
+
+<form id="estructura-save-form" method="post" action="" style="display:none">
+    {% csrf_token %}
+    <input type="hidden" name="descripcion">
+    <input type="hidden" name="cantidad">
+    <input type="hidden" name="estructura_json">
+</form>
+
+<script type="text/babel">
+{% verbatim %}
+(function () {
+'use strict';
+const { useState, useEffect, useRef } = React;
+
+const rootEl = document.getElementById('estructura-root');
+const modalEl = document.getElementById('modal-estructura');
+const DATA = rootEl.dataset;
+const URL_CALC = DATA.calcularUrl;
+const URL_AGREGAR = DATA.agregarUrl;
+const URL_EDITAR = DATA.editarUrl;            // trae /item/0/ → se reemplaza por el id
+const RECARGO = parseFloat(DATA.recargoRenovacion) || 0;
+const ES_RENOV = DATA.tipoObra === 'renovacion';
+const MAX_MODULOS = 12;
+
+const UI = window.AkunUI || {};
+const Sel = UI.Sel, Block = UI.Block, configDesdeSnapshot = UI.configDesdeSnapshot;
+
+const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = n => '$' + fmt(n);
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+const csrf = () => { const i = document.querySelector('#estructura-save-form [name=csrfmiddlewaretoken]'); return i ? i.value : ''; };
+const aviso = (msg, icon) => Swal.fire({
+    toast: true, position: 'bottom', icon: icon || 'info', title: msg,
+    showConfirmButton: false, timer: 4200, timerProgressBar: true,
+});
+
+const LBL = 'block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide';
+const INP = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+
+const solapan = (a, b) => a.x < b.x + b.ancho && a.x + a.ancho > b.x && a.y < b.y + b.alto && a.y + a.alto > b.y;
+const sinConfigurar = m => !(m.config && m.config.marco_id);
+
+// Entero editable: se confirma al salir del campo o con Enter, así tipear "1200" no pasa por 1, 12, 120.
+const NumInput = ({ value, onCommit, min, step, id, className }) => {
+    const [txt, setTxt] = useState(String(value));
+    const foco = useRef(false);
+    useEffect(() => { if (!foco.current) setTxt(String(value)); }, [value]);
+    const commit = () => {
+        foco.current = false;
+        const v = parseInt(txt, 10);
+        if (!Number.isFinite(v)) { setTxt(String(value)); return; }
+        const f = min != null ? Math.max(min, v) : v;
+        setTxt(String(f));
+        if (f !== value) onCommit(f);
+    };
+    return (
+        <input id={id} type="number" inputMode="numeric" step={step || 10} min={min} value={txt}
+            onFocus={() => { foco.current = true; }}
+            onChange={e => setTxt(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+            className={className || INP} />
+    );
+};
+
+// Si cambia el tamaño de una abertura con tirantes, las secciones se reparten en proporción
+// sobre el eje que dividen; la última absorbe el redondeo.
+function reescalarTirantes(viejo, nuevo) {
+    const t = viejo.config && viejo.config.tirantes;
+    if (!t || !t.activo || !(t.secciones || []).length) return { mod: nuevo, cambio: false };
+    const vertical = t.orientacion === 'vertical';
+    const antes = vertical ? viejo.ancho : viejo.alto;
+    const despues = vertical ? nuevo.ancho : nuevo.alto;
+    if (antes === despues) return { mod: nuevo, cambio: false };
+    const secs = t.secciones;
+    const suma = secs.reduce((a, s) => a + (parseInt(s.medida_mm) || 0), 0) || antes;
+    let acum = 0;
+    const medidas = secs.map((s, i) => {
+        if (i === secs.length - 1) return despues - acum;
+        const v = Math.round((parseInt(s.medida_mm) || 0) * despues / suma);
+        acum += v;
+        return v;
+    });
+    const aplicar = tir => (tir && tir.activo)
+        ? { ...tir, secciones: (tir.secciones || []).map((s, i) => ({ ...s, medida_mm: medidas[i] != null ? medidas[i] : s.medida_mm })) }
+        : tir;
+    const out = { ...nuevo, config: { ...nuevo.config, tirantes: aplicar(t) } };
+    if (out.ui) out.ui = { ...out.ui, tirantes: aplicar(out.ui.tirantes) };
+    if (out.dibujo && Array.isArray(out.dibujo.tirantes)) {
+        out.dibujo = { ...out.dibujo, tirantes: out.dibujo.tirantes.map((s, i) => ({ ...s, medida_mm: medidas[i] != null ? medidas[i] : s.medida_mm })) };
+    }
+    return { mod: out, cambio: true };
+}
+
+const limpiarConfig = m => ({ ...m, config: null, ui: null, dibujo: null, nombres: null, precio: null });
+
+const Editor = () => {
+    const [lib, setLib] = useState(null);
+    const [abierto, setAbierto] = useState(false);
+    const [editId, setEditId] = useState(null);
+    const [nombre, setNombre] = useState('');
+    const [comun, setComun] = useState({ extrusora_id: null, linea_id: null, tratamiento_id: null, margen: 30 });
+    const [perfilUnion, setPerfilUnion] = useState(null);
+    const [pared, setPared] = useState({ ancho: 5000, alto: 2600 });
+    const [modulos, setModulos] = useState([]);
+    const [sel, setSel] = useState(null);
+    const [cantidad, setCantidad] = useState(1);
+    const [cotas, setCotas] = useState(true);
+    const [preview, setPreview] = useState(null);
+    const [fallo, setFallo] = useState(null);
+    const [arrastrando, setArrastrando] = useState(null);
+    const [tick, setTick] = useState(0);
+    const [guardando, setGuardando] = useState(false);
+    const [extrusoras, setExtrusoras] = useState([]);
+    const [lineas, setLineas] = useState([]);
+    const [tratamientos, setTratamientos] = useState([]);
+    const [perfiles, setPerfiles] = useState([]);
+
+    const uidRef = useRef(1);
+    const delayRef = useRef(700);
+    const dragRef = useRef(null);
+    const planoRef = useRef(null);
+    const modRef = useRef([]);
+    const sigRef = useRef('');
+    modRef.current = modulos;
+
+    // Catálogos (los mismos endpoints que usa el cotizador).
+    useEffect(() => {
+        window.__loadAkunEstructura().then(setLib).catch(() => {});
+        fetch('/pricing/api/pricing/extrusoras/').then(r => r.json()).then(d => setExtrusoras(Array.isArray(d) ? d : [])).catch(() => {});
+        fetch('/pricing/api/pricing/tratamientos/').then(r => r.json()).then(d => setTratamientos(Array.isArray(d) ? d : [])).catch(() => {});
+        fetch('/pricing/api/pricing/perfiles/').then(r => r.json()).then(d => setPerfiles(Array.isArray(d) ? d : [])).catch(() => {});
+    }, []);
+    useEffect(() => {
+        if (!comun.extrusora_id) { setLineas([]); return; }
+        fetch('/pricing/api/pricing/lineas/?extrusora_id=' + comun.extrusora_id).then(r => r.json())
+            .then(d => setLineas(Array.isArray(d) ? d : [])).catch(() => {});
+    }, [comun.extrusora_id]);
+
+    // Puente JS↔React: abrir un editor vacío o con una estructura guardada.
+    useEffect(() => {
+        const reset = () => {
+            setPreview(null); setFallo(null); setArrastrando(null); setGuardando(false);
+            dragRef.current = null; delayRef.current = 700;
+        };
+        window.__estructuraNueva = () => {
+            reset();
+            uidRef.current = 1;
+            setEditId(null); setNombre('');
+            setComun({ extrusora_id: null, linea_id: null, tratamiento_id: null, margen: 30 });
+            setPerfilUnion(null); setPared({ ancho: 5000, alto: 2600 });
+            setModulos([]); setSel(null); setCantidad(1); setCotas(true);
+            setAbierto(true);
+        };
+        window.__estructuraEditar = (p) => {
+            reset();
+            const rj = p.resultado || {};
+            const e = rj.estructura || {};
+            const c = e.comun || {};
+            let uid = 1;
+            const ms = (e.modulos || []).map(m => {
+                const sn = m.snapshot_item || {};
+                const nom = k => (sn[k] && sn[k].descripcion) || '';
+                return {
+                    uid: uid++, x: m.x, y: m.y, ancho: m.ancho, alto: m.alto,
+                    config: m.config || null,
+                    ui: configDesdeSnapshot ? configDesdeSnapshot(sn) : null,
+                    dibujo: m.dibujo || null,
+                    nombres: { producto: nom('producto'), marco: nom('marco'), hoja: nom('hoja'), interior: nom('interior'), vidrio: nom('vidrio'), apertura: '' },
+                    precio: m.resultado ? m.resultado.precio_total : null,
+                };
+            });
+            uidRef.current = uid;
+            setEditId(p.itemId);
+            setNombre(e.nombre || p.descripcion || '');
+            setComun({
+                extrusora_id: c.extrusora_id || null, linea_id: c.linea_id || null,
+                tratamiento_id: c.tratamiento_id || null,
+                margen: c.margen_porcentaje != null ? c.margen_porcentaje : 30,
+            });
+            setPerfilUnion(e.perfil_union ? e.perfil_union.codigo : null);
+            setPared({ ancho: (e.pared && e.pared.ancho) || 5000, alto: (e.pared && e.pared.alto) || 2600 });
+            setModulos(ms); setSel(ms.length ? ms[0].uid : null);
+            setCantidad(p.cantidad || 1); setCotas(true);
+            setAbierto(true);
+        };
+        window.__estructuraCerrar = () => setAbierto(false);
+        return () => { try { delete window.__estructuraNueva; delete window.__estructuraEditar; delete window.__estructuraCerrar; } catch (e) {} };
+    }, []);
+
+    useEffect(() => {
+        modalEl.classList.toggle('hidden', !abierto);
+        if (abierto) document.body.style.overflow = 'hidden';
+        else if (!document.getElementById('modal-item') || document.getElementById('modal-item').classList.contains('hidden')) document.body.style.overflow = '';
+    }, [abierto]);
+
+    // ---------------------------------------------------------------- derivados
+    const etiquetas = lib ? lib.etiquetarModulos(modulos) : [];
+    const val = lib ? lib.validarEstructura({ pared, modulos }) : { errores: [], indices: [] };
+    const sinConfigIdx = modulos.map((m, i) => (sinConfigurar(m) ? i : -1)).filter(i => i >= 0);
+    const erroresConfig = sinConfigIdx.map(i => etiquetas[i] + ': falta configurar la abertura.');
+    const errLinea = comun.linea_id ? [] : ['Elegí la línea de la estructura.'];
+    const errores = [...val.errores, ...erroresConfig, ...errLinea];
+
+    const payload = {
+        version: 1,
+        nombre: nombre.trim(),
+        pared: { ancho: pared.ancho, alto: pared.alto },
+        comun: { extrusora_id: comun.extrusora_id, linea_id: comun.linea_id, tratamiento_id: comun.tratamiento_id, margen_porcentaje: comun.margen },
+        perfil_union_codigo: perfilUnion || null,
+        modulos: modulos.map(m => ({ x: m.x, y: m.y, ancho: m.ancho, alto: m.alto, config: m.config || {} })),
+    };
+    const sig = JSON.stringify({ ...payload, nombre: undefined });
+    const puedePrev = !!lib && abierto && !!comun.linea_id && modulos.length > 0 && !val.errores.length && !sinConfigIdx.length;
+    const vigente = !!(preview && preview.sig === sig);
+    const falloActual = fallo && fallo.sig === sig ? fallo : null;
+    const calculando = puedePrev && !vigente && !falloActual;
+    const datos = vigente ? preview.data : null;
+
+    // Vista previa: 700 ms después del último cambio, o apenas se suelta un arrastre / se aprieta "Calcular".
+    useEffect(() => {
+        sigRef.current = sig;
+        if (!puedePrev || arrastrando) return;
+        if (preview && preview.sig === sig) return;
+        if (fallo && fallo.sig === sig) return;
+        const delay = delayRef.current;
+        delayRef.current = 700;
+        const t = setTimeout(async () => {
+            try {
+                const res = await fetch(URL_CALC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify(payload),
+                });
+                let data = null;
+                try { data = await res.json(); } catch (e) { data = null; }
+                if (sigRef.current !== sig) return;
+                if (res.ok && data) { setPreview({ sig, data }); setFallo(null); return; }
+                let errs = [];
+                if (data && Array.isArray(data.errores) && data.errores.length) errs = data.errores;
+                else if (data && (data.error || data.detail)) errs = [data.error || data.detail];
+                setFallo({ sig, errores: errs.length ? errs : ['No se pudo calcular el precio.'] });
+            } catch (e) {
+                if (sigRef.current === sig) setFallo({ sig, errores: ['No se pudo conectar con el servidor.'] });
+            }
+        }, delay);
+        return () => clearTimeout(t);
+    }, [sig, puedePrev, arrastrando, tick]);
+
+    const calcularYa = () => { delayRef.current = 0; setFallo(null); setTick(t => t + 1); };
+
+    // ---------------------------------------------------------------- edición
+    const selIdx = modulos.findIndex(m => m.uid === sel);
+    const mSel = selIdx >= 0 ? modulos[selIdx] : null;
+
+    const cambiarMedida = (uid, patch) => {
+        const viejo = modRef.current.find(m => m.uid === uid);
+        if (!viejo) return;
+        const r = reescalarTirantes(viejo, { ...viejo, ...patch });
+        setModulos(ms => ms.map(m => (m.uid === uid ? r.mod : m)));
+        if (r.cambio) aviso('Se reescalaron las secciones de los tirantes en proporción al nuevo tamaño.');
+    };
+
+    const agregarAbertura = () => {
+        if (modulos.length >= MAX_MODULOS) { aviso('Una estructura admite hasta ' + MAX_MODULOS + ' aberturas.', 'warning'); return; }
+        const ancho = Math.min(1000, pared.ancho), alto = Math.min(1100, pared.alto);
+        const m = { uid: uidRef.current, x: 0, y: 0, ancho, alto, config: null, ui: null, dibujo: null, nombres: null, precio: null };
+        const ys = [clamp(900, 0, Math.max(0, pared.alto - alto)), 0].filter((v, i, a) => a.indexOf(v) === i);
+        for (const y of ys) {
+            for (let x = 0; x + ancho <= pared.ancho; x += 10) {
+                const cand = { ...m, x, y };
+                if (!modulos.some(o => solapan(cand, o))) {
+                    uidRef.current += 1;
+                    setModulos(ms => [...ms, cand]);
+                    setSel(cand.uid);
+                    aviso('Se agregó una abertura. Arrastrala a su lugar y usá "Configurar abertura".');
+                    return;
+                }
+            }
+        }
+        aviso('No hay lugar libre en la pared para esa abertura. Agrandá la pared o achicá otra abertura.', 'warning');
+    };
+
+    const eliminarAbertura = () => {
+        if (!mSel) return;
+        const uid = mSel.uid, lb = etiquetas[selIdx];
+        const nom = (mSel.nombres && mSel.nombres.producto) || 'abertura sin configurar';
+        Swal.fire({
+            title: '¿Eliminar abertura?',
+            html: '<p>¿Eliminar <strong>' + lb + ' · ' + nom.replace(/[<>&]/g, '') + ' ' + mSel.ancho + '×' + mSel.alto + '</strong> de la estructura? Las demás no se mueven.</p>',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#dc2626', cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar',
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            setModulos(ms => ms.filter(m => m.uid !== uid));
+            setSel(null);
+            aviso('Se eliminó ' + lb + '. Las etiquetas se renumeran según la posición.');
+        });
+    };
+
+    // Cambiar extrusora o línea invalida los productos ya elegidos: se pide confirmación.
+    const cambiarBase = (patch) => {
+        const aplicar = () => { setComun(c => ({ ...c, ...patch })); setModulos(ms => ms.map(limpiarConfig)); };
+        const cambia = Object.keys(patch).some(k => patch[k] !== comun[k]);
+        if (!cambia) return;
+        if (!modulos.some(m => !sinConfigurar(m))) { setComun(c => ({ ...c, ...patch })); return; }
+        Swal.fire({
+            title: '¿Cambiar la línea?',
+            html: '<p>Las aberturas ya configuradas usan productos de la línea actual. Si la cambiás, hay que <strong>configurarlas de nuevo</strong> (las posiciones y medidas se conservan).</p>',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#dc2626', cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, cambiar', cancelButtonText: 'Cancelar',
+        }).then(r => { if (r.isConfirmed) aplicar(); });
+    };
+
+    const configurar = () => {
+        if (!mSel) return;
+        if (!comun.extrusora_id || !comun.linea_id) { aviso('Elegí primero la extrusora y la línea de la estructura.', 'warning'); return; }
+        if (typeof window.__cotizadorModulo !== 'function') { aviso('No se pudo abrir el cotizador de la abertura.', 'error'); return; }
+        const uid = mSel.uid, lb = etiquetas[selIdx];
+        window.__cotizadorModulo({
+            comun: { extrusora_id: comun.extrusora_id, linea_id: comun.linea_id, tratamiento_id: comun.tratamiento_id, margen_porcentaje: comun.margen },
+            ancho: mSel.ancho, alto: mSel.alto, etiqueta: lb, nombre: nombre,
+            config: mSel.ui || null,
+            onAplicar: (r) => {
+                setModulos(ms => ms.map(m => (m.uid === uid
+                    ? { ...m, config: r.config, ui: r.ui, dibujo: r.dibujo, nombres: r.nombres, precio: r.precio }
+                    : m)));
+                aviso('Se aplicó la configuración a ' + lb + '. El precio de la estructura se recalcula.');
+            },
+        });
+    };
+
+    // ---------------------------------------------------------------- arrastre con imán
+    const svgEl = () => (planoRef.current ? planoRef.current.querySelector('svg') : null);
+    const toMM = (e) => {
+        const svg = svgEl();
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX; pt.y = e.clientY;
+        return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    const imantar = (v, cands, thr) => {
+        let best = null, bd = thr;
+        for (const c of cands) { const d = Math.abs(v - c); if (d <= bd) { bd = d; best = c; } }
+        return best;
+    };
+    const guiasDe = (m, ms) => {
+        const otros = ms.filter(o => o.uid !== m.uid);
+        const rx = otros.flatMap(o => [o.x, o.x + o.ancho]), ry = otros.flatMap(o => [o.y, o.y + o.alto]);
+        return { gx: [m.x, m.x + m.ancho].filter(v => rx.includes(v)), gy: [m.y, m.y + m.alto].filter(v => ry.includes(v)) };
+    };
+
+    const onPointerDown = (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const g = e.target.closest ? e.target.closest('g.mod') : null;
+        if (!g) { setSel(null); return; }
+        const m = modRef.current[parseInt(g.dataset.idx, 10)];
+        if (!m) return;
+        const p = toMM(e), svg = svgEl();
+        dragRef.current = {
+            uid: m.uid, dx: p.x - m.x, dy: (pared.alto - p.y) - m.y,
+            last: { x: m.x, y: m.y }, moved: false, vb: svg.getAttribute('viewBox'),
+        };
+        try { planoRef.current.setPointerCapture(e.pointerId); } catch (err) {}
+        setSel(m.uid);
+        setArrastrando({ uid: m.uid, guias: null });
+        e.preventDefault();
+    };
+
+    const onPointerMove = (e) => {
+        const d = dragRef.current;
+        if (!d) return;
+        const ms = modRef.current;
+        const m = ms.find(o => o.uid === d.uid);
+        if (!m) return;
+        const p = toMM(e);
+        let x = p.x - d.dx, y = (pared.alto - p.y) - d.dy;
+        const thr = 12 / svgEl().getScreenCTM().a;
+        const cx = [0, pared.ancho - m.ancho], cy = [0, pared.alto - m.alto];
+        ms.filter(o => o.uid !== m.uid).forEach(o => {
+            cx.push(o.x + o.ancho, o.x - m.ancho, o.x, o.x + o.ancho - m.ancho);
+            cy.push(o.y + o.alto, o.y - m.alto, o.y, o.y + o.alto - m.alto);
+        });
+        const sx = imantar(x, cx, thr), sy = imantar(y, cy, thr);
+        x = sx != null ? sx : Math.round(x / 10) * 10;
+        y = sy != null ? sy : Math.round(y / 10) * 10;
+        x = clamp(x, 0, Math.max(0, pared.ancho - m.ancho));
+        y = clamp(y, 0, Math.max(0, pared.alto - m.alto));
+        if (x === m.x && y === m.y) return;
+        d.moved = true;
+        const nuevo = { ...m, x, y };
+        if (!ms.some(o => o.uid !== m.uid && solapan(nuevo, o))) d.last = { x, y };
+        setModulos(arr => arr.map(o => (o.uid === m.uid ? nuevo : o)));
+        setArrastrando({ uid: m.uid, guias: guiasDe(nuevo, ms) });
+    };
+
+    const soltar = () => {
+        const d = dragRef.current;
+        if (!d) return;
+        dragRef.current = null;
+        const ms = modRef.current;
+        const m = ms.find(o => o.uid === d.uid);
+        if (m && ms.some(o => o.uid !== m.uid && solapan(m, o))) {
+            setModulos(arr => arr.map(o => (o.uid === m.uid ? { ...o, x: d.last.x, y: d.last.y } : o)));
+            aviso('Se superponía con otra abertura: volvió al último lugar libre.', 'warning');
+        }
+        if (d.moved) delayRef.current = 0;
+        setArrastrando(null);
+    };
+
+    const onKeyDown = (e) => {
+        const g = e.target.closest ? e.target.closest('g.mod') : null;
+        if (g && (e.key === 'Enter' || e.key === ' ')) {
+            const m = modRef.current[parseInt(g.dataset.idx, 10)];
+            if (m) setSel(m.uid);
+            e.preventDefault();
+        }
+    };
+
+    // ---------------------------------------------------------------- guardar
+    const guardable = !errores.length && vigente && !guardando;
+    const guardar = () => {
+        if (!guardable) return;
+        setGuardando(true);
+        const f = document.getElementById('estructura-save-form');
+        f.action = editId ? URL_EDITAR.replace('/item/0/', '/item/' + editId + '/') : URL_AGREGAR;
+        f.querySelector('[name=descripcion]').value = nombre.trim() || 'Estructura sin nombre';
+        f.querySelector('[name=cantidad]').value = cantidad;
+        f.querySelector('[name=estructura_json]').value = JSON.stringify(payload);
+        f.submit();
+    };
+
+    // ---------------------------------------------------------------- render
+    if (!abierto) return null;
+
+    const tratSel = tratamientos.find(t => t.id === comun.tratamiento_id);
+    const lineaSel = lineas.find(l => l.id === comun.linea_id);
+    const conColor = (d) => {
+        if (!d || !tratSel) return d || null;
+        const c = { ...d };
+        delete c.color;
+        c.color_terminacion = tratSel.descripcion;
+        return c;
+    };
+
+    let svgStr = '', aspecto = '16 / 9';
+    if (lib) {
+        const pEd = {
+            tipo: 'estructura', pared, perfil_union: !!perfilUnion,
+            modulos: modulos.map(m => ({ x: m.x, y: m.y, ancho: m.ancho, alto: m.alto, dibujo: conColor(m.dibujo) })),
+        };
+        svgStr = lib.svgEstructura(pEd, {
+            pared: true, cotas: cotas, etiquetas: true, apertura: true, interactivo: true,
+            seleccion: selIdx >= 0 ? selIdx : null, invalidos: val.indices,
+            soloContorno: !!arrastrando, guias: arrastrando ? arrastrando.guias : null, idPrefijo: 'ed',
+        });
+        // Mientras se arrastra, el encuadre queda fijo para que el dibujo no "salte" al cambiar las cotas.
+        if (arrastrando && dragRef.current && dragRef.current.vb) {
+            svgStr = svgStr.replace(/viewBox="[^"]*"/, 'viewBox="' + dragRef.current.vb + '"');
+        }
+        const vb = /viewBox="(\S+) (\S+) (\S+) (\S+)"/.exec(svgStr);
+        if (vb) aspecto = vb[3] + ' / ' + vb[4];
+    }
+
+    const precioDe = (idx) => {
+        if (!datos) return null;
+        const r = (datos.modulos || []).find(x => x.indice === idx);
+        return r ? r.precio_total : null;
+    };
+    const juntas = lib ? lib.detectarJuntas(modulos) : [];
+    const precioJunta = (j) => {
+        if (!datos) return null;
+        const r = (datos.juntas || []).find(x => x.a === etiquetas[j.a] && x.b === etiquetas[j.b] && x.orientacion === j.orientacion);
+        return r ? r.precio_total : null;
+    };
+    const ordenIdx = modulos.map((_, i) => i).sort((a, b) => parseInt(etiquetas[a].slice(1), 10) - parseInt(etiquetas[b].slice(1), 10));
+    const erroresMSel = mSel ? val.errores.filter(t => t.startsWith(etiquetas[selIdx] + ' ') || t.startsWith(etiquetas[selIdx] + ':')) : [];
+    const totalUnit = datos ? datos.precio_total + (ES_RENOV ? RECARGO : 0) : 0;
+
+    const opcPerfiles = perfiles.map(p => ({ codigo: p.codigo, nombre: p.codigo + ' - ' + (p.descripcion || p.nombre || '') }));
+
+    return (
+        <>
+            <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0"><i className="fas fa-object-group"></i></div>
+                    <div className="min-w-0">
+                        <h2 className="text-base font-bold text-slate-800 leading-tight">{editId ? 'Editar estructura' : 'Agregar estructura'}</h2>
+                        <p className="text-xs text-slate-500 truncate">{DATA.numero} · {DATA.cliente}</p>
+                    </div>
+                </div>
+                <button type="button" onClick={() => setAbierto(false)} className="text-slate-400 hover:text-slate-600 text-xl transition-colors shrink-0"><i className="fas fa-times"></i></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-3 sm:p-6">
+                {!lib || !Sel ? (
+                    <div className="py-16 text-center text-slate-400"><i className="fas fa-spinner fa-spin mr-2"></i>Cargando editor...</div>
+                ) : (
+                <div className="space-y-4">
+                    <Block title="Datos de la estructura" icon="fa-object-group" hint="Valen para todas las aberturas">
+                        <div className="mb-3">
+                            <label className={LBL}>Nombre</label>
+                            <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} maxLength={150} placeholder="Ej: Frente living" className={INP} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                            <Sel label="Extrusora" options={extrusoras} value={comun.extrusora_id}
+                                onChange={v => cambiarBase({ extrusora_id: v, linea_id: null })} placeholder="Seleccionar..." />
+                            <Sel label="Linea" options={lineas} value={comun.linea_id} disabled={!comun.extrusora_id}
+                                onChange={v => cambiarBase({ linea_id: v })} placeholder={comun.extrusora_id ? 'Seleccionar...' : 'Primero extrusora'} />
+                            <Sel label="Tratamiento / color (opcional)" options={tratamientos} value={comun.tratamiento_id}
+                                onChange={v => setComun(c => ({ ...c, tratamiento_id: v }))} placeholder="Sin tratamiento" />
+                            <Sel label="Perfil de unión (opcional)" options={opcPerfiles} value={perfilUnion}
+                                onChange={v => setPerfilUnion(v)} placeholder="Sin perfil de unión" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <label className={LBL}>Margen (%)</label>
+                                <NumInput value={comun.margen} min={0} step={1} onCommit={v => setComun(c => ({ ...c, margen: Math.min(v, 200) }))} />
+                            </div>
+                            <div>
+                                <label className={LBL}>Pared ancho (mm)</label>
+                                <NumInput value={pared.ancho} min={1} onCommit={v => setPared(p => ({ ...p, ancho: v }))} />
+                            </div>
+                            <div>
+                                <label className={LBL}>Pared alto (mm)</label>
+                                <NumInput value={pared.alto} min={1} onCommit={v => setPared(p => ({ ...p, alto: v }))} />
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">La pared es solo referencia: no se cobra. {ES_RENOV && RECARGO > 0 ? <span><i className="fas fa-hard-hat mr-1"></i>Obra de renovación: la colocación ({money(RECARGO)}) se cobra una vez por estructura.</span> : null}</p>
+                    </Block>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div className="lg:col-span-2">
+                            <Block title="Plano de la estructura" icon="fa-ruler-combined" hint="Arrastrá para mover">
+                                <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                                    <button type="button" onClick={agregarAbertura}
+                                        className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
+                                        <i className="fas fa-plus mr-1"></i>Agregar abertura
+                                    </button>
+                                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer">
+                                        <input type="checkbox" checked={cotas} onChange={e => setCotas(e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />Cotas
+                                    </label>
+                                </div>
+                                <div className="bg-white border border-slate-200 rounded-2xl p-2">
+                                    <div id="estructura-plano" ref={planoRef} className={arrastrando ? 'arrastrando' : ''}
+                                        style={{ aspectRatio: aspecto }}
+                                        onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                                        onPointerUp={soltar} onPointerCancel={soltar} onKeyDown={onKeyDown}
+                                        dangerouslySetInnerHTML={{ __html: svgStr }}></div>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">Para medidas exactas usá los campos de la abertura seleccionada. Grilla de 10 mm, con imán a los bordes.</p>
+                            </Block>
+                        </div>
+
+                        <div>
+                            <Block title="Abertura seleccionada" icon="fa-door-open">
+                                {!mSel ? (
+                                    <div>
+                                        <p className="text-sm text-slate-500">Tocá una abertura del plano para ver su configuración y ajustar sus medidas.</p>
+                                        <p className="text-xs text-slate-400 mt-2">Con "Agregar abertura" sumás una al primer lugar libre de la pared.</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="px-2 py-1 rounded-md bg-blue-600 text-white text-xs font-bold">{etiquetas[selIdx]}</span>
+                                            <div className="min-w-0">
+                                                {mSel.nombres && mSel.nombres.producto ? (
+                                                    <>
+                                                        <p className="text-sm font-semibold text-slate-800 truncate">{mSel.nombres.producto}{lineaSel ? ' · ' + lineaSel.nombre : ''}</p>
+                                                        <p className="text-xs text-slate-500">{mSel.nombres.vidrio ? 'vidrio ' + mSel.nombres.vidrio : 'sin vidrio'}{mSel.nombres.apertura ? ' · ' + mSel.nombres.apertura : ''}</p>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-sm font-semibold text-amber-600">Sin configurar</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={configurar}
+                                            className="w-full mb-3 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                                            <i className="fas fa-sliders"></i>Configurar abertura
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className={LBL}>Ancho (mm)</label><NumInput value={mSel.ancho} min={1} onCommit={v => cambiarMedida(mSel.uid, { ancho: v })} /></div>
+                                            <div><label className={LBL}>Alto (mm)</label><NumInput value={mSel.alto} min={1} onCommit={v => cambiarMedida(mSel.uid, { alto: v })} /></div>
+                                            <div><label className={LBL}>Desde la izq.</label><NumInput value={mSel.x} min={0} onCommit={v => cambiarMedida(mSel.uid, { x: v })} /></div>
+                                            <div><label className={LBL}>Desde el piso</label><NumInput value={mSel.y} min={0} onCommit={v => cambiarMedida(mSel.uid, { y: v })} /></div>
+                                        </div>
+                                        <div className="flex justify-between items-center mt-3 text-sm">
+                                            <span className="text-slate-500">Precio de la abertura</span>
+                                            <strong className="text-slate-800">{precioDe(selIdx) != null ? money(precioDe(selIdx)) : '…'}</strong>
+                                        </div>
+                                        {erroresMSel.length > 0 && (
+                                            <p className="mt-2 text-xs text-red-600 flex items-start gap-1.5"><i className="fas fa-exclamation-circle mt-0.5"></i>{erroresMSel.join(' ')}</p>
+                                        )}
+                                        <button type="button" onClick={eliminarAbertura}
+                                            className="w-full mt-3 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg font-semibold text-sm transition-colors inline-flex items-center justify-center gap-2">
+                                            <i className="fas fa-trash text-xs"></i>Eliminar abertura
+                                        </button>
+                                    </div>
+                                )}
+                            </Block>
+                        </div>
+                    </div>
+
+                    <Block title="Aberturas y juntas" icon="fa-link"
+                        hint={modulos.length + (modulos.length === 1 ? ' abertura' : ' aberturas') + ' · ' + juntas.length + (juntas.length === 1 ? ' junta' : ' juntas')}>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {ordenIdx.length === 0 && <span className="text-sm text-slate-400">Todavía no hay aberturas.</span>}
+                            {ordenIdx.map(i => {
+                                const m = modulos[i], p = precioDe(i);
+                                return (
+                                    <span key={m.uid} className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+                                        <b className="text-blue-600">{etiquetas[i]}</b>
+                                        <span className="text-slate-700">{(m.nombres && m.nombres.producto) || 'Sin configurar'}</span>
+                                        <span className="text-slate-500">{m.ancho}×{m.alto}</span>
+                                        <span className="font-semibold text-slate-700">{p != null ? money(p) : '…'}</span>
+                                    </span>
+                                );
+                            })}
+                        </div>
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {juntas.length === 0 ? (
+                                <span className="text-sm text-slate-500">Ninguna abertura está pegada a otra: no hay juntas.</span>
+                            ) : (
+                                <>
+                                    {juntas.map((j, k) => {
+                                        const p = precioJunta(j);
+                                        return (
+                                            <span key={k} className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-xs">
+                                                <b className="text-amber-700">{etiquetas[j.a]} | {etiquetas[j.b]}</b>
+                                                <span className="text-slate-600">{j.orientacion} · {j.largo} mm</span>
+                                                {perfilUnion && <b className="text-slate-700">{p != null ? money(p) : '…'}</b>}
+                                            </span>
+                                        );
+                                    })}
+                                    <span className="text-xs text-slate-400">{perfilUnion ? 'Se cobran con el perfil de unión elegido.' : '(sin perfil de unión: no se cobran)'}</span>
+                                </>
+                            )}
+                        </div>
+                        {errores.length > 0 && (
+                            <ul className="mt-2 text-xs text-red-600 space-y-0.5">
+                                {errores.map((t, k) => (
+                                    <li key={k} className="flex items-start gap-1.5"><i className="fas fa-exclamation-circle mt-0.5"></i>{t}</li>
+                                ))}
+                            </ul>
+                        )}
+                        {falloActual && (
+                            <ul className="mt-2 text-xs text-red-600 space-y-0.5">
+                                {falloActual.errores.map((t, k) => (
+                                    <li key={k} className="flex items-start gap-1.5"><i className="fas fa-exclamation-circle mt-0.5"></i>{t}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </Block>
+                </div>
+                )}
+
+                <div className="sticky bottom-0 -mx-3 -mb-3 sm:-mx-6 sm:-mb-6 mt-4 px-3 sm:px-6 py-2 sm:py-3 bg-white border-t border-slate-200 flex items-center gap-2 sm:gap-3 flex-wrap">
+                    {errores.length > 0 || falloActual ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">No se puede guardar</span>
+                    ) : vigente ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Precio al día</span>
+                    ) : (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700"><i className="fas fa-spinner fa-spin mr-1"></i>Calculando precio…</span>
+                    )}
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">Cantidad
+                        <NumInput value={cantidad} min={1} step={1} onCommit={v => setCantidad(v)}
+                            className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                    </label>
+                    <span className="text-xs text-slate-500">Total estructura: <strong className="text-slate-800">{vigente ? money(totalUnit * cantidad) : '—'}</strong>
+                        {ES_RENOV && RECARGO > 0 ? <span className="text-slate-400"> · incluye colocación</span> : null}</span>
+                    <span className="flex-1"></span>
+                    <button type="button" onClick={() => setAbierto(false)}
+                        className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
+                    <button type="button" onClick={calcularYa} title="Calcular precio" disabled={!puedePrev}
+                        className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
+                        <i className="fas fa-arrows-rotate"></i><span className="hidden sm:inline">Calcular</span>
+                    </button>
+                    <button type="button" onClick={guardar} disabled={!guardable}
+                        className="px-4 py-2 sm:px-6 sm:py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                        {guardando ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>Guardar</>}
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+};
+
+ReactDOM.createRoot(rootEl).render(<Editor />);
+})();
+{% endverbatim %}
+</script>

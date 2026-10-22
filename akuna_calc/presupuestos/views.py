@@ -27,11 +27,12 @@ from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabric
 from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
 from pricing.models import Producto
-from .pdf_descriptions import build_item_snapshot, build_pdf_item_context
+from .pdf_descriptions import build_item_snapshot, build_pdf_item_context, texto_modulo_estructura
+from .estructuras import fields_item_estructura
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import (
     PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm,
-    ImportarCotizacionForm, ItemImportadoFormSet, ConfirmarImportacionForm,
+    ImportarCotizacionForm, ItemImportadoFormSet, ConfirmarImportacionForm, EstructuraItemForm,
 )
 from .importar_rehau import ImportacionError, extraer_texto, parsear_cotizacion
 
@@ -315,6 +316,18 @@ def _fields_item_desde_post(request, presupuesto):
     except (TypeError, ValueError):
         cantidad = 1
 
+    # Estructura (REQ-062): varias aberturas sobre una pared, todo en un JSON
+    if 'estructura_json' in data:
+        if presupuesto.tipo_material == 'pvc':
+            return None, 'Las estructuras solo se pueden cargar en presupuestos de aluminio.'
+        form = EstructuraItemForm(data)
+        if not form.is_valid():
+            return None, 'La estructura enviada no es válida.'
+        return fields_item_estructura(
+            presupuesto, form.cleaned_data['estructura_json'],
+            form.cleaned_data['descripcion'], form.cleaned_data['cantidad'],
+        )
+
     # PVC: valor manual en dólares
     if presupuesto.tipo_material == 'pvc':
         if not presupuesto.tiene_cotizacion_usd():
@@ -512,6 +525,12 @@ def editar_item(request, pk, ipk):
 
     item = get_object_or_404(ItemPresupuesto, pk=ipk, presupuesto=presupuesto)
 
+    # Una estructura solo se edita desde su editor: el cotizador común la pisaría
+    # con una abertura suelta.
+    if (item.resultado_json or {}).get('tipo') == 'estructura' and 'estructura_json' not in request.POST:
+        messages.error(request, 'Las estructuras se editan desde el editor de estructuras.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
     fields, error = _fields_item_desde_post(request, presupuesto)
     if error:
         messages.error(request, error)
@@ -603,9 +622,8 @@ def _snapshot_de_item(item):
     return snapshot if isinstance(snapshot, dict) else {}
 
 
-def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
+def _crear_orden(pedido, item, numero, orden, presupuesto, snapshot, ancho, alto, item_medida='1', estructura=''):
     """Crea una OrdenFabricacion precargada con los datos disponibles del ítem y el cliente."""
-    snapshot = _snapshot_de_item(item)
     cliente = presupuesto.cliente
 
     fecha_comprometida = None
@@ -657,19 +675,63 @@ def _crear_orden_desde_item(pedido, item, numero, orden, presupuesto):
         color=_cortar('color', (snapshot.get('tratamiento') or {}).get('descripcion', '')),
         tipo_vidrio=_cortar('tipo_vidrio', vidrio_texto),
         nota=nota,
+        estructura=estructura,
     )
 
     medida = ''
-    if item.ancho_mm and item.alto_mm:
-        medida = f'{item.ancho_mm} x {item.alto_mm}'
+    if ancho and alto:
+        medida = f'{ancho} x {alto}'
     MedidaOrdenFabricacion.objects.create(
         orden=orden_fabricacion,
-        item='1',
+        item=item_medida,
         cantidad=item.cantidad or 1,
         medida=medida,
         orden_fila=1,
     )
     return orden_fabricacion
+
+
+def _texto_estructura_orden(presupuesto, item, posicion, modulo):
+    """Texto del campo 'Estructura' de la orden de un módulo (REQ-062)."""
+    resultado = item.resultado_json
+    estructura = resultado['estructura']
+    modulos = estructura['modulos']
+    pared = estructura['pared']
+    env = estructura['envolvente']
+    juntas = ' · '.join(
+        f"{j['a']}-{j['b']} {j['orientacion']} {j['largo_mm']}" for j in estructura.get('juntas') or []
+    )
+    perfil = estructura.get('perfil_union')
+    union = f"Perfil de unión {perfil['codigo']}." if perfil else 'Sin perfil de unión.'
+    partes = [
+        f"Estructura «{estructura.get('nombre') or item.descripcion}» (ítem {posicion}, {presupuesto.numero}) "
+        f"— módulo {modulo['etiqueta']} de {len(modulos)}.",
+        f"Pared {pared['ancho']}×{pared['alto']}; conjunto {env['ancho']}×{env['alto']}.",
+        f"{modulo['etiqueta']} a {modulo['x']} mm del borde izq., {modulo['y']} mm del piso.",
+        f"Módulos: {' · '.join(texto_modulo_estructura(m) for m in modulos)}.",
+    ]
+    if juntas:
+        partes.append(f'Juntas: {juntas}.')
+    partes.append(union)
+    return ' '.join(partes)
+
+
+def _crear_ordenes_desde_item(pedido, item, numero, orden, presupuesto, posicion):
+    """Crea las órdenes de un ítem: una, o una por módulo si es una estructura.
+    Devuelve cuántas creó, para que el que llama siga la numeración."""
+    resultado = item.resultado_json if isinstance(item.resultado_json, dict) else {}
+    if resultado.get('tipo') == 'estructura' and isinstance(resultado.get('estructura'), dict):
+        modulos = resultado['estructura']['modulos']
+        for i, modulo in enumerate(modulos):
+            _crear_orden(
+                pedido, item, numero + i, orden + i, presupuesto,
+                modulo.get('snapshot_item') or {}, modulo['ancho'], modulo['alto'],
+                item_medida=modulo['etiqueta'],
+                estructura=_texto_estructura_orden(presupuesto, item, posicion, modulo),
+            )
+        return len(modulos)
+    _crear_orden(pedido, item, numero, orden, presupuesto, _snapshot_de_item(item), item.ancho_mm, item.alto_mm)
+    return 1
 
 
 def _procesar_confirmacion(request, presupuesto):
@@ -699,9 +761,14 @@ def _procesar_confirmacion(request, presupuesto):
             usuario=request.user,
             presupuesto=presupuesto,
         )
-        numero_base = OrdenFabricacion.generar_numero()
-        for indice, item in enumerate(presupuesto.items.all()):
-            _crear_orden_desde_item(pedido, item, numero_base + indice, indice + 1, presupuesto)
+        # Contador corrido: una estructura genera una orden por módulo, así que el
+        # número (único) y la posición ya no son "base + índice de ítem".
+        numero = OrdenFabricacion.generar_numero()
+        orden = 1
+        for posicion, item in enumerate(presupuesto.items.all(), start=1):
+            creadas = _crear_ordenes_desde_item(pedido, item, numero, orden, presupuesto, posicion)
+            numero += creadas
+            orden += creadas
         presupuesto.venta = venta
         presupuesto.estado = 'confirmado'
         presupuesto.save(update_fields=['estado', 'venta'])
