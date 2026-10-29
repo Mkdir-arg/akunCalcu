@@ -1,86 +1,10 @@
 {% extends 'core/base.html' %}
+{% block title %}Usuarios{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-users-cog mr-3"></i>Gestión de Usuarios
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Administración de accesos al sistema</p>
-        </div>
-        <a href="{% url 'user_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i>Nuevo Usuario
-        </a>
-    </div>
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Usuario</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Email</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Perfil</th>
-                        <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Accesos</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for user in users %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-user text-blue-600 text-sm"></i>
-                                </div>
-                                <span class="font-semibold text-slate-800">{{ user.username }}</span>
-                            </div>
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ user.email }}</td>
-                        <td class="hidden md:table-cell px-6 py-4">
-                            <div class="space-y-1">
-                                <p class="text-sm font-semibold text-slate-700">{{ user.role_label }}</p>
-                                <p class="text-xs text-slate-500">{{ user.first_name }} {{ user.last_name }}</p>
-                            </div>
-                        </td>
-                        <td class="hidden lg:table-cell px-6 py-4 text-sm text-slate-700">{{ user.access_summary }}</td>
-                        <td class="px-6 py-4">
-                            {% if user.is_active %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i>Activo
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i>Inactivo
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'user_update' user.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form method="post" action="{% url 'user_toggle' user.pk %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="inline-flex items-center {% if user.is_active %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                        <i class="fas fa-toggle-{% if user.is_active %}off{% else %}on{% endif %}"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay usuarios registrados</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+{% url 'user_create' as url_crear %}
+{% include 'core/ui/page_header.html' with title="Usuarios" subtitle="Administración de accesos al sistema." action_url=url_crear action_label="Nuevo usuario" only %}
+<section class="card overflow-hidden" data-live="usuarios,usuarios_perfiles" data-live-partial>
+    {% include 'usuarios/_tabla.html' %}
+</section>
 {% endblock %}

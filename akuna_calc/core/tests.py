@@ -215,7 +215,7 @@ class HomeVendedorTest(TestCase):
         self.assertIn(s, resp.context['mis_solicitudes'])
         self.assertContains(resp, 'Mis solicitudes pendientes')
         # El vendedor no ve las tarjetas/acciones generales del dashboard.
-        self.assertNotContains(resp, 'Acciones Rápidas')
+        self.assertNotContains(resp, 'Accesos rápidos')
 
     def test_solicitud_contestada_no_aparece(self):
         self.client.force_login(self.vendedor)
@@ -232,7 +232,7 @@ class HomeVendedorTest(TestCase):
         resp = self.client.get(reverse('home'))
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['es_vendedor'])
-        self.assertContains(resp, 'Acciones Rápidas')
+        self.assertContains(resp, 'Accesos rápidos')
 
 
 from datetime import timedelta

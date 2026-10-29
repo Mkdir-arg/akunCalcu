@@ -2,129 +2,98 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Login - AKUN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ingresar · AKUN</title>
     {% load static %}
-    
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                screens: {
-                    'xs': '475px',
-                    'sm': '640px',
-                    'md': '768px',
-                    'lg': '1024px',
-                    'xl': '1280px',
-                    '2xl': '1536px',
-                }
-            }
-        }
-    </script>
-    
     <style>
-        * {
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        body {
-            touch-action: manipulation;
-        }
+        * { box-sizing: border-box; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; background: #fff; font-family: Inter, system-ui, sans-serif; color: #101828; }
+        a { color: #1F4FD8; text-decoration: none; }
+        a:hover { color: #163BA6; }
+        .lg-wrap { min-height: 100vh; display: flex; flex-wrap: wrap; }
+        .lg-main { flex: 1 1 480px; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; }
+        .lg-narrow { max-width: 400px; width: 100%; margin: 0 auto; }
+        .lg-brand { display: flex; align-items: center; gap: 10px; }
+        .lg-mark { width: 32px; height: 32px; border-radius: 8px; background: #0F1729; color: #fff; font: 700 15px/32px Inter, sans-serif; text-align: center; }
+        .lg-form { display: flex; flex-direction: column; gap: 20px; margin-top: 48px; margin-bottom: 48px; }
+        .lg-lbl { display: block; font: 500 13px/1.3 Inter, sans-serif; color: #344054; margin-bottom: 6px; }
+        .lg-inp { width: 100%; height: 44px; border: 1px solid #D0D5DD; border-radius: 10px; padding: 0 14px; font: 400 15px Inter, sans-serif; color: #101828; background: #fff; }
+        .lg-inp:focus { outline: none; border-color: #1F4FD8; box-shadow: 0 0 0 4px #DCE6FF; }
+        .lg-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 44px; border: 0; border-radius: 10px; background: #1F4FD8; color: #fff; font: 600 15px Inter, sans-serif; cursor: pointer; }
+        .lg-btn:hover { background: #163BA6; }
+        .lg-alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font: 500 14px/1.4 Inter, sans-serif; background: #FEF3F2; border: 1px solid #FECDCA; color: #B42318; }
+        .lg-alert.info { background: #EEF3FF; border-color: #DCE6FF; color: #1F4FD8; }
+        .lg-side { flex: 1 1 480px; background: #0F1729; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 56px 40px; gap: 40px; }
+        .lg-win { width: 280px; height: 340px; max-width: 100%; border: 10px solid #2B3A55; border-radius: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; background: #16213A; }
+        .lg-pane { border: 6px solid #3D5078; border-radius: 3px; background: linear-gradient(160deg, #284069 0%, #1A2847 60%); position: relative; }
+        .lg-pane i { position: absolute; top: 46%; width: 4px; height: 28px; border-radius: 2px; background: #8FA3C8; }
+        @media (max-width: 760px) { .lg-side { display: none; } }
     </style>
 </head>
-<body class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 pb-32 overflow-hidden">
-    <!-- Wave decorativa -->
-    <svg class="absolute inset-x-0 bottom-0 w-full pointer-events-none select-none" viewBox="0 0 1440 320" preserveAspectRatio="none">
-        <path fill="#3B82F6" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-    </svg>
-
-    <div class="w-full max-w-md">
-        <!-- Logo Section -->
-        <div class="text-center mb-8">
-            <img src="{% static 'imagenes/AKUN-LOGO.webp' %}" alt="AKUN" class="w-24 h-24 sm:w-32 sm:h-32 mx-auto" onerror="this.onerror=null; this.src='{% static 'imagenes/AKUN-LOGO.png' %}'">
+<body>
+<div class="lg-wrap">
+    <main class="lg-main">
+        <div class="lg-narrow lg-brand">
+            <span class="lg-mark">A</span>
+            <span style="font:700 17px Inter,sans-serif;letter-spacing:.04em">AKUN</span>
+            <span style="font:500 13px Inter,sans-serif;color:#667085">Aberturas</span>
         </div>
 
-        <!-- Login Card -->
-        <div class="bg-white/80 backdrop-blur-sm shadow-2xl rounded-3xl p-6 sm:p-8 border border-white/20">
-            {% if messages %}
-                {% for message in messages %}
-                <div class="mb-4 rounded-2xl border px-4 py-3 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700{% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
-                    <div class="flex items-start gap-2">
-                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mt-0.5"></i>
-                        <span>{{ message }}</span>
-                    </div>
-                </div>
-                {% endfor %}
-            {% endif %}
+        <form method="post" class="lg-narrow lg-form">
+            {% csrf_token %}
+            <div>
+                <h1 style="margin:0;font:600 30px/1.2 Inter,sans-serif;letter-spacing:-.02em">Ingresá a tu cuenta</h1>
+                <p style="margin:8px 0 0;font:400 15px/1.5 Inter,sans-serif;color:#475467">Gestión comercial y de fábrica de Akuna.</p>
+            </div>
+
+            {% for message in messages %}
+            <div role="alert" class="lg-alert {% if message.tags != 'error' %}info{% endif %}">
+                <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}" style="margin-top:2px"></i>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
 
             {% if form.errors %}
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4">
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
-                        <p class="font-medium text-sm">Usuario o contraseña incorrectos</p>
-                    </div>
-                </div>
+            <div role="alert" class="lg-alert">
+                <i class="fas fa-circle-exclamation" style="margin-top:2px"></i>
+                Usuario o contraseña incorrectos. Revisá los datos e intentá de nuevo.
+            </div>
             {% endif %}
 
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                
-                <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Email
-                    </label>
-                    <div class="relative">
-                        <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                        <input type="text" 
-                               name="{{ form.username.name }}" 
-                               id="{{ form.username.id_for_label }}"
-                               class="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 text-sm sm:text-base"
-                               placeholder="tu@email.com"
-                               required>
-                    </div>
-                </div>
-                
-                <div>
-                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Contraseña
-                    </label>
-                    <div class="relative">
-                        <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                        <input type="password" 
-                               name="{{ form.password.name }}" 
-                               id="{{ form.password.id_for_label }}"
-                               class="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 text-sm sm:text-base"
-                               placeholder="••••••••"
-                               required>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between text-sm">
-                    <label class="flex items-center">
-                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <span class="ml-2 text-gray-600">Recordarme</span>
-                    </label>
-                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">¿Olvidaste tu contraseña?</a>
-                </div>
-                
-                <button type="submit" 
-                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 sm:py-4 rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed">
-                    Iniciar Sesión
-                </button>
-            </form>
-
-            <div class="text-center mt-6">
-                <p class="text-sm text-gray-600">
-                    ¿No tienes cuenta? <a href="#" class="text-blue-600 hover:text-blue-700 font-semibold">Regístrate</a>
-                </p>
+            <div>
+                <label class="lg-lbl" for="{{ form.username.id_for_label }}">Usuario</label>
+                <input type="text" class="lg-inp" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" autocomplete="username" required autofocus>
             </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                    <label class="lg-lbl" for="{{ form.password.id_for_label }}">Contraseña</label>
+                    <a href="#" style="font:500 13px Inter,sans-serif">¿La olvidaste?</a>
+                </div>
+                <input type="password" class="lg-inp" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" autocomplete="current-password" required>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;font:400 14px Inter,sans-serif;color:#344054;cursor:pointer">
+                <input type="checkbox" style="width:16px;height:16px;accent-color:#1F4FD8">Recordarme en esta computadora
+            </label>
+            <button class="lg-btn" type="submit">Ingresar</button>
+            <p style="margin:0;font:400 13px/1.5 Inter,sans-serif;color:#667085">¿No tenés usuario? Pedíselo a un administrador.</p>
+        </form>
+
+        <p class="lg-narrow" style="margin-top:0;margin-bottom:0;font:400 12px Inter,sans-serif;color:#667085">© 2026 Akuna Aberturas</p>
+    </main>
+
+    <aside class="lg-side" aria-label="Presentación">
+        <div class="lg-win" aria-hidden="true">
+            <div class="lg-pane"><i style="right:8px"></i></div>
+            <div class="lg-pane"><i style="left:8px"></i></div>
         </div>
-    </div>
+        <div style="max-width:380px;text-align:center">
+            <p style="margin:0;font:600 22px/1.35 Inter,sans-serif;letter-spacing:-.01em">Del presupuesto a la orden de fábrica, en un solo lugar.</p>
+            <p style="margin:12px 0 0;font:400 14px/1.6 Inter,sans-serif;color:#A9B6CF">Cotizá aberturas de PVC y aluminio, confirmá ventas y seguí cada pedido hasta el cobro.</p>
+        </div>
+    </aside>
+</div>
 </body>
 </html>

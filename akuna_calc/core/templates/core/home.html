@@ -1,170 +1,104 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
+{% block title %}Inicio{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12 mb-6 border-l-4 border-blue-500">
-    <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Bienvenido a AKUN</h1>
-    <p class="text-lg text-gray-600 mb-6">Sistema profesional de gestión comercial para aberturas</p>
-    <div class="flex flex-col sm:flex-row gap-4">
-        <a href="{% url 'productos:calculadora' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all inline-flex items-center justify-center shadow-lg">
-            <i class="fas fa-calculator mr-2"></i>Comenzar Cálculo
-        </a>
-        <a href="{% url 'productos:productos_list' %}" class="bg-white text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-xl font-semibold hover:border-blue-500 hover:text-blue-600 transition-all inline-flex items-center justify-center">
-            <i class="fas fa-box mr-2"></i>Ver Productos
-        </a>
-        <button onclick="mostrarCotizacionDolar()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all inline-flex items-center justify-center shadow-lg">
-            <i class="fas fa-dollar-sign mr-2"></i>Cotización Dólar
-        </button>
+<div class="page-head">
+    <div>
+        <p class="muted text-sm" style="margin:0">{% now "l j \d\e F" %}</p>
+        <h1 class="page-title">Buen día, {{ request.user.first_name|default:request.user.username }}</h1>
+        <p class="page-sub">Sistema de gestión comercial para aberturas.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'productos:productos_list' %}" class="btn btn-secondary">Ver productos</a>
+        <button type="button" onclick="mostrarCotizacionDolar()" class="btn btn-secondary"><i class="fas fa-dollar-sign"></i>Cotización dólar</button>
+        <a href="{% url 'productos:calculadora' %}" class="btn btn-primary"><i class="fas fa-calculator"></i>Comenzar cálculo</a>
     </div>
 </div>
 
 {% if es_vendedor %}
-<!-- Bandeja del vendedor: mis solicitudes pendientes -->
-<div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+<section class="card overflow-hidden mb-6" data-live="inicio_solicitudes">
     {% csrf_token %}
-    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fas fa-inbox text-blue-500 mr-2"></i>Mis solicitudes pendientes</h2>
-        <span class="text-sm text-slate-500 font-medium">{{ mis_solicitudes|length }} sin atender</span>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-line">
+        <h2 class="strong" style="font-size:16px;margin:0">Mis solicitudes pendientes</h2>
+        <span class="muted text-sm">{{ mis_solicitudes|length }} sin atender</span>
     </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
-                    <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Asunto</th>
-                    <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Recibido</th>
-                    <th class="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    <th>Cliente</th>
+                    <th class="hidden md:table-cell">Asunto</th>
+                    <th class="hidden sm:table-cell">Recibido</th>
+                    <th></th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody>
                 {% for s in mis_solicitudes %}
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-slate-700">
-                        <p class="font-semibold text-slate-800">{{ s.nombre_cliente|default:"Sin nombre" }}</p>
-                        {% if s.telefono %}<p class="text-xs text-slate-500"><i class="fas fa-phone mr-1"></i>{{ s.telefono }}</p>{% endif %}
-                        {% if s.email %}<p class="text-xs text-slate-500"><i class="fas fa-envelope mr-1"></i>{{ s.email }}</p>{% endif %}
+                <tr>
+                    <td>
+                        <p class="strong" style="margin:0">{{ s.nombre_cliente|default:"Sin nombre" }}</p>
+                        {% if s.telefono %}<p class="muted text-xs" style="margin:2px 0 0"><i class="fas fa-phone mr-1"></i>{{ s.telefono }}</p>{% endif %}
+                        {% if s.email %}<p class="muted text-xs" style="margin:2px 0 0"><i class="fas fa-envelope mr-1"></i>{{ s.email }}</p>{% endif %}
                     </td>
-                    <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-600">{{ s.asunto|default:"—"|truncatechars:60 }}</td>
-                    <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{{ s.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <a href="{% url 'presupuestos:presupuestos-crear' %}?solicitud={{ s.pk }}" class="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold">
-                                <i class="fas fa-file-invoice-dollar mr-1"></i>Crear presupuesto
-                            </a>
-                            <button onclick="marcarContestada('{% url 'solicitudes:marcar_contestada' s.pk %}', '{{ s.nombre_cliente|default:s.email|escapejs }}')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-semibold" title="Marcar contestada">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
+                    <td class="hidden md:table-cell muted">{{ s.asunto|default:"—"|truncatechars:60 }}</td>
+                    <td class="hidden sm:table-cell muted whitespace-nowrap">{{ s.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                    <td class="num whitespace-nowrap">
+                        <a href="{% url 'presupuestos:presupuestos-crear' %}?solicitud={{ s.pk }}" class="btn btn-secondary btn-sm">Crear presupuesto</a>
+                        <button type="button" onclick="marcarContestada('{% url 'solicitudes:marcar_contestada' s.pk %}', '{{ s.nombre_cliente|default:s.email|escapejs }}')" class="btn btn-ghost btn-sm btn-icon" title="Marcar contestada" aria-label="Marcar contestada"><i class="fas fa-check"></i></button>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="px-6 py-10 text-center">
-                        <i class="fas fa-check-circle text-emerald-300 text-4xl mb-2"></i>
-                        <p class="text-slate-500 font-medium">No tenés solicitudes pendientes</p>
-                    </td>
+                    <td colspan="4">{% include 'core/ui/empty_state.html' with title="No tenés solicitudes pendientes" icon="fas fa-check-circle" only %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+</section>
 {% endif %}
 
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 gap-6 mb-6">
-    <!-- Stats removed -->
-</div>
-
 {% if not es_vendedor %}
-<!-- Main Actions -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-    <!-- Calculadora Rápida -->
-    <div class="bg-white rounded-2xl p-6 shadow-lg">
-        <div class="flex items-center mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <i class="fas fa-calculator text-white text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-xl font-bold text-gray-900">Calculadora</h3>
-                <p class="text-sm text-gray-600">Cálculo rápido</p>
-            </div>
-        </div>
-        <p class="text-gray-600 mb-6 text-sm">Realiza cálculos instantáneos de precios sin necesidad de guardar la cotización.</p>
-        <a href="{% url 'productos:calculadora' %}" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all inline-flex items-center justify-center">
-            <i class="fas fa-play mr-2"></i>Iniciar Cálculo
-        </a>
-    </div>
-
-    <!-- Productos -->
-    <div class="bg-white rounded-2xl p-6 shadow-lg">
-        <div class="flex items-center mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <i class="fas fa-box text-white text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-xl font-bold text-gray-900">Productos</h3>
-                <p class="text-sm text-gray-600">Gestión completa</p>
-            </div>
-        </div>
-        <p class="text-gray-600 mb-6 text-sm">Administra tu catálogo completo de productos, precios por m² y categorías.</p>
-        <a href="{% url 'productos:productos_list' %}" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all inline-flex items-center justify-center">
-            <i class="fas fa-cog mr-2"></i>Gestionar Catálogo
-        </a>
-    </div>
-
-    <!-- Comercial -->
-    <div class="bg-white rounded-2xl p-6 shadow-lg">
-        <div class="flex items-center mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <i class="fas fa-chart-line text-white text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-xl font-bold text-gray-900">Comercial</h3>
-                <p class="text-sm text-gray-600">Ventas y gastos</p>
-            </div>
-        </div>
-        <p class="text-gray-600 mb-6 text-sm">Gestiona ventas, gastos, clientes y cuentas. Mantén un control completo.</p>
-        <a href="{% url 'comercial:dashboard' %}" class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-700 transition-all inline-flex items-center justify-center">
-            <i class="fas fa-chart-bar mr-2"></i>Ver Dashboard
-        </a>
-    </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <section class="card card-pad">
+        <h2 class="strong" style="font-size:16px;margin:0">Calculadora</h2>
+        <p class="muted text-sm" style="margin:6px 0 16px">Realizá cálculos instantáneos de precios sin necesidad de guardar la cotización.</p>
+        <a href="{% url 'productos:calculadora' %}" class="btn btn-secondary"><i class="fas fa-play"></i>Iniciar cálculo</a>
+    </section>
+    <section class="card card-pad">
+        <h2 class="strong" style="font-size:16px;margin:0">Productos</h2>
+        <p class="muted text-sm" style="margin:6px 0 16px">Administrá el catálogo completo de productos, precios por m² y categorías.</p>
+        <a href="{% url 'productos:productos_list' %}" class="btn btn-secondary"><i class="fas fa-box"></i>Gestionar catálogo</a>
+    </section>
+    <section class="card card-pad">
+        <h2 class="strong" style="font-size:16px;margin:0">Comercial</h2>
+        <p class="muted text-sm" style="margin:6px 0 16px">Gestioná ventas, gastos, clientes y cuentas con control completo.</p>
+        <a href="{% url 'comercial:dashboard' %}" class="btn btn-secondary"><i class="fas fa-chart-bar"></i>Ver dashboard</a>
+    </section>
 </div>
 
-<!-- Quick Actions -->
-<div class="bg-white rounded-2xl p-6 shadow-lg">
-    <h3 class="text-2xl font-bold text-slate-800 mb-8 tracking-tight">Acciones Rápidas</h3>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <a href="{% url 'productos:producto_create' %}" class="flex flex-col items-center p-6 rounded-2xl hover:bg-slate-50 transition-all duration-300 group">
-            <div class="w-14 h-14 bg-gradient-to-br from-slate-500 to-slate-600 rounded-2xl flex items-center justify-center mb-4 group-hover:shadow-lg transition-all shadow-lg">
-                <i class="fas fa-plus text-white"></i>
-            </div>
-            <span class="text-sm font-semibold text-slate-700 text-center">Nuevo Producto</span>
+<section class="card" style="padding:12px">
+    <h2 class="strong" style="font-size:16px;margin:0;padding:8px 8px 4px">Accesos rápidos</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1">
+        <a href="{% url 'productos:producto_create' %}" class="flex items-center gap-3 p-3 rounded-xl text-ink hover:bg-ground">
+            <span class="flex items-center justify-center rounded-xl bg-accent-soft text-accent" style="width:36px;height:36px"><i class="fas fa-plus"></i></span>
+            <span class="text-sm font-medium">Nuevo producto</span>
         </a>
-        
-        <a href="{% url 'comercial:clientes_list' %}" class="flex flex-col items-center p-6 rounded-2xl hover:bg-slate-50 transition-all duration-300 group">
-            <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:shadow-lg transition-all shadow-lg">
-                <i class="fas fa-users text-white"></i>
-            </div>
-            <span class="text-sm font-semibold text-slate-700 text-center">Clientes</span>
+        <a href="{% url 'comercial:clientes_list' %}" class="flex items-center gap-3 p-3 rounded-xl text-ink hover:bg-ground">
+            <span class="flex items-center justify-center rounded-xl bg-accent-soft text-accent" style="width:36px;height:36px"><i class="fas fa-users"></i></span>
+            <span class="text-sm font-medium">Clientes</span>
         </a>
-        
-        <a href="{% url 'productos:calculadora' %}" class="flex flex-col items-center p-6 rounded-2xl hover:bg-slate-50 transition-all duration-300 group">
-            <div class="w-14 h-14 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center mb-4 group-hover:shadow-lg transition-all shadow-lg">
-                <i class="fas fa-calculator text-white"></i>
-            </div>
-            <span class="text-sm font-semibold text-slate-700 text-center">Calcular Precio</span>
+        <a href="{% url 'productos:calculadora' %}" class="flex items-center gap-3 p-3 rounded-xl text-ink hover:bg-ground">
+            <span class="flex items-center justify-center rounded-xl bg-accent-soft text-accent" style="width:36px;height:36px"><i class="fas fa-calculator"></i></span>
+            <span class="text-sm font-medium">Calcular precio</span>
         </a>
-        
-        <a href="{% url 'admin:index' %}" class="flex flex-col items-center p-6 rounded-2xl hover:bg-slate-50 transition-all duration-300 group">
-            <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mb-4 group-hover:shadow-lg transition-all shadow-lg">
-                <i class="fas fa-cogs text-white"></i>
-            </div>
-            <span class="text-sm font-semibold text-slate-700 text-center">Administración</span>
+        <a href="{% url 'admin:index' %}" class="flex items-center gap-3 p-3 rounded-xl text-ink hover:bg-ground">
+            <span class="flex items-center justify-center rounded-xl bg-accent-soft text-accent" style="width:36px;height:36px"><i class="fas fa-cogs"></i></span>
+            <span class="text-sm font-medium">Administración</span>
         </a>
     </div>
-</div>
+</section>
 {% endif %}
 
 <script>
@@ -174,8 +108,8 @@ function marcarContestada(url, cliente) {
         html: `<p>Solicitud de <strong>${cliente || 'este cliente'}</strong></p>`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#16a34a',
-        cancelButtonColor: '#94a3b8',
+        confirmButtonColor: '#1F4FD8',
+        cancelButtonColor: '#98A2B3',
         confirmButtonText: 'Sí, contestada',
         cancelButtonText: 'Cancelar'
     }).then((result) => {
@@ -199,95 +133,51 @@ function mostrarCotizacionDolar() {
         showConfirmButton: false,
         allowOutsideClick: false
     });
-    
+
     Promise.all([
         fetch('https://dolarapi.com/v1/dolares/blue').then(r => r.json()),
         fetch('https://dolarapi.com/v1/dolares/oficial').then(r => r.json())
     ]).then(([blue, oficial]) => {
-        const fechaBlue = new Date(blue.fechaActualizacion).toLocaleString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        const fmt = (iso) => new Date(iso).toLocaleString('es-AR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
-        
-        const fechaOficial = new Date(oficial.fechaActualizacion).toLocaleString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        Swal.fire({
-            html: `
-                <div class="space-y-4">
-                    <div class="text-center mb-6">
-                        <i class="fas fa-dollar-sign text-5xl text-green-600 mb-3"></i>
-                        <h2 class="text-3xl font-bold text-gray-800">Cotización del Dólar</h2>
+        const bloque = (titulo, d) => `
+            <div style="background:#F9FAFB;border:1px solid #E4E7EC;border-radius:14px;padding:20px;text-align:left">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <h3 style="margin:0;font:600 16px Inter,sans-serif;color:#101828">${titulo}</h3>
+                    <span style="font:400 12px Inter,sans-serif;color:#667085">Act. ${fmt(d.fechaActualizacion)}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px">
+                    <div style="background:#fff;border-radius:10px;padding:12px">
+                        <p style="margin:0;font:500 13px Inter,sans-serif;color:#475467">Compra</p>
+                        <p style="margin:6px 0 0;font:600 22px Inter,sans-serif;color:#101828">$${d.compra}</p>
                     </div>
-                    
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-8 text-white shadow-2xl">
-                        <h3 class="text-2xl font-bold mb-6 flex items-center justify-center">
-                            <i class="fas fa-chart-line mr-3"></i>Dólar Blue
-                        </h3>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Compra</p>
-                                <p class="text-4xl font-bold">$${blue.compra}</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Venta</p>
-                                <p class="text-4xl font-bold">$${blue.venta}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-blue-400 text-center">
-                            <p class="text-xs opacity-80"><i class="far fa-clock mr-1"></i>Actualizado: ${fechaBlue}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gradient-to-br from-gray-700 to-gray-900 rounded-3xl p-8 text-white shadow-2xl">
-                        <h3 class="text-2xl font-bold mb-6 flex items-center justify-center">
-                            <i class="fas fa-university mr-3"></i>Dólar Oficial
-                        </h3>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Compra</p>
-                                <p class="text-4xl font-bold">$${oficial.compra}</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-sm opacity-90 mb-2 font-semibold">Venta</p>
-                                <p class="text-4xl font-bold">$${oficial.venta}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-gray-600 text-center">
-                            <p class="text-xs opacity-80"><i class="far fa-clock mr-1"></i>Actualizado: ${fechaOficial}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-50 rounded-2xl p-3 text-center">
-                        <p class="text-xs text-gray-600">
-                            <i class="fas fa-info-circle mr-1"></i>Fuente: DolarAPI.com
-                        </p>
+                    <div style="background:#fff;border-radius:10px;padding:12px">
+                        <p style="margin:0;font:500 13px Inter,sans-serif;color:#475467">Venta</p>
+                        <p style="margin:6px 0 0;font:600 22px Inter,sans-serif;color:#101828">$${d.venta}</p>
                     </div>
                 </div>
-            `,
-            width: '650px',
+            </div>`;
+
+        Swal.fire({
+            title: 'Cotización del dólar',
+            html: `
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    ${bloque('Dólar blue', blue)}
+                    ${bloque('Dólar oficial', oficial)}
+                    <p style="margin:0;font:400 12px Inter,sans-serif;color:#667085">Fuente: DolarAPI.com</p>
+                </div>`,
+            width: '560px',
             showConfirmButton: true,
-            confirmButtonText: '<i class="fas fa-times mr-2"></i>Cerrar',
-            confirmButtonColor: '#3b82f6',
-            customClass: {
-                popup: 'rounded-3xl',
-                confirmButton: 'rounded-xl px-8 py-3 font-semibold'
-            }
+            confirmButtonText: 'Cerrar',
+            confirmButtonColor: '#1F4FD8'
         });
     }).catch(error => {
         Swal.fire({
             icon: 'error',
             title: 'Error',
             text: 'No se pudo obtener la cotización del dólar',
-            confirmButtonColor: '#3b82f6'
+            confirmButtonColor: '#1F4FD8'
         });
     });
 }
