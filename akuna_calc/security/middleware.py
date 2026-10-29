@@ -17,6 +17,10 @@ SECURITY_EXEMPT_PATHS = {
     '/health/',
     '/favicon.ico',
 }
+# La consulta periódica de tiempo real (live.js) no es actividad del usuario: si contara,
+# una pestaña abierta impediría el cierre de sesión por inactividad.
+PASSIVE_POLL_PATHS = {'/core/api/live/'}
+
 SECURITY_EXEMPT_PREFIXES = (
     '/static/',
     '/media/',
@@ -50,6 +54,7 @@ class AuditMiddleware(MiddlewareMixin):
         '/security/backups/api/',
         '/agenda/api/',
         '/solicitudes/api/',
+        '/core/api/',
     ]
     
     SENSITIVE_FIELDS = ['password', 'token', 'secret', 'key']
@@ -250,7 +255,8 @@ class SecurityMiddleware(MiddlewareMixin):
                     return redirect('login')
             
             # Actualizar última actividad
-            request.session['last_activity'] = timezone.now().isoformat()
+            if request.path not in PASSIVE_POLL_PATHS:
+                request.session['last_activity'] = timezone.now().isoformat()
         except:
             pass
 

@@ -1,6 +1,9 @@
+import random
 import re
+from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -12,6 +15,10 @@ MAX_KEYS = 20
 MAX_AVISOS = 10
 RECURSO_RE = re.compile(r'^[a-z0-9_]{1,50}\.[a-z0-9_]{1,50}$')
 OBJECT_ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
+# Las filas vencidas de EdicionActiva se borran de vez en cuando (1 de cada N consultas
+# con presencia), para no sumar una consulta en cada poll.
+PURGA_PROBABILIDAD = 0.02
+PURGA_ANTIGUEDAD = timedelta(hours=1)
 
 
 def get_dolar():
@@ -32,10 +39,16 @@ def _presencia(user, edit):
     if not RECURSO_RE.match(recurso) or not OBJECT_ID_RE.match(object_id):
         return None
     ahora = timezone.now()
-    EdicionActiva.objects.update_or_create(
-        usuario=user, recurso=recurso, object_id=object_id,
-        defaults={'last_seen': ahora},
-    )
+    propia = EdicionActiva.objects.filter(usuario=user, recurso=recurso, object_id=object_id)
+    if not propia.update(last_seen=ahora):
+        try:
+            with transaction.atomic():
+                EdicionActiva.objects.create(
+                    usuario=user, recurso=recurso, object_id=object_id, last_seen=ahora)
+        except IntegrityError:
+            propia.update(last_seen=ahora)
+    if random.random() < PURGA_PROBABILIDAD:
+        EdicionActiva.objects.filter(last_seen__lt=ahora - PURGA_ANTIGUEDAD).delete()
     otros = (
         EdicionActiva.vigentes(ahora)
         .filter(recurso=recurso, object_id=object_id)
@@ -60,9 +73,11 @@ def live_poll(request):
         {'id': a.pk, 'tipo': a.tipo, 'texto': a.texto, 'url': a.url, 'fecha': a.fecha.isoformat()}
         for a in unread[:MAX_AVISOS]
     ]
+    # Si entraron todos en la página no hace falta el COUNT aparte.
+    unread_count = len(avisos) if len(avisos) < MAX_AVISOS else unread.count()
     payload = {
         'sources': live.snapshots_for(user, keys),
-        'avisos': {'count': unread.count(), 'items': avisos},
+        'avisos': {'count': unread_count, 'items': avisos},
         'dolar': get_dolar(),
         'kpis': get_kpis(user),
         'edit': _presencia(user, request.GET.get('edit', '')),

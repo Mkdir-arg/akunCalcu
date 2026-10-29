@@ -321,6 +321,37 @@ class LiveEndpointTests(TestCase):
         data = self.client.get(self.url, {'edit': 'presupuestos.presupuesto:5'}).json()
         self.assertEqual([o['usuario'] for o in data['edit']['otros']], ['otro_live'])
 
+    def test_poll_no_cuenta_como_actividad_de_sesion(self):
+        self.client.force_login(self.admin)
+        hace_un_rato = (timezone.now() - timedelta(minutes=5)).isoformat()
+        session = self.client.session
+        session['last_activity'] = hace_un_rato
+        session.save()
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        self.assertEqual(self.client.session.get('last_activity'), hace_un_rato)
+        self.client.get(reverse('home'))
+        self.assertNotEqual(self.client.session.get('last_activity'), hace_un_rato)
+
+    def test_avisos_cuenta_total_aunque_supere_la_pagina(self):
+        for i in range(12):
+            crear_aviso(self.admin, f'aviso {i}')
+        self.client.force_login(self.admin)
+        data = self.client.get(self.url).json()
+        self.assertEqual(len(data['avisos']['items']), 10)
+        self.assertEqual(data['avisos']['count'], 12)
+
+    def test_presencia_purga_filas_vencidas(self):
+        EdicionActiva.objects.create(
+            usuario=self.otro, recurso='presupuestos.presupuesto', object_id='9',
+            last_seen=timezone.now() - timedelta(hours=2))
+        self.client.force_login(self.admin)
+        with patch('core.live_api.random.random', return_value=0):
+            self.client.get(self.url, {'edit': 'presupuestos.presupuesto:5'})
+        self.assertEqual(
+            list(EdicionActiva.objects.values_list('object_id', flat=True)), ['5'])
+        self.client.get(self.url, {'edit': 'presupuestos.presupuesto:5'})
+        self.assertEqual(EdicionActiva.objects.count(), 1)
+
     def test_presencia_ignora_formato_invalido(self):
         self.client.force_login(self.admin)
         data = self.client.get(self.url, {'edit': '../x:1'}).json()
@@ -347,6 +378,22 @@ class AvisoYEdicionModelTests(TestCase):
         self.assertIn(reciente, vigentes)
         self.assertNotIn(vieja, vigentes)
         self.assertIn('presupuestos.presupuesto:2', str(reciente))
+
+
+class KebabMenuTests(SimpleTestCase):
+    def test_eliminar_por_defecto(self):
+        html = render_to_string('core/ui/kebab_menu.html', {'delete_url': '/x/', 'delete_name': 'A'})
+        self.assertIn('data-verb="eliminar"', html)
+        self.assertIn('fa-trash', html)
+        self.assertIn('Eliminar', html)
+
+    def test_accion_que_desactiva(self):
+        html = render_to_string('core/ui/kebab_menu.html', {
+            'delete_url': '/x/', 'delete_name': 'A', 'delete_label': 'Desactivar',
+            'delete_verb': 'desactivar', 'delete_icon': 'fas fa-ban'})
+        self.assertIn('data-verb="desactivar"', html)
+        self.assertIn('Desactivar', html)
+        self.assertNotIn('Eliminar', html)
 
 
 class SidebarGruposTests(TestCase):
