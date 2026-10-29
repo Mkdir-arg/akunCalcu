@@ -5,226 +5,57 @@
 {% block title %}Dashboard Comercial{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12 mb-6 border-l-4 border-blue-500">
-    <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Administración Comercial</h1>
-    <p class="text-lg text-gray-600">Gestión integral de ventas, gastos y reportes</p>
-</div>
+{% url 'comercial:venta_create' as venta_create_url %}
+{% include 'core/ui/page_header.html' with title="Administración comercial" subtitle="Ventas, gastos y reportes en un solo lugar." action_url=venta_create_url action_label="Nueva venta" only %}
+{% include 'comercial/_nav_comercial.html' with active='tablero' only %}
 
-<!-- Estadísticas -->
-<div class="grid grid-cols-1 gap-6 mb-6">
-    <!-- Stats removed -->
-</div>
-
-<!-- Gráficos -->
-<div class="grid grid-cols-1 gap-6 mb-8 animate-fade-in">
-    <!-- Charts removed -->
-</div>
-
-<!-- Main Actions -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
-    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
-        <div class="flex items-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                <i class="fas fa-chart-line text-white text-2xl"></i>
-            </div>
-            <div class="ml-6">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Ventas</h3>
-                <p class="text-sm text-slate-500 font-medium">Gestión completa</p>
-            </div>
-        </div>
-        <div class="space-y-3">
-            <a href="{% url 'comercial:ventas_list' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
-                <i class="fas fa-list mr-2"></i>Ver Ventas
-            </a>
-            <a href="{% url 'comercial:venta_create' %}" class="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-plus mr-2"></i>Nueva Venta
-            </a>
-            <a href="{% url 'comercial:clientes_list' %}" class="inline-flex items-center justify-center w-full bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-users mr-2"></i>Clientes
-            </a>
-        </div>
-    </div>
-
-    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
-        <div class="flex items-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                <i class="fas fa-shopping-cart text-white text-2xl"></i>
-            </div>
-            <div class="ml-6">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Gastos</h3>
-                <p class="text-sm text-slate-500 font-medium">Control de egresos</p>
-            </div>
-        </div>
-        <div class="space-y-3">
-            <a href="{% url 'comercial:compras_list' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
-                <i class="fas fa-list mr-2"></i>Ver Gastos
-            </a>
-            <a href="{% url 'comercial:compra_create' %}" class="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-plus mr-2"></i>Nuevo Gasto
-            </a>
-            <a href="{% url 'comercial:cuentas_list' %}" class="inline-flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-folder mr-2"></i>Cuentas
-            </a>
-        </div>
-    </div>
-
-    <div class="group card-elegant bg-white rounded-3xl p-8 shadow-xl">
-        <div class="flex items-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                <i class="fas fa-chart-bar text-white text-2xl"></i>
-            </div>
-            <div class="ml-6">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Reportes</h3>
-                <p class="text-sm text-slate-500 font-medium">Análisis contable</p>
-            </div>
-        </div>
-        <div class="space-y-3">
-            <a href="{% url 'comercial:reportes' %}" class="btn-primary inline-flex items-center justify-center w-full text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
-                <i class="fas fa-file-alt mr-2"></i>Ventas
-            </a>
-            <a href="{% url 'comercial:reportes_cobranzas' %}" class="inline-flex items-center justify-center w-full bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-search-dollar mr-2"></i>Reporte Cobranza
-            </a>
-            <a href="{% url 'comercial:reporte_general' %}" class="inline-flex items-center justify-center w-full bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-chart-pie mr-2"></i>Reporte General
-            </a>
-            <a href="{% url 'comercial:reportes' %}" class="inline-flex items-center justify-center w-full bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-arrow-trend-up mr-2"></i>Reporte Ventas
-            </a>
-            <a href="{% url 'comercial:reportes_gastos' %}" class="inline-flex items-center justify-center w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-money-bill-trend-up mr-2"></i>Reporte Gastos
-            </a>
-            <a href="{% url 'comercial:reportes_proveedores' %}" class="inline-flex items-center justify-center w-full bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                <i class="fas fa-truck mr-2"></i>Reportes Proveedores
-            </a>
-        </div>
+<div data-live="ventas,clientes">
+    <div class="grid gap-4 mb-5" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="card card-pad"><p class="sec-label">Ventas</p><p class="page-title" style="font-size:26px">$ {{ total_ventas|formato_numero }}</p><p class="page-sub">{{ ventas_pendientes }} pendiente{{ ventas_pendientes|pluralize }}</p></div>
+        <div class="card card-pad"><p class="sec-label">Gastos</p><p class="page-title" style="font-size:26px">$ {{ total_compras|formato_numero }}</p><p class="page-sub">Total cargado</p></div>
+        <div class="card card-pad"><p class="sec-label">Clientes</p><p class="page-title" style="font-size:26px">{{ clientes_count }}</p><p class="page-sub">Registrados</p></div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico Evolución Ventas (solo ventas)
-    const ctx1 = document.getElementById('evolucionChart');
-    if (ctx1) {
-        const ventasMeses = JSON.parse('{{ ventas_por_mes|escapejs }}');
-        
-        if (ventasMeses.length === 0) {
-            ctx1.parentElement.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-slate-400 text-center"><i class="fas fa-chart-line text-4xl mb-2"></i><br>No hay datos para mostrar</p></div>';
-        } else {
-            const labels = ventasMeses.map(v => {
-                const fecha = new Date(v.mes);
-                return fecha.toLocaleDateString('es-AR', {month: 'short', year: 'numeric'});
-            });
-            const data = ventasMeses.map(v => v.total);
-            
-            new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Ventas',
-                        data: data,
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const parts = context.parsed.y.toFixed(2).split('.');
-                                    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                    return 'Ventas: $' + integerPart + ',' + parts[1];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-    
-    // Gráfico Gastos por Tipo (Dona)
-    const ctx2 = document.getElementById('gastosChart');
-    if (ctx2) {
-        const gastosPorTipo = JSON.parse('{{ compras_por_tipo|escapejs }}');
-        
-        if (gastosPorTipo.length === 0) {
-            ctx2.parentElement.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-slate-400 text-center"><i class="fas fa-chart-pie text-4xl mb-2"></i><br>No hay datos para mostrar</p></div>';
-        } else {
-            const labels = gastosPorTipo.map(g => g.tipo);
-            const data = gastosPorTipo.map(g => g.total);
-            
-            new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.7)',
-                            'rgba(168, 85, 247, 0.7)',
-                            'rgba(236, 72, 153, 0.7)',
-                            'rgba(251, 146, 60, 0.7)',
-                            'rgba(34, 197, 94, 0.7)',
-                            'rgba(234, 179, 8, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(168, 85, 247, 1)',
-                            'rgba(236, 72, 153, 1)',
-                            'rgba(251, 146, 60, 1)',
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(234, 179, 8, 1)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                font: { size: 11 },
-                                padding: 10
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const parts = context.parsed.toFixed(2).split('.');
-                                    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                    return context.label + ': $' + integerPart + ',' + parts[1];
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-});
-</script>
+<div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <section class="card card-pad flex flex-col">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="inline-flex items-center justify-center bg-accent-soft text-accent" style="width:40px;height:40px;border-radius:10px"><i class="fas fa-briefcase"></i></span>
+            <div><h2 class="strong" style="font-size:16px">Ventas</h2><p class="muted" style="font-size:13px">Gestión completa</p></div>
+        </div>
+        <div class="flex-1">
+            <a href="{% url 'comercial:ventas_list' %}" class="flex justify-between items-center py-3 border-t border-line strong">Ver ventas<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:venta_create' %}" class="flex justify-between items-center py-3 border-t border-line strong">Nueva venta<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:clientes_list' %}" class="flex justify-between items-center py-3 border-t border-line strong">Clientes<i class="fas fa-chevron-right muted"></i></a>
+        </div>
+        <a class="btn btn-secondary mt-4 justify-center" href="{% url 'comercial:ventas_list' %}">Ir a ventas</a>
+    </section>
+
+    <section class="card card-pad flex flex-col">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="inline-flex items-center justify-center bg-accent-soft text-accent" style="width:40px;height:40px;border-radius:10px"><i class="fas fa-wallet"></i></span>
+            <div><h2 class="strong" style="font-size:16px">Gastos</h2><p class="muted" style="font-size:13px">Control de egresos</p></div>
+        </div>
+        <div class="flex-1">
+            <a href="{% url 'comercial:compras_list' %}" class="flex justify-between items-center py-3 border-t border-line strong">Ver gastos<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:compra_create' %}" class="flex justify-between items-center py-3 border-t border-line strong">Nuevo gasto<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:cuentas_list' %}" class="flex justify-between items-center py-3 border-t border-line strong">Cuentas<i class="fas fa-chevron-right muted"></i></a>
+        </div>
+        <a class="btn btn-secondary mt-4 justify-center" href="{% url 'comercial:compras_list' %}">Ir a gastos</a>
+    </section>
+
+    <section class="card card-pad flex flex-col">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="inline-flex items-center justify-center bg-accent-soft text-accent" style="width:40px;height:40px;border-radius:10px"><i class="fas fa-chart-column"></i></span>
+            <div><h2 class="strong" style="font-size:16px">Reportes</h2><p class="muted" style="font-size:13px">Análisis contable</p></div>
+        </div>
+        <div class="flex-1">
+            <a href="{% url 'comercial:reportes' %}" class="flex justify-between items-center py-3 border-t border-line strong">Ventas<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:reportes_cobranzas' %}" class="flex justify-between items-center py-3 border-t border-line strong">Cobranzas<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:reporte_general' %}" class="flex justify-between items-center py-3 border-t border-line strong">General<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:reportes_gastos' %}" class="flex justify-between items-center py-3 border-t border-line strong">Gastos<i class="fas fa-chevron-right muted"></i></a>
+            <a href="{% url 'comercial:reportes_proveedores' %}" class="flex justify-between items-center py-3 border-t border-line strong">Proveedores<i class="fas fa-chevron-right muted"></i></a>
+        </div>
+    </section>
+</div>
 {% endblock %}

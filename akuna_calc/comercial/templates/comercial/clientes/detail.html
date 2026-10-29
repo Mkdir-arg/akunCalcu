@@ -5,415 +5,171 @@
 {% block title %}{{ cliente.get_nombre_completo }} — Detalle{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- HEADER                                                      -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 lg:p-8 text-white shadow-2xl mb-8">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div class="flex items-center gap-5">
-                <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-user text-4xl text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl lg:text-4xl font-bold tracking-tight text-white">
-                        {{ cliente.get_nombre_completo }}
-                    </h1>
-                    <div class="flex flex-wrap gap-3 mt-2">
-                        <span class="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                            <i class="fas fa-hashtag mr-1"></i>{{ cliente.codigo }}
-                        </span>
-                        {% if cliente.cuit %}
-                        <span class="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                            <i class="fas fa-id-card mr-1"></i>CUIT: {{ cliente.cuit }}
-                        </span>
-                        {% endif %}
-                        <span class="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                            <i class="fas fa-file-invoice mr-1"></i>{{ cliente.get_condicion_iva_display }}
-                        </span>
-                        {% if cliente.localidad %}
-                        <span class="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                            <i class="fas fa-map-marker-alt mr-1"></i>{{ cliente.localidad }}{% if cliente.provincia %}, {{ cliente.provincia }}{% endif %}
-                        </span>
-                        {% endif %}
-                        <span class="text-emerald-100 text-sm font-medium mt-1">
-                            <i class="far fa-calendar mr-1"></i>Cliente desde {{ cliente.created_at|date:"d/m/Y" }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                {% url 'comercial:venta_create' as venta_create_base_url %}
-                <a href="{% with_return_to venta_create_base_url|add:'?cliente='|add:cliente.pk request.get_full_path %}" class="inline-flex items-center bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold transition-all text-sm">
-                    <i class="fas fa-plus mr-2"></i>Nueva Venta
-                </a>
-                {% url 'comercial:cliente_edit' cliente.pk as cliente_edit_url %}
-                <a href="{% with_return_to cliente_edit_url request.get_full_path %}" class="inline-flex items-center bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold transition-all text-sm">
-                    <i class="fas fa-edit mr-2"></i>Editar
-                </a>
-                <a href="{{ return_url }}" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl font-semibold transition-all text-sm">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver
-                </a>
-            </div>
+{% url 'comercial:venta_create' as venta_create_base_url %}
+{% url 'comercial:cliente_edit' cliente.pk as cliente_edit_url %}
+<div data-live="clientes,ventas">
+<div class="page-head">
+    <div>
+        <a href="{{ return_url }}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>Volver</a>
+        <h1 class="page-title">{{ cliente.get_nombre_completo }}</h1>
+        <div class="flex flex-wrap gap-2 mt-2 items-center">
+            <span class="badge b-gray">{{ cliente.codigo }}</span>
+            {% if cliente.cuit %}<span class="badge b-gray">CUIT: {{ cliente.cuit }}</span>{% endif %}
+            <span class="badge b-gray">{{ cliente.get_condicion_iva_display }}</span>
+            {% if cliente.localidad %}<span class="badge b-gray"><i class="fas fa-map-marker-alt"></i>{{ cliente.localidad }}{% if cliente.provincia %}, {{ cliente.provincia }}{% endif %}</span>{% endif %}
+            <span class="muted text-sm">Cliente desde {{ cliente.created_at|date:"d/m/Y" }}</span>
         </div>
     </div>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- KPIs                                                        -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-
-        <div class="bg-white rounded-2xl shadow-lg p-5 border-l-4 border-emerald-500">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Comprado</p>
-            <p class="text-2xl font-bold text-slate-800">${{ total_comprado|formato_numero }}</p>
-            <p class="text-xs text-slate-400 mt-1">en {{ cantidad_ventas }} venta{% if cantidad_ventas != 1 %}s{% endif %}</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-lg p-5 border-l-4 border-blue-500">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Cobrado</p>
-            <p class="text-2xl font-bold text-slate-800">${{ total_cobrado|formato_numero }}</p>
-            <p class="text-xs text-slate-400 mt-1">en pagos registrados</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-lg p-5 border-l-4 {% if saldo_pendiente > 0 %}border-red-500{% else %}border-green-500{% endif %}">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Saldo Pendiente</p>
-            <p class="text-2xl font-bold {% if saldo_pendiente > 0 %}text-red-600{% else %}text-green-600{% endif %}">${{ saldo_pendiente|formato_numero }}</p>
-            <p class="text-xs text-slate-400 mt-1">{% if saldo_pendiente > 0 %}por cobrar{% else %}al día{% endif %}</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-lg p-5 border-l-4 border-purple-500">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ventas</p>
-            <p class="text-2xl font-bold text-slate-800">{{ cantidad_ventas }}</p>
-            <p class="text-xs text-slate-400 mt-1">pedidos registrados</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-lg p-5 border-l-4 border-orange-500">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Facturas</p>
-            <p class="text-2xl font-bold text-slate-800">{{ cantidad_facturas }}</p>
-            <p class="text-xs text-slate-400 mt-1">electrónicas emitidas</p>
-        </div>
-
+    <div class="page-actions">
+        <a href="{% with_return_to cliente_edit_url request.get_full_path %}" class="btn btn-secondary"><i class="fas fa-pen"></i>Editar</a>
+        <a href="{% with_return_to venta_create_base_url|add:'?cliente='|add:cliente.pk request.get_full_path %}" class="btn btn-primary"><i class="fas fa-plus"></i>Nueva venta</a>
     </div>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- DATOS + GRÁFICOS                                            -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-
-        <!-- Datos del cliente -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-address-card text-emerald-500"></i> Información
-            </h2>
-            <div class="space-y-3">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-user text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">Nombre · {{ cliente.codigo }}</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.nombre }} {{ cliente.apellido }}</p>
-                        {% if cliente.razon_social %}<p class="text-xs text-slate-500">{{ cliente.razon_social }}</p>{% endif %}
-                    </div>
-                </div>
-                {% if cliente.dni %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-id-badge text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">DNI</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.dni }}</p>
-                    </div>
-                </div>
-                {% endif %}
-                {% if cliente.cuit %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-fingerprint text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">CUIT</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.cuit }}</p>
-                    </div>
-                </div>
-                {% endif %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-receipt text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">Condición IVA</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.get_condicion_iva_display }}</p>
-                    </div>
-                </div>
-                {% if cliente.telefono %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-phone text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">Teléfono</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.telefono }}</p>
-                    </div>
-                </div>
-                {% endif %}
-                {% if cliente.email %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-envelope text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">Email</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.email }}</p>
-                    </div>
-                </div>
-                {% endif %}
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-map-marker-alt text-slate-500 text-xs"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 font-semibold uppercase">Dirección</p>
-                        <p class="text-sm font-semibold text-slate-800">{{ cliente.direccion }}</p>
-                        <p class="text-xs text-slate-500">{{ cliente.localidad }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Gráfico: ventas por mes -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-chart-bar text-blue-500"></i> Ventas por mes
-            </h2>
-            {% if meses_labels != "[]" %}
-            <div class="relative" style="height: 220px;">
-                <canvas id="chartVentasMes"></canvas>
-            </div>
-            {% else %}
-            <div class="flex flex-col items-center justify-center h-40 text-slate-400">
-                <i class="fas fa-chart-bar text-4xl mb-2"></i>
-                <p class="text-sm font-medium">Sin ventas en los últimos 12 meses</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Gráfico: distribución por estado -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-chart-pie text-purple-500"></i> Estado de pedidos
-            </h2>
-            {% if estados_labels != "[]" %}
-            <div class="relative" style="height: 180px;">
-                <canvas id="chartEstados"></canvas>
-            </div>
-            <div id="legendEstados" class="flex flex-wrap justify-center gap-2 mt-3"></div>
-            {% else %}
-            <div class="flex flex-col items-center justify-center h-40 text-slate-400">
-                <i class="fas fa-chart-pie text-4xl mb-2"></i>
-                <p class="text-sm font-medium">Sin datos</p>
-            </div>
-            {% endif %}
-        </div>
-
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- TABS: VENTAS / PAGOS / FACTURAS                            -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-
-        <!-- Tab headers -->
-        <div class="flex border-b border-gray-200 bg-gray-50">
-            <button class="tab-btn active flex-1 py-4 px-6 text-sm font-bold text-center transition-all" data-tab="ventas">
-                <i class="fas fa-shopping-cart mr-2"></i>Ventas
-                <span class="ml-2 bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ cantidad_ventas }}</span>
-            </button>
-            <button class="tab-btn flex-1 py-4 px-6 text-sm font-bold text-center transition-all" data-tab="pagos">
-                <i class="fas fa-dollar-sign mr-2"></i>Pagos
-                <span class="ml-2 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ pagos|length }}</span>
-            </button>
-            <button class="tab-btn flex-1 py-4 px-6 text-sm font-bold text-center transition-all" data-tab="facturas">
-                <i class="fas fa-file-invoice mr-2"></i>Facturas
-                <span class="ml-2 bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ cantidad_facturas }}</span>
-            </button>
-        </div>
-
-        <!-- TAB: VENTAS -->
-        <div id="tab-ventas" class="tab-content">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Pedido</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Total</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Seña</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Saldo</th>
-                            <th class="px-5 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                            <th class="px-5 py-3 text-center text-xs font-bold text-white uppercase tracking-wider"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for venta in ventas %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-5 py-3">
-                                <span class="font-bold text-slate-800">#{{ venta.numero_pedido }}</span>
-                                {% if not venta.con_factura %}<span class="ml-1 text-xs bg-gray-100 text-gray-600 px-1 rounded">negro</span>{% endif %}
-                            </td>
-                            <td class="px-5 py-3 text-sm text-slate-500">{{ venta.created_at|date:"d/m/Y" }}</td>
-                            <td class="px-5 py-3 text-sm text-right font-semibold text-slate-800">${{ venta.valor_total|formato_numero }}</td>
-                            <td class="px-5 py-3 text-sm text-right text-slate-600">${{ venta.sena|formato_numero }}</td>
-                            <td class="px-5 py-3 text-sm text-right font-bold {% if venta.saldo > 0 %}text-red-600{% else %}text-green-600{% endif %}">
-                                ${{ venta.saldo|formato_numero }}
-                            </td>
-                            <td class="px-5 py-3 text-center">
-                                {% if venta.estado == 'pendiente' %}
-                                    <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">Pendiente</span>
-                                {% elif venta.estado == 'entregado' %}
-                                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">Entregado</span>
-                                {% else %}
-                                    <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Colocado</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-5 py-3 text-center">
-                                {% url 'comercial:venta_detail' venta.pk as venta_detail_url %}
-                                <a href="{% with_return_to venta_detail_url request.get_full_path %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="px-6 py-10 text-center">
-                                <i class="fas fa-inbox text-slate-300 text-4xl mb-2 block"></i>
-                                <p class="text-slate-500 font-medium">Sin ventas registradas</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- TAB: PAGOS -->
-        <div id="tab-pagos" class="tab-content hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Pedido</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Forma de Pago</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Monto</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Observaciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for pago in pagos %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-5 py-3 text-sm text-slate-600">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
-                            <td class="px-5 py-3">
-                                {% url 'comercial:venta_detail' pago.venta.pk as pago_venta_detail_url %}
-                                <a href="{% with_return_to pago_venta_detail_url request.get_full_path %}" class="font-bold text-indigo-600 hover:text-indigo-800">#{{ pago.venta.numero_pedido }}</a>
-                            </td>
-                            <td class="px-5 py-3 text-sm text-slate-700">
-                                {% if pago.forma_pago == 'transferencia' %}<i class="fas fa-exchange-alt text-blue-500 mr-1"></i>
-                                {% elif pago.forma_pago == 'efectivo' %}<i class="fas fa-money-bill text-green-500 mr-1"></i>
-                                {% elif pago.forma_pago == 'cheque' %}<i class="fas fa-money-check text-purple-500 mr-1"></i>
-                                {% elif pago.forma_pago == 'tarjeta' %}<i class="fas fa-credit-card text-orange-500 mr-1"></i>
-                                {% endif %}
-                                {{ pago.get_forma_pago_display }}
-                            </td>
-                            <td class="px-5 py-3 text-right font-bold text-emerald-600 text-sm">${{ pago.monto|formato_numero }}</td>
-                            <td class="px-5 py-3 text-sm text-slate-500">{{ pago.observaciones|default:"-" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-10 text-center">
-                                <i class="fas fa-inbox text-slate-300 text-4xl mb-2 block"></i>
-                                <p class="text-slate-500 font-medium">Sin pagos registrados</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    {% if pagos %}
-                    <tfoot class="bg-slate-50">
-                        <tr>
-                            <td colspan="3" class="px-5 py-3 text-sm font-bold text-slate-700 text-right">Total cobrado:</td>
-                            <td class="px-5 py-3 text-right font-bold text-emerald-700">${{ total_cobrado|formato_numero }}</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                    {% endif %}
-                </table>
-            </div>
-        </div>
-
-        <!-- TAB: FACTURAS -->
-        <div id="tab-facturas" class="tab-content hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Número</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Pedido</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Total</th>
-                            <th class="px-5 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">CAE</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for factura in facturas %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-5 py-3 font-bold text-slate-800 text-sm">
-                                {{ factura.punto_venta.numero|stringformat:"04d" }}-{{ factura.numero|stringformat:"08d" }}
-                            </td>
-                            <td class="px-5 py-3 text-sm">
-                                <span class="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded">Factura {{ factura.tipo }}</span>
-                            </td>
-                            <td class="px-5 py-3 text-sm text-slate-500">{{ factura.fecha|date:"d/m/Y" }}</td>
-                            <td class="px-5 py-3 text-sm text-slate-600">
-                                {% if factura.venta %}
-                                    {% url 'comercial:venta_detail' factura.venta.pk as factura_venta_detail_url %}
-                                    <a href="{% with_return_to factura_venta_detail_url request.get_full_path %}" class="text-indigo-600 hover:text-indigo-800 font-semibold">#{{ factura.venta.numero_pedido }}</a>
-                                {% else %}-{% endif %}
-                            </td>
-                            <td class="px-5 py-3 text-right font-bold text-slate-800 text-sm">${{ factura.total|formato_numero }}</td>
-                            <td class="px-5 py-3 text-center">
-                                {% if factura.estado == 'autorizada' %}
-                                    <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Autorizada</span>
-                                {% elif factura.estado == 'borrador' %}
-                                    <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">Borrador</span>
-                                {% elif factura.estado == 'rechazada' %}
-                                    <span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">Rechazada</span>
-                                {% else %}
-                                    <span class="bg-gray-100 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">{{ factura.estado|capfirst }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-5 py-3 text-xs text-slate-500 font-mono">{{ factura.cae|default:"-" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="px-6 py-10 text-center">
-                                <i class="fas fa-inbox text-slate-300 text-4xl mb-2 block"></i>
-                                <p class="text-slate-500 font-medium">Sin facturas electrónicas</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-    <!-- /tabs -->
-
 </div>
+
+<!-- KPIs -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
+    <div class="card card-pad"><p class="sec-label">Total comprado</p><p class="page-title" style="font-size:24px">${{ total_comprado|formato_numero }}</p><p class="page-sub">en {{ cantidad_ventas }} venta{% if cantidad_ventas != 1 %}s{% endif %}</p></div>
+    <div class="card card-pad"><p class="sec-label">Total cobrado</p><p class="page-title" style="font-size:24px">${{ total_cobrado|formato_numero }}</p><p class="page-sub">en pagos registrados</p></div>
+    <div class="card card-pad"><p class="sec-label">Saldo pendiente</p><p class="page-title{% if saldo_pendiente > 0 %} text-warn{% endif %}" style="font-size:24px">${{ saldo_pendiente|formato_numero }}</p><p class="page-sub">{% if saldo_pendiente > 0 %}por cobrar{% else %}al día{% endif %}</p></div>
+    <div class="card card-pad"><p class="sec-label">Ventas</p><p class="page-title" style="font-size:24px">{{ cantidad_ventas }}</p><p class="page-sub">pedidos registrados</p></div>
+    <div class="card card-pad"><p class="sec-label">Facturas</p><p class="page-title" style="font-size:24px">{{ cantidad_facturas }}</p><p class="page-sub">electrónicas emitidas</p></div>
+</div>
+</div>
+
+<!-- DATOS + GRÁFICOS -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+    <section class="card card-pad">
+        <h2 class="sec-label">Información</h2>
+        <div>
+            <div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">Nombre</span><span class="strong text-right">{{ cliente.nombre }} {{ cliente.apellido }}{% if cliente.razon_social %}<span class="muted block" style="font-size:12px;font-weight:400">{{ cliente.razon_social }}</span>{% endif %}</span></div>
+            {% if cliente.dni %}<div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">DNI</span><span class="strong">{{ cliente.dni }}</span></div>{% endif %}
+            {% if cliente.cuit %}<div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">CUIT</span><span class="strong">{{ cliente.cuit }}</span></div>{% endif %}
+            <div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">Condición IVA</span><span class="strong">{{ cliente.get_condicion_iva_display }}</span></div>
+            {% if cliente.telefono %}<div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">Teléfono</span><span class="strong">{{ cliente.telefono }}</span></div>{% endif %}
+            {% if cliente.email %}<div class="flex justify-between gap-3 py-2 border-b border-line"><span class="muted">Email</span><span class="strong">{{ cliente.email }}</span></div>{% endif %}
+            <div class="flex justify-between gap-3 py-2"><span class="muted">Dirección</span><span class="strong text-right">{{ cliente.direccion }}<span class="muted block" style="font-size:12px;font-weight:400">{{ cliente.localidad }}</span></span></div>
+        </div>
+    </section>
+
+    <section class="card card-pad">
+        <h2 class="sec-label">Ventas por mes</h2>
+        {% if meses_labels != "[]" %}
+        <div class="relative" style="height: 220px;"><canvas id="chartVentasMes"></canvas></div>
+        {% else %}
+        {% include 'core/ui/empty_state.html' with title="Sin ventas en los últimos 12 meses" icon="fas fa-chart-column" only %}
+        {% endif %}
+    </section>
+
+    <section class="card card-pad">
+        <h2 class="sec-label">Estado de pedidos</h2>
+        {% if estados_labels != "[]" %}
+        <div class="relative" style="height: 180px;"><canvas id="chartEstados"></canvas></div>
+        <div id="legendEstados" class="flex flex-wrap justify-center gap-3 mt-3"></div>
+        {% else %}
+        {% include 'core/ui/empty_state.html' with title="Sin datos" icon="fas fa-chart-pie" only %}
+        {% endif %}
+    </section>
+</div>
+
+<!-- TABS: VENTAS / PAGOS / FACTURAS -->
+<section class="card overflow-hidden">
+    <div style="padding:12px 20px;border-bottom:1px solid var(--t-line)">
+        <div class="tabs" role="tablist">
+            <button type="button" class="tab-btn tab on" data-tab="ventas">Ventas <span class="cnt">{{ cantidad_ventas }}</span></button>
+            <button type="button" class="tab-btn tab" data-tab="pagos">Pagos <span class="cnt">{{ pagos|length }}</span></button>
+            <button type="button" class="tab-btn tab" data-tab="facturas">Facturas <span class="cnt">{{ cantidad_facturas }}</span></button>
+        </div>
+    </div>
+
+    <!-- TAB: VENTAS -->
+    <div id="tab-ventas" class="tab-content">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead><tr><th>Pedido</th><th>Fecha</th><th class="num">Total</th><th class="num">Seña</th><th class="num">Saldo</th><th>Estado</th><th><span class="sr-only">Ver</span></th></tr></thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    {% url 'comercial:venta_detail' venta.pk as venta_detail_url %}
+                    <tr>
+                        <td><a class="strong" href="{% with_return_to venta_detail_url request.get_full_path %}">#{{ venta.numero_pedido }}</a>{% if not venta.con_factura %} <span class="badge b-gray">Negro</span>{% endif %}</td>
+                        <td class="muted">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="num strong">${{ venta.valor_total|formato_numero }}</td>
+                        <td class="num">${{ venta.sena|formato_numero }}</td>
+                        <td class="num strong{% if venta.saldo > 0 %} text-warn{% endif %}">${{ venta.saldo|formato_numero }}</td>
+                        <td>
+                            {% if venta.estado == 'pendiente' %}{% include 'core/ui/badge.html' with tone="amber" label="Pendiente" dot=True only %}
+                            {% elif venta.estado == 'entregado' %}{% include 'core/ui/badge.html' with tone="blue" label="Entregado" dot=True only %}
+                            {% else %}{% include 'core/ui/badge.html' with tone="green" label="Colocado" dot=True only %}{% endif %}
+                        </td>
+                        <td class="num"><a href="{% with_return_to venta_detail_url request.get_full_path %}" class="btn btn-ghost btn-sm btn-icon" aria-label="Ver venta {{ venta.numero_pedido }}"><i class="fas fa-eye"></i></a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">{% include 'core/ui/empty_state.html' with title="Sin ventas registradas" icon="fas fa-inbox" only %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB: PAGOS -->
+    <div id="tab-pagos" class="tab-content hidden">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead><tr><th>Fecha</th><th>Pedido</th><th>Forma de pago</th><th class="num">Monto</th><th>Observaciones</th></tr></thead>
+                <tbody>
+                    {% for pago in pagos %}
+                    {% url 'comercial:venta_detail' pago.venta.pk as pago_venta_detail_url %}
+                    <tr>
+                        <td class="muted">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
+                        <td><a class="strong" href="{% with_return_to pago_venta_detail_url request.get_full_path %}">#{{ pago.venta.numero_pedido }}</a></td>
+                        <td>{{ pago.get_forma_pago_display }}</td>
+                        <td class="num strong">${{ pago.monto|formato_numero }}</td>
+                        <td class="muted">{{ pago.observaciones|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">{% include 'core/ui/empty_state.html' with title="Sin pagos registrados" icon="fas fa-inbox" only %}</td></tr>
+                    {% endfor %}
+                </tbody>
+                {% if pagos %}
+                <tfoot><tr><td colspan="3" class="num strong">Total cobrado</td><td class="num strong">${{ total_cobrado|formato_numero }}</td><td></td></tr></tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB: FACTURAS -->
+    <div id="tab-facturas" class="tab-content hidden">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead><tr><th>Número</th><th>Tipo</th><th>Fecha</th><th>Pedido</th><th class="num">Total</th><th>Estado</th><th>CAE</th></tr></thead>
+                <tbody>
+                    {% for factura in facturas %}
+                    <tr>
+                        <td class="strong">{{ factura.punto_venta.numero|stringformat:"04d" }}-{{ factura.numero|stringformat:"08d" }}</td>
+                        <td><span class="badge b-gray">Factura {{ factura.tipo }}</span></td>
+                        <td class="muted">{{ factura.fecha|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if factura.venta %}
+                                {% url 'comercial:venta_detail' factura.venta.pk as factura_venta_detail_url %}
+                                <a class="strong" href="{% with_return_to factura_venta_detail_url request.get_full_path %}">#{{ factura.venta.numero_pedido }}</a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="num strong">${{ factura.total|formato_numero }}</td>
+                        <td>
+                            {% if factura.estado == 'autorizada' %}{% include 'core/ui/badge.html' with tone="green" label="Autorizada" dot=True only %}
+                            {% elif factura.estado == 'borrador' %}{% include 'core/ui/badge.html' with tone="amber" label="Borrador" dot=True only %}
+                            {% elif factura.estado == 'rechazada' %}{% include 'core/ui/badge.html' with tone="red" label="Rechazada" dot=True only %}
+                            {% else %}<span class="badge b-gray">{{ factura.estado|capfirst }}</span>{% endif %}
+                        </td>
+                        <td class="muted">{{ factura.cae|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">{% include 'core/ui/empty_state.html' with title="Sin facturas electrónicas" icon="fas fa-inbox" only %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
@@ -422,9 +178,9 @@
 // ── TABS ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        btn.classList.add('active');
+        btn.classList.add('on');
         document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
     });
 });
@@ -442,9 +198,8 @@ if (mesesLabels.length > 0) {
             datasets: [{
                 label: 'Ventas $',
                 data: mesesData,
-                backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                borderColor: 'rgba(5, 150, 105, 1)',
-                borderWidth: 2,
+                backgroundColor: 'rgba(31, 79, 216, 0.75)',
+                borderWidth: 0,
                 borderRadius: 6,
             }]
         },
@@ -470,7 +225,7 @@ if (mesesLabels.length > 0) {
 // ── GRÁFICO 2: Estados ────────────────────────────────────────────────────
 const estadosLabels = {{ estados_labels|safe }};
 const estadosData   = {{ estados_data|safe }};
-const estadosColors = ['#f59e0b', '#3b82f6', '#10b981'];
+const estadosColors = ['#B54708', '#1F4FD8', '#067647'];
 
 if (estadosLabels.length > 0) {
     const ctxEstados = document.getElementById('chartEstados').getContext('2d');
@@ -504,26 +259,15 @@ if (estadosLabels.length > 0) {
     // Leyenda manual
     const legend = document.getElementById('legendEstados');
     estadosLabels.forEach((label, i) => {
-        legend.innerHTML += `<span class="flex items-center gap-1 text-xs font-semibold text-slate-600">
-            <span style="background:${estadosColors[i]}" class="w-3 h-3 rounded-full inline-block"></span>${label}
+        legend.innerHTML += `<span class="flex items-center gap-1 muted" style="font-size:12px">
+            <span style="background:${estadosColors[i]};width:10px;height:10px;border-radius:50%;display:inline-block"></span>${label}
         </span>`;
     });
 }
 </script>
 
 <style>
-.tab-btn {
-    color: #64748b;
-    border-bottom: 3px solid transparent;
-}
-.tab-btn.active {
-    color: #1e293b;
-    border-bottom: 3px solid #10b981;
-    background: white;
-}
-.tab-btn:hover:not(.active) {
-    background: #f1f5f9;
-    color: #334155;
-}
+.tab-btn { border: 0; cursor: pointer; background: transparent; }
+.tab-btn.on { background: #fff; }
 </style>
 {% endblock %}

@@ -18,6 +18,20 @@ from .forms import ClienteForm, VentaForm, CuentaForm, CompraForm, ReporteForm, 
 logger = logging.getLogger(__name__)
 
 
+def _path_sin_partial(request):
+    params = request.GET.copy()
+    params.pop('partial', None)
+    query = params.urlencode()
+    return f'{request.path}?{query}' if query else request.path
+
+
+def _query_sin(request, *claves):
+    params = request.GET.copy()
+    for clave in claves:
+        params.pop(clave, None)
+    return params.urlencode()
+
+
 def _ventas_list_url():
     return reverse('comercial:ventas_list')
 
@@ -397,7 +411,11 @@ def ventas_list(request):
             ('colocado',  'bg-green-400',  'bg-green-50',  'border-green-200',  'bg-green-100 text-green-800', 'bg-gradient-to-r from-emerald-500 to-green-600'),
         ],
     }
-    return render(request, 'comercial/ventas/list.html', context)
+    template = 'comercial/ventas/_lista.html' if request.GET.get('partial') else 'comercial/ventas/list.html'
+    context['return_path'] = _path_sin_partial(request)
+    context['query_sin_page'] = _query_sin(request, 'page', 'partial')
+    context['query_sin_orden'] = _query_sin(request, 'page', 'partial', 'orden')
+    return render(request, template, context)
 
 
 @login_required
@@ -837,7 +855,8 @@ def clientes_list(request):
             filtro_buscar |= Q(pk=cliente_pk)
         clientes = clientes.filter(filtro_buscar)
     
-    return render(request, 'comercial/clientes/list.html', {'clientes': clientes})
+    template = 'comercial/clientes/_tabla.html' if request.GET.get('partial') else 'comercial/clientes/list.html'
+    return render(request, template, {'clientes': clientes, 'return_path': _path_sin_partial(request)})
 
 
 @login_required

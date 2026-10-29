@@ -1,0 +1,41 @@
+{% load custom_filters %}
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th class="hidden md:table-cell">Razón social</th>
+                <th class="hidden sm:table-cell">Localidad</th>
+                <th class="hidden sm:table-cell">Teléfono</th>
+                <th class="hidden md:table-cell">Email</th>
+                <th><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            {% url 'comercial:cliente_detail' cliente.pk as cliente_detail_url %}
+            {% url 'comercial:cliente_edit' cliente.pk as cliente_edit_url %}
+            {% url 'comercial:cliente_delete' cliente.pk as cliente_delete_url %}
+            <tr>
+                <td class="muted">{{ cliente.codigo }}</td>
+                <td><a class="strong" href="{% with_return_to cliente_detail_url return_path %}">{{ cliente.nombre }} {{ cliente.apellido }}</a></td>
+                <td class="hidden md:table-cell">{{ cliente.razon_social|default:"—" }}</td>
+                <td class="hidden sm:table-cell">{{ cliente.localidad }}</td>
+                <td class="hidden sm:table-cell">{{ cliente.telefono|default:"—" }}</td>
+                <td class="hidden md:table-cell">{{ cliente.email|default:"—" }}</td>
+                <td class="num">
+                    {% with_return_to cliente_detail_url return_path as view_href %}
+                    {% with_return_to cliente_edit_url return_path as edit_href %}
+                    {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del cliente" view_url=view_href edit_url=edit_href delete_url=cliente_delete_url delete_name=cliente.nombre only %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">{% url 'comercial:cliente_create' as cliente_create_url %}
+                    {% include 'core/ui/empty_state.html' with title="No hay clientes registrados" icon="fas fa-users" action_url=cliente_create_url action_label="Nuevo cliente" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

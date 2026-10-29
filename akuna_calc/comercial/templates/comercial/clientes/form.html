@@ -4,133 +4,90 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
-            <p class="text-slate-500 font-medium mt-1">Complete los datos del formulario</p>
-        </div>
-        <a href="{{ return_url }}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-arrow-left mr-2"></i>Volver
-        </a>
-    </div>
+{% include 'core/ui/page_header.html' with title=title subtitle="Completá los datos del cliente." back_url=return_url back_label="Volver" only %}
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
-            <form method="post" class="space-y-6">
-                {% csrf_token %}
-                <input type="hidden" name="_return_to" value="{{ return_url }}">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre <span class="text-red-500">*</span></label>
-                        {{ form.nombre }}
-                        {% if form.nombre.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>
-                        {% endif %}
-                    </div>
+<div class="card card-pad" style="max-width:880px">
+    <form method="post" class="flex flex-col gap-5">
+        {% csrf_token %}
+        <input type="hidden" name="_return_to" value="{{ return_url }}">
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Apellido <span class="text-red-500">*</span></label>
-                        {{ form.apellido }}
-                        {% if form.apellido.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.apellido.errors.0 }}</p>
-                        {% endif %}
-                    </div>
+        <p class="sec-label">Datos personales</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="field">
+                    <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<p class="field-error">{{ form.nombre.errors.0 }}</p>{% endif %}
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Razón Social</label>
+                <div class="field">
+                    <label for="{{ form.apellido.id_for_label }}">Apellido *</label>
+                    {{ form.apellido }}
+                    {% if form.apellido.errors %}<p class="field-error">{{ form.apellido.errors.0 }}</p>{% endif %}
+                </div>
+        </div>
+                <div class="field">
+                    <label for="{{ form.razon_social.id_for_label }}">Razón social</label>
                     {{ form.razon_social }}
-                    {% if form.razon_social.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.razon_social.errors.0 }}</p>
-                    {% endif %}
+                    {% if form.razon_social.errors %}<p class="field-error">{{ form.razon_social.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">CUIT</label>
-                        {{ form.cuit }}
-                        {% if form.cuit.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.cuit.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">DNI</label>
-                        {{ form.dni }}
-                        {% if form.dni.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.dni.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Condición IVA</label>
-                        {{ form.condicion_iva }}
-                        {% if form.condicion_iva.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.condicion_iva.errors.0 }}</p>
-                        {% endif %}
-                    </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="field">
+                    <label for="{{ form.cuit.id_for_label }}">CUIT</label>
+                    {{ form.cuit }}
+                    {% if form.cuit.errors %}<p class="field-error">{{ form.cuit.errors.0 }}</p>{% endif %}
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Dirección <span class="text-red-500">*</span></label>
-                    {{ form.direccion }}
-                    {% if form.direccion.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.direccion.errors.0 }}</p>
-                    {% endif %}
+                <div class="field">
+                    <label for="{{ form.dni.id_for_label }}">DNI</label>
+                    {{ form.dni }}
+                    {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors.0 }}</p>{% endif %}
                 </div>
-
-                {% if form.instance.pk %}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ID de cliente</label>
-                    <p class="px-3 py-2 bg-slate-100 border border-gray-200 rounded-md font-mono text-slate-600">{{ form.instance.codigo }}</p>
+                <div class="field">
+                    <label for="{{ form.condicion_iva.id_for_label }}">Condición IVA</label>
+                    {{ form.condicion_iva }}
+                    {% if form.condicion_iva.errors %}<p class="field-error">{{ form.condicion_iva.errors.0 }}</p>{% endif %}
                 </div>
-                {% endif %}
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Localidad *</label>
-                        {{ form.localidad }}
-                        {% if form.localidad.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.localidad.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Provincia</label>
-                        {{ form.provincia }}
-                        {% if form.provincia.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.provincia.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                        {{ form.telefono }}
-                        {% if form.telefono.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.telefono.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8">
-                    <a href="{{ return_url }}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                        Cancelar
-                    </a>
-                    <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                        <i class="fas fa-save mr-2"></i>Guardar
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
+
+        <p class="sec-label">Contacto y ubicación</p>
+                <div class="field">
+                    <label for="{{ form.direccion.id_for_label }}">Dirección *</label>
+                    {{ form.direccion }}
+                    {% if form.direccion.errors %}<p class="field-error">{{ form.direccion.errors.0 }}</p>{% endif %}
+                </div>
+
+        {% if form.instance.pk %}
+        <div class="field">
+            <label>ID de cliente</label>
+            <p class="muted strong">{{ form.instance.codigo }}</p>
+        </div>
+        {% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="field">
+                    <label for="{{ form.localidad.id_for_label }}">Localidad *</label>
+                    {{ form.localidad }}
+                    {% if form.localidad.errors %}<p class="field-error">{{ form.localidad.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.provincia.id_for_label }}">Provincia</label>
+                    {{ form.provincia }}
+                    {% if form.provincia.errors %}<p class="field-error">{{ form.provincia.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
+                    {{ form.telefono }}
+                    {% if form.telefono.errors %}<p class="field-error">{{ form.telefono.errors.0 }}</p>{% endif %}
+                </div>
+        </div>
+                <div class="field">
+                    <label for="{{ form.email.id_for_label }}">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="field-error">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+            <a href="{{ return_url }}" class="btn btn-secondary justify-center">Cancelar</a>
+            <button type="submit" class="btn btn-primary justify-center"><i class="fas fa-save"></i>Guardar</button>
+        </div>
+    </form>
 </div>
 {% endblock %}
