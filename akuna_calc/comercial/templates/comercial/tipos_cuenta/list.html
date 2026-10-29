@@ -1,128 +1,60 @@
 {% extends 'core/base.html' %}
 
+{% block title %}Tipos de cuenta{% endblock %}
+
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4 animate-fade-in">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-folder mr-3"></i>Tipos de Cuenta
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de tipos de cuenta</p>
+{% url 'comercial:tipo_cuenta_create' as create_href %}
+{% include 'core/ui/page_header.html' with title="Tipos de cuenta" subtitle="Gestión de tipos de cuenta." action_url=create_href action_label="Nuevo tipo" only %}
+
+<section class="card overflow-hidden">
+    <form method="get" class="toolbar">
+        <div class="field" style="flex:2 1 260px">
+            <label for="tc-q">Buscar</label>
+            <input type="text" id="tc-q" name="q" value="{{ request.GET.q }}" class="input" placeholder="Tipo o descripción">
         </div>
-        <a href="{% url 'comercial:tipo_cuenta_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-lg">
-            <i class="fas fa-plus mr-2"></i>Nuevo Tipo
-        </a>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-        <div class="mb-4 p-4 rounded-2xl animate-fade-in bg-green-100 text-green-800">
-            <i class="fas fa-check-circle mr-2"></i>{{ message }}
+        <div class="field" style="flex:1 1 170px">
+            <label for="tc-e">Estado</label>
+            <select id="tc-e" name="estado" class="input">
+                <option value="">Todos los estados</option>
+                <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
+                <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+            </select>
         </div>
-        {% endfor %}
-    {% endif %}
-
-    <!-- Filtros -->
-    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
-        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar por tipo o descripción..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <select name="estado" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="">Todos los estados</option>
-                    <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
-                    <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
-                </select>
-            </div>
-            <div class="flex gap-2">
-                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
-                </button>
-                <a href="{% url 'comercial:tipos_cuenta_list' %}" class="flex-1 text-center bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-times mr-2"></i>Limpiar
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Descripción</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for tipo in tipos %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ tipo.get_tipo_display }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ tipo.descripcion }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
-                            {% if tipo.activo %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                    <i class="fas fa-check-circle mr-1"></i>Activo
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                                    <i class="fas fa-times-circle mr-1"></i>Inactivo
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'comercial:tipo_cuenta_edit' tipo.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button onclick="confirmarEliminacion('{% url 'comercial:tipo_cuenta_delete' tipo.pk %}', '{{ tipo.get_tipo_display }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay tipos de cuenta registrados</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{% url 'comercial:tipos_cuenta_list' %}" class="btn btn-secondary">Limpiar</a>
         </div>
+    </form>
+    <div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tipo in tipos %}
+            {% url 'comercial:tipo_cuenta_edit' tipo.pk as edit_href %}
+            {% url 'comercial:tipo_cuenta_delete' tipo.pk as delete_href %}
+            <tr>
+                <td><span class="strong">{{ tipo.get_tipo_display }}</span></td>
+                <td class="muted">{{ tipo.descripcion }}</td>
+                <td>
+                    {% if tipo.activo %}{% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}{% endif %}
+                </td>
+                <td class="num">
+                    {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del tipo de cuenta" edit_url=edit_href delete_url=delete_href delete_name=tipo.get_tipo_display only %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">{% include 'core/ui/empty_state.html' with title="No hay tipos de cuenta registrados" icon="fas fa-inbox" only %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
     </div>
-</div>
-
-<script>
-function confirmarEliminacion(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar tipo de cuenta?',
-        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">Las cuentas y gastos asociados se desactivarán automáticamente.</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            }
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+</section>
 {% endblock %}

@@ -5,99 +5,69 @@
 {% block title %}Reportes Proveedores{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes Proveedores</h1>
-        <p class="text-slate-500 font-medium mt-1">Cuenta corriente, saldos pendientes y saldos a favor por proveedor</p>
-    </div>
+<div class="max-w-7xl">
+    {% include 'core/ui/page_header.html' with title="Reportes de proveedores" subtitle="Cuenta corriente, saldos pendientes y saldos a favor por proveedor." only %}
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
-        <form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Proveedor</label>
+    <section class="card mb-6">
+        <form method="get" class="toolbar">
+            <div class="field" style="flex:1 1 280px">
+                <label>Proveedor</label>
                 {{ form.proveedor }}
             </div>
-            <div class="flex gap-3">
-                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-search mr-2"></i>Ver Cuenta
-                </button>
-                <a href="{% url 'comercial:reportes_proveedores' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-redo mr-2"></i>Limpiar
-                </a>
+            <div class="flex gap-2" style="align-self:flex-end">
+                <button type="submit" class="btn btn-primary">Ver cuenta</button>
+                <a href="{% url 'comercial:reportes_proveedores' %}" class="btn btn-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
-
-    {% if proveedor_filtro %}
-    <div class="mb-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sky-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-            <p class="text-xs uppercase tracking-[0.25em] font-semibold text-sky-600">Filtro activo</p>
-            <p class="text-lg font-bold">Mostrando {{ proveedor_filtro.nombre }}</p>
+        {% if proveedor_filtro %}
+        <div class="px-5 py-3 flex flex-wrap items-center gap-3">
+            {% include 'core/ui/badge.html' with tone="blue" label="Filtro activo" only %}
+            <span class="chip on">{{ proveedor_filtro.nombre }}</span>
+            <a href="{% url 'comercial:reportes_proveedores' %}" class="text-sm">Quitar filtro</a>
         </div>
-        <a href="{% url 'comercial:reportes_proveedores' %}" class="inline-flex items-center rounded-2xl bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 text-sm font-semibold transition-all">
-            <i class="fas fa-times mr-2"></i>Quitar filtro
-        </a>
-    </div>
-    {% endif %}
+        {% endif %}
+    </section>
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4">
-            <h3 class="text-xl font-bold text-white"><i class="fas fa-table mr-2"></i>Listado de proveedores</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-slate-50">
+    <section class="card overflow-hidden mb-6">
+        <div class="px-5 pt-4"><h2 class="sec-label" style="margin:0">Listado de proveedores</h2></div>
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Proveedor</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Razón social</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Compras</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Señas</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Pagos</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Saldo actual</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Acción</th>
+                        <th>Proveedor</th>
+                        <th>Razón social</th>
+                        <th class="num">Compras</th>
+                        <th class="num">Señas</th>
+                        <th class="num">Pagos</th>
+                        <th class="num">Saldo actual</th>
+                        <th><span class="sr-only">Acción</span></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for item in resumen_proveedores %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ item.proveedor.nombre }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ item.proveedor.razon_social|default:'Proveedor sin razón social' }}</td>
-                        <td class="px-6 py-4 text-sm text-right font-semibold text-slate-800">${{ item.total_compras|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right font-semibold text-blue-600">${{ item.total_senas|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right font-semibold text-green-600">${{ item.total_pagos|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right">
-                            <div class="flex flex-col items-end">
-                                <span class="font-bold {% if item.saldo_actual > 0 %}text-orange-600{% elif item.saldo_actual < 0 %}text-green-600{% else %}text-slate-700{% endif %}">${{ item.saldo_actual|formato_numero }}</span>
-                                <span class="text-xs {% if item.saldo_actual > 0 %}text-orange-500{% elif item.saldo_actual < 0 %}text-green-500{% else %}text-slate-400{% endif %}">
-                                    {% if item.saldo_actual > 0 %}
-                                    Pendiente
-                                    {% elif item.saldo_actual < 0 %}
-                                    A favor
-                                    {% else %}
-                                    Al día
-                                    {% endif %}
-                                </span>
+                    {% url 'comercial:reporte_proveedor_detalle' item.proveedor.id as proveedor_detalle_url %}
+                    <tr>
+                        <td><span class="strong">{{ item.proveedor.nombre }}</span></td>
+                        <td class="muted">{{ item.proveedor.razon_social|default:'Proveedor sin razón social' }}</td>
+                        <td class="num">${{ item.total_compras|formato_numero }}</td>
+                        <td class="num">${{ item.total_senas|formato_numero }}</td>
+                        <td class="num">${{ item.total_pagos|formato_numero }}</td>
+                        <td class="num">
+                            <span class="strong {% if item.saldo_actual > 0 %}text-warn{% elif item.saldo_actual < 0 %}text-ok{% endif %}">${{ item.saldo_actual|formato_numero }}</span>
+                            <div class="text-xs muted">
+                                {% if item.saldo_actual > 0 %}Pendiente{% elif item.saldo_actual < 0 %}A favor{% else %}Al día{% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            {% url 'comercial:reporte_proveedor_detalle' item.proveedor.id as proveedor_detalle_url %}
-                            <a href="{% with_return_to proveedor_detalle_url request.get_full_path %}" class="inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">
-                                <i class="fas fa-arrow-right mr-2"></i>Abrir panel
-                            </a>
+                        <td class="num">
+                            <a href="{% with_return_to proveedor_detalle_url request.get_full_path %}" class="btn btn-secondary btn-sm">Abrir panel</a>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="7" class="px-6 py-10 text-center">
-                            <i class="fas fa-truck-loading text-slate-300 text-5xl mb-3"></i>
-                            <p class="text-slate-500 font-medium">No hay proveedores cargados</p>
-                        </td>
-                    </tr>
+                    <tr><td colspan="7">{% include 'core/ui/empty_state.html' with title="No hay proveedores cargados" icon="fas fa-truck-loading" only %}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}

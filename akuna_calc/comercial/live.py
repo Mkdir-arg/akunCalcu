@@ -1,9 +1,8 @@
 from core.live import register
 
-from .models import Cliente, Venta
+from .models import Cliente, Compra, Venta
 
 
-# ===== BLOQUE VENTAS Y CLIENTES (rediseño Taller, módulo 4) =====
 register(
     key='ventas',
     queryset=lambda user: Venta.objects.filter(deleted_at__isnull=True),
@@ -18,4 +17,10 @@ register(
     date_field='created_at',
     permission='comercial.clientes',
 )
-# ===== FIN BLOQUE VENTAS Y CLIENTES =====
+
+register(
+    key='compras',
+    queryset=lambda user: Compra.objects.filter(deleted_at__isnull=True),
+    date_field='updated_at',
+    permission='comercial.gastos',
+)

@@ -10,212 +10,151 @@
 {% block title %}Reportes de Ventas{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes de Ventas</h1>
-        <p class="text-slate-500 font-medium mt-1">Análisis y control de ventas registradas</p>
-    </div>
+<div class="max-w-7xl">
+    {% include 'core/ui/page_header.html' with title="Reportes de ventas" subtitle="Análisis y control de ventas registradas." only %}
 
-    <!-- Formulario de Filtros -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
+    <!-- Filtros -->
+    <section class="card card-pad mb-6">
         <form method="post">
             {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+                <div class="field">
+                    <label>Fecha desde</label>
                     {{ form.fecha_desde }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
+                <div class="field">
+                    <label>Fecha hasta</label>
                     {{ form.fecha_hasta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                <div class="field">
+                    <label>Cliente</label>
                     {{ form.cliente }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Razón Social</label>
+                <div class="field">
+                    <label>Razón social</label>
                     {{ form.razon_social }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estado</label>
+                <div class="field">
+                    <label>Estado</label>
                     {{ form.estado_venta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
+                <div class="field">
+                    <label>Tipo de factura</label>
                     {{ form.tipo_factura }}
                 </div>
             </div>
-            <div class="flex flex-wrap gap-4">
-                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-search mr-2"></i>Generar Reporte
-                </button>
-                <a href="{% url 'comercial:reportes' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-redo mr-2"></i>Limpiar
-                </a>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Generar reporte</button>
+                <a href="{% url 'comercial:reportes' %}" class="btn btn-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
+    </section>
 
     {% if reporte_data %}
-    <!-- Gráfico de Ventas -->
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card card-pad">
+            <p class="sec-label">Ventas en blanco</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.ventas.total_blanco|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.ventas.cantidad_blanco }} ventas</p>
+        </div>
+        <div class="card card-pad">
+            <p class="sec-label">Ventas en negro</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.ventas.total_negro|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.ventas.cantidad_negro }} ventas</p>
+        </div>
+        <div class="card card-pad">
+            <p class="sec-label">Total ventas</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.ventas.total|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.ventas.cantidad }} ventas</p>
+        </div>
+    </div>
+
+    <!-- Gráfico -->
     {% if reporte_data.ventas.total > 0 %}
-    <div class="mb-8">
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Ventas por Tipo</h3>
-            <div class="h-64">
-                <canvas id="ventasChart" class="w-full h-full"></canvas>
-            </div>
+    <section class="card card-pad mb-6">
+        <h2 class="sec-label">Ventas por tipo</h2>
+        <div class="h-64">
+            <canvas id="ventasChart" class="w-full h-full"></canvas>
         </div>
-    </div>
+    </section>
     {% endif %}
-    
-    <!-- Resumen de Ventas -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Ventas Blanco -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Blanco</p>
-                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total_blanco|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_blanco }} ventas</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-file-invoice text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Ventas Negro -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-gray-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Ventas Negro</p>
-                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.ventas.total_negro|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad_negro }} ventas</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-receipt text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Total Ventas -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Ventas</p>
-                    <p class="text-3xl font-bold text-blue-600">${{ reporte_data.ventas.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ventas.cantidad }} ventas</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-chart-line text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tabla de Ventas -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-slate-200">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Ventas</h3>
-                <span class="text-3xl font-bold text-green-600">${{ reporte_data.ventas.total|formato_numero }}</span>
-            </div>
+
+    <!-- Detalle -->
+    <section class="card overflow-hidden mb-6">
+        <div class="flex justify-between items-center px-5 py-4 border-b border-line">
+            <h2 class="sec-label" style="margin:0">Detalle de ventas</h2>
+            <span class="text-xl font-semibold text-ink num">${{ reporte_data.ventas.total|formato_numero }}</span>
         </div>
         {% if reporte_data.ventas.lista %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
-                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Factura</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Razón Social</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forma Pago</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th>Fecha de pago</th>
+                        <th>Pedido</th>
+                        <th>ID factura</th>
+                        <th>Cliente</th>
+                        <th>Razón social</th>
+                        <th>Forma de pago</th>
+                        <th class="num">Monto</th>
+                        <th>Tipo</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for ingreso in reporte_data.ventas.lista %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">{{ ingreso.fecha|date:"d/m/Y" }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-medium text-gray-900">
-                            {% url 'comercial:venta_detail' ingreso.venta_id as ingreso_venta_url %}
-                            <a href="{% with_return_to ingreso_venta_url request.get_full_path %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.pedido }}</a>
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm font-medium text-gray-900">
+                    {% url 'comercial:venta_detail' ingreso.venta_id as ingreso_venta_url %}
+                    <tr>
+                        <td class="muted">{{ ingreso.fecha|date:"d/m/Y" }}</td>
+                        <td><a class="strong" href="{% with_return_to ingreso_venta_url request.get_full_path %}">{{ ingreso.pedido }}</a></td>
+                        <td>
                             {% if ingreso.numero_factura != '-' %}
-                                <a href="{% with_return_to ingreso_venta_url request.get_full_path %}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ ingreso.numero_factura }}</a>
+                                <a href="{% with_return_to ingreso_venta_url request.get_full_path %}">{{ ingreso.numero_factura }}</a>
                             {% else %}
-                                <span class="text-gray-500">{{ ingreso.numero_factura }}</span>
+                                <span class="muted">{{ ingreso.numero_factura }}</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
-                            <div>{{ ingreso.cliente }}</div>
+                        <td>
+                            <div class="strong">{{ ingreso.cliente }}</div>
                             {% if ingreso.venta_en_dolares and ingreso.monto_usd %}
-                            <div class="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
-                                Venta USD
-                            </div>
+                            <div class="mt-1">{% include 'core/ui/badge.html' with tone="blue" label="Venta USD" only %}</div>
                             {% endif %}
                         </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-600">{{ ingreso.razon_social }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">
+                        <td class="muted">{{ ingreso.razon_social }}</td>
+                        <td>
                             <div>{{ ingreso.forma_pago }}</div>
                             {% if ingreso.venta_en_dolares and ingreso.monto_usd %}
-                            <div class="mt-2 text-xs text-slate-500 font-medium">
-                                Operación cargada en USD
-                            </div>
+                            <div class="text-xs muted mt-1">Operación cargada en USD</div>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-green-600 font-semibold">
+                        <td class="num strong">
                             <div>${{ ingreso.monto|formato_numero }}</div>
                             {% if ingreso.venta_en_dolares and ingreso.monto_usd %}
-                            <div class="mt-2 inline-flex items-center px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                                USD {{ ingreso.monto_usd|formato_numero }}
-                                {% if ingreso.cotizacion_usd %}<span class="text-slate-500"> a ${{ ingreso.cotizacion_usd|formato_numero }}</span>{% endif %}
-                            </div>
+                            <div class="text-xs muted mt-1">USD {{ ingreso.monto_usd|formato_numero }}{% if ingreso.cotizacion_usd %} a ${{ ingreso.cotizacion_usd|formato_numero }}{% endif %}</div>
                             {% endif %}
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4">
-                            {% if ingreso.tipo == 'Blanco' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
-                            {% endif %}
-                        </td>
+                        <td>{% if ingreso.tipo == 'Blanco' %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="px-6 py-4 text-center text-gray-500">
-            No hay ventas registradas con los filtros seleccionados
-        </div>
+        {% include 'core/ui/empty_state.html' with title="No hay ventas registradas con los filtros seleccionados" only %}
         {% endif %}
-    </div>
+    </section>
 
-    <!-- Botón de Exportación -->
+    <!-- Exportación -->
     {% if reporte_data.ventas.cantidad > 0 %}
-    <div class="mt-8 flex justify-center gap-4">
-        <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
-        </a>
-        <button onclick="window.print()" class="inline-flex items-center bg-slate-600 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl transition-all">
-            <i class="fas fa-print mr-2"></i>Imprimir
-        </button>
+    <div class="flex justify-end gap-3">
+        <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i>Imprimir</button>
+        <a href="{% url 'comercial:exportar_reporte_excel' %}" class="btn btn-primary"><i class="fas fa-file-excel"></i>Exportar a Excel</a>
     </div>
     {% endif %}
     {% else %}
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
-        <i class="fas fa-filter-circle-dollar text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-2xl font-bold text-gray-700 mb-2">Usá los filtros para generar el reporte</h3>
-        <p class="text-gray-500 mb-6">La vista inicial ya no procesa todo el historial completo hasta que confirmás la búsqueda.</p>
-    </div>
+    <section class="card">
+        {% include 'core/ui/empty_state.html' with title="Usá los filtros para generar el reporte" text="La vista inicial no procesa todo el historial hasta que confirmás la búsqueda." icon="fas fa-filter" only %}
+    </section>
     {% endif %}
 </div>
 

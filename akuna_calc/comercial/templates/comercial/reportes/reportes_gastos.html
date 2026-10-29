@@ -10,143 +10,107 @@
 {% block title %}Reportes de Gastos{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reportes de Gastos</h1>
-        <p class="text-slate-500 font-medium mt-1">Análisis y control de gastos por compras</p>
-    </div>
+<div class="max-w-7xl">
+    {% include 'core/ui/page_header.html' with title="Reportes de gastos" subtitle="Análisis y control de gastos por compras." only %}
 
-    <!-- Formulario de Filtros -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
+    <!-- Filtros -->
+    <section class="card card-pad mb-6">
         <form method="post">
             {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+                <div class="field">
+                    <label>Fecha desde</label>
                     {{ form.fecha_desde }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
+                <div class="field">
+                    <label>Fecha hasta</label>
                     {{ form.fecha_hasta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Cuenta</label>
+                <div class="field">
+                    <label>Cuenta</label>
                     {{ form.cuenta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Cuenta</label>
+                <div class="field">
+                    <label>Tipo de cuenta</label>
                     {{ form.tipo_cuenta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Gasto</label>
+                <div class="field">
+                    <label>Tipo de gasto</label>
                     {{ form.tipo_gasto }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
+                <div class="field">
+                    <label>Tipo de factura</label>
                     {{ form.tipo_factura }}
                 </div>
             </div>
-            <div class="flex flex-wrap gap-4">
-                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-search mr-2"></i>Generar Reporte
-                </button>
-                <a href="{% url 'comercial:reportes_gastos' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-redo mr-2"></i>Limpiar
-                </a>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Generar reporte</button>
+                <a href="{% url 'comercial:reportes_gastos' %}" class="btn btn-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
+    </section>
 
     {% if reporte_data %}
-    <!-- Gráfico de Gastos -->
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card card-pad">
+            <p class="sec-label">Gastos en blanco</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.gastos.total_blanco|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.gastos.cantidad_blanco }} compras</p>
+        </div>
+        <div class="card card-pad">
+            <p class="sec-label">Gastos en negro</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.gastos.total_negro|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.gastos.cantidad_negro }} compras</p>
+        </div>
+        <div class="card card-pad">
+            <p class="sec-label">Total gastos</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.gastos.total|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.gastos.cantidad }} compras</p>
+        </div>
+    </div>
+
+    <!-- Gráfico -->
     {% if reporte_data.gastos.total > 0 %}
-    <div class="mb-8">
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Gastos por Tipo</h3>
-            <div class="h-64">
-                <canvas id="gastosChart" class="w-full h-full"></canvas>
-            </div>
+    <section class="card card-pad mb-6">
+        <h2 class="sec-label">Gastos por tipo</h2>
+        <div class="h-64">
+            <canvas id="gastosChart" class="w-full h-full"></canvas>
         </div>
-    </div>
+    </section>
     {% endif %}
-    
-    <!-- Resumen de Gastos -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Gastos Blanco -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-red-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Gastos Blanco</p>
-                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.gastos.total_blanco|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.gastos.cantidad_blanco }} compras</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-file-invoice text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Gastos Negro -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-gray-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Gastos Negro</p>
-                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.gastos.total_negro|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.gastos.cantidad_negro }} compras</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-receipt text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Total Gastos -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-orange-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Gastos</p>
-                    <p class="text-3xl font-bold text-orange-600">${{ reporte_data.gastos.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.gastos.cantidad }} compras</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-chart-line text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Sumas por Tipo (desplegables) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <details class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-            <summary class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-slate-200 cursor-pointer flex items-center justify-between select-none">
-                <span class="text-lg font-bold text-slate-800"><i class="fas fa-layer-group mr-2"></i>Total por Tipo de Cuenta</span>
-                <i class="fas fa-chevron-down text-slate-400 chevron-toggle ml-2"></i>
+
+    <!-- Sumas por tipo (desplegables) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <details class="card overflow-hidden">
+            <summary class="px-5 py-4 cursor-pointer flex items-center justify-between select-none">
+                <span class="text-sm font-semibold text-ink">Total por tipo de cuenta</span>
+                <i class="fas fa-chevron-down text-ink-3 chevron-toggle ml-2"></i>
             </summary>
-            <table class="min-w-full divide-y divide-gray-200">
-                <tbody class="divide-y divide-gray-100">
+            <table class="tbl">
+                <tbody>
                     {% for item in reporte_data.gastos.por_tipo_cuenta %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-3 text-sm font-medium text-slate-700">{{ item.nombre }}</td>
-                        <td class="px-6 py-3 text-sm text-slate-400 text-center">{{ item.cantidad }}</td>
-                        <td class="px-6 py-3 text-sm text-right font-bold text-slate-800">${{ item.total|formato_numero }}</td>
+                    <tr>
+                        <td><span class="strong">{{ item.nombre }}</span></td>
+                        <td class="muted">{{ item.cantidad }}</td>
+                        <td class="num strong">${{ item.total|formato_numero }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </details>
-        <details class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-            <summary class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-slate-200 cursor-pointer flex items-center justify-between select-none">
-                <span class="text-lg font-bold text-slate-800"><i class="fas fa-tags mr-2"></i>Total por Tipo de Gasto</span>
-                <i class="fas fa-chevron-down text-slate-400 chevron-toggle ml-2"></i>
+        <details class="card overflow-hidden">
+            <summary class="px-5 py-4 cursor-pointer flex items-center justify-between select-none">
+                <span class="text-sm font-semibold text-ink">Total por tipo de gasto</span>
+                <i class="fas fa-chevron-down text-ink-3 chevron-toggle ml-2"></i>
             </summary>
-            <table class="min-w-full divide-y divide-gray-200">
-                <tbody class="divide-y divide-gray-100">
+            <table class="tbl">
+                <tbody>
                     {% for item in reporte_data.gastos.por_tipo_gasto %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-3 text-sm font-medium text-slate-700">{{ item.nombre }}</td>
-                        <td class="px-6 py-3 text-sm text-slate-400 text-center">{{ item.cantidad }}</td>
-                        <td class="px-6 py-3 text-sm text-right font-bold text-slate-800">${{ item.total|formato_numero }}</td>
+                    <tr>
+                        <td><span class="strong">{{ item.nombre }}</span></td>
+                        <td class="muted">{{ item.cantidad }}</td>
+                        <td class="num strong">${{ item.total|formato_numero }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -154,75 +118,59 @@
         </details>
     </div>
 
-    <!-- Tabla de Gastos -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-red-50 to-orange-50 px-8 py-6 border-b border-slate-200">
-            <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Gastos</h3>
-                <span class="text-3xl font-bold text-red-600">${{ reporte_data.gastos.total|formato_numero }}</span>
-            </div>
+    <!-- Detalle -->
+    <section class="card overflow-hidden mb-6">
+        <div class="flex justify-between items-center px-5 py-4 border-b border-line">
+            <h2 class="sec-label" style="margin:0">Detalle de gastos</h2>
+            <span class="text-xl font-semibold text-ink num">${{ reporte_data.gastos.total|formato_numero }}</span>
         </div>
         {% if reporte_data.gastos.lista %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Pago</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Pedido</th>
-                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Factura</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cuenta</th>
-                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Cuenta</th>
-                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Gasto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th>Fecha de pago</th>
+                        <th>N° pedido</th>
+                        <th>N° factura</th>
+                        <th>Cuenta</th>
+                        <th>Tipo de cuenta</th>
+                        <th>Tipo de gasto</th>
+                        <th class="num">Monto</th>
+                        <th>Tipo</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for gasto in reporte_data.gastos.lista %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-900">{{ gasto.fecha|date:"d/m/Y" }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_pedido }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm font-medium text-gray-900">{{ gasto.numero_factura }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ gasto.cuenta }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-600">{{ gasto.tipo_cuenta }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-600">{{ gasto.tipo_gasto }}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${{ gasto.monto|formato_numero }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
-                            {% if gasto.tipo == 'Blanco' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Blanco</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Negro</span>
-                            {% endif %}
-                        </td>
+                    <tr>
+                        <td class="muted">{{ gasto.fecha|date:"d/m/Y" }}</td>
+                        <td><span class="strong">{{ gasto.numero_pedido }}</span></td>
+                        <td>{{ gasto.numero_factura }}</td>
+                        <td>{{ gasto.cuenta }}</td>
+                        <td class="muted">{{ gasto.tipo_cuenta }}</td>
+                        <td class="muted">{{ gasto.tipo_gasto }}</td>
+                        <td class="num strong">${{ gasto.monto|formato_numero }}</td>
+                        <td>{% if gasto.tipo == 'Blanco' %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="px-6 py-4 text-center text-gray-500">
-            No hay gastos registrados con los filtros seleccionados
-        </div>
+        {% include 'core/ui/empty_state.html' with title="No hay gastos registrados con los filtros seleccionados" only %}
         {% endif %}
-    </div>
+    </section>
 
-    <!-- Botón de Exportación -->
+    <!-- Exportación -->
     {% if reporte_data.gastos.cantidad > 0 %}
-    <div class="mt-8 flex justify-center gap-4">
-        <a href="{% url 'comercial:exportar_reporte_gastos_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
-        </a>
-        <button onclick="window.print()" class="inline-flex items-center bg-slate-600 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl transition-all">
-            <i class="fas fa-print mr-2"></i>Imprimir
-        </button>
+    <div class="flex justify-end gap-3">
+        <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i>Imprimir</button>
+        <a href="{% url 'comercial:exportar_reporte_gastos_excel' %}" class="btn btn-primary"><i class="fas fa-file-excel"></i>Exportar a Excel</a>
     </div>
     {% endif %}
     {% else %}
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
-        <i class="fas fa-filter-circle-dollar text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-2xl font-bold text-gray-700 mb-2">Usá los filtros para generar el reporte</h3>
-        <p class="text-gray-500 mb-6">La vista inicial ya no procesa todo el historial de compras hasta que confirmás la búsqueda.</p>
-    </div>
+    <section class="card">
+        {% include 'core/ui/empty_state.html' with title="Usá los filtros para generar el reporte" text="La vista inicial no procesa todo el historial de compras hasta que confirmás la búsqueda." icon="fas fa-filter" only %}
+    </section>
     {% endif %}
 </div>
 

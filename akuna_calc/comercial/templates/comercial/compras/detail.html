@@ -2,354 +2,231 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Compra #{{ compra.numero_pedido }}{% endblock %}
+{% block title %}Gasto #{{ compra.numero_pedido }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
+<div class="max-w-7xl">
 
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-6 lg:p-8 text-white shadow-2xl mb-6">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div>
-                <div class="flex flex-wrap items-center gap-3 mb-2">
-                    <h1 class="text-2xl lg:text-4xl font-bold tracking-tight text-white">
-                        <i class="fas fa-shopping-cart mr-3"></i>Compra #{{ compra.numero_pedido }}
-                    </h1>
-                    <span id="badge-estado" class="px-4 py-1.5 rounded-full text-sm font-bold shadow
-                        {% if compra.estado == 'pendiente' %}bg-yellow-400 text-yellow-900
-                        {% else %}bg-green-400 text-green-900{% endif %}">
-                        <i class="fas fa-circle mr-1 text-xs"></i>{{ compra.get_estado_display }}
-                    </span>
-                </div>
-                <div class="flex flex-wrap items-center gap-4 text-blue-100 text-sm font-medium">
-                    <span><i class="far fa-calendar mr-1"></i>{{ compra.created_at|date:"d/m/Y H:i" }}</span>
-                    <span class="{% if dias_abierta > 60 %}text-red-300{% elif dias_abierta > 30 %}text-yellow-300{% else %}text-blue-100{% endif %}">
-                        <i class="fas fa-clock mr-1"></i>
-                        {% if dias_abierta == 0 %}Creada hoy
-                        {% elif dias_abierta == 1 %}Hace 1 dia
-                        {% else %}Hace {{ dias_abierta }} dias{% endif %}
-                    </span>
-                    <span>
-                        <i class="fas fa-building mr-1"></i>{{ compra.cuenta.nombre }}
-                        <span class="text-blue-200">({{ compra.cuenta.tipo_cuenta }})</span>
-                    </span>
-                </div>
+    <div class="page-head">
+        <div>
+            <a href="{{ return_url }}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>Volver</a>
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="page-title">Gasto #{{ compra.numero_pedido }}</h1>
+                <span id="badge-estado" class="badge {% if compra.estado == 'pendiente' %}b-amber{% else %}b-green{% endif %}"><span class="dot"></span>{{ compra.get_estado_display }}</span>
             </div>
-
-            <!-- Acciones -->
-            <div class="flex flex-wrap gap-2">
-                {% url 'comercial:compra_edit' compra.pk as compra_edit_url %}
-                <a href="{% with_return_to compra_edit_url request.get_full_path %}"
-                   class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fas fa-edit mr-2"></i>Editar
-                </a>
-                <a href="{{ return_url }}"
-                   class="inline-flex items-center bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver
-                </a>
-            </div>
+            <p class="page-sub">
+                <i class="far fa-calendar mr-1"></i>{{ compra.created_at|date:"d/m/Y H:i" }}
+                &middot;
+                <span class="{% if dias_abierta > 60 %}text-danger{% elif dias_abierta > 30 %}text-warn{% endif %}">
+                    {% if dias_abierta == 0 %}Creado hoy
+                    {% elif dias_abierta == 1 %}Hace 1 día
+                    {% else %}Hace {{ dias_abierta }} días{% endif %}
+                </span>
+                &middot; {{ compra.cuenta.nombre }} ({{ compra.cuenta.tipo_cuenta }})
+            </p>
+        </div>
+        <div class="page-actions">
+            {% url 'comercial:compra_edit' compra.pk as compra_edit_url %}
+            <a href="{% with_return_to compra_edit_url request.get_full_path %}" class="btn btn-primary"><i class="fas fa-pen"></i>Editar</a>
         </div>
     </div>
 
-    {% if messages %}
-    <div class="space-y-3 mb-6">
-    {% for message in messages %}
-    <div class="p-4 rounded-2xl animate-fade-in {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-300{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-300{% else %}bg-blue-100 text-blue-800 border border-blue-300{% endif %}">
-        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} mr-2"></i>{{ message }}
-    </div>
-    {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- KPI Cards -->
+    <!-- KPIs -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <!-- Cuenta -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-5">
-            <div class="flex items-center">
-                <div class="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
-                    <i class="fas fa-building text-green-600 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-xs text-slate-500 font-medium">Cuenta</p>
-                    <p class="text-base font-bold text-slate-800 truncate">{{ compra.cuenta.nombre }}</p>
-                    <p class="text-xs text-slate-400">{{ compra.cuenta.tipo_cuenta }}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Cuenta</p>
+            <p class="text-base font-semibold text-ink truncate">{{ compra.cuenta.nombre }}</p>
+            <p class="text-xs text-ink-3">{{ compra.cuenta.tipo_cuenta }}</p>
         </div>
-
-        <!-- Valor Total -->
-        <div class="card-elegant bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl shadow-xl p-5">
-            <div class="flex items-center">
-                <div class="w-11 h-11 bg-blue-700 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
-                    <i class="fas fa-dollar-sign text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-blue-100 font-medium">Valor Total</p>
-                    <p class="text-2xl font-bold text-white">${{ compra.valor_total|formato_numero }}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Valor total</p>
+            <p class="text-2xl font-semibold text-ink num">${{ compra.valor_total|formato_numero }}</p>
         </div>
-
-        <!-- Total Pagado -->
-        <div class="card-elegant bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl shadow-xl p-5">
-            <div class="flex items-center">
-                <div class="w-11 h-11 bg-purple-700 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
-                    <i class="fas fa-hand-holding-usd text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-purple-100 font-medium">Total Pagado</p>
-                    <p class="text-2xl font-bold text-white">${{ total_pagado|formato_numero }}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Total pagado</p>
+            <p class="text-2xl font-semibold text-ink num">${{ total_pagado|formato_numero }}</p>
         </div>
-
-        <!-- Saldo -->
-        <div class="card-elegant bg-gradient-to-br from-{% if compra.saldo > 0 %}orange-500 to-orange-600{% else %}green-500 to-green-600{% endif %} rounded-3xl shadow-xl p-5">
-            <div class="flex items-center">
-                <div class="w-11 h-11 {% if compra.saldo > 0 %}bg-orange-700{% else %}bg-green-700{% endif %} rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
-                    <i class="fas fa-{% if compra.saldo > 0 %}exclamation-circle{% else %}check-circle{% endif %} text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-xs {% if compra.saldo > 0 %}text-orange-100{% else %}text-green-100{% endif %} font-medium">{% if compra.saldo < 0 %}Saldo a Favor{% else %}Saldo Pendiente{% endif %}</p>
-                    <p class="text-2xl font-bold text-white">${{ compra.saldo|formato_numero }}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">{% if compra.saldo < 0 %}Saldo a favor{% else %}Saldo pendiente{% endif %}</p>
+            <p class="text-2xl font-semibold num {% if compra.saldo > 0 %}text-warn{% else %}text-ok{% endif %}">${{ compra.saldo|formato_numero }}</p>
+            <p class="text-xs text-ink-3">{% if compra.saldo > 0 %}Pendiente de pago{% else %}Sin deuda{% endif %}</p>
         </div>
     </div>
 
-    <!-- Barra de progreso -->
-    <div class="bg-white rounded-2xl shadow p-5 mb-6">
+    <!-- Progreso -->
+    <div class="card card-pad mb-6">
         <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-bold text-slate-700">Progreso de pago</span>
-            <span class="text-sm font-bold {% if porcentaje_pagado == 100 %}text-green-600{% elif porcentaje_pagado >= 50 %}text-blue-600{% else %}text-orange-600{% endif %}">
-                {{ porcentaje_pagado }}% pagado
-            </span>
+            <span class="text-sm font-semibold text-ink">Progreso de pago</span>
+            <span class="text-sm font-semibold {% if porcentaje_pagado == 100 %}text-ok{% elif porcentaje_pagado >= 50 %}text-accent{% else %}text-warn{% endif %}">{{ porcentaje_pagado }}% pagado</span>
         </div>
-        <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
-            <div class="h-4 rounded-full transition-all duration-700
-                {% if porcentaje_pagado == 100 %}bg-gradient-to-r from-green-400 to-green-600
-                {% elif porcentaje_pagado >= 50 %}bg-gradient-to-r from-blue-400 to-blue-600
-                {% else %}bg-gradient-to-r from-orange-400 to-orange-500{% endif %}"
-                style="width: {{ porcentaje_pagado }}%"></div>
+        <div class="w-full bg-line rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full {% if porcentaje_pagado == 100 %}bg-ok{% else %}bg-accent{% endif %}" style="width: {{ porcentaje_pagado }}%"></div>
         </div>
-        <div class="flex justify-between text-xs text-slate-400 mt-1">
-            <span>Sena: ${{ compra.sena|formato_numero }}</span>
+        <div class="flex justify-between text-xs text-ink-3 mt-2">
+            <span>Seña: ${{ compra.sena|formato_numero }}</span>
             <span>Pagado: ${{ total_pagado|formato_numero }} / ${{ compra.valor_total|formato_numero }}</span>
         </div>
     </div>
 
     <!-- Info + Pago -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- Informacion de la compra -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-info-circle mr-2"></i>Informacion de la Compra</h3>
-            <div class="space-y-3">
-                <div class="pb-3 border-b">
-                    <p class="text-xs text-slate-500 font-semibold mb-2">CUENTA / PROVEEDOR</p>
-                    <p class="font-bold text-slate-800">{{ compra.cuenta.nombre }}</p>
-                    <p class="text-sm text-slate-600">Tipo: {{ compra.cuenta.tipo_cuenta }}</p>
-                    {% if compra.cuenta.cuit %}<p class="text-sm text-slate-600">CUIT: {{ compra.cuenta.cuit }}</p>{% endif %}
-                    {% if compra.cuenta.telefono %}
-                    <p class="text-sm text-slate-600"><i class="fas fa-phone mr-1"></i>{{ compra.cuenta.telefono }}</p>
-                    {% endif %}
+        <section class="card card-pad">
+            <h2 class="sec-label">Información del gasto</h2>
+            <div>
+                <div class="pb-3 mb-1 border-b border-line">
+                    <p class="text-xs text-ink-3 font-semibold mb-1">CUENTA / PROVEEDOR</p>
+                    <p class="font-semibold text-ink">{{ compra.cuenta.nombre }}</p>
+                    <p class="text-sm text-ink-2">Tipo: {{ compra.cuenta.tipo_cuenta }}</p>
+                    {% if compra.cuenta.cuit %}<p class="text-sm text-ink-2">CUIT: {{ compra.cuenta.cuit }}</p>{% endif %}
+                    {% if compra.cuenta.telefono %}<p class="text-sm text-ink-2"><i class="fas fa-phone mr-1"></i>{{ compra.cuenta.telefono }}</p>{% endif %}
                 </div>
                 {% if compra.tipo_gasto %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Tipo de Gasto:</span>
-                    <span class="font-bold text-slate-800">{{ compra.tipo_gasto.nombre }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Tipo de gasto</span><span class="strong">{{ compra.tipo_gasto.nombre }}</span></div>
                 {% endif %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Fecha:</span>
-                    <span class="font-bold text-slate-800">{{ compra.fecha_pago|date:"d/m/Y" }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Valor Contable:</span>
-                    <span class="font-bold text-slate-800">${{ compra.valor_total|formato_numero }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Fecha</span><span class="strong">{{ compra.fecha_pago|date:"d/m/Y" }}</span></div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Valor contable</span><span class="strong num">${{ compra.valor_total|formato_numero }}</span></div>
                 {% if compra.compra_en_dolares and compra.valor_total_usd %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Compra Original:</span>
-                    <span class="font-bold text-emerald-700">USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Compra original</span><span class="strong">USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</span></div>
                 {% endif %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Tipo:</span>
-                    <span class="px-3 py-1 {% if compra.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
-                        {% if compra.con_factura %}<i class="fas fa-file-invoice mr-1"></i>Blanco{% else %}Negro{% endif %}
-                    </span>
+                <div class="flex justify-between items-center py-2 border-b border-line text-sm">
+                    <span class="text-ink-2">Tipo</span>
+                    {% if compra.con_factura %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" icon="fas fa-file-invoice" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}
                 </div>
                 {% if compra.numero_factura %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Factura:</span>
-                    <span class="font-bold text-slate-800">{{ compra.numero_factura }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Factura</span><span class="strong">{{ compra.numero_factura }}</span></div>
                 {% endif %}
                 {% if compra.comprobante %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Comprobante:</span>
-                    <span class="font-bold text-slate-800">{{ compra.comprobante }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Comprobante</span><span class="strong">{{ compra.comprobante }}</span></div>
                 {% endif %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Sena Inicial:</span>
-                    <span class="font-bold text-green-700">${{ compra.sena|formato_numero }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Seña inicial</span><span class="strong num">${{ compra.sena|formato_numero }}</span></div>
                 {% if compra.sena > 0 and compra.sena_en_dolares and compra.sena_usd %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Seña Original:</span>
-                    <span class="font-bold text-emerald-700">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Seña original</span><span class="strong">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</span></div>
                 {% endif %}
                 {% if compra.sena > 0 and compra.forma_pago_sena %}
-                <div class="flex justify-between">
-                    <span class="text-slate-600 font-medium">Pago de la Sena:</span>
-                    <span class="font-bold text-slate-800">{{ compra.get_forma_pago_sena_display }}</span>
-                </div>
+                <div class="flex justify-between py-2 border-b border-line text-sm"><span class="text-ink-2">Pago de la seña</span><span class="strong">{{ compra.get_forma_pago_sena_display }}</span></div>
                 {% endif %}
                 {% if compra.descripcion %}
-                <div class="pt-2 border-t">
-                    <p class="text-xs text-slate-500 font-semibold mb-1">DESCRIPCION</p>
-                    <p class="text-sm text-slate-700">{{ compra.descripcion }}</p>
+                <div class="pt-3">
+                    <p class="text-xs text-ink-3 font-semibold mb-1">DESCRIPCIÓN</p>
+                    <p class="text-sm text-ink-2">{{ compra.descripcion }}</p>
                 </div>
                 {% endif %}
             </div>
-        </div>
+        </section>
 
-        <!-- Registrar Pago / Pagada -->
         {% if permite_pago_adicional %}
-        <div class="card-elegant bg-gradient-to-br from-green-50 to-blue-50 rounded-3xl shadow-xl p-6 border-2 border-green-200">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-cash-register mr-2"></i>Registrar Pago</h3>
-            <form method="post" action="{% url 'comercial:registrar_pago_compra' compra.pk %}">
+        <section class="card card-pad">
+            <h2 class="sec-label">Registrar pago</h2>
+            <form method="post" action="{% url 'comercial:registrar_pago_compra' compra.pk %}" class="flex flex-col gap-4">
                 {% csrf_token %}
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
-                            <input type="number" id="monto-pesos-input" name="monto" step="0.01" {% if not compra.es_proveedor %}max="{{ compra.saldo }}"{% endif %} required
-                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <p id="monto-pesos-help" class="text-xs text-slate-500 mt-1">
-                                {% if compra.es_proveedor %}
-                                Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.
-                                {% else %}
-                                Maximo: ${{ compra.saldo|formato_numero }}
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
-                            <input type="date" name="fecha_pago" value="{{ today|date:'Y-m-d' }}" required
-                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="field">
+                        <label>Monto que impacta en saldo (pesos) *</label>
+                        <input type="number" id="monto-pesos-input" name="monto" step="0.01" {% if not compra.es_proveedor %}max="{{ compra.saldo }}"{% endif %} required class="input">
+                        <p id="monto-pesos-help" class="field-hint">
+                            {% if compra.es_proveedor %}
+                            Puedes registrar un pago mayor al saldo para dejar credito a favor del proveedor.
+                            {% else %}
+                            Maximo: ${{ compra.saldo|formato_numero }}
+                            {% endif %}
+                        </p>
                     </div>
+                    <div class="field">
+                        <label>Fecha de pago *</label>
+                        <input type="date" name="fecha_pago" value="{{ today|date:'Y-m-d' }}" required class="input">
+                    </div>
+                </div>
 
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                        <div class="flex flex-col gap-3">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" id="pago_en_dolares_check" name="pago_en_dolares" value="true"
-                                       class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
-                                <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pago en dólares</span>
-                            </label>
-                            <p class="text-xs text-emerald-700">Si completa USD y cotización, el sistema calcula el monto en pesos que impacta en el saldo de la compra.</p>
-                        </div>
-                        <div id="campos-dolares-pago" class="hidden mt-4 pt-4 border-t border-emerald-200">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
-                                    <input type="number" id="monto-usd-input" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
-                                           class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
-                                    <input type="number" id="cotizacion-usd-input" name="cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
-                                           class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-                                </div>
+                <div class="bg-ok-soft border border-line rounded-xl p-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="pago_en_dolares_check" name="pago_en_dolares" value="true">
+                        <span class="text-sm font-semibold text-ink">Pago en dólares</span>
+                    </label>
+                    <p class="field-hint">Si completa USD y cotización, el sistema calcula el monto en pesos que impacta en el saldo del gasto.</p>
+                    <div id="campos-dolares-pago" class="hidden mt-4 pt-4 border-t border-line">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="field">
+                                <label>Monto USD</label>
+                                <input type="number" id="monto-usd-input" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500" class="input">
+                            </div>
+                            <div class="field">
+                                <label>Cotización usada</label>
+                                <input type="number" id="cotizacion-usd-input" name="cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350" class="input">
                             </div>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
-                            <select name="forma_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                                <option value="transferencia">Transferencia</option>
-                                <option value="efectivo">Efectivo</option>
-                                <option value="cheque">Cheque</option>
-                                <option value="tarjeta">Tarjeta</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Compra <span class="text-red-500">*</span></label>
-                            <select name="con_factura" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                                <option value="true" {% if compra.con_factura %}selected{% endif %}>Blanco (con factura)</option>
-                                <option value="false" {% if not compra.con_factura %}selected{% endif %}>Negro (sin factura)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Numero de Factura</label>
-                            <input type="text" name="numero_factura" placeholder="Ej: 0001-00001234"
-                                   class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
-                            <textarea name="observaciones" rows="2"
-                                      class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
-                        <i class="fas fa-check mr-2"></i>Registrar Pago
-                    </button>
                 </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="field">
+                        <label>Forma de pago *</label>
+                        <select name="forma_pago" required class="input">
+                            <option value="transferencia">Transferencia</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Tipo de compra *</label>
+                        <select name="con_factura" required class="input">
+                            <option value="true" {% if compra.con_factura %}selected{% endif %}>Blanco (con factura)</option>
+                            <option value="false" {% if not compra.con_factura %}selected{% endif %}>Negro (sin factura)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Número de factura</label>
+                        <input type="text" name="numero_factura" placeholder="Ej: 0001-00001234" class="input">
+                    </div>
+                    <div class="field">
+                        <label>Observaciones</label>
+                        <textarea name="observaciones" rows="2" class="input"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-secondary justify-center"><i class="fas fa-check"></i>Registrar pago</button>
             </form>
-        </div>
+        </section>
         {% else %}
         {% if compra.estado == 'pagado' and total_pagado > 0 %}
-        <div class="card-elegant bg-gradient-to-br from-green-50 to-green-100 rounded-3xl shadow-xl p-6 border-2 border-green-300">
-            <div class="text-center py-8">
-                <i class="fas fa-check-circle text-green-600 text-6xl mb-4"></i>
-                <h3 class="text-2xl font-bold text-green-800 mb-2">Compra Pagada</h3>
-                <p class="text-green-700">Esta compra ha sido pagada en su totalidad</p>
+        <section class="card card-pad">
+            <div class="empty">
+                <i class="fas fa-check-circle text-ok" style="font-size:40px"></i>
+                <h2 class="text-lg font-semibold text-ink mt-3">Gasto pagado</h2>
+                <p class="muted">Este gasto fue pagado en su totalidad.</p>
             </div>
-        </div>
+        </section>
         {% endif %}
         {% endif %}
     </div>
 
-    <!-- Timeline + Notas (2 columnas) -->
+    <!-- Timeline + Notas -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-        <!-- Timeline -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-5"><i class="fas fa-stream mr-2"></i>Linea de tiempo</h3>
+        <section class="card card-pad">
+            <h2 class="sec-label">Línea de tiempo</h2>
             <div class="relative">
-                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
-                <div class="space-y-5">
-                    <!-- Compra creada -->
+                <div class="absolute left-4 top-0 bottom-0 w-px bg-line"></div>
+                <div class="flex flex-col gap-5">
                     <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-shopping-cart text-white text-xs"></i>
-                        </div>
+                        <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 z-10"><i class="fas fa-shopping-cart text-white text-xs"></i></div>
                         <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Compra creada</p>
-                            <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y H:i" }}</p>
-                            <p class="text-xs text-slate-600 mt-0.5">Total: ${{ compra.valor_total|formato_numero }} — Sena: ${{ compra.sena|formato_numero }}</p>
+                            <p class="font-semibold text-ink text-sm">Gasto creado</p>
+                            <p class="text-xs text-ink-3">{{ compra.created_at|date:"d/m/Y H:i" }}</p>
+                            <p class="text-xs text-ink-2 mt-0.5">Total: ${{ compra.valor_total|formato_numero }} — Seña: ${{ compra.sena|formato_numero }}</p>
                             {% if compra.compra_en_dolares and compra.valor_total_usd %}
-                            <p class="text-xs text-emerald-700 mt-0.5">Compra original: USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            <p class="text-xs text-ink-2 mt-0.5">Compra original: USD {{ compra.valor_total_usd|formato_numero }}{% if compra.cotizacion_usd %} a ${{ compra.cotizacion_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </div>
                     </div>
 
                     {% if compra.sena > 0 %}
                     <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-hand-holding-usd text-white text-xs"></i>
-                        </div>
+                        <div class="w-8 h-8 bg-ink-3 rounded-full flex items-center justify-center flex-shrink-0 z-10"><i class="fas fa-hand-holding-usd text-white text-xs"></i></div>
                         <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Sena inicial registrada</p>
-                            <p class="text-xs text-slate-500">{{ compra.created_at|date:"d/m/Y" }}{% if compra.forma_pago_sena %} — {{ compra.get_forma_pago_sena_display }}{% endif %}</p>
-                            <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ compra.sena|formato_numero }}</p>
+                            <p class="font-semibold text-ink text-sm">Seña inicial registrada</p>
+                            <p class="text-xs text-ink-3">{{ compra.created_at|date:"d/m/Y" }}{% if compra.forma_pago_sena %} — {{ compra.get_forma_pago_sena_display }}{% endif %}</p>
+                            <p class="text-xs text-ok font-semibold mt-0.5">+${{ compra.sena|formato_numero }}</p>
                             {% if compra.sena_en_dolares and compra.sena_usd %}
-                            <p class="text-xs text-emerald-700 mt-0.5">Seña original: USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            <p class="text-xs text-ink-2 mt-0.5">Seña original: USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -357,148 +234,119 @@
 
                     {% for pago in pagos %}
                     <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 z-10">
-                            <i class="fas fa-money-bill text-white text-xs"></i>
-                        </div>
+                        <div class="w-8 h-8 bg-ok rounded-full flex items-center justify-center flex-shrink-0 z-10"><i class="fas fa-money-bill text-white text-xs"></i></div>
                         <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Pago registrado</p>
-                            <p class="text-xs text-slate-500">{{ pago.fecha_pago|date:"d/m/Y" }} — {{ pago.get_forma_pago_display }}</p>
-                            <p class="text-xs text-green-600 font-semibold mt-0.5">+${{ pago.monto|formato_numero }}</p>
+                            <p class="font-semibold text-ink text-sm">Pago registrado</p>
+                            <p class="text-xs text-ink-3">{{ pago.fecha_pago|date:"d/m/Y" }} — {{ pago.get_forma_pago_display }}</p>
+                            <p class="text-xs text-ok font-semibold mt-0.5">+${{ pago.monto|formato_numero }}</p>
                             {% if pago.pago_en_dolares and pago.monto_usd %}
-                            <p class="text-xs text-emerald-700 mt-0.5">Pago original: USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            <p class="text-xs text-ink-2 mt-0.5">Pago original: USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </div>
                     </div>
                     {% endfor %}
 
                     <div class="flex items-start gap-4">
-                        <div class="w-8 h-8 {% if compra.estado == 'pagado' %}bg-green-600{% else %}bg-yellow-500{% endif %} rounded-full flex items-center justify-center flex-shrink-0 z-10">
+                        <div class="w-8 h-8 {% if compra.estado == 'pagado' %}bg-ok{% else %}bg-warn{% endif %} rounded-full flex items-center justify-center flex-shrink-0 z-10">
                             <i class="fas fa-{% if compra.estado == 'pagado' %}check-double{% else %}clock{% endif %} text-white text-xs"></i>
                         </div>
                         <div class="pt-1">
-                            <p class="font-semibold text-slate-800 text-sm">Estado actual: {{ compra.get_estado_display }}</p>
-                            <p class="text-xs text-slate-500">Ultima actualizacion: {{ compra.updated_at|date:"d/m/Y H:i" }}</p>
+                            <p class="font-semibold text-ink text-sm">Estado actual: {{ compra.get_estado_display }}</p>
+                            <p class="text-xs text-ink-3">Última actualización: {{ compra.updated_at|date:"d/m/Y H:i" }}</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Notas Internas -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-sticky-note mr-2"></i>Notas Internas</h3>
-                <span class="text-xs text-slate-400 italic">Solo visible para el equipo</span>
+        <section class="card card-pad">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="sec-label" style="margin:0">Notas internas</h2>
+                <span class="text-xs text-ink-3">Solo visible para el equipo</span>
             </div>
-            <textarea id="notas-internas-input" rows="8"
-                      placeholder="Escribi notas internas sobre esta compra: acuerdos, recordatorios, detalles..."
-                      class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-700 resize-none">{{ compra.notas_internas }}</textarea>
+            <div class="field">
+                <textarea id="notas-internas-input" rows="8" placeholder="Escribí notas internas sobre este gasto: acuerdos, recordatorios, detalles..." class="input resize-none">{{ compra.notas_internas }}</textarea>
+            </div>
             <div class="flex justify-between items-center mt-3">
                 <span id="notas-status" class="text-xs text-slate-400"></span>
-                <button onclick="guardarNotas()"
-                        class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar Nota
-                </button>
+                <button onclick="guardarNotas()" class="btn btn-secondary btn-sm"><i class="fas fa-save"></i>Guardar nota</button>
             </div>
-        </div>
+        </section>
     </div>
 
-    <!-- Resumen de deuda + Historial de Pagos -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
-        <!-- Resumen -->
-        <div class="bg-gradient-to-r from-slate-100 to-slate-200 px-6 py-4 border-b border-slate-300">
-            <div class="flex flex-wrap gap-6 items-center">
-                <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Valor compra</span>
-                    <p class="text-lg font-bold text-slate-800">${{ compra.valor_total|formato_numero }}</p>
-                </div>
-                <div class="text-slate-300 text-xl">-</div>
-                <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Total pagado</span>
-                    <p class="text-lg font-bold text-purple-700">${{ total_pagado|formato_numero }}</p>
-                </div>
-                <div class="text-slate-300 text-xl">=</div>
-                <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Saldo restante</span>
-                    <p class="text-lg font-bold {% if compra.saldo > 0 %}text-orange-600{% else %}text-green-600{% endif %}">${{ compra.saldo|formato_numero }}</p>
-                </div>
+    <!-- Resumen + historial -->
+    <section class="card overflow-hidden mb-6">
+        <div class="flex flex-wrap gap-6 items-center px-5 py-4 border-b border-line bg-ground">
+            <div>
+                <span class="text-xs text-ink-3 font-semibold uppercase">Valor del gasto</span>
+                <p class="text-lg font-semibold text-ink num">${{ compra.valor_total|formato_numero }}</p>
+            </div>
+            <div class="text-ink-3 text-xl">-</div>
+            <div>
+                <span class="text-xs text-ink-3 font-semibold uppercase">Total pagado</span>
+                <p class="text-lg font-semibold text-ink num">${{ total_pagado|formato_numero }}</p>
+            </div>
+            <div class="text-ink-3 text-xl">=</div>
+            <div>
+                <span class="text-xs text-ink-3 font-semibold uppercase">Saldo restante</span>
+                <p class="text-lg font-semibold num {% if compra.saldo > 0 %}text-warn{% else %}text-ok{% endif %}">${{ compra.saldo|formato_numero }}</p>
             </div>
         </div>
 
-        <!-- Header tabla -->
-        <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4">
-            <h3 class="text-xl font-bold text-white">
-                <i class="fas fa-history mr-2"></i>Historial de Pagos
-            </h3>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-slate-50">
+        <div class="px-5 pt-4"><h2 class="sec-label" style="margin:0">Historial de pagos</h2></div>
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Fecha</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Monto</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Forma de Pago</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">N Factura</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Observaciones</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Registrado por</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
+                        <th>Fecha</th>
+                        <th class="num">Monto</th>
+                        <th>Forma de pago</th>
+                        <th>Tipo</th>
+                        <th>N° factura</th>
+                        <th>Observaciones</th>
+                        <th>Registrado por</th>
+                        <th><span class="sr-only">Acciones</span></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <!-- Sena inicial -->
-                    <tr class="bg-blue-50">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ compra.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-blue-700">
+                <tbody>
+                    <tr>
+                        <td>{{ compra.created_at|date:"d/m/Y" }}</td>
+                        <td class="num strong">
                             ${{ compra.sena|formato_numero }}
                             {% if compra.sena_en_dolares and compra.sena_usd %}
-                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            <p class="text-xs muted">USD {{ compra.sena_usd|formato_numero }}{% if compra.cotizacion_sena_usd %} a ${{ compra.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{% if compra.forma_pago_sena %}{{ compra.get_forma_pago_sena_display }}{% else %}Sena Inicial{% endif %}</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="px-3 py-1 {% if compra.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
-                                {% if compra.con_factura %}Blanco{% else %}Negro{% endif %}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{% if compra.numero_factura %}{{ compra.numero_factura }}{% else %}—{% endif %}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">Pago inicial de la compra</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ compra.created_by.username }}</td>
-                        <td class="px-6 py-4 text-center text-sm text-slate-400">—</td>
+                        <td>{% if compra.forma_pago_sena %}{% include 'core/ui/badge.html' with tone="blue" label=compra.get_forma_pago_sena_display only %}{% else %}{% include 'core/ui/badge.html' with tone="blue" label="Seña inicial" only %}{% endif %}</td>
+                        <td>{% if compra.con_factura %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}</td>
+                        <td>{% if compra.numero_factura %}{{ compra.numero_factura }}{% else %}—{% endif %}</td>
+                        <td class="muted">Pago inicial del gasto</td>
+                        <td class="muted">{{ compra.created_by.username }}</td>
+                        <td class="num muted">—</td>
                     </tr>
 
-                    <!-- Pagos adicionales -->
                     {% for pago in pagos %}
-                    <tr class="hover:bg-slate-50 transition-colors" id="pago-row-{{ pago.id }}">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-green-700">
+                    <tr id="pago-row-{{ pago.id }}">
+                        <td>{{ pago.fecha_pago|date:"d/m/Y" }}</td>
+                        <td class="num strong">
                             ${{ pago.monto|formato_numero }}
                             {% if pago.pago_en_dolares and pago.monto_usd %}
-                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
+                            <p class="text-xs muted">USD {{ pago.monto_usd|formato_numero }}{% if pago.cotizacion_usd %} a ${{ pago.cotizacion_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">
-                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">{{ pago.get_forma_pago_display }}</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="px-3 py-1 {% if pago.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
-                                {% if pago.con_factura %}Blanco{% else %}Negro{% endif %}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-medium text-slate-700">{% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}—{% endif %}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ pago.observaciones|default:"—" }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
+                        <td>{% include 'core/ui/badge.html' with tone="green" label=pago.get_forma_pago_display only %}</td>
+                        <td>{% if pago.con_factura %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}</td>
+                        <td>{% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}—{% endif %}</td>
+                        <td class="muted">{{ pago.observaciones|default:"—" }}</td>
+                        <td class="muted">{{ pago.created_by.username }}</td>
+                        <td class="num">
+                            <div class="flex items-center justify-end gap-1">
                                 <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }}, {{ pago.pago_en_dolares|lower }}, {{ pago.monto_usd|default:'null' }}, {{ pago.cotizacion_usd|default:'null' }})"
-                                        class="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                                    <i class="fas fa-edit"></i>
+                                        class="btn btn-ghost btn-sm btn-icon" aria-label="Editar pago">
+                                    <i class="fas fa-pen"></i>
                                 </button>
                                 <button onclick="eliminarPago({{ pago.id }}, {{ pago.monto|stringformat:".2f" }})"
-                                        class="text-red-600 hover:text-red-800 font-medium text-sm">
+                                        class="btn btn-ghost btn-sm btn-icon text-danger" aria-label="Eliminar pago">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -506,92 +354,85 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="bg-gradient-to-r from-slate-700 to-slate-800">
+                <tfoot>
                     <tr>
-                        <td class="px-6 py-4 text-right text-base font-bold text-white">TOTAL PAGADO:</td>
-                        <td class="px-6 py-4 text-2xl font-bold text-white">${{ total_pagado|formato_numero }}</td>
-                        <td colspan="6" class="px-6 py-4"></td>
+                        <td class="num">Total pagado</td>
+                        <td class="num">${{ total_pagado|formato_numero }}</td>
+                        <td colspan="6"></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-    </div>
+    </section>
 
 </div>
 
 <!-- Modal Editar Pago -->
 <div id="editarPagoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white"><i class="fas fa-edit mr-2"></i>Editar Pago</h2>
-            <button type="button" onclick="cerrarModalEditar()" class="text-white hover:text-gray-200">
-                <i class="fas fa-times text-2xl"></i>
-            </button>
+    <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-line px-6 py-4 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-ink">Editar pago</h2>
+            <button type="button" onclick="cerrarModalEditar()" class="btn btn-ghost btn-icon" aria-label="Cerrar"><i class="fas fa-times"></i></button>
         </div>
-        <form id="editarPagoForm" class="p-6 space-y-4">
+        <form id="editarPagoForm" class="p-6 flex flex-col gap-4">
             <input type="hidden" id="edit_pago_id">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
-                    <input type="number" id="edit_monto" step="0.01" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>Monto que impacta en saldo (pesos) *</label>
+                    <input type="number" id="edit_monto" step="0.01" required class="input">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
-                    <input type="date" id="edit_fecha_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>Fecha de pago *</label>
+                    <input type="date" id="edit_fecha_pago" required class="input">
                 </div>
             </div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+            <div class="bg-ok-soft border border-line rounded-xl p-4">
                 <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" id="edit_pago_en_dolares"
-                           class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
-                    <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pago en dólares</span>
+                    <input type="checkbox" id="edit_pago_en_dolares">
+                    <span class="text-sm font-semibold text-ink">Pago en dólares</span>
                 </label>
-                <div id="edit-campos-dolares" class="hidden mt-4 pt-4 border-t border-emerald-200">
+                <div id="edit-campos-dolares" class="hidden mt-4 pt-4 border-t border-line">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
-                            <input type="number" id="edit_monto_usd" step="0.01" min="0" placeholder="Ej: 500"
-                                   class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <div class="field">
+                            <label>Monto USD</label>
+                            <input type="number" id="edit_monto_usd" step="0.01" min="0" placeholder="Ej: 500" class="input">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
-                            <input type="number" id="edit_cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
-                                   class="w-full px-4 py-3 border border-emerald-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <div class="field">
+                            <label>Cotización usada</label>
+                            <input type="number" id="edit_cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350" class="input">
                         </div>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
-                    <select id="edit_forma_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>Forma de pago *</label>
+                    <select id="edit_forma_pago" required class="input">
                         <option value="transferencia">Transferencia</option>
                         <option value="efectivo">Efectivo</option>
                         <option value="cheque">Cheque</option>
                         <option value="tarjeta">Tarjeta</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Compra <span class="text-red-500">*</span></label>
-                    <select id="edit_con_factura" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>Tipo de compra *</label>
+                    <select id="edit_con_factura" required class="input">
                         <option value="true">Blanco (con factura)</option>
                         <option value="false">Negro (sin factura)</option>
                     </select>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Numero de Factura</label>
-                <input type="text" id="edit_numero_factura" placeholder="Ej: 0001-00001234" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="field">
+                <label>Número de factura</label>
+                <input type="text" id="edit_numero_factura" placeholder="Ej: 0001-00001234" class="input">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
-                <textarea id="edit_observaciones" rows="3" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            <div class="field">
+                <label>Observaciones</label>
+                <textarea id="edit_observaciones" rows="3" class="input"></textarea>
             </div>
-            <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="cerrarModalEditar()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-all">Cancelar</button>
-                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar Cambios
-                </button>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="cerrarModalEditar()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
             </div>
         </form>
     </div>

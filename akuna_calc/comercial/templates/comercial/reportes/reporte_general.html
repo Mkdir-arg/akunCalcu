@@ -10,166 +10,106 @@
 {% block title %}Reporte General{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Reporte General</h1>
-        <p class="text-slate-500 font-medium mt-1">Análisis completo de ingresos, gastos y balance</p>
-    </div>
+<div class="max-w-7xl">
+    {% include 'core/ui/page_header.html' with title="Reporte general" subtitle="Análisis completo de ingresos, gastos y balance." only %}
 
-    <!-- Formulario de Filtros -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8 mb-8">
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 tracking-tight"><i class="fas fa-filter mr-2"></i>Filtros</h2>
-        <form method="post">
+    <!-- Filtros -->
+    <section class="card mb-6">
+        <form method="post" class="toolbar">
             {% csrf_token %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
-                    <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
-                    <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
+            <div class="field" style="flex:1 1 180px">
+                <label for="rg-desde">Fecha desde</label>
+                <input type="date" id="rg-desde" name="fecha_desde" value="{{ fecha_desde }}" class="input">
             </div>
-            <div class="flex flex-wrap gap-4">
-                <button type="submit" class="btn-primary inline-flex items-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-search mr-2"></i>Generar Reporte
-                </button>
-                <a href="{% url 'comercial:reporte_general' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-redo mr-2"></i>Limpiar
-                </a>
+            <div class="field" style="flex:1 1 180px">
+                <label for="rg-hasta">Fecha hasta</label>
+                <input type="date" id="rg-hasta" name="fecha_hasta" value="{{ fecha_hasta }}" class="input">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">Generar reporte</button>
+                <a href="{% url 'comercial:reporte_general' %}" class="btn btn-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
+    </section>
 
     {% if reporte_data %}
-    <!-- Gráfico Comparativo -->
-    <div class="mb-8">
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4"><i class="fas fa-chart-bar mr-2"></i>Comparativa Ingresos vs Gastos</h3>
-            <div class="h-80">
-                <canvas id="generalChart" class="w-full h-full"></canvas>
-            </div>
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card card-pad">
+            <p class="sec-label">Total ingresos</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.ingresos.total|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.ingresos.cantidad }} pagos</p>
         </div>
-    </div>
-    
-    <!-- Resumen General -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Total Ingresos -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Ingresos</p>
-                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.ingresos.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.ingresos.cantidad }} pagos</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-arrow-up text-white text-xl"></i>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Total gastos</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.gastos.total|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.gastos.cantidad }} compras</p>
         </div>
-        
-        <!-- Total Gastos -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-red-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Total Gastos</p>
-                    <p class="text-3xl font-bold text-red-600">${{ reporte_data.gastos.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.gastos.cantidad }} compras</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-arrow-down text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Balance Total -->
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 {% if reporte_data.balance.total >= 0 %}border-blue-500{% else %}border-orange-500{% endif %}">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Balance Total</p>
-                    <p class="text-3xl font-bold {% if reporte_data.balance.total >= 0 %}text-blue-600{% else %}text-orange-600{% endif %}">${{ reporte_data.balance.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">
-                        {% if reporte_data.balance.total >= 0 %}
-                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Positivo</span>
-                        {% else %}
-                            <span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>Negativo</span>
-                        {% endif %}
-                    </p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br {% if reporte_data.balance.total >= 0 %}from-blue-500 to-blue-600{% else %}from-orange-500 to-orange-600{% endif %} rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-balance-scale text-white text-xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tabla Detallada -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 border-b border-slate-200">
-            <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-table mr-2"></i>Desglose Detallado</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Blanco</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Negro</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr class="hover:bg-green-50">
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">
-                            <i class="fas fa-arrow-up text-green-600 mr-2"></i>Ingresos
-                        </td>
-                        <td class="px-6 py-4 text-sm text-right text-green-600 font-semibold">${{ reporte_data.ingresos.blanco|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right text-gray-600 font-semibold">${{ reporte_data.ingresos.negro|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right text-green-600 font-bold">${{ reporte_data.ingresos.total|formato_numero }}</td>
-                    </tr>
-                    <tr class="hover:bg-red-50">
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">
-                            <i class="fas fa-arrow-down text-red-600 mr-2"></i>Gastos
-                        </td>
-                        <td class="px-6 py-4 text-sm text-right text-red-600 font-semibold">${{ reporte_data.gastos.blanco|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right text-gray-600 font-semibold">${{ reporte_data.gastos.negro|formato_numero }}</td>
-                        <td class="px-6 py-4 text-sm text-right text-red-600 font-bold">${{ reporte_data.gastos.total|formato_numero }}</td>
-                    </tr>
-                    <tr class="bg-blue-50 font-bold">
-                        <td class="px-6 py-4 text-sm font-bold text-gray-900">
-                            <i class="fas fa-balance-scale text-blue-600 mr-2"></i>Balance
-                        </td>
-                        <td class="px-6 py-4 text-sm text-right {% if reporte_data.balance.blanco >= 0 %}text-blue-600{% else %}text-orange-600{% endif %} font-bold">
-                            ${{ reporte_data.balance.blanco|formato_numero }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-right {% if reporte_data.balance.negro >= 0 %}text-blue-600{% else %}text-orange-600{% endif %} font-bold">
-                            ${{ reporte_data.balance.negro|formato_numero }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-right {% if reporte_data.balance.total >= 0 %}text-blue-600{% else %}text-orange-600{% endif %} font-bold text-lg">
-                            ${{ reporte_data.balance.total|formato_numero }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="card card-pad">
+            <p class="sec-label">Balance total</p>
+            <p class="text-3xl font-semibold num {% if reporte_data.balance.total >= 0 %}text-ok{% else %}text-danger{% endif %}">${{ reporte_data.balance.total|formato_numero }}</p>
+            <p class="mt-1">
+                {% if reporte_data.balance.total >= 0 %}{% include 'core/ui/badge.html' with tone="green" label="Positivo" dot=True only %}{% else %}{% include 'core/ui/badge.html' with tone="red" label="Negativo" dot=True only %}{% endif %}
+            </p>
         </div>
     </div>
 
-    <!-- Botones de Exportación -->
-    <div class="mt-8 flex justify-center gap-4">
-        <a href="{% url 'comercial:exportar_reporte_general_excel' %}" class="btn-primary inline-flex items-center text-white px-8 py-4 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
-        </a>
-        <button onclick="window.print()" class="inline-flex items-center bg-slate-600 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl transition-all">
-            <i class="fas fa-print mr-2"></i>Imprimir
-        </button>
+    <!-- Gráfico -->
+    <section class="card card-pad mb-6">
+        <h2 class="sec-label">Comparativa ingresos vs. gastos</h2>
+        <div class="h-80">
+            <canvas id="generalChart" class="w-full h-full"></canvas>
+        </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="card overflow-hidden mb-6">
+        <div class="px-5 pt-4"><h2 class="sec-label" style="margin:0">Desglose detallado</h2></div>
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th class="num">Blanco</th>
+                        <th class="num">Negro</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="strong">Ingresos</span></td>
+                        <td class="num">${{ reporte_data.ingresos.blanco|formato_numero }}</td>
+                        <td class="num">${{ reporte_data.ingresos.negro|formato_numero }}</td>
+                        <td class="num strong">${{ reporte_data.ingresos.total|formato_numero }}</td>
+                    </tr>
+                    <tr>
+                        <td><span class="strong">Gastos</span></td>
+                        <td class="num">${{ reporte_data.gastos.blanco|formato_numero }}</td>
+                        <td class="num">${{ reporte_data.gastos.negro|formato_numero }}</td>
+                        <td class="num strong">${{ reporte_data.gastos.total|formato_numero }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Balance</td>
+                        <td class="num {% if reporte_data.balance.blanco >= 0 %}text-ok{% else %}text-danger{% endif %}">${{ reporte_data.balance.blanco|formato_numero }}</td>
+                        <td class="num {% if reporte_data.balance.negro >= 0 %}text-ok{% else %}text-danger{% endif %}">${{ reporte_data.balance.negro|formato_numero }}</td>
+                        <td class="num {% if reporte_data.balance.total >= 0 %}text-ok{% else %}text-danger{% endif %}">${{ reporte_data.balance.total|formato_numero }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <!-- Exportación -->
+    <div class="flex justify-end gap-3">
+        <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i>Imprimir</button>
+        <a href="{% url 'comercial:exportar_reporte_general_excel' %}" class="btn btn-primary"><i class="fas fa-file-excel"></i>Exportar a Excel</a>
     </div>
     {% else %}
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
-        <i class="fas fa-chart-pie text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-2xl font-bold text-gray-700 mb-2">Genera tu reporte general</h3>
-        <p class="text-gray-500 mb-6">Selecciona un rango de fechas y haz clic en "Generar Reporte"</p>
-    </div>
+    <section class="card">
+        {% include 'core/ui/empty_state.html' with title="Generá tu reporte general" text="Seleccioná un rango de fechas y hacé clic en «Generar reporte»." icon="fas fa-chart-pie" only %}
+    </section>
     {% endif %}
 </div>
 {% endblock %}
