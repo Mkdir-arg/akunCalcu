@@ -1,0 +1,10 @@
+{% comment %}
+Estado vacío. Parámetros: title (obligatorio), text, icon (clase FA, default "fas fa-inbox"),
+action_url, action_label. Dentro de una tabla envolverlo en <tr><td colspan="N">. Usar con `only`.
+{% endcomment %}
+<div class="empty">
+    <div class="empty-icon"><i class="{{ icon|default:'fas fa-inbox' }}"></i></div>
+    <p class="empty-title">{{ title }}</p>
+    {% if text %}<p class="empty-text">{{ text }}</p>{% endif %}
+    {% if action_url %}<a class="btn btn-primary mt-2" href="{{ action_url }}"><i class="fas fa-plus"></i>{{ action_label }}</a>{% endif %}
+</div>

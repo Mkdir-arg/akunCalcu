@@ -1,0 +1,13 @@
+{% comment %}
+Paginación Taller. Parámetros: page_obj (obligatorio), query (querystring a conservar SIN el page,
+ej. "q=abc&estado=x"), page_param (default "page"), total_label (ej. "presupuestos"). Usar con `only`.
+{% endcomment %}
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div class="pager">
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}{% if total_label %} · {{ page_obj.paginator.count }} {{ total_label }}{% endif %}</span>
+    <span class="pager-links">
+        {% if page_obj.has_previous %}<a class="btn btn-secondary btn-sm" href="?{% if query %}{{ query }}&amp;{% endif %}{{ page_param|default:'page' }}={{ page_obj.previous_page_number }}">Anterior</a>{% else %}<span class="btn btn-secondary btn-sm is-disabled">Anterior</span>{% endif %}
+        {% if page_obj.has_next %}<a class="btn btn-secondary btn-sm" href="?{% if query %}{{ query }}&amp;{% endif %}{{ page_param|default:'page' }}={{ page_obj.next_page_number }}">Siguiente</a>{% else %}<span class="btn btn-secondary btn-sm is-disabled">Siguiente</span>{% endif %}
+    </span>
+</div>
+{% endif %}

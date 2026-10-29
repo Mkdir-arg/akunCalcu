@@ -1,0 +1,21 @@
+{% comment %}
+Cabecera de página Taller. Parámetros (todos opcionales salvo title):
+  title, subtitle,
+  action_url, action_label, action_icon (clase FA, default "fas fa-plus")  -> botón primario
+  secondary_url, secondary_label, secondary_icon                           -> botón secundario
+  back_url, back_label                                                     -> enlace «volver»
+Usar siempre con `only`. Para cabeceras con más botones, copiar el markup (.page-head).
+{% endcomment %}
+<div class="page-head">
+    <div>
+        {% if back_url %}<a href="{{ back_url }}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>{{ back_label|default:"Volver" }}</a>{% endif %}
+        <h1 class="page-title">{{ title }}</h1>
+        {% if subtitle %}<p class="page-sub">{{ subtitle }}</p>{% endif %}
+    </div>
+    {% if action_url or secondary_url %}
+    <div class="page-actions">
+        {% if secondary_url %}<a class="btn btn-secondary" href="{{ secondary_url }}">{% if secondary_icon %}<i class="{{ secondary_icon }}"></i>{% endif %}{{ secondary_label }}</a>{% endif %}
+        {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}"><i class="{{ action_icon|default:'fas fa-plus' }}"></i>{{ action_label }}</a>{% endif %}
+    </div>
+    {% endif %}
+</div>

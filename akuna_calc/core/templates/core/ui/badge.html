@@ -1,0 +1,5 @@
+{% comment %}
+Badge de estado. Parámetros: label (obligatorio), tone = gray|blue|violet|green|amber|red (default gray),
+dot (True para el puntito), icon (clase FA opcional). Usar con `only`.
+{% endcomment %}
+<span class="badge b-{{ tone|default:'gray' }}">{% if dot %}<span class="dot"></span>{% endif %}{% if icon %}<i class="{{ icon }}"></i>{% endif %}{{ label }}</span>

@@ -6,6 +6,7 @@ from .models import PerfilAccesoUsuario
 ACCESS_MODULES = [
     {
         'key': 'dashboard',
+        'grupo': 'operacion',
         'label': 'Dashboard',
         'icon': 'fas fa-home',
         'dropdown': False,
@@ -15,6 +16,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'presupuestos',
+        'grupo': 'operacion',
         'label': 'Presupuestos',
         'icon': 'fas fa-file-invoice-dollar',
         'dropdown': False,
@@ -24,6 +26,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'comercial',
+        'grupo': 'ventas',
         'label': 'Comercial',
         'icon': 'fas fa-chart-line',
         'dropdown': True,
@@ -37,6 +40,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'gastos_diarios',
+        'grupo': 'ventas',
         'label': 'Gastos Diarios',
         'icon': 'fas fa-microphone-alt',
         'dropdown': True,
@@ -47,6 +51,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'agenda',
+        'grupo': 'operacion',
         'label': 'Agenda',
         'icon': 'fas fa-calendar-alt',
         'dropdown': False,
@@ -56,6 +61,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'solicitudes',
+        'grupo': 'operacion',
         'label': 'Solicitudes',
         'icon': 'fas fa-inbox',
         'dropdown': False,
@@ -65,6 +71,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'reportes',
+        'grupo': 'analisis',
         'label': 'Reportes',
         'icon': 'fas fa-chart-bar',
         'dropdown': True,
@@ -78,6 +85,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'productos',
+        'grupo': 'fabrica',
         'label': 'Productos',
         'icon': 'fas fa-box',
         'dropdown': True,
@@ -87,6 +95,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'despiece',
+        'grupo': 'fabrica',
         'label': 'Pedidos de Fábrica',
         'icon': 'fas fa-clipboard-list',
         'dropdown': False,
@@ -96,6 +105,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'cotizador',
+        'grupo': 'operacion',
         'label': 'Cotizador',
         'icon': 'fas fa-calculator',
         'dropdown': False,
@@ -105,6 +115,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'fabrica',
+        'grupo': 'fabrica',
         'label': 'Fábrica',
         'icon': 'fas fa-industry',
         'dropdown': True,
@@ -125,6 +136,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'facturacion',
+        'grupo': 'ventas',
         'label': 'Facturación',
         'icon': 'fas fa-file-invoice-dollar',
         'dropdown': True,
@@ -135,6 +147,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'seguridad',
+        'grupo': 'sistema',
         'label': 'Seguridad',
         'icon': 'fas fa-shield-alt',
         'dropdown': True,
@@ -147,6 +160,7 @@ ACCESS_MODULES = [
     },
     {
         'key': 'configuracion',
+        'grupo': 'sistema',
         'label': 'Configuración',
         'icon': 'fas fa-cog',
         'dropdown': True,
@@ -157,6 +171,14 @@ ACCESS_MODULES = [
             {'code': 'configuracion.general', 'label': 'General', 'route_name': 'configuracion-general'},
         ],
     },
+]
+
+SIDEBAR_GRUPOS = [
+    ('operacion', 'Operación', ['dashboard', 'solicitudes', 'presupuestos', 'cotizador', 'agenda']),
+    ('ventas', 'Ventas y cobros', ['comercial', 'facturacion', 'gastos_diarios']),
+    ('fabrica', 'Fábrica', ['despiece', 'fabrica', 'productos']),
+    ('analisis', 'Análisis', ['reportes']),
+    ('sistema', 'Sistema', ['seguridad', 'configuracion']),
 ]
 
 PUBLIC_ROUTE_KEYS = {
@@ -407,6 +429,7 @@ def build_sidebar_modules(user, current_route_key=None):
             continue
         modules.append({
             'key': module['key'],
+            'grupo': module.get('grupo', ''),
             'label': module['label'],
             'icon': module['icon'],
             'dropdown': module['dropdown'],
@@ -414,6 +437,26 @@ def build_sidebar_modules(user, current_route_key=None):
             'active': any(item['active'] for item in visible_items),
         })
     return modules
+
+
+def group_sidebar_modules(modules):
+    """Agrupa los módulos visibles por tarea (Operación, Ventas y cobros, ...).
+
+    Respeta el orden de SIDEBAR_GRUPOS; un módulo sin grupo conocido va al final
+    en «Otros». No toca permisos: solo reordena lo que build_sidebar_modules ya filtró.
+    """
+    by_key = {m['key']: m for m in modules}
+    used = set()
+    groups = []
+    for group_key, label, module_keys in SIDEBAR_GRUPOS:
+        members = [by_key[k] for k in module_keys if k in by_key]
+        used.update(m['key'] for m in members)
+        if members:
+            groups.append({'key': group_key, 'label': label, 'modules': members})
+    rest = [m for m in modules if m['key'] not in used]
+    if rest:
+        groups.append({'key': 'otros', 'label': 'Otros', 'modules': rest})
+    return groups
 
 
 def get_default_url_for_user(user):

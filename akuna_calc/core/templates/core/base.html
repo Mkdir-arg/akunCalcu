@@ -5,17 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>AKUN - Sistema de Gestión</title>
+    <title>{% block title %}Sistema de Gestión{% endblock %} · AKUN</title>
     {% load static %}
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="{% static 'css/taller.css' %}" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% block extra_head %}{% endblock %}
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -26,11 +30,27 @@
                     'lg': '1024px',
                     'xl': '1280px',
                     '2xl': '1536px',
-                }
+                },
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        ground: '#F4F5F7',
+                        ink: { DEFAULT: '#101828', 2: '#475467', 3: '#667085' },
+                        line: { DEFAULT: '#E4E7EC', soft: '#F2F4F7', strong: '#D0D5DD' },
+                        brand: '#0F1729',
+                        accent: { DEFAULT: '#1F4FD8', hover: '#163BA6', soft: '#EEF3FF', ring: '#DCE6FF' },
+                        ok: { DEFAULT: '#067647', soft: '#ECFDF3' },
+                        warn: { DEFAULT: '#B54708', soft: '#FFFAEB' },
+                        danger: { DEFAULT: '#B42318', soft: '#FEF3F2' },
+                        violet: { DEFAULT: '#5925DC', soft: '#F4F3FF' },
+                    },
+                },
             }
         }
     </script>
-    
+
     <style>
         * {
             -webkit-text-size-adjust: 100%;
@@ -49,57 +69,51 @@
             display: none;
         }
         #sidebar.collapsed .sidebar-logo {
-            height: 40px;
+            justify-content: center;
         }
-        .btn-primary {
-            background: linear-gradient(to right, #3B82F6, #9333EA);
-            color: white;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(to right, #2563EB, #7E22CE);
-        }
+        /* Select2 con tokens Taller */
         .select2-container {
             width: 100% !important;
         }
         .select2-container--classic .select2-selection--single,
         .select2-container--classic .select2-selection--multiple {
-            min-height: 46px;
-            border: 1px solid rgb(203 213 225) !important;
-            border-radius: 1rem !important;
+            min-height: 40px;
+            border: 1px solid #D0D5DD !important;
+            border-radius: 10px !important;
             background: #fff !important;
             background-image: none !important;
             box-shadow: none !important;
-            padding: 0.15rem 0.35rem;
+            padding: 0.05rem 0.35rem;
         }
         .select2-container--classic .select2-selection--single .select2-selection__rendered {
-            line-height: 42px !important;
-            color: rgb(15 23 42) !important;
-            padding-left: 0.55rem !important;
+            line-height: 38px !important;
+            color: #101828 !important;
+            padding-left: 0.4rem !important;
             padding-right: 2rem !important;
         }
         .select2-container--classic .select2-selection--single .select2-selection__placeholder,
         .select2-search--dropdown .select2-search__field::placeholder {
-            color: rgb(100 116 139) !important;
+            color: #667085 !important;
         }
         .select2-container--classic .select2-selection--single .select2-selection__clear {
-            color: rgb(148 163 184);
+            color: #98A2B3;
             margin-right: 0.35rem;
         }
         .select2-container--classic .select2-selection--single .select2-selection__arrow {
-            height: 44px !important;
+            height: 38px !important;
             right: 0.4rem !important;
             width: 1rem !important;
             background: transparent !important;
             border: 0 !important;
         }
         .select2-container--classic .select2-selection--single .select2-selection__arrow b {
-            border-color: rgb(100 116 139) transparent transparent transparent !important;
+            border-color: #667085 transparent transparent transparent !important;
             border-width: 5px 4px 0 4px !important;
             margin-left: -4px !important;
             margin-top: -2px !important;
         }
         .select2-container--classic.select2-container--open .select2-selection--single .select2-selection__arrow b {
-            border-color: transparent transparent rgb(100 116 139) transparent !important;
+            border-color: transparent transparent #667085 transparent !important;
             border-width: 0 4px 5px 4px !important;
         }
         .select2-container--classic .select2-selection--multiple .select2-selection__rendered {
@@ -112,32 +126,32 @@
             margin: 0 !important;
             border-radius: 9999px !important;
             border: 0 !important;
-            background: rgb(224 242 254) !important;
-            color: rgb(30 64 175) !important;
+            background: #EEF3FF !important;
+            color: #1F4FD8 !important;
             padding: 0.15rem 0.5rem !important;
         }
         .select2-container--classic .select2-selection--multiple .select2-selection__choice__remove {
-            color: rgb(59 130 246) !important;
+            color: #1F4FD8 !important;
             margin-right: 0.25rem;
         }
         .select2-container--classic.select2-container--focus .select2-selection--single,
         .select2-container--classic.select2-container--focus .select2-selection--multiple,
         .select2-container--classic.select2-container--open .select2-selection--single,
         .select2-container--classic.select2-container--open .select2-selection--multiple {
-            border-color: rgb(59 130 246) !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+            border-color: #1F4FD8 !important;
+            box-shadow: 0 0 0 4px #DCE6FF !important;
         }
         .select2-container--classic.select2-container--disabled .select2-selection--single,
         .select2-container--classic.select2-container--disabled .select2-selection--multiple {
-            background: rgb(248 250 252) !important;
-            color: rgb(148 163 184) !important;
+            background: #F9FAFB !important;
+            color: #98A2B3 !important;
             cursor: not-allowed;
         }
         .select2-dropdown {
-            border: 1px solid rgb(203 213 225) !important;
-            border-radius: 1rem !important;
+            border: 1px solid #E4E7EC !important;
+            border-radius: 12px !important;
             overflow: hidden;
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
         }
         .select2-container--classic .select2-dropdown {
             background: #fff;
@@ -146,65 +160,72 @@
             padding: 0.5rem !important;
         }
         .select2-search--dropdown .select2-search__field {
-            border: 1px solid rgb(203 213 225) !important;
-            border-radius: 0.75rem !important;
-            padding: 0.55rem 0.75rem !important;
+            border: 1px solid #D0D5DD !important;
+            border-radius: 8px !important;
+            padding: 0.5rem 0.75rem !important;
             font-size: 0.875rem;
-            color: rgb(15 23 42);
+            color: #101828;
             outline: none;
         }
         .select2-results__option {
-            padding: 0.65rem 0.85rem !important;
+            padding: 0.6rem 0.85rem !important;
             font-size: 0.875rem;
-            color: rgb(51 65 85);
+            color: #344054;
         }
         .select2-results__option--highlighted[aria-selected] {
-            background: rgb(14 165 233) !important;
+            background: #1F4FD8 !important;
             color: #fff !important;
         }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="taller min-h-screen bg-ground font-sans text-ink">
     <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden" onclick="toggleMobileMenu()"></div>
-    
+    <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
+
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white shadow-lg flex flex-col fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 -translate-x-full lg:translate-x-0" style="width: 256px;">
-            <!-- Logo -->
-            <div class="p-6 border-b text-center flex items-center justify-between">
-                <img src="{% static 'imagenes/AKUN-LOGO.webp' %}" alt="AKUN" class="h-16 w-auto mx-auto sidebar-logo" onerror="this.onerror=null; this.src='{% static 'imagenes/AKUN-LOGO.png' %}'">
-                <button onclick="toggleSidebar()" class="hidden lg:block text-gray-600 hover:text-gray-900 sidebar-toggle">
-                    <i class="fas fa-bars text-xl"></i>
+        <aside id="sidebar" class="bg-white border-r border-line flex flex-col fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 transition-all duration-300 -translate-x-full lg:translate-x-0" style="width: 256px;">
+            <div class="sidebar-logo flex items-center justify-between gap-2 px-5 pt-5 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-[30px] h-[30px] rounded-lg bg-brand text-white font-bold text-sm leading-[30px] text-center flex-none">A</span>
+                    <span class="sidebar-text font-bold text-base tracking-wider">AKUN</span>
+                </div>
+                <button onclick="toggleSidebar()" class="hidden lg:block text-ink-3 hover:text-ink sidebar-toggle sidebar-text" aria-label="Contraer menú">
+                    <i class="fas fa-bars"></i>
                 </button>
             </div>
 
-            <!-- Navigation -->
-            <nav class="flex-1 overflow-y-auto p-4">
-                <div class="space-y-2">
-                    {% for module in sidebar_modules %}
-                        {% if module.dropdown %}
-                        <div>
-                            <button onclick="toggleMenu('{{ module.key }}')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors {% if module.active %}bg-blue-50 text-blue-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                                <div class="flex items-center">
-                                    <i class="{{ module.icon }} w-5 mr-3"></i>
+            <nav class="flex-1 overflow-y-auto px-3 py-3" aria-label="Menú principal">
+                <div class="flex flex-col gap-5">
+                    {% for group in sidebar_groups %}
+                    <div>
+                        <p class="sb-h">{{ group.label }}</p>
+                        <div class="flex flex-col gap-0.5">
+                        {% for module in group.modules %}
+                            {% if module.dropdown %}
+                            <div>
+                                <button onclick="toggleMenu('{{ module.key }}')" class="nv {% if module.active %}on{% endif %}" type="button">
+                                    <i class="{{ module.icon }} nv-icon"></i>
                                     <span class="sidebar-text">{{ module.label }}</span>
+                                    <i class="fas fa-chevron-down text-xs transition-transform duration-300 sidebar-text nv-badge {% if module.active %}rotate-180{% endif %}" id="{{ module.key }}-icon"></i>
+                                </button>
+                                <div id="{{ module.key }}-menu" class="ml-6 mt-1 mb-1 pl-3 border-l border-line flex flex-col gap-0.5 sidebar-submenu {% if not module.active %}hidden{% endif %}">
+                                    {% for item in module.items %}
+                                    <a href="{{ item.url }}" class="nv-sub sidebar-text {% if item.active %}on{% endif %}">{{ item.label }}</a>
+                                    {% endfor %}
                                 </div>
-                                <i class="fas fa-chevron-down text-sm transition-transform duration-300 sidebar-text {% if module.active %}rotate-180{% endif %}" id="{{ module.key }}-icon"></i>
-                            </button>
-                            <div id="{{ module.key }}-menu" class="ml-8 mt-1 space-y-1 sidebar-submenu {% if not module.active %}hidden{% endif %}">
-                                {% for item in module.items %}
-                                <a href="{{ item.url }}" class="block px-3 py-2 text-sm rounded-lg sidebar-text transition-colors {% if item.active %}bg-blue-100 text-blue-700 font-semibold{% else %}text-gray-600 hover:bg-gray-100{% endif %}">{{ item.label }}</a>
-                                {% endfor %}
                             </div>
+                            {% else %}
+                            <a href="{{ module.items.0.url }}" class="nv {% if module.items.0.active %}on{% endif %}">
+                                <i class="{{ module.icon }} nv-icon"></i>
+                                <span class="sidebar-text">{{ module.label }}</span>
+                            </a>
+                            {% endif %}
+                        {% endfor %}
                         </div>
-                        {% else %}
-                        <a href="{{ module.items.0.url }}" class="w-full flex items-center px-3 py-2 rounded-lg transition-colors {% if module.items.0.active %}bg-blue-50 text-blue-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="{{ module.icon }} w-5 mr-3"></i>
-                            <span class="sidebar-text">{{ module.label }}</span>
-                        </a>
-                        {% endif %}
+                    </div>
                     {% empty %}
-                    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div class="rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-warn">
                         <div class="flex items-start gap-3">
                             <i class="fas fa-triangle-exclamation mt-0.5"></i>
                             <span class="sidebar-text">Tu usuario no tiene módulos visibles asignados.</span>
@@ -214,72 +235,72 @@
                 </div>
             </nav>
 
-            <!-- User Section -->
-            <div class="p-4 border-t sidebar-user">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-blue-700">{{ user.username|slice:":1"|upper }}</span>
-                    </div>
-                    <div class="flex-1 min-w-0 sidebar-text">
-                        <p class="text-sm font-semibold text-gray-900 truncate">{{ user.username }}</p>
-                        <p class="text-xs text-gray-600 truncate">{{ user_role_label }}</p>
-                        <p class="text-xs text-gray-500 truncate">{{ user_access_summary }}</p>
-                    </div>
-                </div>
+            <div class="px-5 py-4 border-t border-line sidebar-user sidebar-text">
+                <p class="text-sm font-semibold text-ink truncate">{{ user.username }}</p>
+                <p class="text-xs text-ink-3 truncate">{{ user_role_label }}</p>
+                <p class="text-xs text-ink-3 truncate">{{ user_access_summary }}</p>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="bg-white shadow-sm border-b px-4 lg:px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <button id="mobile-menu-btn" class="lg:hidden text-gray-600 hover:text-gray-900" onclick="toggleMobileMenu()">
-                            <i class="fas fa-bars text-xl"></i>
+        <div class="flex-1 flex flex-col min-w-0">
+            <header class="bg-white border-b border-line px-4 lg:px-8 py-3 sticky top-0 z-30">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="mobile-menu-btn" class="lg:hidden text-ink-2 hover:text-ink" onclick="toggleMobileMenu()" aria-label="Abrir menú">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="topbar-search hidden sm:block">
+                        <input id="topbar-search" class="input" type="search" aria-label="Buscar en AkunCalcu" placeholder="Buscar cliente, presupuesto o venta" autocomplete="off">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <span class="flex-1"></span>
+                    <span id="live-dolar" class="badge b-gray hidden sm:inline-flex" style="height:28px;padding:0 10px" title="Dólar oficial (BNA)">Dólar BNA <span id="live-dolar-value">$ —</span></span>
+
+                    <div class="relative">
+                        <button type="button" id="live-bell" class="btn btn-ghost btn-icon relative" data-dropdown-toggle="avisos-panel" aria-label="Avisos" aria-haspopup="true">
+                            <i class="far fa-bell text-lg"></i>
+                            <span id="live-bell-count" class="bell-count hidden">0</span>
                         </button>
-                        <div>
-                            <h2 class="text-xl lg:text-2xl font-bold text-gray-900">AKUN</h2>
-                            <p class="text-sm text-gray-600 hidden sm:block">Sistema de Gestión de Aberturas</p>
+                        <div id="avisos-panel" class="dropdown-panel" style="width:340px;max-width:calc(100vw - 32px)">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-line">
+                                <span class="font-semibold text-sm">Avisos</span>
+                                <button type="button" id="live-read-all" class="text-xs font-semibold text-accent hover:underline">Marcar todos como leídos</button>
+                            </div>
+                            <div id="live-avisos-list" class="max-h-80 overflow-y-auto">
+                                <p class="px-4 py-6 text-sm text-ink-3 text-center">No tenés avisos nuevos.</p>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <div class="hidden sm:flex items-center space-x-3 bg-gray-50 rounded-2xl px-4 py-2">
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-sm font-medium text-blue-700">{{ user.username|slice:":1"|upper }}</span>
+
+                    <div class="relative">
+                        <button type="button" class="user-chip" data-dropdown-toggle="user-panel" aria-label="Menú de usuario: {{ user.username }}" aria-haspopup="true">
+                            <span class="avatar">{{ user.username|slice:":1"|upper }}</span>
+                            <span class="hidden sm:inline">{{ user.username }}</span>
+                        </button>
+                        <div id="user-panel" class="dropdown-panel" style="width:220px">
+                            <div class="px-4 py-3 border-b border-line">
+                                <p class="text-sm font-semibold truncate">{{ user.username }}</p>
+                                <p class="text-xs text-ink-3 truncate">{{ user_role_label }}</p>
                             </div>
-                            <span class="text-sm font-semibold text-gray-700">{{ user.username }}</span>
+                            <div class="p-1.5">
+                                <a href="{% url 'logout' %}" class="kebab-item"><i class="fas fa-sign-out-alt"></i>Salir</a>
+                            </div>
                         </div>
-                        <a href="{% url 'logout' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-2xl transition-all duration-200 font-semibold">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            <span class="hidden sm:inline">Salir</span>
-                        </a>
                     </div>
                 </div>
             </header>
 
-            <!-- Content -->
-            <main class="flex-1 p-4 lg:p-6 overflow-x-hidden">
-                {% if messages %}
-                    {% for message in messages %}
-                    <script>
-                        Swal.fire({
-                            icon: '{% if message.tags == "error" %}error{% elif message.tags == "success" %}success{% elif message.tags == "warning" %}warning{% else %}info{% endif %}',
-                            title: '{% if message.tags == "error" %}Error{% elif message.tags == "success" %}Éxito{% elif message.tags == "warning" %}Advertencia{% else %}Información{% endif %}',
-                            text: '{{ message|escapejs }}',
-                            confirmButtonColor: '#3b82f6',
-                            timer: 5000,
-                            timerProgressBar: true
-                        });
-                    </script>
-                    {% endfor %}
-                {% endif %}
+            <main class="flex-1 p-4 lg:p-8 overflow-x-hidden">
                 {% block content %}
                 {% endblock %}
             </main>
         </div>
     </div>
+
+    <div id="live-config" hidden
+         data-poll-url="{% url 'core_api_live' %}"
+         data-read-url="{% url 'core_api_aviso_leido' %}"
+         data-csrf="{{ csrf_token }}"></div>
 
     <script>
     function toggleMenu(menuId) {
@@ -429,8 +450,106 @@
     $(document).ready(function() {
         initAkunSelect2(document);
     });
+    // ---- Taller: toasts, menús de fila, dropdowns, confirmación de borrado ----
+    window.AkunToast = {
+        show: function (text, tipo, ms) {
+            const wrap = document.getElementById('toast-wrap');
+            if (!wrap) { return; }
+            const tipos = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+            tipo = tipos[tipo] ? tipo : 'info';
+            const el = document.createElement('div');
+            el.className = 'toast toast-' + tipo;
+            el.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+            const icon = document.createElement('i');
+            icon.className = 'fas ' + tipos[tipo];
+            const msg = document.createElement('span');
+            msg.textContent = text;
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'toast-close';
+            close.setAttribute('aria-label', 'Cerrar');
+            close.innerHTML = '&times;';
+            el.append(icon, msg, close);
+            wrap.appendChild(el);
+            const remove = function () { el.remove(); };
+            close.addEventListener('click', remove);
+            setTimeout(remove, ms || (tipo === 'error' ? 8000 : 5000));
+        }
+    };
+
+    function closeTallerMenus(except) {
+        document.querySelectorAll('.kebab.open').forEach(function (k) { if (k !== except) { k.classList.remove('open'); } });
+        document.querySelectorAll('.dropdown-panel.open').forEach(function (p) { if (p !== except) { p.classList.remove('open'); } });
+    }
+
+    document.addEventListener('click', function (e) {
+        const kebabToggle = e.target.closest('[data-kebab-toggle]');
+        if (kebabToggle) {
+            const kebab = kebabToggle.closest('.kebab');
+            const willOpen = !kebab.classList.contains('open');
+            closeTallerMenus();
+            if (willOpen) {
+                const menu = kebab.querySelector('.kebab-menu');
+                const r = kebabToggle.getBoundingClientRect();
+                kebab.classList.add('open');
+                const w = menu.offsetWidth;
+                menu.style.top = (r.bottom + 4) + 'px';
+                menu.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+            }
+            return;
+        }
+
+        const ddToggle = e.target.closest('[data-dropdown-toggle]');
+        if (ddToggle) {
+            const panel = document.getElementById(ddToggle.getAttribute('data-dropdown-toggle'));
+            const willOpen = panel && !panel.classList.contains('open');
+            closeTallerMenus();
+            if (willOpen) { panel.classList.add('open'); }
+            return;
+        }
+
+        const del = e.target.closest('[data-taller-delete]');
+        if (del) {
+            const url = del.getAttribute('data-taller-delete');
+            const name = del.getAttribute('data-name') || 'este registro';
+            closeTallerMenus();
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Eliminar?',
+                text: '¿Está seguro que desea eliminar ' + name + '?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#B42318'
+            }).then(function (res) {
+                if (!res.isConfirmed) { return; }
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = url;
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = 'csrfmiddlewaretoken';
+                csrf.value = document.getElementById('live-config').dataset.csrf;
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            });
+            return;
+        }
+
+        if (!e.target.closest('.kebab-menu') && !e.target.closest('.dropdown-panel')) { closeTallerMenus(); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { closeTallerMenus(); }
+    });
+    window.addEventListener('scroll', function () { document.querySelectorAll('.kebab.open').forEach(function (k) { k.classList.remove('open'); }); }, true);
+
+    {% for message in messages %}
+    AkunToast.show('{{ message|escapejs }}', '{{ message.level_tag|default:"info"|escapejs }}');
+    {% endfor %}
     </script>
-    
+    <script src="{% static 'js/live.js' %}" defer></script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
