@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva factura</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn svg{width:16px;height:16px}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-g{background:transparent;color:#475467}.btn-g:hover{background:#F2F4F7;color:#101828}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.ib{width:36px;padding:0;justify-content:center}
+.btn-sm.ib{width:32px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-gray{background:#F2F4F7;color:#344054}.b-blue{background:#EEF3FF;color:#1F4FD8}.b-green{background:#ECFDF3;color:#067647}.b-amber{background:#FFFAEB;color:#B54708}.b-red{background:#FEF3F2;color:#B42318}.b-violet{background:#F4F3FF;color:#5925DC}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:12px 16px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid #F2F4F7;color:#344054;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:#667085}
+.strong{color:#101828;font-weight:600}
+.sb{flex:1 1 248px;max-width:248px;background:#fff;border-right:1px solid #E4E7EC;box-sizing:border-box;padding:20px 12px;display:flex;flex-direction:column;gap:18px}
+.sb-h{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:0 0 6px}
+.nv{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.nv:hover{background:#F2F4F7;color:#101828}
+.nv svg{width:18px;height:18px;flex:none;color:#667085}
+.nv.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.nv.on svg{color:#1F4FD8}
+.tab{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;font:500 14px Inter,sans-serif;color:#475467}
+.tab:hover{background:#fff;color:#101828}
+.tab.on{background:#fff;color:#101828;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.cnt{font:600 12px Inter,sans-serif;color:#667085;background:#F2F4F7;border-radius:999px;padding:2px 8px}
+@media (max-width:760px){.sb{max-width:none}}
+
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+select.inp{appearance:auto}
+textarea.inp{height:auto;padding:10px 12px;resize:none;line-height:1.45}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid #D0D5DD;background:#fff;color:#344054;font:500 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.chip:hover{background:#F9FAFB}
+.chip.on{background:#EEF3FF;border-color:#B2CCFF;color:#1F4FD8;font-weight:600}
+.back{display:inline-flex;align-items:center;gap:6px;font:500 14px Inter,sans-serif;color:#475467}
+.back:hover{color:#101828}
+.back svg{width:16px;height:16px}
+.sec-t{margin:0 0 16px;font:600 16px/1.3 Inter,sans-serif;color:#101828}
+.kv dt{font:500 12px Inter,sans-serif;color:#667085;margin:0 0 4px}
+.kv dd{margin:0 0 16px;font:500 14px/1.4 Inter,sans-serif;color:#101828}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}}
+.tfoot td{background:#F9FAFB;font-weight:700;color:#101828;border-top:1px solid #E4E7EC}
+.toggle{display:inline-flex;align-items:center;gap:10px;font:500 14px Inter,sans-serif;color:#344054}
+.toggle input{width:18px;height:18px;accent-color:#1F4FD8}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap">
+  <nav class="sb" aria-label="Menú principal">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 12px 8px"><span style="width:30px;height:30px;border-radius:8px;background:#0F1729;color:#fff;font:700 14px/30px Inter,sans-serif;text-align:center">A</span><span style="font:700 16px Inter,sans-serif;letter-spacing:.04em">AKUN</span></div>
+    <div><p class="sb-h">Operación</p>
+      <a class="nv" href="Inicio.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Inicio</a>
+      <a class="nv" href="Solicitudes-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>Solicitudes<span class="badge b-blue" style="margin-left:auto;height:20px">3</span></a>
+      <a class="nv" href="Presupuestos-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Presupuestos</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg>Cotizador</a>
+      <a class="nv" href="Agenda-Calendario.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</a>
+    </div>
+    <div><p class="sb-h">Ventas y cobros</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>Comercial</a>
+      <a class="nv on" href="Facturas-Lista.dc.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Facturación</a>
+      <a class="nv" href="GastosDiarios-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 14h2M3 10h18"/></svg>Gastos diarios</a>
+    </div>
+    <div><p class="sb-h">Fábrica</p>
+      <a class="nv" href="Pedidos-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/></svg>Pedidos de fábrica</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Catálogo</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17 17 3l4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg>Calculadora</a>
+    </div>
+    <div><p class="sb-h">Análisis</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+    </div>
+    <div><p class="sb-h">Sistema</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg>Seguridad</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Configuración</a>
+    </div>
+  </nav>
+  <div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column">
+    <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 32px;background:#fff;border-bottom:1px solid #E4E7EC">
+      <div style="position:relative;flex:1 1 260px;max-width:440px"><input class="inp" aria-label="Buscar en AkunCalcu" placeholder="Buscar cliente, presupuesto o venta" style="padding-left:38px;height:38px;background:#F9FAFB"><svg viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position:absolute;left:12px;top:11px;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <span style="flex:1"></span>
+      <span class="badge b-gray" style="height:28px;padding:0 10px">Dólar BNA $ 1.415</span>
+      <button class="btn btn-g ib" type="button" aria-label="Notificaciones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:20px;height:20px"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button type="button" aria-label="Menú de usuario: Lucía" style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px 0 4px;border:1px solid #E4E7EC;border-radius:999px;background:#fff;cursor:pointer;font:500 14px Inter,sans-serif;color:#101828"><span style="width:32px;height:32px;border-radius:50%;background:#EEF3FF;color:#1F4FD8;font:600 13px/32px Inter,sans-serif;text-align:center">L</span>Lucía</button>
+    </header>
+    <main style="padding:32px;display:flex;flex-direction:column;gap:20px;max-width:1280px;width:100%;box-sizing:border-box">
+<a class="back" href="Facturas-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Facturación</a>
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px"><div><h1 style="margin:0;font:600 28px/1.2 Inter,sans-serif;letter-spacing:-.02em">Nueva factura</h1><p class="muted" style="margin:6px 0 0;font-size:14px">Se emite en ARCA y devuelve el CAE al instante.</p></div></div>
+<form action="#" style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+  <div style="flex:999 1 620px;min-width:0;display:flex;flex-direction:column;gap:20px">
+    <section class="card" style="padding:24px"><h2 class="sec-t">Comprobante</h2><div class="g4"><div><label class="lbl" for="fa-pv">Punto de venta</label><select class="inp" id="fa-pv"><option selected>0001 · Principal</option><option>0002 · Sucursal Centro</option></select></div><div><label class="lbl" for="fa-tp">Tipo</label><select class="inp" id="fa-tp"><option selected>Factura A</option><option>Factura B</option><option>Factura C</option></select></div><div><label class="lbl" for="fa-co">Concepto</label><select class="inp" id="fa-co"><option selected>Productos</option><option>Servicios</option><option>Productos y servicios</option></select></div><div><label class="lbl" for="fa-fe">Fecha de emisión</label><input class="inp" id="fa-fe" type="text" value="27/10/2026"></div></div></section>
+    <section class="card" style="padding:24px"><h2 class="sec-t">Cliente</h2><div class="g2"><div style="grid-column:span 2"><label class="lbl" for="fa-cl">Cliente</label><input class="inp" id="fa-cl" type="text" value="C-00087 · Constructora del Litoral S.R.L."></div><div><label class="lbl" for="fa-cu">CUIT</label><input class="inp" id="fa-cu" type="text" value="30-71234567-8"></div><div><label class="lbl" for="fa-iv">Condición frente al IVA</label><select class="inp" id="fa-iv"><option selected>Responsable Inscripto</option><option>Monotributo</option><option>Consumidor final</option></select></div><div style="grid-column:span 2"><label class="lbl" for="fa-do">Domicilio</label><input class="inp" id="fa-do" type="text" value="Av. Costanera 1450, Paraná, Entre Ríos"></div></div></section>
+    <section class="card" style="padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px"><h2 class="sec-t" style="margin:0">Ítems</h2><button class="btn btn-s btn-sm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar ítem</button></div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:760px;font-size:14px">
+        <thead><tr><th class="muted" style="font:600 12px Inter,sans-serif;padding:0 8px 6px;text-align:left">Descripción</th><th class="muted" style="font:600 12px Inter,sans-serif;padding:0 8px 6px;text-align:left">Cant.</th><th class="muted" style="font:600 12px Inter,sans-serif;padding:0 8px 6px;text-align:left">Precio unitario</th><th class="muted" style="font:600 12px Inter,sans-serif;padding:0 8px 6px;text-align:left">IVA</th><th class="muted" style="font:600 12px Inter,sans-serif;padding:0 8px 6px;text-align:right">Subtotal</th><th><span style="position:absolute;left:-9999px">Quitar</span></th></tr></thead>
+        <tbody><tr>
+<td style="padding:6px 8px 6px 0;min-width:280px"><input class="inp" aria-label="Descripción fila 1" value="Aberturas PVC según presupuesto P-0412" style="height:36px"></td>
+<td style="padding:6px 8px"><input class="inp" type="number" aria-label="Cantidad fila 1" value="1" style="height:36px;width:80px"></td>
+<td style="padding:6px 8px"><input class="inp" aria-label="Precio unitario fila 1" value="$ 2.900.000" style="height:36px;width:140px;text-align:right"></td>
+<td style="padding:6px 8px"><select class="inp" aria-label="IVA fila 1" style="height:36px;width:90px"><option selected>21%</option><option>10,5%</option><option>Exento</option></select></td>
+<td style="padding:6px 8px;text-align:right;font-weight:600">$ 2.900.000</td>
+<td style="padding:6px 0 6px 8px"><button class="btn btn-g btn-sm ib" type="button" aria-label="Quitar fila 1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td>
+</tr><tr>
+<td style="padding:6px 8px 6px 0;min-width:280px"><input class="inp" aria-label="Descripción fila 2" value="Flete a obra" style="height:36px"></td>
+<td style="padding:6px 8px"><input class="inp" type="number" aria-label="Cantidad fila 2" value="1" style="height:36px;width:80px"></td>
+<td style="padding:6px 8px"><input class="inp" aria-label="Precio unitario fila 2" value="$ 365.000" style="height:36px;width:140px;text-align:right"></td>
+<td style="padding:6px 8px"><select class="inp" aria-label="IVA fila 2" style="height:36px;width:90px"><option selected>21%</option><option>10,5%</option><option>Exento</option></select></td>
+<td style="padding:6px 8px;text-align:right;font-weight:600">$ 365.000</td>
+<td style="padding:6px 0 6px 8px"><button class="btn btn-g btn-sm ib" type="button" aria-label="Quitar fila 2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td>
+</tr></tbody>
+      </table>
+      </div>
+    </section>
+  </div>
+  <aside class="card" style="flex:1 1 300px;max-width:360px;padding:24px;box-sizing:border-box;position:sticky;top:24px">
+    <h2 class="sec-t">Resumen</h2>
+    <dl style="margin:0;display:grid;grid-template-columns:1fr auto;gap:10px 12px;font-size:14px;color:#344054">
+      <dt>Neto gravado</dt><dd style="margin:0;text-align:right">$ 3.265.000</dd>
+      <dt>IVA 21%</dt><dd style="margin:0;text-align:right">$ 685.650</dd>
+      <dt style="padding-top:12px;border-top:1px solid #E4E7EC;font-weight:700;color:#101828">Total</dt><dd style="margin:0;padding-top:12px;border-top:1px solid #E4E7EC;text-align:right;font:700 20px Inter,sans-serif;color:#101828">$ 3.950.650</dd>
+    </dl>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px">
+      <button class="btn btn-p" type="submit" style="justify-content:center">Emitir factura</button>
+      <a class="btn btn-g" href="Facturas-Lista.dc.html" style="justify-content:center">Cancelar</a>
+    </div>
+  </aside>
+</form></main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -51,6 +51,8 @@
 | [FEAT-043](./FEAT-043-id-cliente-y-provincia.md) | ID de cliente C-00123 en Clientes, Ventas, Presupuestos, selects, Excel y PDF + Provincia del cliente | Implementado | 2026-10-20 | Sprint 1 RF Akun |
 | [FEAT-044](./FEAT-044-alta-rapida-cliente-compartida.md) | Alta rápida de cliente desde Presupuestos con modal compartido con Ventas | Implementado | 2026-10-20 | Sprint 1 RF Akun |
 | [FEAT-045](./FEAT-045-estructuras.md) | Estructuras: varias aberturas sobre una pared cotizadas como un conjunto (Etapa 1) | Implementado | 2026-10-22 | Fuera de plan |
+| [FEAT-046](./FEAT-046-rediseno-taller.md) | Rediseño visual «Taller» de todo el sistema (REQ-064) | Implementado (en `development`) | 2026-10-29 | Fuera de plan |
+| [FEAT-047](./FEAT-047-tiempo-real.md) | Actualización en vivo por polling: listados, avisos, dólar, KPIs y edición simultánea (REQ-065) | Implementado (en `development`) | 2026-10-29 | Fuera de plan |
 
 ---
 
@@ -69,7 +71,7 @@
 | `presupuestos` (dibujo) | FEAT-037, FEAT-038, FEAT-045 | 2026-10-22 |
 | `presupuestos` (PVC) | FEAT-015, FEAT-039, FEAT-040 | 2026-09-04 |
 | `solicitudes` | FEAT-025 | 2026-07-18 |
-| `core` | FEAT-009, FEAT-011 | 2026-05-17 |
+| `core` | FEAT-009, FEAT-011, FEAT-046, FEAT-047 | 2026-10-29 |
 | `facturacion` | FEAT-011 | 2026-05-17 |
 | `security` | FEAT-011, FEAT-012, FEAT-029, FEAT-035 | 2026-08-01 |
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |

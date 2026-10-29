@@ -14,6 +14,22 @@
 
 ---
 
+## 2026-10-29 — Rediseño «Taller» y actualización en vivo (REQ-064/065 → FEAT-046/047)
+
+**Sprint**: Fuera de plan
+**Deploy**: todavía no; está en la rama `development` (no se mergea a `main` sin OK). Migraciones de `core` (`Aviso`, `EdicionActiva`)
+
+Todas las pantallas pasan al sistema visual Taller (sidebar agrupada, topbar con Dólar BNA y campanita,
+`taller.css`, includes `core/ui/*`, kebab de fila, badges por estado, toasts). Solo visual: los PDF y las
+funciones no cambian. Además, polling cada 20 s (`/core/api/live/`): listados que avisan o se refrescan,
+avisos (presupuesto confirmado, pedido por voz, backup fallido, solicitud asignada), Dólar y KPIs, y aviso de
+edición simultánea. El polling no renueva la sesión ni cuenta como actividad. ADR-023 (paleta) y ADR-024
+(polling en vez de WebSockets). Suite igual a la línea base (25 failures + 9 errors). Pendiente: confirmar
+los desvíos de solo-visual (usuario sin pestañas, login, pestañas nuevas), recorrido con Playwright y las
+propuestas de los mockups, que quedaron en el backlog.
+
+---
+
 ## 2026-10-22 — Estructuras: aberturas sobre una pared cotizadas como un conjunto, Etapa 1 (REQ-062 → FEAT-045)
 
 **Sprint**: Fuera de plan (Sprint 1 RF Akun en curso)

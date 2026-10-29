@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Editar cliente</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn svg{width:16px;height:16px}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-g{background:transparent;color:#475467}.btn-g:hover{background:#F2F4F7;color:#101828}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.ib{width:36px;padding:0;justify-content:center}
+.btn-sm.ib{width:32px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-gray{background:#F2F4F7;color:#344054}.b-blue{background:#EEF3FF;color:#1F4FD8}.b-green{background:#ECFDF3;color:#067647}.b-amber{background:#FFFAEB;color:#B54708}.b-red{background:#FEF3F2;color:#B42318}.b-violet{background:#F4F3FF;color:#5925DC}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:12px 16px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid #F2F4F7;color:#344054;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:#667085}
+.strong{color:#101828;font-weight:600}
+.sb{flex:1 1 248px;max-width:248px;background:#fff;border-right:1px solid #E4E7EC;box-sizing:border-box;padding:20px 12px;display:flex;flex-direction:column;gap:18px}
+.sb-h{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:0 0 6px}
+.nv{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.nv:hover{background:#F2F4F7;color:#101828}
+.nv svg{width:18px;height:18px;flex:none;color:#667085}
+.nv.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.nv.on svg{color:#1F4FD8}
+.tab{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;font:500 14px Inter,sans-serif;color:#475467}
+.tab:hover{background:#fff;color:#101828}
+.tab.on{background:#fff;color:#101828;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.cnt{font:600 12px Inter,sans-serif;color:#667085;background:#F2F4F7;border-radius:999px;padding:2px 8px}
+@media (max-width:760px){.sb{max-width:none}}
+
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+.sec{margin:0 0 12px;font:600 12px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085}
+.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid #D0D5DD;font:500 13px Inter,sans-serif;color:#344054;background:#fff;cursor:pointer}
+.chip.on{border-color:#1F4FD8;background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.dl{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #F2F4F7;font:400 13px/1.4 Inter,sans-serif;color:#344054}
+.dl span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.seg{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;cursor:pointer;background:#fff;text-align:left;font:inherit}
+.seg.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8;background:#F5F8FF}
+.kpi-l{margin:0;font:600 12px/1 Inter,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#667085}
+.kpi-v{margin:8px 0 0;font:600 26px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:#101828}
+.kpi-s{margin:6px 0 0;font:400 13px/1.3 Inter,sans-serif;color:#475467}
+.h2{margin:0;font:600 16px/1.3 Inter,sans-serif;color:#101828}
+.chk{display:flex;gap:8px;align-items:center;font:400 14px Inter,sans-serif;color:#344054}
+.chk input{accent-color:#1F4FD8;width:16px;height:16px;margin:0}
+.bar{height:8px;border-radius:999px;background:#EAECF0;overflow:hidden}
+.bar span{display:block;height:100%;background:#1F4FD8;border-radius:999px}
+.tbl tfoot td{background:#F9FAFB;font-weight:600;color:#101828;border-top:1px solid #E4E7EC}
+select.inp{appearance:auto}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center">
+  <form role="dialog" aria-labelledby="cf-t0" style="width:720px;max-height:860px;background:#fff;border-radius:16px;box-shadow:0 24px 48px rgba(16,24,40,.24);overflow:hidden;display:flex;flex-direction:column" action="#">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:24px 24px 0">
+      <div><h2 id="cf-t0" style="margin:0;font:600 20px/1.3 Inter,sans-serif">Editar cliente</h2><p style="margin:4px 0 0;font:400 14px Inter,sans-serif;color:#475467">ID de cliente C-00123 · se asigna solo al crear.</p></div>
+      <button class="btn btn-g ib" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:20px;overflow:auto">
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px"><div><label class="lbl" for="cf-n">Nombre <span style="color:#B42318">*</span></label><input class="inp" id="cf-n" value="Martín"></div><div><label class="lbl" for="cf-a">Apellido <span style="color:#B42318">*</span></label><input class="inp" id="cf-a" value="Gómez"></div></div><div><label class="lbl" for="cf-r">Razón social <span style="font-weight:400;color:#667085">(opcional)</span></label><input class="inp" id="cf-r" value=""></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px"><div><label class="lbl" for="cf-c">CUIT</label><input class="inp" id="cf-c" value="20-28441172-5"></div><div><label class="lbl" for="cf-d">DNI</label><input class="inp" id="cf-d" value="28.441.172"></div><div><label class="lbl" for="cf-i">Condición IVA</label><select class="inp" id="cf-i"><option>Responsable Inscripto</option></select></div></div><div><label class="lbl" for="cf-di">Dirección <span style="color:#B42318">*</span></label><input class="inp" id="cf-di" value="Av. Ramírez 1840"></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px"><div><label class="lbl" for="cf-l">Localidad <span style="color:#B42318">*</span></label><input class="inp" id="cf-l" value="Paraná"></div><div><label class="lbl" for="cf-p">Provincia</label><select class="inp" id="cf-p"><option>Entre Ríos</option></select></div><div><label class="lbl" for="cf-t">Teléfono</label><input class="inp" id="cf-t" value="343 415-2287"></div></div><div><label class="lbl" for="cf-e">Email</label><input class="inp" id="cf-e" value="martin.gomez@correo.com.ar"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #E4E7EC;background:#F9FAFB">
+<button class="btn btn-s" type="button">Cancelar</button><button class="btn btn-p" type="submit">Guardar cliente</button>
+    </div>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

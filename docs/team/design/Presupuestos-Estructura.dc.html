@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Estructura sobre una pared</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box;text-decoration:none}
+.btn-p{background:#1F4FD8;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}
+.btn-g{background:transparent;color:#475467}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.lbl{display:block;font:500 12px/1.3 Inter,sans-serif;color:#344054;margin-bottom:4px}
+.inp{box-sizing:border-box;width:100%;height:36px;border:1px solid #D0D5DD;border-radius:8px;padding:0 10px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.mod{border:1px solid #E4E7EC;border-radius:12px;padding:14px;background:#fff}
+.mod.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center">
+  <div role="dialog" aria-labelledby="es-t" style="width:1240px;height:800px;background:#fff;border-radius:16px;box-shadow:0 24px 48px rgba(16,24,40,.24);display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;padding:20px 24px;border-bottom:1px solid #E4E7EC">
+      <div style="flex:1 1 200px"><h2 id="es-t" style="margin:0;font:600 20px/1.3 Inter,sans-serif">Estructura</h2><p style="margin:4px 0 0;font:400 13px Inter,sans-serif;color:#475467">Varias aberturas sobre una pared, cotizadas como un conjunto.</p></div>
+      <div style="width:220px"><label class="lbl" for="es-n">Nombre</label><input class="inp" id="es-n" value="Pared cocina"></div>
+      <div style="width:120px"><label class="lbl" for="es-w">Pared ancho (mm)</label><input class="inp" id="es-w" value="3200"></div>
+      <div style="width:120px"><label class="lbl" for="es-h">Pared alto (mm)</label><input class="inp" id="es-h" value="2400"></div>
+      <div style="width:90px"><label class="lbl" for="es-m">Margen (%)</label><input class="inp" id="es-m" value="35"></div>
+    </div>
+
+    <div style="flex:1;display:flex;min-height:0">
+      <div style="flex:1;background:#F9FAFB;display:flex;align-items:center;justify-content:center;position:relative" aria-label="Vista de la pared" role="img">
+        <div style="position:relative;width:640px;height:480px;background:repeating-linear-gradient(45deg,#EAECF0 0 2px,#F2F4F7 2px 14px);border:2px solid #98A2B3">
+          <div style="position:absolute;left:60px;top:120px;width:200px;height:260px;border:6px solid #475467;background:#D1E0FF;box-sizing:border-box"><span style="position:absolute;left:8px;top:8px;font:600 11px Inter,sans-serif;color:#344054;background:#fff;border-radius:4px;padding:2px 6px">1 · Paño fijo</span></div>
+          <div style="position:absolute;left:340px;top:90px;width:240px;height:200px;border:6px solid #1F4FD8;background:#D1E0FF;box-sizing:border-box;box-shadow:0 0 0 4px rgba(31,79,216,.18)"><span style="position:absolute;left:8px;top:8px;font:600 11px Inter,sans-serif;color:#fff;background:#1F4FD8;border-radius:4px;padding:2px 6px">2 · Oscilobatiente</span>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><path d="M0 0 L100 50 L0 100 M0 100 L50 0 L100 100" fill="none" stroke="#1F4FD8" stroke-width=".6" stroke-dasharray="3 2"/></svg>
+          </div>
+          <span style="position:absolute;left:0;right:0;bottom:-28px;text-align:center;font:500 12px Inter,sans-serif;color:#475467">3200 mm</span>
+          <span style="position:absolute;top:0;bottom:0;right:-64px;display:flex;align-items:center;font:500 12px Inter,sans-serif;color:#475467">2400 mm</span>
+        </div>
+        <p style="position:absolute;left:20px;bottom:16px;margin:0;font:400 12px Inter,sans-serif;color:#667085">Arrastrá un módulo para moverlo; las medidas se ajustan solas.</p>
+      </div>
+
+      <aside style="width:380px;flex:none;border-left:1px solid #E4E7EC;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;overflow:auto" aria-label="Módulos">
+        <div style="display:flex;justify-content:space-between;align-items:center"><p style="margin:0;font:600 15px Inter,sans-serif">Módulos · 2</p><button class="btn btn-s btn-sm" type="button">+ Módulo</button></div>
+        <div class="mod">
+          <p style="margin:0 0 10px;font:600 14px Inter,sans-serif">1 · Paño fijo</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div><label class="lbl" for="m1a">Ancho (mm)</label><input class="inp" id="m1a" value="1000"></div>
+            <div><label class="lbl" for="m1b">Alto (mm)</label><input class="inp" id="m1b" value="1300"></div>
+            <div><label class="lbl" for="m1c">Desde la izq.</label><input class="inp" id="m1c" value="300"></div>
+            <div><label class="lbl" for="m1d">Desde el piso</label><input class="inp" id="m1d" value="500"></div>
+          </div>
+        </div>
+        <div class="mod on">
+          <p style="margin:0 0 10px;font:600 14px Inter,sans-serif;color:#1F4FD8">2 · Ventana oscilobatiente</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div><label class="lbl" for="m2a">Ancho (mm)</label><input class="inp" id="m2a" value="1200"></div>
+            <div><label class="lbl" for="m2b">Alto (mm)</label><input class="inp" id="m2b" value="1000"></div>
+            <div><label class="lbl" for="m2c">Desde la izq.</label><input class="inp" id="m2c" value="1700"></div>
+            <div><label class="lbl" for="m2d">Desde el piso</label><input class="inp" id="m2d" value="950"></div>
+          </div>
+          <p style="margin:10px 0 0;font:400 12px Inter,sans-serif;color:#475467">Orientación: abre a la derecha · DVH 4/12/4 · Blanco</p>
+        </div>
+        <div style="margin-top:auto;padding:14px;border-radius:12px;background:#F9FAFB">
+          <div style="display:flex;justify-content:space-between;font:400 13px Inter,sans-serif;color:#344054"><span>Módulo 1</span><span>$ 402.600</span></div>
+          <div style="display:flex;justify-content:space-between;font:400 13px Inter,sans-serif;color:#344054;margin-top:6px"><span>Módulo 2</span><span>$ 643.400</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:10px;border-top:1px solid #E4E7EC"><span style="font:600 14px Inter,sans-serif">Total estructura</span><span style="font:600 20px Inter,sans-serif">$ 1.046.000</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid #E4E7EC">
+      <p style="margin:0;font:400 13px Inter,sans-serif;color:#475467">Al confirmar se genera una orden de fabricación por módulo.</p>
+      <div style="display:flex;gap:10px"><button class="btn btn-s" type="button">Cancelar</button><a class="btn btn-p" href="Presupuestos-Detalle.dc.html">Agregar estructura</a></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

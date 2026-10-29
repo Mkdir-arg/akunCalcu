@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Recibo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+.t{width:100%;border-collapse:collapse}
+.k{font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;margin:0 0 4px}
+.lb{font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#475467;padding:9px 0;white-space:nowrap}
+.vl{font:500 11px/1.3 Inter,sans-serif;color:#101828;padding:9px 6px 9px 0;border-bottom:1px solid #D0D5DD}
+.pt th{text-align:left;font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#475467;padding:8px 6px;border-bottom:1.5px solid #101828}
+.pt td{font:400 10.5px/1.4 Inter,sans-serif;color:#344054;padding:9px 6px;border-bottom:1px solid #E4E7EC}
+.r{text-align:right;white-space:nowrap}
+</style>
+</helmet>
+<div style="width:794px;height:1123px;box-sizing:border-box;padding:48px 56px;background:#fff">
+  <table class="t" style="margin-bottom:14px"><tbody><tr>
+    <td style="padding:0"><span style="display:inline-block;border:1px solid #101828;border-radius:4px;padding:4px 10px;font:600 9px Inter,sans-serif;letter-spacing:.12em;color:#101828">ORIGINAL</span></td>
+    <td style="padding:0;text-align:right;font:400 9px Inter,sans-serif;color:#667085">Documento no válido como factura</td>
+  </tr></tbody></table>
+
+  <table class="t" style="margin-bottom:22px"><tbody><tr>
+    <td style="width:42%;vertical-align:top;padding:0"><p style="margin:0;font:700 22px Inter,sans-serif;letter-spacing:.06em;color:#0F1729">AKUN ABERTURAS</p><p style="margin:6px 0 0;font:400 10px/1.6 Inter,sans-serif;color:#475467">Elpidio Gonzalez 5326<br>CP 1407 · Ciudad de Buenos Aires, Argentina<br>I.V.A.: Responsable Inscripto</p></td>
+    <td style="width:12%;vertical-align:top;text-align:center;padding:0"><span style="display:inline-block;width:46px;height:46px;border:1.5px solid #101828;border-radius:6px;font:700 26px/46px Inter,sans-serif;text-align:center">X</span></td>
+    <td style="width:46%;vertical-align:top;text-align:right;padding:0"><p style="margin:0;font:600 9px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#667085">Recibo N°</p><p style="margin:2px 0 0;font:700 22px Inter,sans-serif">0001-00000231</p><p style="margin:6px 0 0;font:500 11px Inter,sans-serif;color:#101828">Fecha: 29/10/2026</p><p style="margin:6px 0 0;font:400 9.5px/1.6 Inter,sans-serif;color:#475467">CUIT 23-24203136-9<br>Ing. Brutos 1588778-02<br>Inicio de actividades: enero de 2020</p></td>
+  </tr></tbody></table>
+
+  <table class="t" style="border-top:1.5px solid #101828;margin-bottom:6px"><tbody>
+    <tr><td class="lb" style="width:15%">Señor(es)</td><td class="vl" style="width:40%">Gómez, Martín</td><td class="lb" style="width:10%">I.V.A.</td><td class="vl" style="width:35%">Responsable Inscripto</td></tr>
+    <tr><td class="lb">Domicilio</td><td class="vl">Av. Ramírez 1840</td><td class="lb">CUIT</td><td class="vl">20-28441172-5</td></tr>
+    <tr><td class="lb">Localidad</td><td class="vl">Paraná, Entre Ríos</td><td class="lb">CP</td><td class="vl">3100</td></tr>
+  </tbody></table>
+
+  <table class="t" style="margin-top:14px;margin-bottom:24px;background:#F9FAFB"><tbody>
+    <tr><td style="padding:12px 14px;width:34%;font:600 9px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#475467">Recibimos la suma de pesos</td><td style="padding:12px 14px;font:600 12px/1.4 Inter,sans-serif;color:#101828">ochocientos cuarenta y seis mil doscientos con 00/100</td></tr>
+    <tr><td style="padding:0 14px 12px;font:600 9px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#475467">Pago en concepto de</td><td style="padding:0 14px 12px;font:500 11px/1.4 Inter,sans-serif;color:#101828">Saldo de la venta #1087 · presupuesto P-0411</td></tr>
+  </tbody></table>
+
+  <p class="k" style="margin-bottom:6px">Detalle de pagos</p>
+  <table class="t pt" style="margin-bottom:24px">
+    <thead><tr><th>Fecha</th><th>Banco / medio</th><th>N.º</th><th class="r">Importe</th></tr></thead>
+    <tbody>
+      <tr><td>26/10/2026</td><td>Efectivo · seña inicial</td><td>—</td><td class="r">423.100,00</td></tr>
+      <tr><td>28/10/2026</td><td>Transferencia</td><td>0003-00045140</td><td class="r">200.000,00</td></tr>
+      <tr><td>29/10/2026</td><td>Transferencia</td><td>0003-00045187</td><td class="r"><strong style="color:#101828">223.100,00</strong></td></tr>
+    </tbody>
+  </table>
+
+  <table class="t" style="margin-top:8px"><tbody><tr>
+    <td style="width:48%;vertical-align:bottom;padding:0 24px 0 0">
+      <table class="t"><tbody>
+        <tr><td style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:600 9px Inter,sans-serif;letter-spacing:.06em;color:#475467">RET. GANANCIAS</td><td class="r" style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:400 10.5px Inter,sans-serif">—</td></tr>
+        <tr><td style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:600 9px Inter,sans-serif;letter-spacing:.06em;color:#475467">RET. ING. BRUTOS</td><td class="r" style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:400 10.5px Inter,sans-serif">10.000,00</td></tr>
+        <tr><td style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:600 9px Inter,sans-serif;letter-spacing:.06em;color:#475467">RET. IVA</td><td class="r" style="padding:8px 0;border-bottom:1px solid #E4E7EC;font:400 10.5px Inter,sans-serif">—</td></tr>
+        <tr><td style="padding:10px 0;border-top:1.5px solid #101828;font:700 12px Inter,sans-serif;color:#101828">TOTAL</td><td class="r" style="padding:10px 0;border-top:1.5px solid #101828;font:700 13px Inter,sans-serif;color:#101828">$ 846.200,00</td></tr>
+      </tbody></table>
+    </td>
+    <td style="width:52%;vertical-align:bottom;padding:0">
+      <table class="t"><tbody>
+        <tr><td style="height:70px;border-bottom:1px solid #101828"></td></tr>
+        <tr><td style="padding-top:5px;font:600 9px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085">Firma</td></tr>
+        <tr><td style="height:34px;border-bottom:1px solid #101828"></td></tr>
+        <tr><td style="padding-top:5px;font:600 9px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085">Aclaración</td></tr>
+      </tbody></table>
+    </td>
+  </tr></tbody></table>
+
+  <p style="margin:48px 0 0;padding-top:12px;border-top:1px solid #E4E7EC;font:400 9px Inter,sans-serif;color:#667085">Recibo 0001-00000231 · Venta #1087 · página 1 de 1</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

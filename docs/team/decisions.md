@@ -190,6 +190,38 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-024: Tiempo real por polling de 20 s en lugar de WebSockets o SSE
+**Fecha**: 2026-10-29
+**Estado**: Activo
+
+**Contexto**: Se quiere que listados, avisos, Dólar BNA, KPIs y la edición simultánea se actualicen sin recargar (REQ-065). Producción corre gunicorn **sync con 3 workers**, sin ASGI y sin Redis. WebSockets (Channels) o SSE exigen un servidor asíncrono y un broker, y un stream abierto por pestaña ocuparía un worker sync entero.
+
+**Decisión**:
+1. **Polling cada 20 s** a un único endpoint liviano `GET /core/api/live/` (`static/js/live.js`), pausado con la pestaña oculta y con backoff ante errores.
+2. **Una consulta agregada por fuente** (`Max(fecha)` + `Count`); las fuentes se registran por app en `<app>/live.py` con `core.live.register`, filtradas por usuario y permiso. Si la fuente cambió, se avisa («Hay cambios · Actualizar») o se refresca el fragmento (`?partial=1`).
+3. **Avisos y presencia en la base** (`core.Aviso`, `core.EdicionActiva`, caducidad de 60 s), no en memoria: el caché local no se comparte entre los 3 workers.
+4. **El polling no cuenta como actividad:** no renueva `last_activity`, no se audita y no renueva la sesión (`PassiveSessionMiddleware` para `/core/api/`, porque `SESSION_SAVE_EVERY_REQUEST=True`).
+
+**Consecuencias**: Sin infraestructura nueva. Latencia de hasta 20 s y carga constante (un request chico por pestaña cada 20 s). Los modelos sin fecha de modificación (Cliente, tablas legacy de `pricing`) solo detectan altas y bajas. Las tablas grandes pueden necesitar índices en `updated_at`. Si algún día hace falta inmediatez, el contrato de `live.py` permite cambiar el transporte sin tocar las apps.
+
+---
+
+## ADR-023: Paleta «Taller» reemplaza el degradé azul-violeta; Tailwind CDN con tokens inline y `taller.css`
+**Fecha**: 2026-10-29
+**Estado**: Activo (reemplaza la paleta de botones y tablas de `design-system.md` anterior)
+
+**Contexto**: Cada módulo tenía su propio estilo (degradé azul-violeta en primarios, cabeceras de tabla oscuras, botones de editar/eliminar de colores variados). Se aprobaron 67 mockups con el sistema «Taller» (REQ-064).
+
+**Decisión**:
+1. Paleta neutra (tinta `#101828`, línea `#E4E7EC`, fondo `#F4F5F7`) con **un solo color de acción**, azul `#1F4FD8`; verde, ámbar, rojo y violeta **solo como estados** y siempre con texto. Se elimina el degradé azul-violeta y las cabeceras de tabla oscuras.
+2. **Se mantiene Tailwind por CDN** (sin build, ver ADR-001): los tokens van inline en el `tailwind.config` de `base.html` (`bg-ground`, `text-ink`, `border-line`, `bg-accent`, etc.) y los componentes repetidos en `static/css/taller.css` con variables CSS `--t-*` (`.btn`, `.card`, `.badge`, `.tbl`, `.kebab`, `.toast`…), más includes en `core/templates/core/ui/`.
+3. Tipografía Inter (Google Fonts). Se conservan SweetAlert2, Select2 y FontAwesome.
+4. **Los PDF quedan fuera del sistema** (HTML, CSS y vistas intactos).
+
+**Consecuencias**: Un solo lenguaje visual y menos clases ad hoc por template. `design-system.md` se reescribe. Hay que seguir cargando Tailwind desde el CDN. Los templates nuevos deben usar los includes y `taller.css`, no colores inventados.
+
+---
+
 ## ADR-022: Estructuras como ítem con JSON (sin modelo nuevo) y geometría duplicada Python/JS con fixtures compartidos
 
 **Fecha**: 2026-10-22 · **Estado**: Aceptada · **Feature**: FEAT-045 / REQ-062

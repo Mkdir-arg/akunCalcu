@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Editar perfil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#101828}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}
+.btn-g{background:transparent;color:#475467}
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+.seg{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;cursor:pointer;background:#fff;text-align:left;font:inherit}
+.seg.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8;background:#F5F8FF}
+
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.kpi{padding:20px}
+.kpi .k{margin:0;font:500 13px Inter,sans-serif;color:#475467}
+.kpi .v{margin:8px 0 4px;font:600 28px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:#101828}
+.kpi .s{margin:0;font:400 13px Inter,sans-serif;color:#667085}
+.sec{padding:16px 20px;border-bottom:1px solid #E4E7EC;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.sec h2,.sec h3{margin:0;font:600 16px/1.3 Inter,sans-serif;color:#101828}
+.hb{display:grid;grid-template-columns:130px minmax(0,1fr) 150px;align-items:center;gap:14px;margin:12px 0}
+.hb .tr{height:22px;background:#F2F4F7;border-radius:6px;display:flex;overflow:hidden}
+.hb .l{font:500 14px Inter,sans-serif;color:#344054}
+.hb .n{font:600 14px Inter,sans-serif;color:#101828;text-align:right}
+.lg{display:flex;flex-wrap:wrap;gap:16px;font:500 13px Inter,sans-serif;color:#475467}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.ln{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #F2F4F7;font:400 14px Inter,sans-serif;color:#344054}
+.ln b{font-weight:500;color:#101828;font-variant-numeric:tabular-nums}
+.ln.t{font-weight:600;color:#101828;border-bottom:0;border-top:1px solid #D0D5DD;margin-top:4px}
+.ln.t b{font-weight:600}
+.vn{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+.ent{display:flex;align-items:center;justify-content:space-between;gap:8px;height:38px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.ent:hover{background:#F2F4F7;color:#101828}
+.ent.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.ent .cnt{background:#fff;border:1px solid #E4E7EC}
+.ent.on .cnt{color:#1F4FD8;border-color:#C7D7FE}
+.eh{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:14px 0 6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid #D0D5DD;background:#fff;font:500 13px Inter,sans-serif;color:#344054}
+.chip.on{background:#EEF3FF;border-color:#1F4FD8;color:#1F4FD8;font-weight:600}
+.seg{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;cursor:pointer;background:#fff;text-align:left;font:inherit}
+.seg.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8;background:#F5F8FF}
+.cb{width:18px;height:18px;accent-color:#1F4FD8}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 20px;background:#EEF3FF;border-bottom:1px solid #C7D7FE;font:500 14px Inter,sans-serif;color:#163BA6}
+.sub{margin:6px 0 0;font-size:14px;color:#667085}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif}.b-gray{background:#F2F4F7;color:#344054}.b-green{background:#ECFDF3;color:#067647}.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}</style>
+</helmet>
+<div style="width:1440px;height:900px;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center">
+  <form role="dialog" aria-labelledby="pf-t" style="width:600px;background:#fff;border-radius:16px;box-shadow:0 24px 48px rgba(16,24,40,.24);overflow:hidden" action="#">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:24px 24px 0">
+      <div><h2 id="pf-t" style="margin:0;font:600 20px/1.3 Inter,sans-serif">Editar perfil</h2><p style="margin:4px 0 0;font:400 14px Inter,sans-serif;color:#475467">Código <strong style="color:#101828">R-5101</strong> · el código no se puede cambiar.</p></div>
+      <button class="btn btn-g" type="button" aria-label="Cerrar" style="width:36px;padding:0;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+        <div><label class="lbl" for="pf-l">Línea</label><select class="inp" id="pf-l"><option>REHAU Euro 60</option></select></div>
+        <div><label class="lbl" for="pf-d">Descripción</label><input class="inp" id="pf-d" value="Marco 60 mm cámara triple"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+        <div><label class="lbl" for="pf-pm">Peso por metro (kg)</label><input class="inp" id="pf-pm" value="1,184"></div>
+        <div><label class="lbl" for="pf-lt">Largo de tira (mm)</label><input class="inp" id="pf-lt" value="6000"></div>
+        <div><label class="lbl" for="pf-pk">Precio por kg</label><input class="inp" id="pf-pk" value="8.420"><p class="hint">Se actualiza también desde la edición masiva.</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+        <div><label class="lbl" for="pf-m">Moneda</label><select class="inp" id="pf-m"><option>Pesos (ARS)</option></select></div>
+        <fieldset style="border:0;margin:0;padding:0"><legend class="lbl">Tipo de perfil</legend><div style="display:flex;gap:10px"><button class="seg on" type="button" aria-pressed="true"><span style="font:600 14px Inter,sans-serif">Marco</span></button><button class="seg" type="button" aria-pressed="false"><span style="font:600 14px Inter,sans-serif">Hojas</span></button></div></fieldset>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid #E4E7EC;background:#F9FAFB">
+      <button class="btn btn-g" type="button" style="color:#B42318">Desactivar perfil</button>
+      <span style="display:flex;gap:10px"><button class="btn btn-s" type="button">Cancelar</button><button class="btn btn-p" type="submit">Guardar</button></span>
+    </div>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

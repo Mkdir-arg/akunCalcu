@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PDF del presupuesto</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+.t{width:100%;border-collapse:collapse}
+.t th{text-align:left;font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#475467;padding:8px 6px;border-bottom:1.5px solid #101828}
+.t td{font:400 10.5px/1.45 Inter,sans-serif;color:#344054;padding:10px 6px;border-bottom:1px solid #E4E7EC;vertical-align:top}
+.r{text-align:right;white-space:nowrap}
+.k{font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;margin:0 0 4px}
+</style>
+</helmet>
+<div style="width:794px;height:1123px;box-sizing:border-box;padding:56px 56px 48px;background:#fff;display:flex;flex-direction:column">
+  <table class="t" style="margin-bottom:28px"><tbody><tr>
+    <td style="border:0;padding:0;vertical-align:top"><p style="margin:0;font:700 20px Inter,sans-serif;letter-spacing:.06em;color:#0F1729">AKUN</p><p style="margin:2px 0 0;font:400 10px Inter,sans-serif;color:#475467">Akuna Aberturas · [CUIT] · [DIRECCIÓN] · [TELÉFONO]</p></td>
+    <td style="border:0;padding:0;text-align:right;vertical-align:top"><p style="margin:0;font:600 9px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#667085">Presupuesto</p><p style="margin:2px 0 0;font:700 22px Inter,sans-serif">P-0412</p><p style="margin:2px 0 0;font:400 10px Inter,sans-serif;color:#475467">27/10/2026 · válido hasta 26/11/2026</p></td>
+  </tr></tbody></table>
+
+  <table class="t" style="margin-bottom:24px;background:#F9FAFB"><tbody><tr>
+    <td style="border:0;padding:12px 14px"><p class="k">Cliente</p><p style="margin:0;font:600 12px Inter,sans-serif">Constructora del Litoral</p><p style="margin:2px 0 0;font:400 10px Inter,sans-serif;color:#475467">C-00087 · Paraná, Entre Ríos</p></td>
+    <td style="border:0;padding:12px 14px"><p class="k">Obra</p><p style="margin:0;font:600 12px Inter,sans-serif">Obra nueva · PVC</p><p style="margin:2px 0 0;font:400 10px Inter,sans-serif;color:#475467">Entrega 45 días · seña 50 %</p></td>
+    <td style="border:0;padding:12px 14px;text-align:right"><p class="k">Cotización USD</p><p style="margin:0;font:600 12px Inter,sans-serif">$ 1.415,00</p></td>
+  </tr></tbody></table>
+
+  <table class="t">
+    <thead><tr><th style="width:24px">#</th><th>Descripción</th><th class="r">Cant.</th><th class="r">Unitario</th><th class="r">Total</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong style="color:#101828">Ventana corrediza 2 hojas · Living</strong><br>1500 × 1100 mm · DVH 4/12/4 · Blanco. Incluye: mosquitero.</td><td class="r">2</td><td class="r">$ 642.250</td><td class="r"><strong style="color:#101828">$ 1.284.500</strong></td></tr>
+      <tr><td>2</td><td><strong style="color:#101828">Puerta balcón 1 hoja · Dormitorio</strong><br>800 × 2050 mm · DVH 4/12/4 · Blanco · abre interior derecha.</td><td class="r">1</td><td class="r">$ 912.300</td><td class="r"><strong style="color:#101828">$ 912.300</strong></td></tr>
+      <tr><td>3</td><td><strong style="color:#101828">Estructura · Pared cocina</strong><br>Pared 3200 × 2400 mm: paño fijo 1000 × 1300 + ventana oscilobatiente 1200 × 1000. Ver anexo Planos.</td><td class="r">1</td><td class="r">$ 1.046.000</td><td class="r"><strong style="color:#101828">$ 1.046.000</strong></td></tr>
+      <tr><td>4</td><td><strong style="color:#101828">Mosquitero enrollable</strong></td><td class="r">3</td><td class="r">$ 56.667</td><td class="r"><strong style="color:#101828">$ 170.000</strong></td></tr>
+    </tbody>
+  </table>
+
+  <table class="t" style="margin-top:16px"><tbody>
+    <tr><td style="border:0;width:55%"></td><td style="border:0;padding:4px 6px">Subtotal ítems</td><td class="r" style="border:0;padding:4px 6px">$ 3.412.800</td></tr>
+    <tr><td style="border:0"></td><td style="border:0;padding:4px 6px">Colocación</td><td class="r" style="border:0;padding:4px 6px">$ 537.700</td></tr>
+    <tr><td style="border:0"></td><td style="padding:10px 6px;border-top:1.5px solid #101828;border-bottom:0;font:700 13px Inter,sans-serif;color:#101828">Total</td><td class="r" style="padding:10px 6px;border-top:1.5px solid #101828;border-bottom:0;font:700 13px Inter,sans-serif;color:#101828">$ 3.950.500</td></tr>
+    <tr><td style="border:0"></td><td style="border:0;padding:0 6px;color:#667085">Equivalente</td><td class="r" style="border:0;padding:0 6px;color:#667085">US$ 2.791,87</td></tr>
+  </tbody></table>
+
+  <div style="margin-top:28px">
+    <p class="k">Observaciones</p>
+    <p style="margin:0;font:400 10px/1.6 Inter,sans-serif;color:#344054">Incluye flete y colocación en obra. Seña del 50 % para iniciar la fabricación. [CONDICIONES COMERCIALES QUE HOY GENERA LA CONFIGURACIÓN DE OBRA]</p>
+  </div>
+
+  <div style="margin-top:auto;padding-top:16px;border-top:1px solid #E4E7EC;font:400 9px Inter,sans-serif;color:#667085">P-0412 · página 1 de 2 · anexo Planos en la página siguiente</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

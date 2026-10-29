@@ -20,6 +20,8 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-054 | ID de cliente + Provincia (REQ-054, RF-023) | ✅ Completado | Migraciones `core/0002` (datos) + `comercial/0024` |
 | US-055 | Alta rápida de cliente desde Presupuesto (REQ-055, RF-024) | ✅ Completado | Depende de US-054 |
 | US-062 | Estructuras: varias aberturas sobre una pared, cotizadas como un conjunto (REQ-062) | ✅ Completado (Etapa 1) | Fuera de plan; FEAT-045 / ADR-022. Sin migración. Etapa 2 pendiente. Falta probar con el catálogo real |
+| US-064 | Rediseño visual «Taller» de todo el sistema (REQ-064) | ✅ Completado | Fuera de plan; FEAT-046 / ADR-023. Solo en `development`; PDF intactos |
+| US-065 | Actualización en vivo por polling (REQ-065) | ✅ Completado | Fuera de plan; FEAT-047 / ADR-024. Migraciones de `core` |
 
 ## Items completados (sprints anteriores)
 

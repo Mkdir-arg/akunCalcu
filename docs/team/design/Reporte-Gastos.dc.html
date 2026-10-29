@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte de gastos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn svg{width:16px;height:16px}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-g{background:transparent;color:#475467}.btn-g:hover{background:#F2F4F7;color:#101828}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.ib{width:36px;padding:0;justify-content:center}
+.btn-sm.ib{width:32px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-gray{background:#F2F4F7;color:#344054}.b-blue{background:#EEF3FF;color:#1F4FD8}.b-green{background:#ECFDF3;color:#067647}.b-amber{background:#FFFAEB;color:#B54708}.b-red{background:#FEF3F2;color:#B42318}.b-violet{background:#F4F3FF;color:#5925DC}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:12px 16px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid #F2F4F7;color:#344054;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:#667085}
+.strong{color:#101828;font-weight:600}
+.sb{flex:1 1 248px;max-width:248px;background:#fff;border-right:1px solid #E4E7EC;box-sizing:border-box;padding:20px 12px;display:flex;flex-direction:column;gap:18px}
+.sb-h{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:0 0 6px}
+.nv{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.nv:hover{background:#F2F4F7;color:#101828}
+.nv svg{width:18px;height:18px;flex:none;color:#667085}
+.nv.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.nv.on svg{color:#1F4FD8}
+.tab{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;font:500 14px Inter,sans-serif;color:#475467}
+.tab:hover{background:#fff;color:#101828}
+.tab.on{background:#fff;color:#101828;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.cnt{font:600 12px Inter,sans-serif;color:#667085;background:#F2F4F7;border-radius:999px;padding:2px 8px}
+@media (max-width:760px){.sb{max-width:none}}
+
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.kpi{padding:20px}
+.kpi .k{margin:0;font:500 13px Inter,sans-serif;color:#475467}
+.kpi .v{margin:8px 0 4px;font:600 28px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:#101828}
+.kpi .s{margin:0;font:400 13px Inter,sans-serif;color:#667085}
+.sec{padding:16px 20px;border-bottom:1px solid #E4E7EC;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.sec h2,.sec h3{margin:0;font:600 16px/1.3 Inter,sans-serif;color:#101828}
+.hb{display:grid;grid-template-columns:130px minmax(0,1fr) 150px;align-items:center;gap:14px;margin:12px 0}
+.hb .tr{height:22px;background:#F2F4F7;border-radius:6px;display:flex;overflow:hidden}
+.hb .l{font:500 14px Inter,sans-serif;color:#344054}
+.hb .n{font:600 14px Inter,sans-serif;color:#101828;text-align:right}
+.lg{display:flex;flex-wrap:wrap;gap:16px;font:500 13px Inter,sans-serif;color:#475467}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.ln{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #F2F4F7;font:400 14px Inter,sans-serif;color:#344054}
+.ln b{font-weight:500;color:#101828;font-variant-numeric:tabular-nums}
+.ln.t{font-weight:600;color:#101828;border-bottom:0;border-top:1px solid #D0D5DD;margin-top:4px}
+.ln.t b{font-weight:600}
+.vn{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+.ent{display:flex;align-items:center;justify-content:space-between;gap:8px;height:38px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.ent:hover{background:#F2F4F7;color:#101828}
+.ent.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.ent .cnt{background:#fff;border:1px solid #E4E7EC}
+.ent.on .cnt{color:#1F4FD8;border-color:#C7D7FE}
+.eh{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:14px 0 6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid #D0D5DD;background:#fff;font:500 13px Inter,sans-serif;color:#344054}
+.chip.on{background:#EEF3FF;border-color:#1F4FD8;color:#1F4FD8;font-weight:600}
+.seg{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;cursor:pointer;background:#fff;text-align:left;font:inherit}
+.seg.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8;background:#F5F8FF}
+.cb{width:18px;height:18px;accent-color:#1F4FD8}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 20px;background:#EEF3FF;border-bottom:1px solid #C7D7FE;font:500 14px Inter,sans-serif;color:#163BA6}
+.sub{margin:6px 0 0;font-size:14px;color:#667085}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap">
+  <nav class="sb" aria-label="Menú principal">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 12px 8px"><span style="width:30px;height:30px;border-radius:8px;background:#0F1729;color:#fff;font:700 14px/30px Inter,sans-serif;text-align:center">A</span><span style="font:700 16px Inter,sans-serif;letter-spacing:.04em">AKUN</span></div>
+    <div><p class="sb-h">Operación</p>
+      <a class="nv" href="Inicio.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Inicio</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>Solicitudes<span class="badge b-blue" style="margin-left:auto;height:20px">3</span></a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Presupuestos</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg>Cotizador</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</a>
+    </div>
+    <div><p class="sb-h">Ventas y cobros</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>Comercial</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Facturación</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 14h2M3 10h18"/></svg>Gastos diarios</a>
+    </div>
+    <div><p class="sb-h">Fábrica</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/></svg>Pedidos de fábrica</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Catálogo</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17 17 3l4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg>Calculadora</a>
+    </div>
+    <div><p class="sb-h">Análisis</p>
+      <a class="nv on" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+    </div>
+    <div><p class="sb-h">Sistema</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg>Seguridad</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Configuración</a>
+    </div>
+  </nav>
+
+  <div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column">
+    <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 32px;background:#fff;border-bottom:1px solid #E4E7EC">
+      <div style="position:relative;flex:1 1 260px;max-width:440px"><input class="inp" aria-label="Buscar en AkunCalcu" placeholder="Buscar cliente, presupuesto o venta" style="padding-left:38px;height:38px;background:#F9FAFB"><svg viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position:absolute;left:12px;top:11px;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <span style="flex:1"></span>
+      <span class="badge b-gray" style="height:28px;padding:0 10px">Dólar BNA $ 1.415</span>
+      <button class="btn btn-g ib" type="button" aria-label="Notificaciones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:20px;height:20px"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button type="button" aria-label="Menú de usuario: Lucía" style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px 0 4px;border:1px solid #E4E7EC;border-radius:999px;background:#fff;cursor:pointer;font:500 14px Inter,sans-serif;color:#101828"><span style="width:32px;height:32px;border-radius:50%;background:#EEF3FF;color:#1F4FD8;font:600 13px/32px Inter,sans-serif;text-align:center">L</span>Lucía</button>
+    </header>
+    <main style="padding:32px;display:flex;flex-direction:column;gap:20px;max-width:1280px;width:100%;box-sizing:border-box">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
+        <div>
+          <h1 style="margin:0;font:600 28px/1.2 Inter,sans-serif;letter-spacing:-.02em">Reportes</h1>
+          <p class="sub">Análisis y control de gastos por compras.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-s" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Exportar a Excel</button><button class="btn btn-s" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="7"/></svg>Imprimir</button></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:#EAECF0;border-radius:10px;align-self:flex-start" role="tablist">
+        <a class="tab" href="Reporte-General.dc.html" role="tab" aria-selected="false">General</a>
+        <a class="tab" href="Reporte-Ventas.dc.html" role="tab" aria-selected="false">Ventas</a>
+        <a class="tab" href="Reporte-Cobranzas.dc.html" role="tab" aria-selected="false">Cobranzas</a>
+        <a class="tab on" href="Reporte-Gastos.dc.html" role="tab" aria-selected="true">Gastos</a>
+        <a class="tab" href="Reporte-Proveedores.dc.html" role="tab" aria-selected="false">Proveedores</a>
+        <a class="tab" href="Plan-Cuentas.dc.html" role="tab" aria-selected="false">Contabilidad</a>
+      </div>
+      <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:16px" aria-label="Filtros">
+        <div class="fgrid"><div><label class="lbl" for="x-d">Fecha desde</label><input class="inp" id="x-d" type="text" value="01/10/2026"></div><div><label class="lbl" for="x-h">Fecha hasta</label><input class="inp" id="x-h" type="text" value="29/10/2026"></div><div><label class="lbl" for="x-c">Cuenta</label><select class="inp" id="x-c"><option>Todas</option></select></div><div><label class="lbl" for="x-tc">Tipo de cuenta</label><select class="inp" id="x-tc"><option>Todos</option></select></div><div><label class="lbl" for="x-tg">Tipo de gasto</label><select class="inp" id="x-tg"><option>Todos</option></select></div><div><label class="lbl" for="x-tf">Tipo de factura</label><select class="inp" id="x-tf"><option>Todos</option></select></div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-p" type="submit">Generar reporte</button><button class="btn btn-s" type="button">Limpiar</button></div>
+      </section>
+      <div class="kgrid"><div class="card kpi"><p class="k">Gastos blanco</p><p class="v">$ 9.870.300</p><p class="s">36 compras</p></div><div class="card kpi"><p class="k">Gastos negro</p><p class="v">$ 3.215.000</p><p class="s">16 compras</p></div><div class="card kpi"><p class="k">Total gastos</p><p class="v">$ 13.085.300</p><p class="s">52 compras</p></div></div>
+      <section class="card" style="padding:20px 24px"><div class="sec" style="padding:0 0 8px;border:0"><h2>Gastos por tipo</h2><div class="lg"><span><i style="background:#1F4FD8"></i>Blanco</span><span><i style="background:#98A2B3"></i>Negro</span></div></div>
+        <div class="hb"><span class="l">Blanco</span><div class="tr" role="img" aria-label="Blanco: $ 9.870.300 · 75%"><span style="width:75.4%;background:#1F4FD8"></span></div><span class="n">$ 9.870.300 · 75%</span></div>
+        <div class="hb"><span class="l">Negro</span><div class="tr" role="img" aria-label="Negro: $ 3.215.000 · 25%"><span style="width:24.6%;background:#98A2B3"></span></div><span class="n">$ 3.215.000 · 25%</span></div></section>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px">
+        <section class="card" style="padding:20px 24px"><h2 style="margin:0 0 4px;font:600 16px Inter,sans-serif">Total por tipo de cuenta</h2><div class="hb"><span class="l">Materia prima</span><div class="tr" role="img" aria-label="Materia prima: $ 7.420.000"><span style="width:100.0%;background:#1F4FD8"></span></div><span class="n">$ 7.420.000</span></div><div class="hb"><span class="l">Servicios</span><div class="tr" role="img" aria-label="Servicios: $ 2.310.400"><span style="width:31.1%;background:#1F4FD8"></span></div><span class="n">$ 2.310.400</span></div><div class="hb"><span class="l">Operativo</span><div class="tr" role="img" aria-label="Operativo: $ 1.980.900"><span style="width:26.7%;background:#1F4FD8"></span></div><span class="n">$ 1.980.900</span></div><div class="hb"><span class="l">Logística</span><div class="tr" role="img" aria-label="Logística: $ 1.374.000"><span style="width:18.5%;background:#1F4FD8"></span></div><span class="n">$ 1.374.000</span></div></section>
+        <section class="card" style="padding:20px 24px"><h2 style="margin:0 0 4px;font:600 16px Inter,sans-serif">Total por tipo de gasto</h2><div class="hb"><span class="l">Producción</span><div class="tr" role="img" aria-label="Producción: $ 7.980.300"><span style="width:100.0%;background:#1F4FD8"></span></div><span class="n">$ 7.980.300</span></div><div class="hb"><span class="l">Fijo</span><div class="tr" role="img" aria-label="Fijo: $ 2.840.000"><span style="width:35.6%;background:#1F4FD8"></span></div><span class="n">$ 2.840.000</span></div><div class="hb"><span class="l">Variable</span><div class="tr" role="img" aria-label="Variable: $ 1.465.000"><span style="width:18.4%;background:#1F4FD8"></span></div><span class="n">$ 1.465.000</span></div><div class="hb"><span class="l">Mantenimiento</span><div class="tr" role="img" aria-label="Mantenimiento: $ 800.000"><span style="width:10.0%;background:#1F4FD8"></span></div><span class="n">$ 800.000</span></div></section>
+      </div>
+      <section class="card" style="overflow:hidden"><div class="sec"><h2>Detalle de gastos</h2><span class="strong" style="font-size:16px">$ 13.085.300</span></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Fecha pago</th><th>N° pedido</th><th>N° factura</th><th>Cuenta</th><th>Tipo cuenta</th><th>Tipo gasto</th><th class="num">Monto</th><th>Tipo</th></tr></thead><tbody><tr><td>27/10/2026</td><td>C-2291</td><td>A 0005-00044120</td><td>Perfilería Aluar</td><td>Materia prima</td><td>Producción</td><td class="num">$ 1.842.500</td><td><span class="badge b-blue">Blanco</span></td></tr>
+<tr><td>25/10/2026</td><td>C-2288</td><td><span class="muted">-</span></td><td>Caja chica</td><td>Operativo</td><td>Mantenimiento</td><td class="num">$ 48.000</td><td><span class="badge b-gray">Negro</span></td></tr>
+<tr><td>24/10/2026</td><td>C-2285</td><td>A 0002-00007731</td><td>Vidriería Del Centro</td><td>Materia prima</td><td>Producción</td><td class="num">$ 905.300</td><td><span class="badge b-blue">Blanco</span></td></tr>
+<tr><td>22/10/2026</td><td>C-2281</td><td>B 0001-00012990</td><td>Edenor</td><td>Servicios</td><td>Fijo</td><td class="num">$ 214.700</td><td><span class="badge b-blue">Blanco</span></td></tr>
+<tr><td>20/10/2026</td><td>C-2277</td><td><span class="muted">-</span></td><td>Flete Ramírez</td><td>Logística</td><td>Variable</td><td class="num">$ 96.000</td><td><span class="badge b-gray">Negro</span></td></tr></tbody></table></div><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid #E4E7EC;font-size:13px" class="muted"><span>Mostrando 1–20 de 52</span><span style="display:flex;gap:8px"><button class="btn btn-s btn-sm" type="button">Anterior</button><button class="btn btn-s btn-sm" type="button">Siguiente</button></span></div></section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

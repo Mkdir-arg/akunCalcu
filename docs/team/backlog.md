@@ -1,6 +1,6 @@
 # Product Backlog — AkunCalcu
 
-> Actualizado: 2026-10-22
+> Actualizado: 2026-10-29
 
 ## Leyenda
 - 🟡 Pendiente
@@ -47,6 +47,28 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-052 | Como administrador del catálogo, quiero seleccionar varios productos e inactivarlos o activarlos de una vez | Pequeño ✅ |
 
 ---
+
+## Pendientes del rediseño Taller (propuestas de los mockups no implementadas)
+
+Los mockups de [`design/*.dc.html`](./design/) traen mejoras funcionales que quedaron fuera porque el
+rediseño era solo visual (REQ-064). Cada una necesita su propio `/idea` o `/feature`.
+
+| Ítem | Mockup | Estado |
+|------|--------|--------|
+| Catálogo unificado con lista lateral | `Catalogo-*.dc.html` | 🟡 |
+| KPIs nuevos en Inicio y en el dashboard comercial | `Inicio`, `Comercial-Dashboard` | 🟡 |
+| «Crear presupuesto» desde una solicitud | `Solicitudes-Lista` | 🟡 |
+| Enviar la factura por mail | `Factura-Detalle` | 🟡 |
+| Resumen en vivo en Factura nueva | `Factura-Nueva` | 🟡 |
+| Pestañas Facturación / Gastos | `GastosDiarios-Lista`, `Facturas-Lista` | 🟡 |
+| Paginación y buscador en pedidos, facturas y backups | `Pedidos-Lista`, `Facturas-Lista`, `Backups-Lista` | 🟡 |
+| Panel lateral de alta en Números y Puntos de venta | `Numeros-Lista`, `PuntosVenta-Lista` | 🟡 |
+| Configuración de backup dentro del panel | `Backups-Lista` | 🟡 |
+| Activar la app `contabilidad` (no está en `INSTALLED_APPS`) y `subtipos_cuenta` (sin URLs) | `Plan-Cuentas`, `Libro IVA`, `Balance`, `Estado-Resultados`, `Tipos-Cuenta` | 🟡 |
+| Índices en `updated_at` de las tablas que usa el tiempo real | — | 🟡 |
+| Fecha de modificación en `Cliente` (para que el tiempo real detecte ediciones) | — | 🟡 |
+| Confirmar o revertir los desvíos de solo-visual (usuario sin pestañas, login Usuario/sin Regístrate, `_nav_comercial.html` sin filtrar por permiso) | [FEAT-046](../features/FEAT-046-rediseno-taller.md) | 🟡 |
+
 
 ## Ideas sin refinar
 

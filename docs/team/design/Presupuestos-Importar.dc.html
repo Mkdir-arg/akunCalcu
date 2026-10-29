@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Importar cotización REHAU</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box;text-decoration:none}
+.btn-p{background:#1F4FD8;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}
+.btn-g{background:transparent;color:#475467}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.inp{box-sizing:border-box;width:100%;height:36px;border:1px solid #D0D5DD;border-radius:8px;padding:0 10px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:10px 12px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:12px;border-bottom:1px solid #F2F4F7;color:#344054;white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.cb{width:16px;height:16px;accent-color:#1F4FD8}
+.off td{color:#98A2B3}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center">
+  <div role="dialog" aria-labelledby="im-t" style="width:1080px;height:780px;background:#fff;border-radius:16px;box-shadow:0 24px 48px rgba(16,24,40,.24);display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #E4E7EC">
+      <div><h2 id="im-t" style="margin:0;font:600 20px/1.3 Inter,sans-serif">Importar cotización PVC</h2><p style="margin:4px 0 0;font:400 13px Inter,sans-serif;color:#475467">Subí el PDF de REHAU, elegí qué ítems entran y con qué margen.</p></div>
+      <button class="btn btn-g" type="button" aria-label="Cerrar" style="width:36px;padding:0;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+
+    <div style="padding:20px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;border-bottom:1px solid #E4E7EC">
+      <div style="flex:1 1 360px;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px dashed #98A2B3;border-radius:12px;background:#F9FAFB">
+        <span style="width:36px;height:36px;border-radius:8px;background:#FEF3F2;color:#B42318;font:700 11px/36px Inter,sans-serif;text-align:center;flex:none">PDF</span>
+        <div style="flex:1;min-width:0"><p style="margin:0;font:600 14px Inter,sans-serif">cotizacion-rehau-10458.pdf</p><p style="margin:2px 0 0;font:400 12px Inter,sans-serif;color:#067647">Leído: 5 ítems encontrados</p></div>
+        <button class="btn btn-g btn-sm" type="button">Cambiar archivo</button>
+      </div>
+      <div style="width:140px"><label class="lbl" for="im-m">Margen (%)</label><input class="inp" id="im-m" value="35"></div>
+      <div style="width:160px"><label class="lbl" for="im-u">Cotización USD</label><input class="inp" id="im-u" value="$ 1.415,00"></div>
+    </div>
+
+    <div style="flex:1;overflow:auto">
+      <table class="tbl">
+        <thead><tr><th>Incluir</th><th>Tip.</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Unitario US$</th><th class="num">Total US$</th><th class="num">Unitario $ (con margen)</th></tr></thead>
+        <tbody>
+          <tr><td><input class="cb" type="checkbox" checked aria-label="Incluir V1"></td><td style="font-weight:600;color:#101828">V1</td><td>Ventana corrediza 2 hojas 1500×1100 DVH</td><td class="num">2</td><td class="num">672,40</td><td class="num">1.344,80</td><td class="num" style="font-weight:600;color:#101828">$ 1.284.500</td></tr>
+          <tr><td><input class="cb" type="checkbox" checked aria-label="Incluir P1"></td><td style="font-weight:600;color:#101828">P1</td><td>Puerta balcón 1 hoja 800×2050 DVH</td><td class="num">1</td><td class="num">477,60</td><td class="num">477,60</td><td class="num" style="font-weight:600;color:#101828">$ 912.300</td></tr>
+          <tr><td><input class="cb" type="checkbox" checked aria-label="Incluir V2"></td><td style="font-weight:600;color:#101828">V2</td><td>Ventana oscilobatiente 1200×1000 DVH</td><td class="num">1</td><td class="num">336,80</td><td class="num">336,80</td><td class="num" style="font-weight:600;color:#101828">$ 643.400</td></tr>
+          <tr><td><input class="cb" type="checkbox" checked aria-label="Incluir F1"></td><td style="font-weight:600;color:#101828">F1</td><td>Paño fijo 1000×1300 DVH</td><td class="num">1</td><td class="num">210,70</td><td class="num">210,70</td><td class="num" style="font-weight:600;color:#101828">$ 402.600</td></tr>
+          <tr class="off"><td><input class="cb" type="checkbox" aria-label="Incluir Flete"></td><td>—</td><td>Flete a obra</td><td class="num">1</td><td class="num">95,00</td><td class="num">95,00</td><td class="num">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid #E4E7EC;background:#F9FAFB">
+      <p style="margin:0;font:500 14px Inter,sans-serif;color:#344054">Se van a importar <strong>4 ítems</strong> · $ 3.242.800</p>
+      <div style="display:flex;gap:10px"><button class="btn btn-s" type="button">Cancelar</button><a class="btn btn-p" href="Presupuestos-Detalle.dc.html">Importar 4 ítems</a></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cliente · ficha</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn svg{width:16px;height:16px}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-g{background:transparent;color:#475467}.btn-g:hover{background:#F2F4F7;color:#101828}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.ib{width:36px;padding:0;justify-content:center}
+.btn-sm.ib{width:32px}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-gray{background:#F2F4F7;color:#344054}.b-blue{background:#EEF3FF;color:#1F4FD8}.b-green{background:#ECFDF3;color:#067647}.b-amber{background:#FFFAEB;color:#B54708}.b-red{background:#FEF3F2;color:#B42318}.b-violet{background:#F4F3FF;color:#5925DC}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:12px 16px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid #F2F4F7;color:#344054;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:#667085}
+.strong{color:#101828;font-weight:600}
+.sb{flex:1 1 248px;max-width:248px;background:#fff;border-right:1px solid #E4E7EC;box-sizing:border-box;padding:20px 12px;display:flex;flex-direction:column;gap:18px}
+.sb-h{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:0 0 6px}
+.nv{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.nv:hover{background:#F2F4F7;color:#101828}
+.nv svg{width:18px;height:18px;flex:none;color:#667085}
+.nv.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.nv.on svg{color:#1F4FD8}
+.tab{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;font:500 14px Inter,sans-serif;color:#475467}
+.tab:hover{background:#fff;color:#101828}
+.tab.on{background:#fff;color:#101828;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.cnt{font:600 12px Inter,sans-serif;color:#667085;background:#F2F4F7;border-radius:999px;padding:2px 8px}
+@media (max-width:760px){.sb{max-width:none}}
+
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.hint{margin:6px 0 0;font:400 12px/1.4 Inter,sans-serif;color:#667085}
+.sec{margin:0 0 12px;font:600 12px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085}
+.chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid #D0D5DD;font:500 13px Inter,sans-serif;color:#344054;background:#fff;cursor:pointer}
+.chip.on{border-color:#1F4FD8;background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.dl{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #F2F4F7;font:400 13px/1.4 Inter,sans-serif;color:#344054}
+.dl span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.seg{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid #D0D5DD;border-radius:10px;cursor:pointer;background:#fff;text-align:left;font:inherit}
+.seg.on{border-color:#1F4FD8;box-shadow:0 0 0 1px #1F4FD8;background:#F5F8FF}
+.kpi-l{margin:0;font:600 12px/1 Inter,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#667085}
+.kpi-v{margin:8px 0 0;font:600 26px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:#101828}
+.kpi-s{margin:6px 0 0;font:400 13px/1.3 Inter,sans-serif;color:#475467}
+.h2{margin:0;font:600 16px/1.3 Inter,sans-serif;color:#101828}
+.chk{display:flex;gap:8px;align-items:center;font:400 14px Inter,sans-serif;color:#344054}
+.chk input{accent-color:#1F4FD8;width:16px;height:16px;margin:0}
+.bar{height:8px;border-radius:999px;background:#EAECF0;overflow:hidden}
+.bar span{display:block;height:100%;background:#1F4FD8;border-radius:999px}
+.tbl tfoot td{background:#F9FAFB;font-weight:600;color:#101828;border-top:1px solid #E4E7EC}
+select.inp{appearance:auto}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap">
+  <nav class="sb" aria-label="Menú principal">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 12px 8px"><span style="width:30px;height:30px;border-radius:8px;background:#0F1729;color:#fff;font:700 14px/30px Inter,sans-serif;text-align:center">A</span><span style="font:700 16px Inter,sans-serif;letter-spacing:.04em">AKUN</span></div>
+    <div><p class="sb-h">Operación</p>
+      <a class="nv" href="Inicio.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Inicio</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>Solicitudes<span class="badge b-blue" style="margin-left:auto;height:20px">3</span></a>
+      <a class="nv" href="Presupuestos-Lista.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Presupuestos</a>
+      <a class="nv" href="Cotizador.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg>Cotizador</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</a>
+    </div>
+    <div><p class="sb-h">Ventas y cobros</p>
+      <a class="nv on" href="Comercial-Dashboard.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>Comercial</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Facturación</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 14h2M3 10h18"/></svg>Gastos diarios</a>
+    </div>
+    <div><p class="sb-h">Fábrica</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/></svg>Pedidos de fábrica</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Catálogo</a>
+      <a class="nv" href="Calculadora.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17 17 3l4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg>Calculadora</a>
+    </div>
+    <div><p class="sb-h">Análisis</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</a>
+    </div>
+    <div><p class="sb-h">Sistema</p>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg>Seguridad</a>
+      <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Configuración</a>
+    </div>
+  </nav>
+
+  <div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column">
+    <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 32px;background:#fff;border-bottom:1px solid #E4E7EC">
+      <div style="position:relative;flex:1 1 260px;max-width:440px"><input class="inp" aria-label="Buscar en AkunCalcu" placeholder="Buscar cliente, presupuesto o venta" style="padding-left:38px;height:38px;background:#F9FAFB"><svg viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position:absolute;left:12px;top:11px;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <span style="flex:1"></span>
+      <span class="badge b-gray" style="height:28px;padding:0 10px">Dólar BNA $ 1.415</span>
+      <button class="btn btn-g ib" type="button" aria-label="Notificaciones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:20px;height:20px"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button type="button" aria-label="Menú de usuario: Lucía" style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px 0 4px;border:1px solid #E4E7EC;border-radius:999px;background:#fff;cursor:pointer;font:500 14px Inter,sans-serif;color:#101828"><span style="width:32px;height:32px;border-radius:50%;background:#EEF3FF;color:#1F4FD8;font:600 13px/32px Inter,sans-serif;text-align:center">L</span>Lucía</button>
+    </header>
+
+    <main style="padding:32px;display:flex;flex-direction:column;gap:20px;max-width:1280px;width:100%;box-sizing:border-box">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
+  <div><a href="Clientes-Lista.dc.html" style="display:inline-flex;align-items:center;gap:6px;font:500 13px Inter,sans-serif;color:#475467;margin-bottom:10px"><span style="width:14px;height:14px;display:inline-flex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></span>Clientes</a>
+    <h1 style="margin:0;font:600 28px/1.2 Inter,sans-serif;letter-spacing:-.02em">Gómez, Martín</h1>
+    <p class="muted" style="margin:6px 0 0;font-size:14px"><span class="badge b-gray">C-00123</span> &nbsp;Responsable Inscripto · Paraná, Entre Ríos · cliente desde 14/03/2025</p></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><a class="btn btn-s" href="Cliente-Form.dc.html">Editar</a><a class="btn btn-p" href="Venta-Form.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nueva venta</a></div>
+</div><div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div class="card" style="padding:20px;flex:1 1 200px;min-width:0"><p class="kpi-l">Total comprado</p><p class="kpi-v">$ 2.578.700</p><p class="kpi-s">en 3 ventas</p></div>
+      <div class="card" style="padding:20px;flex:1 1 200px;min-width:0"><p class="kpi-l">Total cobrado</p><p class="kpi-v">$ 2.355.600</p><p class="kpi-s">en pagos registrados</p></div>
+      <div class="card" style="padding:20px;flex:1 1 200px;min-width:0"><p class="kpi-l">Saldo pendiente</p><p class="kpi-v" style="color:#B54708">$ 223.100</p><p class="kpi-s">por cobrar</p></div>
+      <div class="card" style="padding:20px;flex:1 1 200px;min-width:0"><p class="kpi-l">Facturas</p><p class="kpi-v">2</p><p class="kpi-s">electrónicas emitidas</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+      <div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px">
+        <section class="card" style="padding:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 class="h2">Ventas por mes</h2><span class="muted" style="font-size:13px">Últimos 12 meses</span></div><svg viewBox="0 0 372 124" width="100%" role="img" aria-label="Ventas por mes de los últimos 12 meses, octubre es el mayor" style="display:block"><line x1="6" y1="100" x2="366" y2="100" stroke="#E4E7EC"/><rect x="12" y="80" width="18" height="20" rx="3" fill="#C7D7FE"/><text x="21" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Nov</text><rect x="42" y="64" width="18" height="36" rx="3" fill="#C7D7FE"/><text x="51" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Dic</text><rect x="72" y="88" width="18" height="12" rx="3" fill="#C7D7FE"/><text x="81" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Ene</text><rect x="102" y="100" width="18" height="0" rx="3" fill="#C7D7FE"/><text x="111" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Feb</text><rect x="132" y="56" width="18" height="44" rx="3" fill="#C7D7FE"/><text x="141" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Mar</text><rect x="162" y="100" width="18" height="0" rx="3" fill="#C7D7FE"/><text x="171" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Abr</text><rect x="192" y="72" width="18" height="28" rx="3" fill="#C7D7FE"/><text x="201" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">May</text><rect x="222" y="100" width="18" height="0" rx="3" fill="#C7D7FE"/><text x="231" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Jun</text><rect x="252" y="48" width="18" height="52" rx="3" fill="#C7D7FE"/><text x="261" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Jul</text><rect x="282" y="82" width="18" height="18" rx="3" fill="#C7D7FE"/><text x="291" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Ago</text><rect x="312" y="100" width="18" height="0" rx="3" fill="#C7D7FE"/><text x="321" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Sep</text><rect x="342" y="16" width="18" height="84" rx="3" fill="#1F4FD8"/><text x="351" y="116" text-anchor="middle" font-size="10" fill="#667085" font-family="Inter">Oct</text></svg></section>
+        <section class="card" style="overflow:hidden">
+          <div style="padding:12px 20px;border-bottom:1px solid #E4E7EC"><div style="display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:#EAECF0;border-radius:10px" role="group"><button class="tab on" type="button" aria-pressed="true" style="border:0;cursor:pointer;background:#fff">Ventas · 3</button><button class="tab" type="button" aria-pressed="false" style="border:0;cursor:pointer;background:transparent">Pagos · 5</button><button class="tab" type="button" aria-pressed="false" style="border:0;cursor:pointer;background:transparent">Facturas · 2</button></div></div>
+          <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Pedido</th><th>Fecha</th><th class="num">Total</th><th class="num">Seña</th><th class="num">Saldo</th><th>Estado</th></tr></thead><tbody><tr><td><a class="strong" href="Venta-Detalle.dc.html">#1087</a></td><td class="muted">26/10/2026</td><td class="num">$ 846.200</td><td class="num">$ 423.100</td><td class="num strong">$ 223.100</td><td><span class="badge b-amber"><span class="dot"></span>Pendiente</span></td><td style="text-align:right"><button class="btn btn-g btn-sm ib" type="button" aria-label="Acciones de la venta 1087"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></td></tr><tr><td><a class="strong" href="Venta-Detalle.dc.html">#1061</a></td><td class="muted">14/08/2026</td><td class="num">$ 1.320.000</td><td class="num">$ 660.000</td><td class="num strong">$ 0</td><td><span class="badge b-green"><span class="dot"></span>Colocado</span></td><td style="text-align:right"><button class="btn btn-g btn-sm ib" type="button" aria-label="Acciones de la venta 1061"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></td></tr><tr><td><a class="strong" href="Venta-Detalle.dc.html">#1022</a> <span class="badge b-gray" style="margin-left:6px">Negro</span></td><td class="muted">02/05/2026</td><td class="num">$ 412.500</td><td class="num">$ 412.500</td><td class="num strong">$ 0</td><td><span class="badge b-blue"><span class="dot"></span>Entregado</span></td><td style="text-align:right"><button class="btn btn-g btn-sm ib" type="button" aria-label="Acciones de la venta 1022"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></td></tr></tbody></table></div>
+        </section>
+      </div>
+      <aside style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px" aria-label="Datos del cliente">
+        <section class="card" style="padding:20px"><h2 class="h2" style="margin-bottom:8px">Información</h2>
+          <div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">Nombre</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">Martín Gómez</p></div><div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">CUIT</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">20-28441172-5</p></div><div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">Condición IVA</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">Responsable Inscripto</p></div><div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">Teléfono</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">343 415-2287</p></div><div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">Email</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">martin.gomez@correo.com.ar</p></div><div style="padding:10px 0;border-bottom:1px solid #F2F4F7"><p class="kpi-l" style="font-size:11px">Dirección</p><p style="margin:4px 0 0;font:500 14px/1.4 Inter,sans-serif;color:#101828">Av. Ramírez 1840, Paraná</p></div></section>
+        <section class="card" style="padding:20px"><h2 class="h2" style="margin-bottom:12px">Estado de pedidos</h2>
+          <div class="dl"><span><span class="badge b-amber"><span class="dot"></span>Pendiente</span></span><span>1</span></div><div class="dl"><span><span class="badge b-blue"><span class="dot"></span>Entregado</span></span><span>1</span></div><div class="dl" style="border-bottom:0"><span><span class="badge b-green"><span class="dot"></span>Colocado</span></span><span>1</span></div></section>
+      </aside>
+    </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

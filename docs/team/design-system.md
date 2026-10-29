@@ -1,327 +1,139 @@
-# Design System — AkunCalcu
+# Design System — AkunCalcu («Taller»)
 
-> Referencia obligatoria para cualquier cambio en el frontend.
-> Todo template nuevo debe seguir estos patrones sin excepción.
+> Referencia obligatoria para cualquier cambio en el frontend. Reescrito el 2026-10-29 (REQ-064 / FEAT-046 / ADR-023);
+> reemplaza al sistema anterior (degradé azul-violeta, cabeceras de tabla oscuras).
+> Mockups de cada pantalla: [`design/*.dc.html`](./design/). El sistema visual completo está en `design/Main.dc.html`.
+> Brief para implementar pantallas: [brief-rediseno-taller.md](./brief-rediseno-taller.md).
 
 ---
 
 ## Base template
 
-```html
+```django
 {% extends 'core/base.html' %}
 {% load static %}
+{% block title %}Presupuestos{% endblock %}   {# se muestra como «Presupuestos · AKUN» #}
 
 {% block content %}
-<!-- tu contenido acá -->
+...
 {% endblock %}
 
 {% block extra_js %}
-<!-- JS específico de la página -->
 {% endblock %}
 ```
 
-**Nunca** crear un template sin extender `core/base.html` (a menos que sea un template de email o PDF).
+**Nunca** crear un template sin extender `core/base.html` (salvo email o PDF). Los `<select>` ya tienen Select2
+automático desde `base.html`: no se duplica.
 
 ---
 
-## Paleta de colores
+## Tokens
 
-| Uso | Clases Tailwind |
-|-----|----------------|
-| Botón primario | `bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white` |
-| Botón editar | `bg-indigo-600 hover:bg-indigo-700 text-white` |
-| Botón eliminar | `bg-gray-600 hover:bg-gray-700 text-white` |
-| Botón filtrar/buscar | `bg-blue-600 hover:bg-blue-700 text-white` |
-| Botón cancelar/limpiar | `bg-gray-500 hover:bg-gray-600 text-white` |
-| Botón guardar en forms | `bg-green-600 hover:bg-green-700 text-white` |
-| Fondo de página | `bg-gray-50` (ya definido en base) |
-| Cabecera de tablas | `bg-gradient-to-r from-slate-700 to-slate-800 text-white` |
-| Texto título | `text-slate-800` |
-| Texto subtítulo | `text-slate-500` |
-| Texto de celda | `text-slate-700` |
+Definidos como variables CSS `--t-*` en `static/css/taller.css` y como colores de Tailwind en el `tailwind.config` inline de `base.html`.
 
----
-
-## Tipografía
-
-```html
-<!-- Título de página -->
-<h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Título</h1>
-<p class="text-slate-500 font-medium mt-1">Subtítulo descriptivo</p>
-
-<!-- Título de sección dentro de página -->
-<h2 class="text-xl font-bold text-slate-800 mb-4">Sección</h2>
-```
-
----
-
-## Layout de página estándar
-
-```html
-<div class="max-w-full mx-auto px-4">
-    <!-- Header de página -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Título</h1>
-            <p class="text-slate-500 font-medium mt-1">Descripción</p>
-        </div>
-        <!-- Botón de acción principal (si aplica) -->
-        <a href="..." class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo
-        </a>
-    </div>
-
-    <!-- Contenido -->
-</div>
-```
-
----
-
-## Cards / Contenedores
-
-```html
-<!-- Card estándar -->
-<div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-    <!-- contenido -->
-</div>
-
-<!-- Card de tabla -->
-<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-    <!-- tabla acá -->
-</div>
-
-<!-- Card de filtros -->
-<div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
-    <!-- form de búsqueda -->
-</div>
-```
-
----
-
-## Botones
-
-```html
-<!-- Primario (acción principal, crear) -->
-<button class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-    <i class="fas fa-plus mr-2"></i>Texto
-</button>
-
-<!-- Editar (en tablas, compacto) -->
-<a href="..." class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-    <i class="fas fa-edit"></i>
-</a>
-
-<!-- Eliminar (en tablas, compacto) -->
-<button onclick="confirmarEliminacion(...)" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-    <i class="fas fa-trash"></i>
-</button>
-
-<!-- Submit de formulario -->
-<button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-    <i class="fas fa-save mr-2"></i>Guardar
-</button>
-
-<!-- Cancelar -->
-<a href="..." class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">
-    Cancelar
-</a>
-```
-
----
-
-## Tablas
-
-```html
-<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                <tr>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Columna</th>
-                    <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for item in items %}
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-slate-700">{{ item.campo }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <!-- botones de acción -->
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="N" class="px-6 py-8 text-center">
-                        <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                        <p class="text-slate-500 font-medium">No hay registros</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-```
-
----
-
-## Formularios
-
-```html
-<div class="bg-white rounded-2xl shadow-lg p-6">
-    <form method="post">
-        {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Campo de texto -->
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Etiqueta</label>
-                <input type="text" name="campo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-
-            <!-- Select (Select2 se aplica automáticamente) -->
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Etiqueta</label>
-                <select name="campo" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                    <option value="">Seleccione...</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Botones de acción del form -->
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-            <a href="..." class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                <i class="fas fa-save mr-2"></i>Guardar
-            </button>
-        </div>
-    </form>
-</div>
-```
-
-**Importante:** Los `<select>` tienen Select2 aplicado automáticamente desde `base.html`. No agregar Select2 manualmente salvo cuando el `<select>` se cree dinámicamente por JavaScript después de cargada la página; en ese caso hay que inicializar Select2 de forma puntual sobre el nuevo nodo. Para excluir un select, usar clase `no-select2`.
-
-### Patrón Select2 global
-
-- El look & feel estándar de todos los selects del sistema es el del buscador de `Tipo de Factura` del reporte de cobranzas y se configura globalmente en `core/base.html`.
-- El helper compartido es `window.AkunSelect2`.
-- Métodos disponibles: `init`, `reinit`, `refresh`, `destroy`.
-- Si un select se crea dinámicamente por JavaScript, usar `window.reinitAkunSelect2(...)` o `window.refreshAkunSelect2(...)` según el caso. No instanciar `select2()` directo salvo una razón técnica excepcional.
-- Si un select vive dentro de un modal, el contenedor del modal debe declarar `data-select2-dropdown-parent` para que el dropdown quede acotado al modal.
-- `no-select2` queda reservado para micro-selects inline muy compactos donde el buscador rompe la legibilidad o la densidad visual. No usarlo en formularios generales, filtros o pantallas operativas estándar.
-
----
-
-## Badges de estado
-
-Patrón de los listados (`solicitudes`, `security/salud`). Siempre con ícono a la izquierda:
-
-```html
-<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-    <i class="fas fa-check mr-1"></i>OK
-</span>
-```
-
-| Semántica | Clases | Ícono |
+| Token (Tailwind) | Valor | Uso |
 |---|---|---|
-| Correcto / Contestada | `bg-green-100 text-green-800` | `fa-check` |
-| **Atención** (requiere mirada, no es error) | `bg-yellow-100 text-yellow-800` | `fa-triangle-exclamation` |
-| Falla / Sin asignar | `bg-red-100 text-red-800` | `fa-circle-xmark` · `fa-exclamation-triangle` |
-| Neutro / Sin datos / Descartada | `bg-slate-100 text-slate-600` | `fa-question` · `fa-ban` |
-| En curso / Asignada | `bg-blue-100 text-blue-800` | `fa-clock` |
+| `bg-ground` | `#F4F5F7` | fondo de página |
+| `text-ink` | `#101828` | texto principal y títulos |
+| `text-ink-2` / `text-ink-3` | `#475467` / `#667085` | texto secundario / ayudas |
+| `border-line` | `#E4E7EC` | bordes (`line-soft` `#F2F4F7`, `line-strong` `#D0D5DD`) |
+| `bg-accent` / `text-accent` | `#1F4FD8` | **único color de acción** (hover `#163BA6`, `accent-soft` `#EEF3FF`) |
+| `text-ok` / `bg-ok-soft` | `#067647` / `#ECFDF3` | éxito / estado positivo |
+| `text-warn` / `bg-warn-soft` | `#B54708` / `#FFFAEB` | pendiente / atención |
+| `text-danger` / `bg-danger-soft` | `#B42318` / `#FEF3F2` | error / eliminación |
+| violeta | `#5925DC` / `#F4F3FF` | solo estados (badge `b-violet`) |
 
-El **amarillo se incorporó en FEAT-035** para distinguir "hay que mirarlo" de "está roto": sin ese
-nivel intermedio, un backup de hace 3 días y una integración caída se veían iguales.
-
-⚠️ Si una tabla se refresca por AJAX, el HTML del badge queda duplicado (el parcial de Django y el
-que arma el JS). En `security/salud.html` está resuelto con un `_salud_fila.html` para el render
-inicial y un mapa `BADGES` en JS para el refresco, **con un comentario en cada lado avisando que hay
-que tocar los dos**. Si aparece un tercer caso así, conviene unificarlo devolviendo el HTML del
-parcial desde el endpoint.
+Tipografía: Inter (Google Fonts). No se inventan colores ni se usa degradé.
 
 ---
 
-## Confirmaciones de eliminación
+## Componentes (`static/css/taller.css`)
 
-**Siempre usar SweetAlert2**, nunca `confirm()` nativo del browser.
+- **Botones:** `.btn` + `.btn-primary | .btn-secondary | .btn-ghost | .btn-danger`; `.btn-sm`, `.btn-icon`.
+- **Superficies:** `.card` (`.card-pad`), `.page-head`, `.page-title`, `.page-sub`, `.page-actions`, `.sec-label`, `.muted`, `.strong`, `.num` (cifras alineadas a la derecha).
+- **Estados:** `.badge` + `.b-gray | .b-blue | .b-violet | .b-green | .b-amber | .b-red` (con `<span class="dot"></span>`), `.chip` (filtro activo), `.tabs` + `.tab` (`.on`, `<span class="cnt">`).
+- **Tablas:** `.tbl` dentro de `.table-wrap`; barra de filtros `.toolbar`; pie `.pager`. Cabecera clara, sin fondo oscuro.
+- **Campos:** `.field` (label + input/select/textarea), `.input`, `.field-hint`, `.field-error`.
+- **Menú de fila:** `.kebab`, `.kebab-menu`, `.kebab-item`. Vacío: `.empty`. Notificación: `.toast`.
 
-```javascript
-function confirmarEliminacion(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar [entidad]?',
-        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            }
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
+## Includes (`core/templates/core/ui/`, usar SIEMPRE con `only`)
+
+| Include | Parámetros |
+|---|---|
+| `page_header.html` | `title` (obligatorio), `subtitle`, `action_url`, `action_label`, `action_icon` (FA, default `fas fa-plus`), `secondary_url/label/icon`, `back_url`, `back_label` |
+| `badge.html` | `label` (obligatorio), `tone` (gray\|blue\|violet\|green\|amber\|red), `dot`, `icon` |
+| `empty_state.html` | `title` (obligatorio), `text`, `icon`, `action_url`, `action_label` |
+| `kebab_menu.html` | `kebab_label`, `view_url`, `edit_url`, `extra_url` + `extra_label` + `extra_icon`, `delete_url` + `delete_name`, y `delete_label` / `delete_verb` / `delete_icon` (default «Eliminar» / «eliminar» / `fa-trash`; p. ej. «Desactivar» cuando no se borra) |
+| `pagination.html` | `page_obj` (obligatorio), `query` (querystring SIN `page`), `page_param`, `total_label` |
+
+Los filtros de listado usan `core/includes/table_filters.html` (`table_filter_id`, `show_status_filter`, `compact_filters`, …).
+
+### Ejemplo de listado
+
+```django
+{% extends 'core/base.html' %}
+{% block title %}Presupuestos{% endblock %}
+{% block content %}
+{% include 'core/ui/page_header.html' with title="Presupuestos" subtitle="Cotizaciones para clientes." action_url=url_crear action_label="Nuevo presupuesto" only %}
+<section class="card overflow-hidden" data-live="presupuestos" data-live-partial>
+  <div class="toolbar">...filtros...</div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th>Número</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
+    <tbody>
+    {% for p in page_obj %}
+      <tr>
+        <td><a class="strong" href="{{ p.get_absolute_url }}">{{ p.numero }}</a></td>
+        <td>{% include 'core/ui/badge.html' with tone="green" label="Confirmado" dot=True only %}</td>
+        <td class="num strong">$ {{ p.total }}</td>
+        <td class="num">{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=p.url_editar delete_url=p.url_borrar delete_name=p.numero only %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">{% include 'core/ui/empty_state.html' with title="Todavía no hay presupuestos" only %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="presupuestos" only %}
+</section>
+{% endblock %}
 ```
 
 ---
 
-## Notificaciones / Mensajes
+## Badges por estado
 
-Los mensajes de Django (`messages.success(...)`, `messages.error(...)`, etc.) se muestran automáticamente como SweetAlert2 desde `base.html`. **No crear notificaciones manualmente** en templates individuales.
+Siempre con texto (el color solo no alcanza). Convención de tonos:
 
-Para mensajes directos en JavaScript:
-```javascript
-Swal.fire({
-    icon: 'success', // 'error', 'warning', 'info'
-    title: 'Éxito',
-    text: 'Mensaje aquí',
-    confirmButtonColor: '#3b82f6',
-    timer: 3000,
-    timerProgressBar: true
-});
-```
+| Tono | Cuándo |
+|---|---|
+| `gray` | borrador, inactivo, sin dato |
+| `blue` | en curso, enviado, informativo |
+| `violet` | en proceso intermedio (p. ej. fabricación) |
+| `green` | confirmado, cobrado, completado |
+| `amber` | pendiente, parcial, atención |
+| `red` | cancelado, vencido, error, fallido |
 
 ---
 
-## Íconos
+## Reglas
 
-Usar exclusivamente **FontAwesome 6.4.0** (ya incluido en base.html).
-
-Íconos comunes del proyecto:
-- Nuevo/Agregar: `fas fa-plus`
-- Editar: `fas fa-edit`
-- Eliminar: `fas fa-trash`
-- Guardar: `fas fa-save`
-- Buscar/Filtrar: `fas fa-filter` o `fas fa-search`
-- Limpiar: `fas fa-times`
-- Listado vacío: `fas fa-inbox`
-- Usuario: `fas fa-user`
-- Dinero/Ventas: `fas fa-dollar-sign`
-- Productos: `fas fa-box`
+1. **Un solo botón primario por pantalla** (`.btn-primary`); el resto `.btn-secondary` o `.btn-ghost`.
+2. **Acciones de fila en el kebab** (`kebab_menu.html`), no una columna de botones sueltos.
+3. **Éxito = toast.** Los mensajes de Django (`messages`) ya salen como toast.
+4. **SweetAlert2 solo para confirmar borrados** (nunca `confirm()` nativo): el kebab lo hace con `data-taller-delete` y hace POST con CSRF, así que la vista debe aceptar POST.
+5. Sin degradé azul-violeta, sin cabeceras de tabla oscuras, sin colores inventados.
+6. Formularios: conservar `id`, `name`, `data-*` y `action`; `{% csrf_token %}` en todo POST; Django Forms, nunca POST raw.
+7. Listados de más de 20 registros paginan con `pagination.html`.
+8. **Los PDF y la impresión están fuera del sistema** y no se tocan: `presupuestos/pdf.html`, `presupuestos/recibo_blank.html`, `plantillas/orden_pdf.html`, `comercial/recibo_pdf.html`, el PDF de venta (reportlab), los `@media print` de `comercial/reportes/*.html` y los JS de dibujo `viewer3d.js`, `elevacion.js`, `estructura.js`.
+9. No agregar librerías JS/CSS nuevas sin pasar por el Arquitecto y registrar ADR. Disponibles: Tailwind (CDN), Select2, SweetAlert2, FontAwesome 6.4, Chart.js (solo donde ya se usa).
 
 ---
 
-## Librerías disponibles (ya en base.html)
+## Tiempo real en una pantalla (FEAT-047)
 
-| Librería | Versión | Uso |
-|---------|---------|-----|
-| Tailwind CSS | CDN | Estilos |
-| FontAwesome | 6.4.0 | Íconos |
-| jQuery | 3.6.0 | DOM y AJAX |
-| Select2 | 4.1.0 | Selects mejorados |
-| SweetAlert2 | 11 | Modales y alertas |
-
-**No agregar nuevas librerías sin pasar por el Arquitecto y registrar un ADR.**
+- `data-live="clave[,clave2]"` en el contenedor del listado: ante un cambio aparece «Hay cambios · Actualizar».
+- `data-live-partial` en el mismo elemento: recarga su contenido con `?partial=1`; la vista devuelve solo el fragmento (`_tabla.html`).
+- `data-live-edit="app.modelo:pk"` en la pantalla de edición: avisa si otra persona la tiene abierta.
+- La fuente se declara en `<app>/live.py` con `core.live.register(...)`. Avisos con `core.avisos.crear_aviso(...)` desde la vista o servicio.
 
 ---
 

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Sistema visual Taller</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;font-family:Inter,system-ui,sans-serif;color:#101828;font-feature-settings:"tnum" 1}
+a{color:#1F4FD8;text-decoration:none}a:hover{color:#163BA6}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px/1 Inter,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.btn svg{width:16px;height:16px}
+.btn-p{background:#1F4FD8;color:#fff}.btn-p:hover{background:#163BA6;color:#fff}
+.btn-s{background:#fff;color:#101828;border-color:#D0D5DD}.btn-s:hover{background:#F9FAFB;color:#101828}
+.btn-g{background:transparent;color:#475467}.btn-g:hover{background:#F2F4F7;color:#101828}
+.btn-d{background:#fff;color:#B42318;border-color:#FDA29B}
+.btn-sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.ib{width:32px;padding:0;justify-content:center}
+.card{background:#fff;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:600 12px/1 Inter,sans-serif;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-gray{background:#F2F4F7;color:#344054}.b-blue{background:#EEF3FF;color:#1F4FD8}.b-green{background:#ECFDF3;color:#067647}.b-amber{background:#FFFAEB;color:#B54708}.b-red{background:#FEF3F2;color:#B42318}.b-violet{background:#F4F3FF;color:#5925DC}
+.lbl{display:block;font:500 13px/1.3 Inter,sans-serif;color:#344054;margin-bottom:6px}
+.inp{box-sizing:border-box;width:100%;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:400 14px Inter,sans-serif;color:#101828;background:#fff}
+.inp:focus{outline:none;border-color:#1F4FD8;box-shadow:0 0 0 4px #DCE6FF}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font:600 12px/1 Inter,sans-serif;color:#475467;background:#F9FAFB;padding:12px 16px;border-bottom:1px solid #E4E7EC;white-space:nowrap}
+.tbl td{padding:14px 16px;border-bottom:1px solid #F2F4F7;color:#344054}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:#667085}
+.sec{font:600 12px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#667085;margin:0 0 16px}
+.h2{font:600 22px/1.25 Inter,sans-serif;margin:0 0 6px;letter-spacing:-.01em}
+.sw{height:64px;border-radius:10px;border:1px solid #E4E7EC}
+.nv{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:8px;color:#344054;font:500 14px Inter,sans-serif}
+.nv svg{width:18px;height:18px;flex:none}
+.nv.on{background:#EEF3FF;color:#1F4FD8;font-weight:600}
+.sb-h{font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;padding:0 12px;margin:0 0 6px}
+</style>
+</helmet>
+<div style="width:1440px;height:2140px;box-sizing:border-box;padding:72px 80px;display:flex;flex-direction:column;gap:56px">
+
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+    <div style="max-width:760px">
+      <p class="sec" style="color:#1F4FD8">AkunCalcu · Sistema visual</p>
+      <h1 style="margin:0;font:700 56px/1.05 Inter,sans-serif;letter-spacing:-.03em">Taller</h1>
+      <p style="margin:16px 0 0;font:400 18px/1.55 Inter,sans-serif;color:#475467">Un solo lenguaje para los 13 módulos. Fondo neutro, superficies blancas, un único azul para la acción principal y color solo cuando comunica un estado.</p>
+    </div>
+    <div class="card" style="padding:20px 24px;width:420px;box-sizing:border-box">
+      <p class="sec" style="margin-bottom:12px">Qué cambia respecto de hoy</p>
+      <ul style="margin:0;padding-left:18px;font:400 14px/1.7 Inter,sans-serif;color:#344054">
+        <li>Se elimina el degradé azul-violeta: el primario es un azul plano.</li>
+        <li>Las cabeceras de tabla oscuras pasan a gris claro.</li>
+        <li>Un solo botón primario por pantalla; editar y borrar van en un menú de fila.</li>
+        <li>Los avisos de éxito son toasts; los modales quedan para confirmar borrados.</li>
+        <li>El menú se agrupa por tarea, no por app de Django.</li>
+      </ul>
+    </div>
+  </header>
+
+  <section>
+    <p class="sec">1 · Color</p>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px">
+      <div><div class="sw" style="background:#F4F5F7"></div><p style="margin:10px 0 0;font:600 13px Inter">Fondo</p><p class="muted" style="margin:2px 0 0;font-size:12px">#F4F5F7</p></div>
+      <div><div class="sw" style="background:#FFFFFF"></div><p style="margin:10px 0 0;font:600 13px Inter">Superficie</p><p class="muted" style="margin:2px 0 0;font-size:12px">#FFFFFF · borde #E4E7EC</p></div>
+      <div><div class="sw" style="background:#101828"></div><p style="margin:10px 0 0;font:600 13px Inter">Tinta</p><p class="muted" style="margin:2px 0 0;font-size:12px">#101828 · 2.ª #475467</p></div>
+      <div><div class="sw" style="background:#1F4FD8"></div><p style="margin:10px 0 0;font:600 13px Inter">Acción</p><p class="muted" style="margin:2px 0 0;font-size:12px">#1F4FD8 · suave #EEF3FF</p></div>
+      <div><div class="sw" style="background:#0F1729"></div><p style="margin:10px 0 0;font:600 13px Inter">Marca (login)</p><p class="muted" style="margin:2px 0 0;font-size:12px">#0F1729</p></div>
+      <div><div class="sw" style="background:#E4E7EC"></div><p style="margin:10px 0 0;font:600 13px Inter">Línea</p><p class="muted" style="margin:2px 0 0;font-size:12px">#E4E7EC · #F2F4F7</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;align-items:center">
+      <span class="muted" style="font-size:13px;width:160px">Estados (siempre con texto)</span>
+      <span class="badge b-gray"><span class="dot"></span>Borrador</span>
+      <span class="badge b-blue"><span class="dot"></span>Enviado</span>
+      <span class="badge b-violet"><span class="dot"></span>En fábrica</span>
+      <span class="badge b-green"><span class="dot"></span>Confirmado</span>
+      <span class="badge b-green"><span class="dot"></span>Cobrado</span>
+      <span class="badge b-amber"><span class="dot"></span>Pago parcial</span>
+      <span class="badge b-red"><span class="dot"></span>Vencido</span>
+      <span class="badge b-gray">PVC · USD</span>
+      <span class="badge b-gray">Aluminio</span>
+    </div>
+  </section>
+
+  <section style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px">
+    <div>
+      <p class="sec">2 · Tipografía — Inter, cifras tabulares</p>
+      <div class="card" style="padding:28px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:baseline;gap:20px"><span class="muted" style="width:96px;font-size:12px">Título 28/600</span><span style="font:600 28px/1.2 Inter;letter-spacing:-.02em">Presupuestos</span></div>
+        <div style="display:flex;align-items:baseline;gap:20px"><span class="muted" style="width:96px;font-size:12px">Sección 18/600</span><span style="font:600 18px/1.3 Inter">Datos del cliente</span></div>
+        <div style="display:flex;align-items:baseline;gap:20px"><span class="muted" style="width:96px;font-size:12px">Texto 14/400</span><span style="font:400 14px/1.5 Inter;color:#344054">Ventana corrediza de 2 hojas, línea Módena.</span></div>
+        <div style="display:flex;align-items:baseline;gap:20px"><span class="muted" style="width:96px;font-size:12px">Etiqueta 12/600</span><span style="font:600 12px/1 Inter;letter-spacing:.06em;text-transform:uppercase;color:#667085">Total del mes</span></div>
+        <div style="display:flex;align-items:baseline;gap:20px"><span class="muted" style="width:96px;font-size:12px">Cifra 32/600</span><span style="font:600 32px/1 Inter;letter-spacing:-.02em">$ 1.284.500,00</span></div>
+      </div>
+    </div>
+    <div>
+      <p class="sec">3 · Botones y campos</p>
+      <div class="card" style="padding:28px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <button class="btn btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nuevo presupuesto</button>
+          <button class="btn btn-s" type="button">Exportar</button>
+          <button class="btn btn-g" type="button">Cancelar</button>
+          <button class="btn btn-d" type="button">Eliminar</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <button class="btn btn-s btn-sm" type="button">Filtrar</button>
+          <button class="btn btn-s btn-sm ib" type="button" aria-label="Más acciones"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+          <span class="muted" style="font-size:13px">Compactos para tablas y barras de filtros</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+          <div><label class="lbl" for="ds-a">Cliente</label><input class="inp" id="ds-a" value="Constructora del Litoral"></div>
+          <div><label class="lbl" for="ds-b">Ancho (mm)</label><input class="inp" id="ds-b" value="1500" style="border-color:#1F4FD8;box-shadow:0 0 0 4px #DCE6FF"></div>
+          <div><label class="lbl" for="ds-c">Cotización USD</label><input class="inp" id="ds-c" value="" style="border-color:#FDA29B"><p style="margin:6px 0 0;font-size:12px;color:#B42318">Obligatoria para presupuestos de PVC.</p></div>
+          <div><label class="lbl" for="ds-d">Material</label><select class="inp" id="ds-d"><option>PVC</option><option>Aluminio</option></select></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec">4 · Patrón de listado — igual en todos los módulos</p>
+    <div class="card" style="overflow:hidden">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 20px;border-bottom:1px solid #E4E7EC">
+        <div style="position:relative;flex:1 1 280px;max-width:360px"><input class="inp" aria-label="Buscar" placeholder="Buscar por cliente o número" style="padding-left:36px;height:36px"><svg viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position:absolute;left:12px;top:10px;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+        <button class="btn btn-s btn-sm" type="button">Estado: todos</button>
+        <button class="btn btn-s btn-sm" type="button">Este mes</button>
+        <span class="badge b-blue">Material: PVC ✕</span>
+        <span style="flex:1"></span>
+        <span class="muted" style="font-size:13px">48 resultados</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Número</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;color:#101828">P-0412</td><td>Constructora del Litoral</td><td class="muted">27/10/2026</td><td><span class="badge b-blue"><span class="dot"></span>Enviado</span></td><td class="num" style="font-weight:600;color:#101828">$ 3.412.800</td><td style="text-align:right"><button class="btn btn-g btn-sm ib" type="button" aria-label="Acciones de P-0412"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></td></tr>
+          <tr><td style="font-weight:600;color:#101828">P-0411</td><td>Gómez, Martín</td><td class="muted">26/10/2026</td><td><span class="badge b-green"><span class="dot"></span>Confirmado</span></td><td class="num" style="font-weight:600;color:#101828">$ 846.200</td><td style="text-align:right"><button class="btn btn-g btn-sm ib" type="button" aria-label="Acciones de P-0411"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button></td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid #E4E7EC;font-size:13px" class="muted"><span>Página 1 de 3</span><span style="display:flex;gap:8px"><button class="btn btn-s btn-sm" type="button">Anterior</button><button class="btn btn-s btn-sm" type="button">Siguiente</button></span></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0;font-size:13px">Cabecera de página (título + 1 acción) → barra de filtros con chips → tabla → paginación de 20. Las acciones de fila viven en el menú ⋯.</p>
+  </section>
+
+  <section style="display:grid;grid-template-columns:280px minmax(0,1fr);gap:48px">
+    <div>
+      <p class="sec">5 · Menú agrupado por tarea</p>
+      <nav class="card" style="padding:16px 12px;display:flex;flex-direction:column;gap:16px" aria-label="Ejemplo de menú">
+        <div><p class="sb-h">Operación</p>
+          <a class="nv on" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Inicio</a>
+          <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>Solicitudes</a>
+          <a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Presupuestos</a>
+        </div>
+        <div><p class="sb-h">Ventas y cobros</p><a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg>Comercial</a></div>
+        <div><p class="sb-h">Fábrica</p><a class="nv" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V10l6 4V10l6 4V6l6 3v12z"/></svg>Pedidos de fábrica</a></div>
+      </nav>
+    </div>
+    <div>
+      <p class="sec">6 · Mapa del menú nuevo</p>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px">
+        <div class="card" style="padding:18px"><p style="margin:0 0 10px;font:600 14px Inter">Operación</p><p style="margin:0;font-size:13px;line-height:1.8;color:#475467">Inicio<br>Solicitudes<br>Presupuestos<br>Cotizador<br>Agenda</p></div>
+        <div class="card" style="padding:18px"><p style="margin:0 0 10px;font:600 14px Inter">Ventas y cobros</p><p style="margin:0;font-size:13px;line-height:1.8;color:#475467">Comercial<br>Facturación<br>Gastos diarios</p></div>
+        <div class="card" style="padding:18px"><p style="margin:0 0 10px;font:600 14px Inter">Fábrica</p><p style="margin:0;font-size:13px;line-height:1.8;color:#475467">Pedidos de fábrica<br>Catálogo<br>Calculadora</p></div>
+        <div class="card" style="padding:18px"><p style="margin:0 0 10px;font:600 14px Inter">Análisis</p><p style="margin:0;font-size:13px;line-height:1.8;color:#475467">Reportes<br>Contabilidad</p></div>
+        <div class="card" style="padding:18px"><p style="margin:0 0 10px;font:600 14px Inter">Sistema</p><p style="margin:0;font-size:13px;line-height:1.8;color:#475467">Seguridad<br>Configuración</p></div>
+      </div>
+      <p class="muted" style="margin:16px 0 0;font-size:13px;line-height:1.6">Los permisos actuales por módulo (access_control) no cambian: un grupo sin ítems visibles no se muestra.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec">7 · Respuesta del sistema</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+      <div class="card" style="padding:16px 18px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 12px 32px rgba(16,24,40,.12)">
+        <span style="width:28px;height:28px;border-radius:50%;background:#ECFDF3;color:#067647;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span>
+        <div><p style="margin:0;font:600 14px Inter">Presupuesto guardado</p><p class="muted" style="margin:4px 0 0;font-size:13px">Toast abajo a la derecha, 4 s. Reemplaza el SweetAlert de éxito.</p></div>
+      </div>
+      <div class="card" style="padding:20px;box-shadow:0 12px 32px rgba(16,24,40,.12)">
+        <p style="margin:0;font:600 16px Inter">¿Eliminar el cliente Gómez, Martín?</p>
+        <p class="muted" style="margin:6px 0 16px;font-size:13px;line-height:1.5">Tiene 2 presupuestos. Esta acción no se puede deshacer.</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-s btn-sm" type="button">Cancelar</button><button class="btn btn-sm" type="button" style="background:#B42318;color:#fff">Eliminar</button></div>
+      </div>
+      <div class="card" style="padding:28px;text-align:center">
+        <p style="margin:0;font:600 15px Inter">Todavía no hay ventas este mes</p>
+        <p class="muted" style="margin:6px 0 16px;font-size:13px">Las ventas aparecen al confirmar un presupuesto.</p>
+        <a class="btn btn-s btn-sm" href="#">Ver presupuestos</a>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2140}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
