@@ -1,130 +1,100 @@
 {% extends 'plantillas/base_plantillas.html' %}
 
+{% block title %}Pedido {{ pedido.numero }}{% endblock %}
+
 {% block plantillas_content %}
-<div class="mb-6">
-    <a href="{% url 'plantillas:pedido_list' %}" class="text-blue-600 hover:text-blue-800 font-medium">
-        <i class="fas fa-arrow-left mr-1"></i>Volver a pedidos
-    </a>
-</div>
+<a href="{% url 'plantillas:pedido_list' %}" class="muted text-sm inline-flex items-center gap-2 mb-3"><i class="fas fa-arrow-left"></i>Pedidos de fábrica</a>
 
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+<div class="page-head">
     <div>
-        <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Pedido {{ pedido.numero }}</h1>
-        <p class="text-slate-500 font-medium mt-1">{{ pedido.cliente }}</p>
+        <div class="flex items-center gap-3 flex-wrap">
+            <h1 class="page-title">Pedido {{ pedido.numero }}</h1>
+            {% if pedido.estado == 'BORRADOR' %}{% include 'core/ui/badge.html' with tone="gray" label=pedido.get_estado_display dot=True only %}
+            {% elif pedido.estado == 'EN_PROCESO' %}{% include 'core/ui/badge.html' with tone="blue" label=pedido.get_estado_display dot=True only %}
+            {% elif pedido.estado == 'COMPLETADO' %}{% include 'core/ui/badge.html' with tone="green" label=pedido.get_estado_display dot=True only %}
+            {% else %}{% include 'core/ui/badge.html' with tone="red" label=pedido.get_estado_display dot=True only %}{% endif %}
+        </div>
+        <p class="page-sub">{{ pedido.cliente }}</p>
     </div>
-    <span class="px-3 py-1 rounded-full text-sm font-semibold
-        {% if pedido.estado == 'BORRADOR' %}bg-gray-100 text-gray-700
-        {% elif pedido.estado == 'EN_PROCESO' %}bg-blue-100 text-blue-700
-        {% elif pedido.estado == 'COMPLETADO' %}bg-green-100 text-green-700
-        {% else %}bg-red-100 text-red-700{% endif %}">
-        {{ pedido.get_estado_display }}
-    </span>
-</div>
-
-<div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-    <h2 class="text-xl font-bold text-slate-800 mb-4">Datos del pedido</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div>
-            <span class="text-slate-500">Fecha</span>
-            <p class="font-semibold text-slate-800">{{ pedido.fecha|date:"d/m/Y" }}</p>
-        </div>
-        <div>
-            <span class="text-slate-500">Creado por</span>
-            <p class="font-semibold text-slate-800">
-                {% if pedido.usuario %}{{ pedido.usuario.get_full_name|default:pedido.usuario.username }}{% else %}—{% endif %}
-            </p>
-        </div>
-        {% if pedido.presupuesto %}
-        <div>
-            <span class="text-slate-500">Presupuesto de origen</span>
-            <p class="font-semibold">
-                <a href="{% url 'presupuestos:presupuestos-detalle' pedido.presupuesto.pk %}" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-file-invoice mr-1"></i>{{ pedido.presupuesto.numero }}
-                </a>
-            </p>
-        </div>
-        {% if pedido.presupuesto.venta %}
-        <div>
-            <span class="text-slate-500">Venta asociada</span>
-            <p class="font-semibold">
-                <a href="{% url 'comercial:venta_detail' pedido.presupuesto.venta.pk %}" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-dollar-sign mr-1"></i>Venta {{ pedido.presupuesto.venta.numero_pedido }}
-                </a>
-            </p>
-        </div>
-        {% endif %}
-        {% endif %}
-        <div class="md:col-span-2">
-            <span class="text-slate-500">Observaciones</span>
-            <p class="font-semibold text-slate-800">{{ pedido.observaciones|default:"—"|linebreaksbr }}</p>
-        </div>
+    <div class="page-actions">
+        <button type="button" onclick="abrirCotizadorOrden()" class="btn btn-primary"><i class="fas fa-plus"></i>Agregar orden</button>
     </div>
 </div>
 
-<div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-        <h2 class="text-xl font-bold text-slate-800">Órdenes de fabricación</h2>
-        <button type="button" onclick="abrirCotizadorOrden()" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">
-            <i class="fas fa-plus mr-2"></i>Agregar orden
-        </button>
-    </div>
+<div class="flex flex-wrap gap-5 items-start">
+    <section class="card overflow-hidden min-w-0" style="flex:999 1 560px" data-live="pedidos_fabrica">
+        <div class="flex justify-between items-center gap-3 flex-wrap px-5 py-4 border-b border-line">
+            <h2 class="strong text-base">Órdenes de fabricación <span class="muted text-sm ml-1">{{ ordenes|length }}</span></h2>
+            <span class="muted text-sm">Una orden por ítem del presupuesto</span>
+        </div>
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>N° orden</th>
+                        <th>Abertura</th>
+                        <th>Medidas</th>
+                        <th><span class="sr-only">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes %}
+                    {% url 'plantillas:orden_edit' orden.pk as url_orden_edit %}
+                    {% url 'plantillas:orden_delete' orden.pk as url_orden_delete %}
+                    <tr>
+                        <td><a class="strong" href="{{ url_orden_edit }}">{{ orden.numero_formateado }}</a></td>
+                        <td>
+                            <span class="strong">{{ orden.tipo_abertura|default:"—" }}</span>
+                            {% if orden.linea or orden.color %}<br><span class="muted text-xs">{{ orden.linea }}{% if orden.linea and orden.color %} · {% endif %}{{ orden.color }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% for medida in orden.medidas.all %}{{ medida.cantidad }}× {{ medida.medida|default:"s/medida" }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}
+                        </td>
+                        <td class="num">
+                            <span class="inline-flex items-center gap-2">
+                                <a href="{% url 'plantillas:orden_pdf' orden.pk %}" target="_blank" class="btn btn-secondary btn-sm" title="Imprimir PDF"><i class="fas fa-print"></i>PDF</a>
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Más acciones de la orden" edit_url=url_orden_edit delete_url=url_orden_delete delete_name=orden.numero_formateado only %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">{% include 'core/ui/empty_state.html' with title="Este pedido no tiene órdenes de fabricación" icon="fas fa-clipboard-list" only %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">N° Orden</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Abertura</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Medidas</th>
-                    <th class="px-4 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for orden in ordenes %}
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-3 text-sm font-semibold text-slate-800">{{ orden.numero_formateado }}</td>
-                    <td class="px-4 py-3 text-sm text-slate-700">
-                        {{ orden.tipo_abertura|default:"—" }}
-                        {% if orden.linea %}<span class="text-slate-400">· {{ orden.linea }}</span>{% endif %}
-                        {% if orden.color %}<span class="text-slate-400">· {{ orden.color }}</span>{% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-sm text-slate-600">
-                        {% for medida in orden.medidas.all %}{{ medida.cantidad }}× {{ medida.medida|default:"s/medida" }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <a href="{% url 'plantillas:orden_pdf' orden.pk %}" target="_blank" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Imprimir PDF">
-                                <i class="fas fa-print"></i>
-                            </a>
-                            <a href="{% url 'plantillas:orden_edit' orden.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <button type="button" onclick="confirmarEliminarOrden('{% url 'plantillas:orden_delete' orden.pk %}', '{{ orden.numero_formateado }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold text-xs" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="px-6 py-8 text-center">
-                        <i class="fas fa-clipboard-list text-slate-300 text-4xl mb-2"></i>
-                        <p class="text-slate-500 font-medium">Este pedido no tiene órdenes de fabricación.</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <aside class="card card-pad" style="flex:1 1 300px;max-width:380px">
+        <h2 class="strong text-base mb-4">Datos del pedido</h2>
+        <dl class="text-sm">
+            <dt class="muted text-xs mb-1">Fecha</dt>
+            <dd class="strong mb-4">{{ pedido.fecha|date:"d/m/Y" }}</dd>
+            <dt class="muted text-xs mb-1">Creado por</dt>
+            <dd class="strong mb-4">{% if pedido.usuario %}{{ pedido.usuario.get_full_name|default:pedido.usuario.username }}{% else %}—{% endif %}</dd>
+            {% if pedido.presupuesto %}
+            <dt class="muted text-xs mb-1">Presupuesto de origen</dt>
+            <dd class="strong mb-4"><a href="{% url 'presupuestos:presupuestos-detalle' pedido.presupuesto.pk %}">{{ pedido.presupuesto.numero }}</a></dd>
+            {% if pedido.presupuesto.venta %}
+            <dt class="muted text-xs mb-1">Venta asociada</dt>
+            <dd class="strong mb-4"><a href="{% url 'comercial:venta_detail' pedido.presupuesto.venta.pk %}">Venta {{ pedido.presupuesto.venta.numero_pedido }}</a></dd>
+            {% endif %}
+            {% endif %}
+            <dt class="muted text-xs mb-1">Observaciones</dt>
+            <dd class="text-ink-2">{{ pedido.observaciones|default:"—"|linebreaksbr }}</dd>
+        </dl>
+    </aside>
 </div>
 
 <!-- ===== MODAL COTIZADOR (crea la orden con la abertura precargada) ===== -->
 <div id="modal-orden" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarCotizadorOrden()"></div>
+    <div class="absolute inset-0 bg-black bg-opacity-60" onclick="cerrarCotizadorOrden()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
-                <h2 class="text-lg font-bold text-slate-800"><i class="fas fa-calculator mr-2 text-blue-600"></i>Nueva orden de fabricación</h2>
+                <h2 class="strong text-base"><i class="fas fa-calculator mr-2 text-accent"></i>Nueva orden de fabricación</h2>
                 <button type="button" onclick="cerrarCotizadorOrden()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
@@ -199,7 +169,7 @@ const Sel = ({ label, options, value, onChange, disabled, valueKey = 'id', label
         <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{label}</label>
         <select value={value || ''} disabled={disabled}
             onChange={e => onChange(e.target.value || null)}
-            className="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100">
+            className="no-select2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-accent disabled:bg-gray-100">
             <option value="">{placeholder || 'Seleccionar...'}</option>
             {(options || []).map(o => <option key={o[valueKey]} value={o[valueKey]}>{o[labelKey]}</option>)}
         </select>
@@ -213,7 +183,7 @@ const OpcionalesModal = ({ opcionales, onSelect }) => {
     return (
         <>
             <button type="button" onClick={() => setIsOpen(true)}
-                className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition flex items-center justify-center text-sm font-semibold">
+                className="btn btn-secondary btn-sm w-full justify-center">
                 <i className="fas fa-plus mr-2"></i>Agregar Opcional
             </button>
             {isOpen && (
@@ -223,12 +193,12 @@ const OpcionalesModal = ({ opcionales, onSelect }) => {
                         <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                             <div className="p-5 border-b">
                                 <div className="flex justify-between items-center mb-3">
-                                    <h3 className="text-lg font-bold text-slate-800"><i className="fas fa-plus-circle mr-2 text-blue-600"></i>Seleccionar Opcional</h3>
+                                    <h3 className="text-lg font-bold text-slate-800"><i className="fas fa-plus-circle mr-2 text-accent"></i>Seleccionar Opcional</h3>
                                     <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl"><i className="fas fa-times"></i></button>
                                 </div>
                                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                                     placeholder="Buscar por código o nombre..."
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" />
                             </div>
                             <div className="overflow-y-auto max-h-96 p-5">
                                 {filtered.length === 0 ? (
@@ -237,7 +207,7 @@ const OpcionalesModal = ({ opcionales, onSelect }) => {
                                     <div className="space-y-2">
                                         {filtered.map(opcional => (
                                             <button key={opcional.id} onClick={() => { onSelect(opcional); setIsOpen(false); setSearch(''); }}
-                                                className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition">
+                                                className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-accent-soft transition">
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
                                                         <div className="font-medium text-gray-900">{opcional.codigo} - {opcional.nombre}</div>
@@ -381,21 +351,21 @@ const CotizadorOrden = () => {
                             <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">{lbl}</label>
                             <input type="number" value={config[key]}
                                 onChange={e => setConfig(c => ({ ...c, [key]: parseFloat(e.target.value) || 0 }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-accent" />
                         </div>
                     ))}
                     <div>
                         <label className="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Cantidad</label>
                         <input type="number" min="1" value={cantidad}
                             onChange={e => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-accent" />
                     </div>
                 </div>
 
                 {config.producto_id && opcionalesDisp.length > 0 && (
                     <div className="mt-4 border-t pt-4">
                         <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
-                            <i className="fas fa-plus-circle mr-1 text-blue-600"></i>Opcionales
+                            <i className="fas fa-plus-circle mr-1 text-accent"></i>Opcionales
                         </label>
                         {config.opcionales.length > 0 && (
                             <div className="mb-2 space-y-1.5">
@@ -427,14 +397,14 @@ const CotizadorOrden = () => {
                 {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
 
                 <button onClick={calcular} disabled={loading || !config.marco_id}
-                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">
+                    className="btn btn-secondary w-full mt-4 justify-center disabled:opacity-50">
                     {loading ? <><i className="fas fa-spinner fa-spin mr-2"></i>Calculando...</> : <><i className="fas fa-calculator mr-2"></i>Calcular precio</>}
                 </button>
             </div>
 
             <div className="flex flex-col">
                 {result ? (
-                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
+                    <div className="bg-accent rounded-xl p-5 text-white mb-4">
                         <p className="text-sm opacity-80 mb-1">Precio unitario (referencia)</p>
                         <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>
                         {cantidad > 1 && <p className="text-sm opacity-80 mt-2">x {cantidad} = <strong>${fmt(result.precio_total * cantidad)}</strong></p>}
@@ -453,7 +423,7 @@ const CotizadorOrden = () => {
                 )}
 
                 <button onClick={crearOrden} disabled={saving}
-                    className="mt-auto w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all">
+                    className="mt-auto w-full btn btn-primary w-full justify-center disabled:opacity-50">
                     {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Creando...</> : <><i className="fas fa-plus mr-2"></i>Crear orden de fabricación</>}
                 </button>
             </div>

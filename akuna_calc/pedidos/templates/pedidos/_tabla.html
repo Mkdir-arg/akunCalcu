@@ -1,0 +1,50 @@
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Usuario</th>
+                <th>Ítems del pedido</th>
+                <th>Transcripción</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos %}
+            <tr>
+                <td class="strong">#{{ pedido.pk }}</td>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center justify-center rounded-lg bg-accent-soft text-accent" style="width:32px;height:32px"><i class="fab fa-telegram"></i></span>
+                        <div>
+                            <span class="strong" style="font-weight:500">{{ pedido.telegram_username|default:"Sin nombre" }}</span><br>
+                            <span class="muted text-xs">ID {{ pedido.telegram_chat_id }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <ul class="space-y-1">
+                        {% for item in pedido.items.all %}
+                        <li class="flex items-baseline gap-2"><span class="badge b-gray">{{ item.cantidad }}x</span>{{ item.descripcion }}</li>
+                        {% empty %}
+                        <li class="muted text-xs italic">Sin ítems</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td class="muted text-xs" style="white-space:normal;min-width:240px;max-width:360px" title="{{ pedido.transcripcion_original }}">{{ pedido.transcripcion_original|truncatechars:80 }}</td>
+                <td>
+                    {% if pedido.estado == 'confirmado' %}{% include 'core/ui/badge.html' with tone="green" label="Confirmado" dot=True only %}
+                    {% elif pedido.estado == 'cancelado' %}{% include 'core/ui/badge.html' with tone="red" label="Cancelado" dot=True only %}
+                    {% else %}{% include 'core/ui/badge.html' with tone="amber" label="Pendiente" dot=True only %}{% endif %}
+                </td>
+                <td class="muted">{{ pedido.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay pedidos registrados todavía" text="Los pedidos aparecen acá cuando alguien usa el bot de Telegram." icon="fab fa-telegram" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

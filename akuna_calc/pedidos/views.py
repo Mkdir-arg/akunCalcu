@@ -1,13 +1,32 @@
 import json
 import os
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from core.avisos import crear_aviso
+from usuarios.access_control import user_has_any_access
+
 from .models import ItemPedidoTelegram, PedidoTelegram
+
+
+def _avisar_borrador(pedido):
+    destinatarios = [
+        u for u in get_user_model().objects.filter(is_active=True)
+        if user_has_any_access(u, 'despiece.pedidos')
+    ]
+    quien = pedido.telegram_username or pedido.telegram_chat_id
+    crear_aviso(
+        destinatarios,
+        f'Nuevo pedido por voz #{pedido.pk} de {quien}, pendiente de confirmar.',
+        tipo='info',
+        url=reverse('pedidos:lista'),
+    )
 
 
 def _validar_token(request):
@@ -48,6 +67,8 @@ def api_crear_borrador(request):
             descripcion=item.get('descripcion', ''),
             cantidad=int(item.get('cantidad', 1)),
         )
+
+    _avisar_borrador(pedido)
 
     items_texto = '\n'.join(
         f"• {i.cantidad}x {i.descripcion}" for i in pedido.items.all()
@@ -108,7 +129,8 @@ def pedidos_list(request):
     if estado:
         pedidos = pedidos.filter(estado=estado)
 
-    return render(request, 'pedidos/pedidos_list.html', {
+    template = 'pedidos/_tabla.html' if request.GET.get('partial') else 'pedidos/pedidos_list.html'
+    return render(request, template, {
         'pedidos': pedidos,
         'estado_filter': estado,
     })
