@@ -20,6 +20,8 @@ def lista_facturas(request):
         'facturas': facturas,
         'titulo': 'Facturas ElectrÃ³nicas'
     }
+    if request.GET.get('partial') == '1':
+        return render(request, 'facturacion/_tabla_facturas.html', context)
     return render(request, 'facturacion/lista_facturas.html', context)
 
 

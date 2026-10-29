@@ -5,132 +5,103 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
-            <p class="text-slate-500 font-medium mt-1">Al {{ fecha|date:"d/m/Y" }}</p>
-        </div>
-        <a href="{% url 'contabilidad:plan_cuentas' %}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-arrow-left mr-2"></i>Volver
-        </a>
-    </div>
-
-    <!-- Filtros -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 mb-8">
-        <form method="get" class="flex flex-wrap gap-4 items-end">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
-                <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" class="px-3 py-2 border border-gray-300 rounded-md">
-            </div>
-            <button type="submit" class="btn-primary inline-flex items-center text-white px-6 py-2 rounded-2xl font-semibold shadow-lg">
-                <i class="fas fa-search mr-2"></i>Filtrar
-            </button>
-        </form>
-    </div>
-
-    <!-- Balance General -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- ACTIVO -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-slate-200">
-                <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-coins mr-2"></i>ACTIVO</h3>
-            </div>
-
-            <div class="p-6 space-y-2">
-                {% for cuenta in balance.activo.cuentas %}
-                {% with saldo=cuenta.get_saldo %}
-                {% if saldo != 0 %}
-                <div class="flex justify-between py-2 px-4 hover:bg-gray-50 rounded">
-                    <span class="text-gray-700 text-sm">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                    <span class="font-semibold text-green-600">${{ saldo|formato_numero }}</span>
-                </div>
-                {% endif %}
-                {% endwith %}
-                {% endfor %}
-                
-                <div class="flex justify-between py-4 px-4 bg-green-100 font-bold text-green-800 text-lg mt-4 rounded-lg border-2 border-green-300">
-                    <span>TOTAL ACTIVO</span>
-                    <span>${{ balance.activo.total|formato_numero }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- PASIVO + PATRIMONIO NETO -->
-        <div class="space-y-6">
-            <!-- PASIVO -->
-            <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-gradient-to-r from-red-50 to-rose-50 px-8 py-6 border-b border-slate-200">
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-file-invoice-dollar mr-2"></i>PASIVO</h3>
-                </div>
-
-                <div class="p-6 space-y-2">
-                    {% for cuenta in balance.pasivo.cuentas %}
-                    {% with saldo=cuenta.get_saldo %}
-                    {% if saldo != 0 %}
-                    <div class="flex justify-between py-2 px-4 hover:bg-gray-50 rounded">
-                        <span class="text-gray-700 text-sm">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                        <span class="font-semibold text-red-600">${{ saldo|formato_numero|cut:"-" }}</span>
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% endfor %}
-                    
-                    <div class="flex justify-between py-3 px-4 bg-red-50 font-bold text-red-700 mt-2 rounded-lg">
-                        <span>Total Pasivo</span>
-                        <span>${{ balance.pasivo.total|formato_numero }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PATRIMONIO NETO -->
-            <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 border-b border-slate-200">
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-balance-scale mr-2"></i>PATRIMONIO NETO</h3>
-                </div>
-
-                <div class="p-6 space-y-2">
-                    {% for cuenta in balance.patrimonio_neto.cuentas %}
-                    {% with saldo=cuenta.get_saldo %}
-                    {% if saldo != 0 %}
-                    <div class="flex justify-between py-2 px-4 hover:bg-gray-50 rounded">
-                        <span class="text-gray-700 text-sm">{{ cuenta.codigo }} - {{ cuenta.nombre }}</span>
-                        <span class="font-semibold text-blue-600">${{ saldo|formato_numero|cut:"-" }}</span>
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% endfor %}
-                    
-                    <div class="flex justify-between py-3 px-4 bg-blue-50 font-bold text-blue-700 mt-2 rounded-lg">
-                        <span>Total Patrimonio Neto</span>
-                        <span>${{ balance.patrimonio_neto.total|formato_numero }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TOTAL PASIVO + PN -->
-            <div class="card-elegant bg-white rounded-3xl shadow-xl p-6">
-                <div class="flex justify-between py-4 px-4 bg-slate-100 font-bold text-slate-800 text-lg rounded-lg border-2 border-slate-300">
-                    <span>TOTAL PASIVO + PN</span>
-                    <span>${{ balance.total_pasivo_pn|formato_numero }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Verificación de Balance -->
-    <div class="mt-6 card-elegant bg-white rounded-3xl shadow-xl p-6">
-        {% if balance.activo.total == balance.total_pasivo_pn %}
-        <div class="flex items-center justify-center text-green-600 font-bold text-lg">
-            <i class="fas fa-check-circle mr-2 text-2xl"></i>
-            Balance Cuadrado: Activo = Pasivo + PN
-        </div>
-        {% else %}
-        <div class="flex items-center justify-center text-red-600 font-bold text-lg">
-            <i class="fas fa-exclamation-triangle mr-2 text-2xl"></i>
-            Diferencia: ${{ balance.activo.total|formato_numero }} - ${{ balance.total_pasivo_pn|formato_numero }} = ${{ balance.activo.total|add:balance.total_pasivo_pn|formato_numero }}
-        </div>
-        {% endif %}
+<a class="muted text-sm inline-flex items-center gap-2 mb-2" href="{% url 'contabilidad:plan_cuentas' %}"><i class="fas fa-arrow-left"></i>Plan de cuentas</a>
+<div class="page-head">
+    <div>
+        <h1 class="page-title">{{ titulo }}</h1>
+        <p class="page-sub">Al {{ fecha|date:"d/m/Y" }}</p>
     </div>
 </div>
+
+<section class="card card-pad">
+    <form method="get" class="flex flex-wrap gap-3 items-end">
+        <div class="field">
+            <label for="fecha">Fecha</label>
+            <input type="date" id="fecha" name="fecha" value="{{ fecha|date:'Y-m-d' }}">
+        </div>
+        <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i>Filtrar</button>
+    </form>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5 items-start">
+    <section class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-line"><h2 class="strong">Activo</h2></div>
+        <div class="table-wrap">
+            <table class="tbl">
+                <tbody>
+                    {% for cuenta in balance.activo.cuentas %}
+                    {% with saldo=cuenta.get_saldo %}
+                    {% if saldo != 0 %}
+                    <tr><td>{{ cuenta.codigo }} - {{ cuenta.nombre }}</td><td class="num">${{ saldo|formato_numero }}</td></tr>
+                    {% endif %}
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr><td class="strong">Total activo</td><td class="num strong">${{ balance.activo.total|formato_numero }}</td></tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <div class="flex flex-col gap-5">
+        <section class="card overflow-hidden">
+            <div class="px-5 py-4 border-b border-line"><h2 class="strong">Pasivo</h2></div>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <tbody>
+                        {% for cuenta in balance.pasivo.cuentas %}
+                        {% with saldo=cuenta.get_saldo %}
+                        {% if saldo != 0 %}
+                        <tr><td>{{ cuenta.codigo }} - {{ cuenta.nombre }}</td><td class="num">${{ saldo|formato_numero|cut:"-" }}</td></tr>
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr><td class="strong">Total pasivo</td><td class="num strong">${{ balance.pasivo.total|formato_numero }}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="card overflow-hidden">
+            <div class="px-5 py-4 border-b border-line"><h2 class="strong">Patrimonio neto</h2></div>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <tbody>
+                        {% for cuenta in balance.patrimonio_neto.cuentas %}
+                        {% with saldo=cuenta.get_saldo %}
+                        {% if saldo != 0 %}
+                        <tr><td>{{ cuenta.codigo }} - {{ cuenta.nombre }}</td><td class="num">${{ saldo|formato_numero|cut:"-" }}</td></tr>
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr><td class="strong">Total patrimonio neto</td><td class="num strong">${{ balance.patrimonio_neto.total|formato_numero }}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="card card-pad flex justify-between">
+            <span class="strong">Total pasivo + PN</span>
+            <span class="strong num">${{ balance.total_pasivo_pn|formato_numero }}</span>
+        </section>
+    </div>
+</div>
+
+<section class="card card-pad mt-5">
+    {% if balance.activo.total == balance.total_pasivo_pn %}
+    <div class="flex items-center justify-center gap-2">
+        {% include 'core/ui/badge.html' with tone="green" label="Balance cuadrado: Activo = Pasivo + PN" icon="fas fa-check-circle" only %}
+    </div>
+    {% else %}
+    <div class="flex items-center justify-center gap-2 flex-wrap">
+        {% include 'core/ui/badge.html' with tone="red" label="Balance con diferencia" icon="fas fa-exclamation-triangle" only %}
+        <span class="strong num">${{ balance.activo.total|formato_numero }} - ${{ balance.total_pasivo_pn|formato_numero }} = ${{ balance.activo.total|add:balance.total_pasivo_pn|formato_numero }}</span>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}

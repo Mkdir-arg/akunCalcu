@@ -1,92 +1,20 @@
 {% extends 'core/base.html' %}
-{% load custom_filters %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}Facturación{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-file-invoice-dollar mr-3"></i>{{ titulo }}
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Facturas electrónicas AFIP</p>
-        </div>
-        <a href="{% url 'facturacion:crear_factura' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i>Nueva Factura
-        </a>
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Facturación</h1>
+        <p class="page-sub">Comprobantes electrónicos emitidos con ARCA.</p>
     </div>
-
-    {% if messages %}
-        {% for message in messages %}
-        <div class="mb-4 p-4 rounded-2xl animate-fade-in {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-            <i class="fas fa-info-circle mr-2"></i>{{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Número</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cliente</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Total</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">CAE</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for factura in facturas %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm font-bold text-slate-800">{{ factura.get_numero_completo }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{{ factura.get_tipo_display }}</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ factura.cliente.nombre }} {{ factura.cliente.apellido }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ factura.fecha|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-slate-800">${{ factura.total|formato_numero }}</td>
-                        <td class="px-6 py-4">
-                            {% if factura.estado == 'autorizada' %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                    <i class="fas fa-check-circle mr-1"></i>Autorizada
-                                </span>
-                            {% elif factura.estado == 'rechazada' %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                                    <i class="fas fa-times-circle mr-1"></i>Rechazada
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">{{ factura.get_estado_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 font-mono">{{ factura.cae|default:"-" }}</td>
-                        <td class="px-6 py-4 text-center">
-                            <a href="{% url 'facturacion:detalle_factura' factura.id %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay facturas registradas</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="mt-6">
-        <a href="{% url 'facturacion:libro_iva_ventas' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold">
-            <i class="fas fa-book mr-2"></i>Ver Libro IVA Ventas
-        </a>
+    <div class="page-actions">
+        <a class="btn btn-secondary" href="{% url 'facturacion:libro_iva_ventas' %}"><i class="fas fa-book"></i>Libro IVA ventas</a>
+        <a class="btn btn-primary" href="{% url 'facturacion:crear_factura' %}"><i class="fas fa-plus"></i>Nueva factura</a>
     </div>
 </div>
+
+<section class="card overflow-hidden" data-live="facturas" data-live-partial>
+    {% include 'facturacion/_tabla_facturas.html' %}
+</section>
 {% endblock %}
