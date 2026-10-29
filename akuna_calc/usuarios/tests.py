@@ -196,6 +196,22 @@ class UserAccessFlowTest(TestCase):
 			self.assertEqual(form_response.status_code, 200)
 			self.assertContains(form_response, 'permissionsCard')
 
+	def test_user_form_rediseñado_guarda_y_muestra_permisos(self):
+		admin = User.objects.create_superuser('root_form', 'r@x.com', 'ClaveSegura123')
+		self.client.force_login(admin)
+		response = self.client.post(reverse('user_create'), {
+			'username': 'vendedora', 'email': 'v@x.com', 'first_name': 'Ve', 'last_name': 'Na',
+			'password': 'ClaveSegura123', 'is_active': 'on', 'rol_sistema': '',
+			'access_codes': ['comercial.ventas', 'presupuestos.view'],
+		})
+		self.assertEqual(response.status_code, 302)
+		creado = User.objects.get(username='vendedora')
+		self.assertEqual(sorted(creado.perfil_acceso.permisos), ['comercial.ventas', 'presupuestos.view'])
+
+		edit = self.client.get(reverse('user_update', args=[creado.pk]))
+		self.assertContains(edit, 'value="comercial.ventas" checked')
+		self.assertNotContains(edit, 'value="comercial.clientes" checked')
+
 	def test_shared_pricing_api_accepts_presupuestos_permission(self):
 		user = User.objects.create_user(username='presup_user', password='ClaveSegura123', is_active=True)
 		self.assign_access(user, ['presupuestos.view'])
