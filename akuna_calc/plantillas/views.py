@@ -43,7 +43,8 @@ def index(request):
 def pedido_list(request):
     """Listado de pedidos"""
     pedidos = PedidoFabrica.objects.select_related('presupuesto').all()
-    return render(request, 'plantillas/pedido_list.html', {'pedidos': pedidos})
+    template = 'plantillas/_pedido_tabla.html' if request.GET.get('partial') else 'plantillas/pedido_list.html'
+    return render(request, template, {'pedidos': pedidos})
 
 
 @login_required

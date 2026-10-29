@@ -2,49 +2,48 @@
 
 {% block title %}{{ titulo }}{% endblock %}
 
-{% block content %}
-<div class="max-w-6xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">{{ titulo }}</h1>
-    </div>
+{% block plantillas_content %}
+<div class="max-w-6xl">
+    {% url 'plantillas:opcional_list' as url_volver %}
+    {% include 'core/ui/page_header.html' with title=titulo back_url=url_volver back_label="Opcionales de fábrica" only %}
 
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">Datos del Opcional</h2>
+    <div class="card card-pad mb-5">
+        <h2 class="strong text-base mb-4">Datos del Opcional</h2>
         <form method="post">
             {% csrf_token %}
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.codigo.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.codigo.label }}</label>
                     {{ form.codigo }}
                     {% if form.codigo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.codigo.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.nombre.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.nombre.label }}</label>
                     {{ form.nombre }}
                     {% if form.nombre.errors %}<p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.tipo.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.tipo.label }}</label>
                     {{ form.tipo }}
                     {% if form.tipo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.0 }}</p>{% endif %}
                 </div>
                 <div id="linea-wrapper">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.linea_id.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.linea_id.label }}</label>
                     {{ form.linea_id }}
                     {% if form.linea_id.errors %}<p class="mt-1 text-sm text-red-600">{{ form.linea_id.errors.0 }}</p>{% endif %}
                 </div>
                 <div id="precio-m2-wrapper">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.precio_m2.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.precio_m2.label }}</label>
                     {{ form.precio_m2 }}
                     {% if form.precio_m2.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_m2.errors.0 }}</p>{% endif %}
                 </div>
                 <div id="precio-unidad-wrapper" style="display:none;">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.precio_unidad.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.precio_unidad.label }}</label>
                     {{ form.precio_unidad }}
                     {% if form.precio_unidad.errors %}<p class="mt-1 text-sm text-red-600">{{ form.precio_unidad.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.descripcion.label }}</label>
+                    <label class="block text-sm font-medium mb-1" style="color:#344054">{{ form.descripcion.label }}</label>
                     {{ form.descripcion }}
                     {% if form.descripcion.errors %}<p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>{% endif %}
                 </div>
@@ -97,17 +96,17 @@
             })();
             </script>
             <div class="mt-6 flex gap-3">
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-                    <i class="fas fa-save mr-2"></i>Guardar
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>Guardar
                 </button>
-                <a href="{% url 'plantillas:opcional_list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">Cancelar</a>
+                <a href="{% url 'plantillas:opcional_list' %}" class="btn btn-ghost">Cancelar</a>
             </div>
         </form>
     </div>
 
     {% if not opcional or not opcional.pk %}
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <p class="text-blue-800"><i class="fas fa-info-circle mr-2"></i>Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones.</p>
+    <div class="bg-accent-soft rounded-lg p-4 mb-5">
+        <p class="text-accent"><i class="fas fa-info-circle mr-2"></i>Guarda primero el opcional para poder agregar fórmulas, accesorios o relaciones.</p>
     </div>
     {% endif %}
 
@@ -115,26 +114,26 @@
 
     {% if opcional.tipo == 'mosquitero' %}
     <!-- Fórmulas Mosquitero: Cantidad + Fórmula + Extrusora + Línea + Producto -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="card card-pad mb-5">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Fórmulas</h2>
+            <h2 class="strong text-base">Fórmulas</h2>
             <span id="estadoFormulasOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
 
         <div id="formulas-mosq-container" class="space-y-3">
             {% for formula in formulas %}
-            <div class="formula-mosq-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="formula-mosq-row bg-ground p-4 rounded-lg border border-line">
                 <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Cantidad</label>
                         <input type="text" name="cantidad" value="{{ formula.cantidad }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fórmula</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Fórmula</label>
                         <input type="text" name="formula" value="{{ formula.formula }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Extrusora</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Extrusora</label>
                         <select class="extrusora-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="extrusora" onchange="filtrarLineas(this)">
                             <option value="">Todas</option>
                             {% for ext in extrusoras %}
@@ -143,7 +142,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Línea</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Línea</label>
                         <select class="linea-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="linea" onchange="filtrarProductos(this)">
                             <option value="">Todas</option>
                             {% for lin in lineas %}
@@ -152,7 +151,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Producto</label>
                         <select class="producto-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" name="producto">
                             <option value="">Seleccionar...</option>
                             {% for prod in productos %}
@@ -161,7 +160,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="eliminarFormulaMosq(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarFormulaMosq(this)" class="btn btn-danger w-full justify-center">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -170,32 +169,32 @@
             {% endfor %}
         </div>
 
-        <button onclick="agregarFormulaMosq()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
+        <button onclick="agregarFormulaMosq()" class="btn btn-secondary mt-4 w-full justify-center">
             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
         </button>
     </div>
 
     {% elif opcional.tipo == 'premarco' or opcional.tipo == 'otro' %}
     <!-- Fórmulas de Cálculo (Otro) -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="card card-pad mb-5">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Fórmulas de Cálculo</h2>
+            <h2 class="strong text-base">Fórmulas de Cálculo</h2>
             <span id="estadoFormulasOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
         <div id="formulas-container" class="space-y-3">
             {% for formula in formulas %}
-            <div class="formula-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="formula-row bg-ground p-4 rounded-lg border border-line">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Cantidad</label>
                         <input type="text" name="cantidad" value="{{ formula.cantidad }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fórmula</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Fórmula</label>
                         <input type="text" name="formula" value="{{ formula.formula }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Alto - 42">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Perfil</label>
                         <select name="perfil" class="perfil-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seleccionar...</option>
                             {% for perfil in perfiles %}
@@ -204,7 +203,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="eliminarFormulaOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarFormulaOpcional(this)" class="btn btn-danger w-full justify-center">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -212,27 +211,27 @@
             </div>
             {% endfor %}
         </div>
-        <button onclick="agregarFormula()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
+        <button onclick="agregarFormula()" class="btn btn-secondary mt-4 w-full justify-center">
             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
         </button>
     </div>
 
     <!-- Accesorios -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="card card-pad mb-5">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Accesorios</h2>
+            <h2 class="strong text-base">Accesorios</h2>
             <span id="estadoAccesoriosOpcional" class="text-sm text-gray-500">Guardado</span>
         </div>
         <div id="accesorios-container" class="space-y-3">
             {% for acc in accesorios %}
-            <div class="accesorio-row bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="accesorio-row bg-ground p-4 rounded-lg border border-line">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Cantidad</label>
                         <input type="text" name="cantidad_acc" value="{{ acc.cantidad }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Accesorio</label>
+                        <label class="block text-sm font-medium mb-1" style="color:#344054">Accesorio</label>
                         <select name="accesorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seleccionar...</option>
                             {% for accesorio in accesorios_list %}
@@ -241,7 +240,7 @@
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button type="button" onclick="eliminarAccesorioOpcional(this)" class="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                        <button type="button" onclick="eliminarAccesorioOpcional(this)" class="btn btn-danger w-full justify-center">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -249,7 +248,7 @@
             </div>
             {% endfor %}
         </div>
-        <button onclick="agregarAccesorio()" class="mt-4 w-full bg-blue-50 text-blue-600 py-3 rounded-lg border-2 border-dashed border-blue-300 hover:bg-blue-100 transition">
+        <button onclick="agregarAccesorio()" class="btn btn-secondary mt-4 w-full justify-center">
             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
         </button>
     </div>

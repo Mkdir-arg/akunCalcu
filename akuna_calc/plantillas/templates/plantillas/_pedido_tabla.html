@@ -1,0 +1,41 @@
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Presupuesto</th>
+                <th>Estado</th>
+                <th><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos %}
+            <tr>
+                <td><a class="strong" href="{% url 'plantillas:pedido_detail' pedido.pk %}">{{ pedido.numero }}</a></td>
+                <td><span class="strong">{{ pedido.cliente }}</span></td>
+                <td class="muted">{{ pedido.fecha|date:"d/m/Y" }}</td>
+                <td>
+                    {% if pedido.presupuesto %}
+                    <a href="{% url 'presupuestos:presupuestos-detalle' pedido.presupuesto.pk %}">{{ pedido.presupuesto.numero }}</a>
+                    {% else %}
+                    <span class="muted">Manual</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if pedido.estado == 'BORRADOR' %}{% include 'core/ui/badge.html' with tone="gray" label="Borrador" dot=True only %}
+                    {% elif pedido.estado == 'EN_PROCESO' %}{% include 'core/ui/badge.html' with tone="blue" label="En proceso" dot=True only %}
+                    {% elif pedido.estado == 'COMPLETADO' %}{% include 'core/ui/badge.html' with tone="green" label="Completado" dot=True only %}
+                    {% else %}{% include 'core/ui/badge.html' with tone="red" label="Cancelado" dot=True only %}{% endif %}
+                </td>
+                <td class="num"><a class="btn btn-secondary btn-sm" href="{% url 'plantillas:pedido_detail' pedido.pk %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">{% url 'plantillas:pedido_create' as url_crear %}{% include 'core/ui/empty_state.html' with title="Todavía no hay pedidos" icon="fas fa-clipboard-list" action_url=url_crear action_label="Nuevo pedido" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
