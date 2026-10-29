@@ -416,3 +416,18 @@ class SidebarGruposTests(TestCase):
         self.assertIn('Ventas y cobros', html)
         self.assertIn('js/live.js', html)
         self.assertIn('css/taller.css', html)
+
+
+class SesionPasivaPollTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin_sesion', 'a@x.com', 'pass')
+        self.client.force_login(self.admin)
+
+    def test_poll_no_renueva_la_sesion(self):
+        response = self.client.get(reverse('core_api_live'), {'keys': 'avisos'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('sessionid', response.cookies)
+
+    def test_pagina_normal_si_renueva_la_sesion(self):
+        response = self.client.get(reverse('home'))
+        self.assertIn('sessionid', response.cookies)
