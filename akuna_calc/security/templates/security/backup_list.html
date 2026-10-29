@@ -1,204 +1,99 @@
 {% extends 'core/base.html' %}
 
+{% block title %}Backups{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4">
-    <!-- Header -->
-    <div class="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-database mr-3 text-blue-600"></i>Gestión de Backups
-            </h1>
-            <p class="text-gray-600">Sistema de respaldo automático de base de datos</p>
-        </div>
-        <a href="{% url 'security:backup_logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
-            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
-        </a>
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Backups</h1>
+        <p class="page-sub">Respaldo de la base de datos, manual y automático.</p>
     </div>
-
-    <div class="bg-white rounded-2xl shadow-lg p-3 mb-6">
-        <div class="flex flex-wrap gap-3">
-            <a href="{% url 'security:backup_list' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2 rounded-xl font-semibold">Backups</a>
-            <a href="{% url 'security:audit_list' %}" class="bg-gray-100 hover:bg-gray-200 text-slate-700 px-5 py-2 rounded-xl font-semibold">Auditoría</a>
-        </div>
-    </div>
-
-    <!-- Estadísticas -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-2 font-medium">Total Backups</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ total_backups }}</p>
-                </div>
-                <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-database text-blue-600 text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-2 font-medium">Completados</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ completed_backups }}</p>
-                </div>
-                <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-purple-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 mb-2 font-medium">Tamaño Total</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ total_size }}</p>
-                </div>
-                <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-hdd text-purple-600 text-2xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Acciones -->
-    <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
-        <div class="flex flex-col sm:flex-row gap-4">
-            <form method="post" action="{% url 'security:backup_create' %}" class="flex-1">
-                {% csrf_token %}
-                <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>Crear Backup Ahora
-                </button>
-            </form>
-            <form method="post" action="{% url 'security:backup_trigger_n8n' %}" class="flex-1" id="form-n8n-trigger">
-                {% csrf_token %}
-                <button type="submit" id="btn-n8n" class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-pink-600 transition-all shadow-lg">
-                    <i class="fab fa-google-drive mr-2"></i>Backup → Google Drive (n8n)
-                </button>
-            </form>
-            <a href="{% url 'security:backup_settings' %}" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg text-center">
-                <i class="fas fa-cog mr-2"></i>Configuración
-            </a>
-        </div>
-
-        {% if settings.auto_backup_enabled %}
-        <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <p class="text-sm text-green-800">
-                <i class="fas fa-check-circle mr-2"></i>
-                <strong>Backup automático activado:</strong> Se ejecuta cada {{ settings.backup_frequency_hours }} horas. 
-                Retención: {{ settings.backup_retention_days }} días.
-            </p>
-        </div>
-        {% else %}
-        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <p class="text-sm text-yellow-800">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                <strong>Backup automático desactivado.</strong> Configure el backup automático en la sección de configuración.
-            </p>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Lista de Backups -->
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-900">
-                <i class="fas fa-list mr-2"></i>Backups Disponibles
-            </h2>
-        </div>
-
-        {% if backups %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archivo</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tamaño</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for backup in backups %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center flex-wrap gap-2">
-                                <i class="fas fa-file-archive text-blue-500 mr-1"></i>
-                                <span class="text-sm font-medium text-gray-900">{{ backup.filename }}</span>
-                                {% if backup.storage_location == 'drive' %}
-                                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                                        <i class="fab fa-google-drive mr-1"></i>Auto - Drive
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">
-                            {{ backup.created_at|date:"d/m/Y H:i" }}
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">
-                            {{ backup.get_size_display }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {% if backup.status == 'completed' %}
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i>Completado
-                                </span>
-                            {% elif backup.status == 'running' %}
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    <i class="fas fa-spinner fa-spin mr-1"></i>En proceso
-                                </span>
-                            {% elif backup.status == 'failed' %}
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i>Fallido
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                    {{ backup.get_status_display }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                            {% if backup.status == 'completed' %}
-                                {% if backup.storage_location == 'drive' %}
-                                    <span class="text-purple-600 mr-4">
-                                        <i class="fab fa-google-drive"></i> En Google Drive
-                                    </span>
-                                {% else %}
-                                    <a href="{% url 'security:backup_download' backup.pk %}" class="text-blue-600 hover:text-blue-900 mr-4">
-                                        <i class="fas fa-download"></i> Descargar
-                                    </a>
-                                {% endif %}
-                                <form method="post" action="{% url 'security:backup_delete' backup.pk %}" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este backup?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-red-600 hover:text-red-900">
-                                        <i class="fas fa-trash"></i> Eliminar
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="px-6 py-12 text-center">
-            <i class="fas fa-database text-gray-300 text-6xl mb-4"></i>
-            <p class="text-gray-500 text-lg">No hay backups disponibles</p>
-            <p class="text-gray-400 text-sm mt-2">Cree su primer backup usando el botón de arriba</p>
-        </div>
-        {% endif %}
+    <div class="page-actions">
+        <a href="{% url 'security:backup_settings' %}" class="btn btn-ghost"><i class="fas fa-gear"></i>Configuración</a>
+        <a href="{% url 'security:backup_logout' %}" class="btn btn-ghost"><i class="fas fa-right-from-bracket"></i>Cerrar sesión</a>
+        <form method="post" action="{% url 'security:backup_trigger_n8n' %}" id="form-n8n-trigger" class="inline">
+            {% csrf_token %}
+            <button type="submit" id="btn-n8n" class="btn btn-secondary"><i class="fab fa-google-drive"></i>Backup → Google Drive (n8n)</button>
+        </form>
+        <form method="post" action="{% url 'security:backup_create' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i>Crear backup ahora</button>
+        </form>
     </div>
 </div>
+
+<div class="mb-5">{% include 'security/_tabs_seguridad.html' with activa='backups' %}</div>
+
+<div class="grid gap-4 mb-5" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+    <div class="card card-pad"><p class="sec-label">Total de backups</p><p class="text-2xl font-semibold num">{{ total_backups }}</p></div>
+    <div class="card card-pad"><p class="sec-label">Completados</p><p class="text-2xl font-semibold num">{{ completed_backups }}</p></div>
+    <div class="card card-pad"><p class="sec-label">Tamaño total</p><p class="text-2xl font-semibold num">{{ total_size }}</p></div>
+    {% if settings.auto_backup_enabled %}
+    <div class="card card-pad flex items-center gap-3" style="background:#ECFDF3; border-color:#ABEFC6;">
+        {% include 'core/ui/badge.html' with tone="green" label="Automático activado" dot=True only %}
+        <span class="text-sm text-ok">Cada {{ settings.backup_frequency_hours }} h. Retención: {{ settings.backup_retention_days }} días.</span>
+    </div>
+    {% else %}
+    <div class="card card-pad flex items-center gap-3" style="background:#FFFAEB; border-color:#FEDF89;">
+        {% include 'core/ui/badge.html' with tone="amber" label="Automático desactivado" dot=True only %}
+        <span class="text-sm text-warn">Configuralo en «Configuración».</span>
+    </div>
+    {% endif %}
+</div>
+
+<section class="card overflow-hidden" data-live="backups">
+    <div class="toolbar justify-between">
+        <h2 class="strong">Backups disponibles</h2>
+        <span class="muted text-sm">Local o Google Drive</span>
+    </div>
+    <div class="table-wrap"><table class="tbl">
+        <thead><tr>
+            <th>Archivo</th><th>Ubicación</th><th>Fecha</th><th class="num">Tamaño</th><th>Estado</th><th><span class="sr-only">Acciones</span></th>
+        </tr></thead>
+        <tbody>
+        {% for backup in backups %}
+        <tr>
+            <td class="strong">{{ backup.filename }}</td>
+            <td>
+                {% if backup.storage_location == 'drive' %}{% include 'core/ui/badge.html' with tone="violet" label="Auto - Drive" only %}
+                {% else %}{% include 'core/ui/badge.html' with tone="gray" label="Local" only %}{% endif %}
+            </td>
+            <td class="muted">{{ backup.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="num">{{ backup.get_size_display }}</td>
+            <td>
+                {% if backup.status == 'completed' %}{% include 'core/ui/badge.html' with tone="green" label="Completado" dot=True only %}
+                {% elif backup.status == 'running' %}{% include 'core/ui/badge.html' with tone="blue" label="En proceso" dot=True only %}
+                {% elif backup.status == 'failed' %}{% include 'core/ui/badge.html' with tone="red" label="Fallido" dot=True only %}
+                {% else %}{% include 'core/ui/badge.html' with tone="gray" label=backup.get_status_display only %}{% endif %}
+            </td>
+            <td class="num">
+                {% if backup.status == 'completed' %}
+                <span class="inline-flex items-center gap-2">
+                    {% if backup.storage_location == 'drive' %}
+                        <span class="muted text-sm">En Google Drive</span>
+                    {% else %}
+                        <a href="{% url 'security:backup_download' backup.pk %}" class="btn btn-secondary btn-sm"><i class="fas fa-download"></i>Descargar</a>
+                    {% endif %}
+                    {% url 'security:backup_delete' backup.pk as url_borrar %}
+                    {% include 'core/ui/kebab_menu.html' with kebab_label="Más acciones" delete_url=url_borrar delete_name=backup.filename only %}
+                </span>
+                {% else %}<span class="muted text-sm">—</span>{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay backups disponibles" text="Creá el primero con el botón «Crear backup ahora»." icon="fas fa-database" only %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+</section>
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.getElementById('form-n8n-trigger').addEventListener('submit', function() {
     var btn = document.getElementById('btn-n8n');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Iniciando workflow...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Iniciando workflow...';
 });
 </script>
-{% endblock %}
 {% endblock %}

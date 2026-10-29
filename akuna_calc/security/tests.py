@@ -167,6 +167,29 @@ class BackupApiCreateTest(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)
 
+    @patch.dict(os.environ, {'BACKUP_BOT_SECRET': 'secreto-test'})
+    @patch('security.views.subprocess.Popen')
+    def test_backup_fallido_avisa_a_staff(self, mock_popen):
+        from django.contrib.auth import get_user_model
+        from core.models import Aviso
+        User = get_user_model()
+        staff = User.objects.create_user('admin_av', password='x', is_staff=True)
+        User.objects.create_user('comun_av', password='x')
+        fake_process = MagicMock()
+        fake_process.stdout.read.side_effect = [b'']
+        fake_process.stderr.read.return_value = b'boom'
+        fake_process.returncode = 2
+        mock_popen.return_value = fake_process
+
+        response = self.client.post(self.url, HTTP_X_BOT_SECRET='secreto-test')
+        b''.join(response.streaming_content)
+
+        self.assertEqual(Backup.objects.first().status, 'failed')
+        avisos = Aviso.objects.all()
+        self.assertEqual(avisos.count(), 1)
+        self.assertEqual(avisos[0].usuario, staff)
+        self.assertEqual(avisos[0].tipo, Aviso.TIPO_ERROR)
+
 
 class FusionarMergeTest(TestCase):
     def setUp(self):
