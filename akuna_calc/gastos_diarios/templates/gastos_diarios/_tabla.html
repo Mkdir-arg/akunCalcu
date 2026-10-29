@@ -1,0 +1,79 @@
+{% load custom_filters %}
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th class="hidden sm:table-cell">#</th>
+                <th>Descripción</th>
+                <th class="num">Monto</th>
+                <th class="hidden md:table-cell">Nombre</th>
+                <th class="hidden sm:table-cell">Fecha</th>
+                <th>Estado</th>
+                <th>Clasificación</th>
+                <th class="num">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gasto in page_obj %}
+            <tr>
+                <td class="hidden sm:table-cell muted">#{{ gasto.pk }}</td>
+                <td>
+                    <p class="strong">{{ gasto.descripcion }}</p>
+                    {% if gasto.transcripcion %}
+                    <p class="muted text-xs mt-1 truncate max-w-md" title="{{ gasto.transcripcion }}">
+                        <i class="fas fa-quote-left mr-1"></i>{{ gasto.transcripcion|truncatechars:80 }}
+                    </p>
+                    {% endif %}
+                </td>
+                <td class="num strong">$ {{ gasto.monto|formato_numero }}</td>
+                <td class="hidden md:table-cell muted">
+                    <i class="fab fa-whatsapp mr-1"></i>{{ gasto.origen_nombre }}
+                </td>
+                <td class="hidden sm:table-cell muted whitespace-nowrap">{{ gasto.fecha|date:"d/m/Y" }}</td>
+                <td>
+                    {% if gasto.estado == 'aprobado' %}
+                        {% include 'core/ui/badge.html' with tone="green" label="Aprobado" dot=True only %}
+                    {% elif gasto.estado == 'rechazado' %}
+                        {% include 'core/ui/badge.html' with tone="red" label="Rechazado" dot=True only %}
+                    {% else %}
+                        {% include 'core/ui/badge.html' with tone="amber" label="En espera" dot=True only %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if gasto.estado == 'en_espera' %}
+                    <select id="tipo-{{ gasto.pk }}" class="input">
+                        <option value="">Sin clasificar</option>
+                        {% for clave, etiqueta in tipo_choices %}
+                        <option value="{{ clave }}" {% if gasto.tipo_cuenta == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                    {% elif gasto.tipo_cuenta %}
+                        {% include 'core/ui/badge.html' with tone="gray" label=gasto.get_tipo_cuenta_display only %}
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td class="num">
+                    {% if gasto.estado == 'en_espera' %}
+                    <div class="inline-flex items-center gap-1">
+                        <button type="button" onclick="confirmarAccion('{% url 'gastos_diarios:aprobar' gasto.pk %}', 'aprobar', '{{ gasto.descripcion|escapejs }}', {{ gasto.pk }})" class="btn btn-secondary btn-sm btn-icon" title="Aprobar" aria-label="Aprobar">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" onclick="confirmarAccion('{% url 'gastos_diarios:rechazar' gasto.pk %}', 'rechazar', '{{ gasto.descripcion|escapejs }}')" class="btn btn-ghost btn-sm btn-icon" title="Rechazar" aria-label="Rechazar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay gastos registrados" text="Mandá una nota de voz por WhatsApp para empezar a cargar gastos." icon="fas fa-microphone-lines" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="gastos" only %}

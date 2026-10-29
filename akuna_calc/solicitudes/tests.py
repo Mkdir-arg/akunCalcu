@@ -121,6 +121,35 @@ class ApiCrearTests(BaseSolicitudesTest):
         self.assertEqual(s.vendedor, v1)
         self.assertIsNotNone(s.fecha_asignacion)
 
+    def test_solicitud_nueva_crea_aviso_al_vendedor(self):
+        from core.models import Aviso
+        v1 = self.crear_vendedor('v1')
+        self.api_post('solicitudes:api_crear', {'nombre_cliente': 'Cliente Uno', 'email': 'cli@uno.com'})
+        aviso = Aviso.objects.get(usuario=v1)
+        self.assertIn('Cliente Uno', aviso.texto)
+        self.assertEqual(aviso.url, reverse('solicitudes:lista'))
+
+    def test_duplicada_o_sin_vendedor_no_crea_aviso(self):
+        from core.models import Aviso
+        v1 = self.crear_vendedor('v1')
+        payload = {'nombre_cliente': 'Cli', 'email': 'c@c.com', 'gmail_thread_id': 'th-1'}
+        self.api_post('solicitudes:api_crear', payload)
+        self.api_post('solicitudes:api_crear', payload)
+        self.assertEqual(Aviso.objects.filter(usuario=v1).count(), 1)
+        v1.is_active = False
+        v1.save()
+        self.api_post('solicitudes:api_crear', {'nombre_cliente': 'Otro', 'email': 'o@o.com'})
+        self.assertEqual(Aviso.objects.count(), 1)
+
+    def test_lista_partial_devuelve_solo_la_tabla(self):
+        v1 = self.crear_vendedor('v1')
+        self.api_post('solicitudes:api_crear', {'nombre_cliente': 'Cliente Parcial', 'email': 'p@p.com'})
+        self.client.force_login(v1)
+        resp = self.client.get(reverse('solicitudes:lista'), {'partial': '1'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Cliente Parcial')
+        self.assertNotContains(resp, '<html')
+
     def test_sin_vendedores_queda_sin_asignar(self):
         resp = self.api_post('solicitudes:api_crear', {'nombre_cliente': 'Cli'})
         self.assertEqual(resp.status_code, 201)

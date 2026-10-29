@@ -312,13 +312,22 @@ def gasto_list(request):
     for gasto in page_obj:
         gasto.origen_nombre = nombres.get(gasto.numero_origen) or gasto.numero_origen
 
-    return render(request, 'gastos_diarios/gasto_list.html', {
+    query_sin_page = '&'.join(
+        f'{k}={v}' for k, v in (
+            ('estado', estado), ('fecha_desde', fecha_desde), ('fecha_hasta', fecha_hasta),
+        ) if v
+    )
+    contexto = {
         'page_obj': page_obj,
+        'query_sin_page': query_sin_page,
         'estado_filter': estado,
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
         'tipo_choices': GastoDiario.TIPO_CUENTA_CHOICES,
-    })
+    }
+    if request.GET.get('partial') == '1':
+        return render(request, 'gastos_diarios/_tabla.html', contexto)
+    return render(request, 'gastos_diarios/gasto_list.html', contexto)
 
 
 def _registrar_compra(gasto, user):

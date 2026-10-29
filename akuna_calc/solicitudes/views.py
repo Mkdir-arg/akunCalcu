@@ -10,6 +10,10 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from django.urls import reverse
+
+from core.avisos import crear_aviso
+
 from .forms import ReasignarSolicitudForm
 from .models import SolicitudPresupuesto
 from .services import asignar_siguiente_vendedor, vendedores_pool
@@ -112,6 +116,14 @@ def api_crear(request):
         else:
             solicitud.estado = SolicitudPresupuesto.ESTADO_SIN_ASIGNAR
     solicitud.save()
+
+    if solicitud.vendedor_id and solicitud.estado == SolicitudPresupuesto.ESTADO_ASIGNADA:
+        crear_aviso(
+            solicitud.vendedor,
+            f"Solicitud nueva de {solicitud.nombre_cliente or solicitud.email or 'un cliente'}",
+            tipo='info',
+            url=reverse('solicitudes:lista'),
+        )
 
     return JsonResponse(_payload_solicitud(solicitud), status=201)
 
@@ -222,13 +234,20 @@ def solicitud_list(request):
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
-    return render(request, 'solicitudes/solicitud_list.html', {
+    query_sin_page = '&'.join(
+        f'{k}={v}' for k, v in (('estado', estado), ('vendedor', vendedor_id)) if v
+    )
+    contexto = {
         'page_obj': page_obj,
+        'query_sin_page': query_sin_page,
         'estado_filter': estado,
         'vendedor_filter': vendedor_id,
         'vendedores': vendedores_pool(),
         'estado_choices': SolicitudPresupuesto.ESTADO_CHOICES,
-    })
+    }
+    if request.GET.get('partial') == '1':
+        return render(request, 'solicitudes/_tabla.html', contexto)
+    return render(request, 'solicitudes/solicitud_list.html', contexto)
 
 
 @login_required

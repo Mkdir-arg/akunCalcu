@@ -174,6 +174,19 @@ class GastoViewsTests(TestCase):
         resp = self.client.get(reverse('gastos_diarios:lista'))
         self.assertNotContains(resp, 'Borrador')
 
+    def test_lista_partial_devuelve_solo_la_tabla(self):
+        self.client.login(username='vendedor', password='pass1234')
+        resp = self.client.get(reverse('gastos_diarios:lista'), {'partial': '1'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Test')
+        self.assertNotContains(resp, '<html')
+
+    def test_numeros_lista_y_form_renderizan(self):
+        NumeroAutorizado.objects.create(numero='5491100000009', nombre='Ref')
+        self.client.login(username='vendedor', password='pass1234')
+        self.assertContains(self.client.get(reverse('gastos_diarios:numero_list')), '5491100000009')
+        self.assertEqual(self.client.get(reverse('gastos_diarios:numero_create')).status_code, 200)
+
     def test_aprobar_cambia_estado(self):
         self.client.login(username='vendedor', password='pass1234')
         self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))

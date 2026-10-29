@@ -5,101 +5,46 @@
 
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4 animate-fade-in">
+{% url 'gastos_diarios:numero_create' as url_nuevo %}
+{% url 'gastos_diarios:lista' as url_gastos %}
+{% include 'core/ui/page_header.html' with title="Números autorizados" subtitle="Números de WhatsApp habilitados para cargar gastos." action_url=url_nuevo action_label="Nuevo número" back_url=url_gastos back_label="Gastos diarios" only %}
 
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-address-book text-blue-500 mr-2"></i>Números autorizados
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Whitelist de números de WhatsApp habilitados para cargar gastos</p>
-        </div>
-        <a href="{% url 'gastos_diarios:numero_create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo número
-        </a>
+<section class="card overflow-hidden">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th class="num"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for numero in numeros %}
+                <tr>
+                    <td class="strong"><i class="fab fa-whatsapp muted mr-2"></i>{{ numero.numero }}</td>
+                    <td>{{ numero.nombre|default:"—" }}</td>
+                    <td>
+                        {% if numero.activo %}
+                            {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
+                        {% else %}
+                            {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
+                        {% endif %}
+                    </td>
+                    <td class="num">
+                        {% url 'gastos_diarios:numero_edit' numero.pk as url_editar %}
+                        {% url 'gastos_diarios:numero_delete' numero.pk as url_borrar %}
+                        {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del número" edit_url=url_editar delete_url=url_borrar delete_name=numero.numero only %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">{% include 'core/ui/empty_state.html' with title="No hay números autorizados" text="Agregá tu número de WhatsApp para empezar a cargar gastos." icon="fas fa-address-book" only %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Número</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for numero in numeros %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-semibold text-slate-800">
-                            <i class="fab fa-whatsapp text-green-500 mr-2"></i>{{ numero.numero }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ numero.nombre|default:"—" }}</td>
-                        <td class="px-6 py-4 text-center">
-                            {% if numero.activo %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                    <i class="fas fa-check mr-1"></i>Activo
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                                    <i class="fas fa-ban mr-1"></i>Inactivo
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'gastos_diarios:numero_edit' numero.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button onclick="confirmarEliminacion('{% url 'gastos_diarios:numero_delete' numero.pk %}', '{{ numero|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-6 py-12 text-center">
-                            <i class="fas fa-address-book text-slate-200 text-5xl mb-3"></i>
-                            <p class="text-slate-500 font-medium">No hay números autorizados</p>
-                            <p class="text-slate-400 text-sm mt-1">Agregá tu número de WhatsApp para empezar a cargar gastos</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function confirmarEliminacion(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar número autorizado?',
-        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            }
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+</section>
 {% endblock %}
