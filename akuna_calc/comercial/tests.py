@@ -1993,3 +1993,23 @@ class ClienteProvinciaTest(TestCase):
         request = RequestFactory().get('/')
         request.user = User.objects.create_superuser('adm', 'a@a.com', 'x')
         self.assertNotIn('delete_selected', admin.site._registry[Cliente].get_actions(request))
+
+
+class ComprasListPartialTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser('adm_compras', 'c@a.com', 'x')
+        self.client.force_login(self.user)
+        tipo = TipoCuenta.objects.create(tipo='proveedores', descripcion='Proveedores')
+        cuenta = Cuenta.objects.create(tipo_cuenta=tipo, nombre='Aluar')
+        Compra.objects.create(numero_pedido='G-1', cuenta=cuenta, fecha_pago=date.today(), valor_total=1000, sena=0, created_by=self.user)
+
+    def test_lista_completa_marca_data_live(self):
+        response = self.client.get(reverse('comercial:compras_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-live="compras"')
+
+    def test_partial_devuelve_solo_la_tabla(self):
+        response = self.client.get(reverse('comercial:compras_list'), {'partial': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'G-1')
+        self.assertNotContains(response, '<html')

@@ -6,176 +6,46 @@
 
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4 animate-fade-in">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Gastos</h1>
-            <p class="text-slate-500 font-medium mt-1">Control de egresos y proveedores</p>
+{% url 'comercial:compra_create' as compra_create_url %}
+{% with_return_to compra_create_url request.get_full_path as create_href %}
+{% include 'core/ui/page_header.html' with title="Gastos" subtitle="Control de egresos y proveedores." action_url=create_href action_label="Nuevo gasto" only %}
+
+<nav class="tabs mb-5" aria-label="Comercial">
+    <a class="tab" href="{% url 'comercial:dashboard' %}">Tablero</a>
+    <a class="tab" href="{% url 'comercial:clientes_list' %}">Clientes</a>
+    <a class="tab" href="{% url 'comercial:ventas_list' %}">Ventas</a>
+    <a class="tab on" href="{% url 'comercial:compras_list' %}" aria-current="page">Gastos</a>
+    <a class="tab" href="{% url 'comercial:cuentas_list' %}">Cuentas</a>
+</nav>
+
+<section class="card overflow-hidden" data-live="compras" data-live-partial>
+    <form method="get" class="toolbar">
+        <div class="field" style="flex:2 1 260px">
+            <label for="gl-q">Buscar</label>
+            <input type="text" id="gl-q" name="q" value="{{ buscar }}" class="input" placeholder="N° de pedido, cuenta, factura">
         </div>
-        {% url 'comercial:compra_create' as compra_create_url %}
-        <a href="{% with_return_to compra_create_url request.get_full_path %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo Gasto
-        </a>
-    </div>
-
-    <!-- Barra de Filtros -->
-    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- Buscador -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                <input type="text" name="q" value="{{ buscar }}" 
-                       placeholder="Nº pedido, cuenta, factura..." 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <!-- Filtro Tipo Cuenta -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Cuenta</label>
-                <select name="tipo_cuenta" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas</option>
-                    {% for tipo in tipos_cuenta %}
-                        <option value="{{ tipo.id }}" {% if filtro_tipo == tipo.id|stringformat:"s" %}selected{% endif %}>{{ tipo.get_tipo_display }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Filtro Tipo -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select name="con_factura" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todas</option>
-                    <option value="si" {% if filtro_factura == 'si' %}selected{% endif %}>Con factura (Blanco)</option>
-                    <option value="no" {% if filtro_factura == 'no' %}selected{% endif %}>Sin factura (Negro)</option>
-                </select>
-            </div>
-            
-            <!-- Botones -->
-            <div class="md:col-span-4 flex gap-2">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
-                </button>
-                <a href="{% url 'comercial:compras_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold">
-                    <i class="fas fa-times mr-2"></i>Limpiar
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Pedido</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Factura</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Cuenta</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo Cuenta</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha Pago</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Importe</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Saldo</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for compra in compras %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ compra.numero_pedido }}
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ compra.numero_factura|default:"-" }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
-                            {{ compra.cuenta.nombre }}
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                {% if compra.cuenta.tipo_cuenta.tipo == 'colocadores' %}bg-blue-100 text-blue-800
-                                {% elif compra.cuenta.tipo_cuenta.tipo == 'colaboradores' %}bg-green-100 text-green-800
-                                {% elif compra.cuenta.tipo_cuenta.tipo == 'fletes' %}bg-yellow-100 text-yellow-800
-                                {% elif compra.cuenta.tipo_cuenta.tipo == 'proveedores' %}bg-purple-100 text-purple-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ compra.cuenta.tipo_cuenta }}
-                            </span>
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ compra.fecha_pago|date:"d/m/Y" }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${{ compra.valor_total|formato_numero }}
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="font-semibold {% if compra.saldo > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
-                                ${{ compra.saldo|formato_numero }}
-                            </span>
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm">
-                            {% if compra.con_factura %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-file-invoice mr-1"></i> Blanco
-                                </span>
-                            {% else %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                    Negro
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center justify-center gap-2">
-                                {% url 'comercial:compra_detail' compra.pk as compra_detail_url %}
-                                <a href="{% with_return_to compra_detail_url request.get_full_path %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% url 'comercial:compra_edit' compra.pk as compra_edit_url %}
-                                <a href="{% with_return_to compra_edit_url request.get_full_path %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button onclick="confirmarEliminacion('{% url 'comercial:compra_delete' compra.pk %}', 'Gasto #{{ compra.numero_pedido }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay gastos registrados</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="field" style="flex:1 1 170px">
+            <label for="gl-tc">Tipo de cuenta</label>
+            <select id="gl-tc" name="tipo_cuenta" class="input">
+                <option value="">Todas</option>
+                {% for tipo in tipos_cuenta %}
+                    <option value="{{ tipo.id }}" {% if filtro_tipo == tipo.id|stringformat:"s" %}selected{% endif %}>{{ tipo.get_tipo_display }}</option>
+                {% endfor %}
+            </select>
         </div>
-    </div>
-</div>
-
-<script>
-function confirmarEliminacion(url, nombre) {
-    Swal.fire({
-        title: '¿Eliminar gasto?',
-        html: `<p>¿Estás seguro de eliminar <strong>${nombre}</strong>?</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            }
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+        <div class="field" style="flex:1 1 190px">
+            <label for="gl-t">Tipo</label>
+            <select id="gl-t" name="con_factura" class="input">
+                <option value="">Todas</option>
+                <option value="si" {% if filtro_factura == 'si' %}selected{% endif %}>Con factura (Blanco)</option>
+                <option value="no" {% if filtro_factura == 'no' %}selected{% endif %}>Sin factura (Negro)</option>
+            </select>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{% url 'comercial:compras_list' %}" class="btn btn-secondary">Limpiar</a>
+        </div>
+    </form>
+    {% include 'comercial/compras/_tabla.html' %}
+</section>
 {% endblock %}

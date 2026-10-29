@@ -5,277 +5,195 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
-            <p class="text-slate-500 font-medium mt-1">Complete los datos de la compra</p>
+<div class="max-w-5xl">
+    {% include 'core/ui/page_header.html' with title=title subtitle="Completá los datos del gasto." back_url=return_url back_label="Volver" only %}
+
+    <form method="post" class="flex flex-col gap-5">
+        {% csrf_token %}
+        <input type="hidden" name="_return_to" value="{{ return_url }}">
+
+        <section class="card card-pad">
+            <h2 class="sec-label">Información básica</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="field">
+                    <label>Número de pedido *</label>
+                    {{ form.numero_pedido }}
+                    {% if form.numero_pedido.errors %}<p class="field-error">{{ form.numero_pedido.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label>Fecha de pago *</label>
+                    {{ form.fecha_pago }}
+                    {% if form.fecha_pago.errors %}<p class="field-error">{{ form.fecha_pago.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="card card-pad">
+            <h2 class="sec-label">Cuenta / proveedor</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="field">
+                    <label>Tipo de cuenta</label>
+                    {{ form.tipo_cuenta_filter }}
+                    {% if form.tipo_cuenta_filter.errors %}<p class="field-error">{{ form.tipo_cuenta_filter.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label>Cuenta *</label>
+                    <div class="flex gap-2">
+                        {{ form.cuenta }}
+                        <button type="button" onclick="openCuentaModal()" class="btn btn-secondary btn-icon" title="Crear nueva cuenta" aria-label="Crear nueva cuenta">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    {% if form.cuenta.errors %}<p class="field-error">{{ form.cuenta.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label>Tipo de gasto</label>
+                    {{ form.tipo_gasto }}
+                    {% if form.tipo_gasto.errors %}<p class="field-error">{{ form.tipo_gasto.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="card card-pad">
+            <h2 class="sec-label">Valores y montos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="field">
+                    <label>Valor total que impacta en saldo (pesos) *</label>
+                    {{ form.valor_total }}
+                    {% if form.valor_total.errors %}<p class="field-error">{{ form.valor_total.errors.0 }}</p>{% endif %}
+                    <p id="valor-total-help" class="field-hint">Ingrese el total en pesos o marque compra en dólares para calcularlo automáticamente.</p>
+                </div>
+
+                <div class="md:col-span-2 bg-accent-soft border border-line rounded-xl p-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form.compra_en_dolares }}
+                        <span class="text-sm font-semibold text-ink">La compra está pactada en dólares</span>
+                    </label>
+                    <p class="field-hint">Si activa esta opción, complete el total en USD y la cotización usada. El sistema calculará el total en pesos para saldo y reportes.</p>
+                </div>
+
+                <div id="valor-total-usd-wrapper" class="hidden field">
+                    <label>Valor total en USD</label>
+                    {{ form.valor_total_usd }}
+                    {% if form.valor_total_usd.errors %}<p class="field-error">{{ form.valor_total_usd.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div id="cotizacion-usd-wrapper" class="hidden field">
+                    <label>Cotización USD utilizada</label>
+                    {{ form.cotizacion_usd }}
+                    {% if form.cotizacion_usd.errors %}<p class="field-error">{{ form.cotizacion_usd.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="field">
+                    <label>Seña que impacta en saldo (pesos)</label>
+                    {{ form.sena }}
+                    {% if form.sena.errors %}<p class="field-error">{{ form.sena.errors.0 }}</p>{% endif %}
+                    <p id="sena-help" class="field-hint">Dejar en 0 si no hay anticipo. Si la seña fue en USD, se calcula automáticamente en pesos.</p>
+                </div>
+
+                <div class="md:col-span-2 bg-ok-soft border border-line rounded-xl p-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form.sena_en_dolares }}
+                        <span class="text-sm font-semibold text-ink">La seña fue pagada en dólares</span>
+                    </label>
+                    <p class="field-hint">Puede registrar la seña en pesos o en dólares. Si fue en USD, complete monto y cotización para convertirla al saldo en pesos.</p>
+                </div>
+
+                <div id="sena-usd-wrapper" class="hidden field">
+                    <label>Seña en USD</label>
+                    {{ form.sena_usd }}
+                    {% if form.sena_usd.errors %}<p class="field-error">{{ form.sena_usd.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div id="sena-cotizacion-wrapper" class="hidden field">
+                    <label>Cotización USD de la seña</label>
+                    {{ form.cotizacion_sena_usd }}
+                    {% if form.cotizacion_sena_usd.errors %}<p class="field-error">{{ form.cotizacion_sena_usd.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div id="forma-pago-sena-wrapper" class="hidden md:col-span-3 field">
+                    <label>Forma de pago de la seña</label>
+                    {{ form.forma_pago_sena }}
+                    {% if form.forma_pago_sena.errors %}<p class="field-error">{{ form.forma_pago_sena.errors.0 }}</p>{% endif %}
+                    <p class="field-hint">Se usa para dejar registrado si el anticipo fue en transferencia o efectivo.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-ground rounded-xl border border-line p-5">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <span class="block text-xs text-ink-3 font-semibold uppercase tracking-wider mb-1">Valor total</span>
+                        <p class="text-xl font-semibold text-ink num" id="preview-total">$0,00</p>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-ink-3 font-semibold uppercase tracking-wider mb-1">Seña</span>
+                        <p class="text-xl font-semibold text-ink num" id="preview-sena">$0,00</p>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-ink-3 font-semibold uppercase tracking-wider mb-1">Saldo pendiente</span>
+                        <p class="text-xl font-semibold num" id="preview-saldo">$0,00</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-line rounded-full h-2">
+                        <div id="preview-progress" class="bg-accent h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-ink-3 text-right mt-1" id="preview-pct">0% anticipado</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card card-pad">
+            <h2 class="sec-label">Facturación</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="flex items-center gap-3">
+                    {{ form.con_factura }}
+                    <label class="text-sm font-medium text-ink-2">{{ form.con_factura.label }}</label>
+                </div>
+                <div class="field">
+                    <label>Número de factura</label>
+                    {{ form.numero_factura }}
+                    {% if form.numero_factura.errors %}<p class="field-error">{{ form.numero_factura.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field">
+                    <label>Comprobante</label>
+                    {{ form.comprobante }}
+                    {% if form.comprobante.errors %}<p class="field-error">{{ form.comprobante.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="card card-pad">
+            <h2 class="sec-label">Detalle y observaciones</h2>
+            <div class="field">
+                <label>Descripción</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}<p class="field-error">{{ form.descripcion.errors.0 }}</p>{% endif %}
+            </div>
+        </section>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-3">
+            <a href="{{ return_url }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar gasto</button>
         </div>
-        <a href="{{ return_url }}" class="inline-flex items-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-arrow-left mr-2"></i>Volver
-        </a>
-    </div>
-
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-8">
-        <form method="post" class="space-y-8">
-            {% csrf_token %}
-            <input type="hidden" name="_return_to" value="{{ return_url }}">
-
-            <!-- Informacion Basica -->
-            <div class="border-b pb-6">
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-info-circle mr-2 text-blue-600"></i>
-                    Informacion Basica
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Numero de Pedido <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.numero_pedido }}
-                        {% if form.numero_pedido.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.numero_pedido.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Fecha de Pago <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.fecha_pago }}
-                        {% if form.fecha_pago.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.fecha_pago.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cuenta / Proveedor -->
-            <div class="border-b pb-6">
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-building mr-2 text-purple-600"></i>
-                    Cuenta / Proveedor
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Cuenta</label>
-                        {{ form.tipo_cuenta_filter }}
-                        {% if form.tipo_cuenta_filter.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.tipo_cuenta_filter.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Cuenta <span class="text-red-500">*</span>
-                        </label>
-                        <div class="flex gap-2">
-                            {{ form.cuenta }}
-                            <button type="button" onclick="openCuentaModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all" title="Crear nueva cuenta">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        {% if form.cuenta.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.cuenta.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Gasto</label>
-                        {{ form.tipo_gasto }}
-                        {% if form.tipo_gasto.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.tipo_gasto.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Valores y Montos -->
-            <div class="border-b pb-6">
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
-                    Valores y Montos
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Valor Total que impacta en saldo (pesos) <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.valor_total }}
-                        {% if form.valor_total.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.valor_total.errors.0 }}</p>
-                        {% endif %}
-                        <p id="valor-total-help" class="mt-1 text-xs text-slate-400">Ingrese el total en pesos o marque compra en dólares para calcularlo automáticamente.</p>
-                    </div>
-
-                    <div class="md:col-span-2 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            {{ form.compra_en_dolares }}
-                            <span class="text-sm font-bold text-slate-800"><i class="fas fa-coins mr-2 text-blue-600"></i>La compra está pactada en dólares</span>
-                        </label>
-                        <p class="mt-2 text-xs text-blue-700">Si activa esta opción, complete el total en USD y la cotización usada. El sistema calculará el total en pesos para saldo y reportes.</p>
-                    </div>
-
-                    <div id="valor-total-usd-wrapper" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor Total en USD</label>
-                        {{ form.valor_total_usd }}
-                        {% if form.valor_total_usd.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.valor_total_usd.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div id="cotizacion-usd-wrapper" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD utilizada</label>
-                        {{ form.cotizacion_usd }}
-                        {% if form.cotizacion_usd.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_usd.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Seña que impacta en saldo (pesos)</label>
-                        {{ form.sena }}
-                        {% if form.sena.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.sena.errors.0 }}</p>
-                        {% endif %}
-                        <p id="sena-help" class="mt-1 text-xs text-slate-400">Dejar en 0 si no hay anticipo. Si la seña fue en USD, se calcula automáticamente en pesos.</p>
-                    </div>
-
-                    <div class="md:col-span-2 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            {{ form.sena_en_dolares }}
-                            <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-2 text-emerald-600"></i>La seña fue pagada en dólares</span>
-                        </label>
-                        <p class="mt-2 text-xs text-emerald-700">Puede registrar la seña en pesos o en dólares. Si fue en USD, complete monto y cotización para convertirla al saldo en pesos.</p>
-                    </div>
-
-                    <div id="sena-usd-wrapper" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Seña en USD</label>
-                        {{ form.sena_usd }}
-                        {% if form.sena_usd.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.sena_usd.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div id="sena-cotizacion-wrapper" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cotización USD de la seña</label>
-                        {{ form.cotizacion_sena_usd }}
-                        {% if form.cotizacion_sena_usd.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.cotizacion_sena_usd.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div id="forma-pago-sena-wrapper" class="hidden md:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pago de la Seña</label>
-                        {{ form.forma_pago_sena }}
-                        {% if form.forma_pago_sena.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.forma_pago_sena.errors.0 }}</p>
-                        {% endif %}
-                        <p class="mt-1 text-xs text-slate-400">Se usa para dejar registrado si el anticipo fue en transferencia o efectivo.</p>
-                    </div>
-                </div>
-
-                <!-- Preview saldo en tiempo real -->
-                <div class="mt-6 bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl border border-slate-200 p-5">
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Valor Total</span>
-                            <p class="text-xl font-bold text-blue-700" id="preview-total">$0,00</p>
-                        </div>
-                        <div class="relative">
-                            <span class="absolute -left-2 top-1/2 text-slate-300 text-lg font-bold">-</span>
-                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Sena</span>
-                            <p class="text-xl font-bold text-purple-700" id="preview-sena">$0,00</p>
-                            <span class="absolute -right-2 top-1/2 text-slate-300 text-lg font-bold">=</span>
-                        </div>
-                        <div>
-                            <span class="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Saldo Pendiente</span>
-                            <p class="text-xl font-bold" id="preview-saldo">$0,00</p>
-                        </div>
-                    </div>
-                    <!-- Barra de progreso -->
-                    <div class="mt-4">
-                        <div class="w-full bg-slate-200 rounded-full h-2">
-                            <div id="preview-progress" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        <p class="text-xs text-slate-400 text-right mt-1" id="preview-pct">0% anticipado</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Facturacion -->
-            <div class="border-b pb-6">
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-file-invoice mr-2 text-indigo-600"></i>
-                    Facturacion
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="flex items-center bg-green-50 p-4 rounded-xl border border-green-200">
-                        {{ form.con_factura }}
-                        <label class="ml-3 text-sm font-medium text-gray-700">{{ form.con_factura.label }}</label>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Numero de Factura</label>
-                        {{ form.numero_factura }}
-                        {% if form.numero_factura.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Comprobante</label>
-                        {{ form.comprobante }}
-                        {% if form.comprobante.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.comprobante.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detalle / Observaciones -->
-            <div>
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center">
-                    <i class="fas fa-clipboard-list mr-2 text-slate-500"></i>
-                    Detalle y Observaciones
-                </h2>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripcion</label>
-                    {{ form.descripcion }}
-                    {% if form.descripcion.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Botones -->
-            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t">
-                <a href="{{ return_url }}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-times mr-2"></i>Cancelar
-                </a>
-                <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-8 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-save mr-2"></i>Guardar Compra
-                </button>
-            </div>
-        </form>
-    </div>
+    </form>
 </div>
 
 <!-- Modal Crear Cuenta -->
 <div id="cuentaModal" data-select2-dropdown-parent class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-slate-800"><i class="fas fa-building mr-2"></i>Nueva Cuenta</h2>
-            <button type="button" onclick="closeCuentaModal()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-2xl"></i>
+    <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-line px-6 py-4 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-ink">Nueva cuenta</h2>
+            <button type="button" onclick="closeCuentaModal()" class="btn btn-ghost btn-icon" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <form id="cuentaForm" class="p-6 space-y-4">
+        <form id="cuentaForm" class="p-6 flex flex-col gap-4">
             {% csrf_token %}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cuenta *</label>
-                <select name="tipo_cuenta" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="field">
+                <label>Tipo de cuenta *</label>
+                <select name="tipo_cuenta" required class="input">
                     <option value="">Seleccione...</option>
                     <option value="colocadores">Colocadores</option>
                     <option value="colaboradores">Colaboradores</option>
@@ -284,28 +202,28 @@
                     <option value="varios">Varios</option>
                     <option value="proveedores">Proveedores</option>
                 </select>
-                <span class="text-red-600 text-sm error-tipo_cuenta"></span>
+                <span class="field-error error-tipo_cuenta"></span>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input type="text" name="nombre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <span class="text-red-600 text-sm error-nombre"></span>
+            <div class="field">
+                <label>Nombre *</label>
+                <input type="text" name="nombre" required class="input">
+                <span class="field-error error-nombre"></span>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Razon Social</label>
-                <input type="text" name="razon_social" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="field">
+                <label>Razón social</label>
+                <input type="text" name="razon_social" class="input">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
-                    <input type="text" name="cuit" maxlength="11" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>CUIT</label>
+                    <input type="text" name="cuit" maxlength="11" class="input">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Condicion IVA</label>
-                    <select name="condicion_iva" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="field">
+                    <label>Condición IVA</label>
+                    <select name="condicion_iva" class="input">
                         <option value="">Seleccione...</option>
                         <option value="CF">Consumidor Final</option>
                         <option value="RI">Responsable Inscripto</option>
@@ -315,28 +233,24 @@
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
-                <input type="text" name="telefono" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="field">
+                <label>Teléfono</label>
+                <input type="text" name="telefono" class="input">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Direccion</label>
-                <textarea name="direccion" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            <div class="field">
+                <label>Dirección</label>
+                <textarea name="direccion" rows="2" class="input"></textarea>
             </div>
 
-            <div class="flex items-center">
-                <input type="checkbox" name="activo" checked class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                <label class="ml-2 text-sm font-medium text-gray-700">Cuenta Activa</label>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="activo" checked>
+                <label class="text-sm font-medium text-ink-2">Cuenta activa</label>
             </div>
 
-            <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="closeCuentaModal()" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
-                    Cancelar
-                </button>
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar Cuenta
-                </button>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeCuentaModal()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cuenta</button>
             </div>
         </form>
     </div>

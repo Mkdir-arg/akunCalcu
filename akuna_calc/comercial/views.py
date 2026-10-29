@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urlencode
 from collections import defaultdict
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -1164,8 +1165,11 @@ def compras_list(request):
         'filtro_tipo': tipo_cuenta,
         'filtro_factura': con_factura,
         'buscar': buscar,
-        'titulo': 'Gastos'
+        'titulo': 'Gastos',
+        'query_sin_page': urlencode({k: v for k, v in request.GET.items() if k != 'page' and v}),
     }
+    if request.GET.get('partial') == '1':
+        return render(request, 'comercial/compras/_tabla.html', context)
     return render(request, 'comercial/compras/list.html', context)
 
 

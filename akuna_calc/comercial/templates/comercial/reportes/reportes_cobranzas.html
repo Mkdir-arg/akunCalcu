@@ -56,200 +56,159 @@
 {% block title %}Reporte Cobranza{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 lg:p-7 mb-8 solo-pantalla">
-        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 mb-6 pb-5 border-b border-slate-200">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-teal-600 mb-2">Reporte Cobranza</p>
-                <h1 class="text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight">Detalle de ingresos por movimiento individual de cobro</h1>
-            </div>
-        </div>
-        <form method="post" id="filtros-cobranzas" class="space-y-5">
+<div class="max-w-7xl">
+    <div class="solo-pantalla">
+        {% include 'core/ui/page_header.html' with title="Reporte de cobranza" subtitle="Detalle de ingresos por movimiento individual de cobro." only %}
+    </div>
+
+    <section class="card card-elegant mb-6 solo-pantalla">
+        <form method="post" id="filtros-cobranzas" class="card-pad flex flex-col gap-5">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Desde</label>
+                <div class="field">
+                    <label>Fecha desde</label>
                     {{ form.fecha_desde }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha Hasta</label>
+                <div class="field">
+                    <label>Fecha hasta</label>
                     {{ form.fecha_hasta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Número de Factura</label>
+                <div class="field">
+                    <label>Número de factura</label>
                     {{ form.numero_factura }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estado</label>
+                <div class="field">
+                    <label>Estado</label>
                     {{ form.estado_venta }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Factura</label>
+                <div class="field">
+                    <label>Tipo de factura</label>
                     {{ form.tipo_factura }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Moneda</label>
+                <div class="field">
+                    <label>Moneda</label>
                     {{ form.moneda_cobranza }}
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Ordenar por</label>
+                <div class="field">
+                    <label>Ordenar por</label>
                     {{ form.orden }}
                 </div>
             </div>
 
-            <details class="rounded-2xl border border-slate-200 bg-slate-50/80 overflow-hidden" {% if form.cliente.value or form.razon_social.value %}open{% endif %}>
+            <details class="rounded-xl border border-line bg-ground overflow-hidden" {% if form.cliente.value or form.razon_social.value %}open{% endif %}>
                 <summary class="list-none cursor-pointer px-4 py-3 flex items-center justify-between gap-4">
                     <div>
-                        <p class="text-sm font-semibold text-slate-800">Más filtros</p>
-                        <p class="text-xs text-slate-500">Cliente y razón social</p>
+                        <p class="text-sm font-semibold text-ink">Más filtros</p>
+                        <p class="text-xs text-ink-3">Cliente y razón social</p>
                     </div>
-                    <i class="fas fa-chevron-down text-slate-400 transition-transform duration-200 filtros-chevron"></i>
+                    <i class="fas fa-chevron-down text-ink-3 transition-transform duration-200 filtros-chevron"></i>
                 </summary>
-                <div class="border-t border-slate-200 px-4 py-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                <div class="border-t border-line px-4 py-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="field">
+                        <label>Cliente</label>
                         {{ form.cliente }}
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">Razón Social</label>
+                    <div class="field">
+                        <label>Razón social</label>
                         {{ form.razon_social }}
                     </div>
                 </div>
             </details>
 
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-1">
-                 <div class="flex flex-wrap gap-3">
-                <button type="submit" class="btn-primary inline-flex items-center justify-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-                    <i class="fas fa-search mr-2"></i>Generar Reporte
-                </button>
-                <a href="{% url 'comercial:reportes_cobranzas' %}" class="inline-flex items-center justify-center bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-                    <i class="fas fa-redo mr-2"></i>Limpiar
-                </a>
-                </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Generar reporte</button>
+                <a href="{% url 'comercial:reportes_cobranzas' %}" class="btn btn-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
+    </section>
 
     {% if reporte_data %}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 solo-pantalla">
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Cobranza Blanco</p>
-                    <p class="text-3xl font-bold text-green-600">${{ reporte_data.cobranzas.total_blanco|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad_blanco }} movimientos</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-file-invoice text-white text-xl"></i>
-                </div>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 solo-pantalla">
+        <div class="card card-elegant card-pad">
+            <p class="sec-label">Cobranza en blanco</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.cobranzas.total_blanco|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.cobranzas.cantidad_blanco }} movimientos</p>
         </div>
-
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-gray-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-500 mb-2 font-medium">Cobranza Negro</p>
-                    <p class="text-3xl font-bold text-gray-600">${{ reporte_data.cobranzas.total_negro|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad_negro }} movimientos</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-receipt text-white text-xl"></i>
-                </div>
-            </div>
+        <div class="card card-elegant card-pad">
+            <p class="sec-label">Cobranza en negro</p>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.cobranzas.total_negro|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.cobranzas.cantidad_negro }} movimientos</p>
         </div>
-
-        <div class="card-elegant bg-white rounded-3xl p-6 shadow-xl border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <p class="text-sm text-slate-500 font-medium">Total Cobranza (ARS)</p>
-                        {% if reporte_data.cobranzas.total_usd %}
-                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">USD {{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
-                        {% endif %}
-                    </div>
-                    <p class="text-3xl font-bold text-blue-600">${{ reporte_data.cobranzas.total|formato_numero }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ reporte_data.cobranzas.cantidad }} movimientos</p>
-                </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-hand-holding-usd text-white text-xl"></i>
-                </div>
+        <div class="card card-elegant card-pad">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <p class="sec-label" style="margin:0">Total cobranza (ARS)</p>
+                {% if reporte_data.cobranzas.total_usd %}
+                {% include 'core/ui/badge.html' with tone="green" label="USD" only %}<span class="text-xs strong num">{{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
+                {% endif %}
             </div>
+            <p class="text-3xl font-semibold text-ink num">${{ reporte_data.cobranzas.total|formato_numero }}</p>
+            <p class="text-xs text-ink-3 mt-1">{{ reporte_data.cobranzas.cantidad }} movimientos</p>
         </div>
     </div>
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-teal-50 to-sky-50 px-6 lg:px-8 py-6 border-b border-slate-200">
-            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
+    <section class="card card-elegant overflow-hidden mb-6">
+        <div class="px-5 py-4 border-b border-line">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
-                    <h3 class="text-2xl font-bold text-slate-800 tracking-tight"><i class="fas fa-list mr-2"></i>Detalle de Cobranza</h3>
-                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-slate-500">
-                        <span><span class="font-semibold text-slate-700">{{ reporte_data.cobranzas.cantidad }}</span> movimientos</span>
-                        <span class="text-slate-300">•</span>
-                        <span><span class="font-semibold text-slate-700">{{ reporte_data.cobranzas.cantidad_pagos }}</span> pagos</span>
-                        <span class="text-slate-300">•</span>
-                        <span><span class="font-semibold text-slate-700">{{ reporte_data.cobranzas.cantidad_senas }}</span> señas</span>
+                    <h2 class="sec-label" style="margin:0 0 8px">Detalle de cobranza</h2>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-ink-3">
+                        <span><span class="strong">{{ reporte_data.cobranzas.cantidad }}</span> movimientos</span>
+                        <span>•</span>
+                        <span><span class="strong">{{ reporte_data.cobranzas.cantidad_pagos }}</span> pagos</span>
+                        <span>•</span>
+                        <span><span class="strong">{{ reporte_data.cobranzas.cantidad_senas }}</span> señas</span>
                         {% if reporte_data.cobranzas.cantidad_usd %}
-                        <span class="text-slate-300">•</span>
-                        <span class="font-medium text-emerald-700"><span class="font-semibold">{{ reporte_data.cobranzas.cantidad_usd }}</span> en USD</span>
+                        <span>•</span>
+                        <span><span class="strong">{{ reporte_data.cobranzas.cantidad_usd }}</span> en USD</span>
                         {% endif %}
                     </div>
                 </div>
-                <div class="inline-flex lg:flex-col items-start lg:items-end gap-1 rounded-2xl bg-white/80 border border-white/70 px-4 py-3 shadow-sm shrink-0">
+                <div class="flex flex-col lg:items-end gap-1 shrink-0">
                     <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <span class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Total en pesos</span>
+                        <span class="text-xs uppercase tracking-wide text-ink-3 font-semibold">Total en pesos</span>
                         {% if reporte_data.cobranzas.total_usd %}
-                        <span class="text-[11px] uppercase tracking-wide text-emerald-600 font-semibold">USD {{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
+                        <span class="text-xs uppercase tracking-wide text-ok font-semibold">USD {{ reporte_data.cobranzas.total_usd|formato_numero }}</span>
                         {% endif %}
                     </div>
-                    <span class="text-2xl lg:text-3xl font-bold text-teal-600 leading-none">${{ reporte_data.cobranzas.total|formato_numero }}</span>
-                    <span class="text-[11px] text-slate-400 font-medium">USD informado por separado</span>
+                    <span class="text-2xl font-semibold text-ink num leading-none">${{ reporte_data.cobranzas.total|formato_numero }}</span>
+                    <span class="text-xs text-ink-3">USD informado por separado</span>
                 </div>
             </div>
         </div>
         {% if reporte_data.cobranzas.lista %}
-        <div class="cobranzas-mobile lg:hidden p-4 space-y-3 bg-slate-50/60">
+        <div class="cobranzas-mobile lg:hidden p-4 space-y-3 bg-ground">
             {% for item in reporte_data.cobranzas.lista %}
-            <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <article class="card card-pad">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
-                            {% if item.concepto == 'Seña inicial' %}
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Seña inicial</span>
-                            {% else %}
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold">Pago</span>
-                            {% endif %}
-                            {% if item.tipo == 'Blanco' %}
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Blanco</span>
-                            {% else %}
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">Negro</span>
-                            {% endif %}
-                            {% if item.pago_en_dolares and item.monto_usd %}
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Cobrado en USD</span>
-                            {% endif %}
+                            {% if item.concepto == 'Seña inicial' %}{% include 'core/ui/badge.html' with tone="amber" label="Seña inicial" only %}{% else %}{% include 'core/ui/badge.html' with tone="blue" label="Pago" only %}{% endif %}
+                            {% if item.tipo == 'Blanco' %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}
+                            {% if item.pago_en_dolares and item.monto_usd %}{% include 'core/ui/badge.html' with tone="green" label="Cobrado en USD" only %}{% endif %}
                         </div>
                         {% url 'comercial:venta_detail' item.venta_id as cobranza_venta_url %}
-                        <a href="{% with_return_to cobranza_venta_url request.get_full_path %}" class="mt-3 inline-block text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
-                        <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }} · Factura {{ item.numero_factura }}</p>
+                        <a href="{% with_return_to cobranza_venta_url request.get_full_path %}" class="mt-3 inline-block text-sm strong">{{ item.pedido }}</a>
+                        <p class="text-xs text-ink-3 mt-1">{{ item.fecha|date:"d/m/Y" }} · Factura {{ item.numero_factura }}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <p class="text-lg font-bold text-teal-700">${{ item.monto|formato_numero }}</p>
+                        <p class="text-lg font-semibold text-ink num">${{ item.monto|formato_numero }}</p>
                         {% if item.pago_en_dolares and item.monto_usd %}
-                        <p class="text-xs text-emerald-700 font-semibold mt-1">USD {{ item.monto_usd|formato_numero }}</p>
+                        <p class="text-xs text-ok font-semibold mt-1">USD {{ item.monto_usd|formato_numero }}</p>
                         {% endif %}
                     </div>
                 </div>
                 <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
                     <div>
-                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cliente</p>
-                        <p class="text-slate-800 font-medium">{{ item.cliente }}</p>
-                        <p class="text-slate-500 text-xs">{{ item.razon_social }}</p>
+                        <p class="text-xs uppercase tracking-wide text-ink-3 font-semibold">Cliente</p>
+                        <p class="strong">{{ item.cliente }}</p>
+                        <p class="text-ink-3 text-xs">{{ item.razon_social }}</p>
                     </div>
-                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Detalle</p>
-                        <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700">
+                    <div class="rounded-lg bg-ground border border-line px-3 py-2">
+                        <p class="text-xs uppercase tracking-wide text-ink-3 font-semibold">Detalle</p>
+                        <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
                             <span class="font-medium">{{ item.forma_pago }}</span>
                             {% if item.cotizacion_usd %}
-                            <span class="text-slate-300">•</span>
+                            <span>•</span>
                             <span>Cotiz. ${{ item.cotizacion_usd|formato_numero }}</span>
                             {% endif %}
                         </div>
@@ -257,12 +216,12 @@
                     {% if item.pago_en_dolares and item.monto_usd %}
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cobranzas USD</p>
-                            <p class="text-emerald-700 font-semibold">USD {{ item.monto_usd|formato_numero }}</p>
+                            <p class="text-xs uppercase tracking-wide text-ink-3 font-semibold">Cobranzas USD</p>
+                            <p class="text-ok font-semibold">USD {{ item.monto_usd|formato_numero }}</p>
                         </div>
                         <div>
-                            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Cotización</p>
-                            <p class="text-slate-700">${{ item.cotizacion_usd|formato_numero }}</p>
+                            <p class="text-xs uppercase tracking-wide text-ink-3 font-semibold">Cotización</p>
+                            <p class="text-ink-2">${{ item.cotizacion_usd|formato_numero }}</p>
                         </div>
                     </div>
                     {% endif %}
@@ -272,67 +231,47 @@
         </div>
 
         <div class="cobranzas-desktop hidden lg:block overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Movimiento</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Cliente</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Detalle</th>
-                        <th class="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Importe ARS</th>
-                        <th class="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Cobranzas USD</th>
+                        <th>Movimiento</th>
+                        <th>Cliente</th>
+                        <th>Detalle</th>
+                        <th class="num">Importe ARS</th>
+                        <th class="num">Cobranzas USD</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-slate-100">
+                <tbody>
                     {% for item in reporte_data.cobranzas.lista %}
-                    <tr class="hover:bg-slate-50/80 align-top">
-                        <td class="px-5 py-4">
+                    <tr class="align-top">
+                        <td>
                             {% url 'comercial:venta_detail' item.venta_id as cobranza_venta_desktop_url %}
-                            <a href="{% with_return_to cobranza_venta_desktop_url request.get_full_path %}" class="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ item.pedido }}</a>
-                            <p class="text-xs text-slate-500 mt-1">{{ item.fecha|date:"d/m/Y" }}</p>
-                            <p class="text-xs text-slate-400 mt-1">Factura {{ item.numero_factura }}</p>
+                            <a href="{% with_return_to cobranza_venta_desktop_url request.get_full_path %}" class="strong">{{ item.pedido }}</a>
+                            <p class="text-xs muted mt-1">{{ item.fecha|date:"d/m/Y" }}</p>
+                            <p class="text-xs muted mt-1">Factura {{ item.numero_factura }}</p>
                         </td>
-                        <td class="px-5 py-4">
-                            <p class="text-sm font-semibold text-slate-800">{{ item.cliente }}</p>
-                            <p class="text-xs text-slate-500 mt-1 max-w-xs">{{ item.razon_social }}</p>
+                        <td style="white-space:normal">
+                            <p class="strong">{{ item.cliente }}</p>
+                            <p class="text-xs muted mt-1 max-w-xs">{{ item.razon_social }}</p>
                         </td>
-                        <td class="px-5 py-4">
+                        <td>
                             <div class="flex flex-wrap gap-2">
-                                {% if item.concepto == 'Seña inicial' %}
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Seña inicial</span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold">Pago</span>
-                                {% endif %}
-                                {% if item.tipo == 'Blanco' %}
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Blanco</span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">Negro</span>
-                                {% endif %}
-                                {% if item.pago_en_dolares and item.monto_usd %}
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Cobrado en USD</span>
-                                {% endif %}
+                                {% if item.concepto == 'Seña inicial' %}{% include 'core/ui/badge.html' with tone="amber" label="Seña inicial" only %}{% else %}{% include 'core/ui/badge.html' with tone="blue" label="Pago" only %}{% endif %}
+                                {% if item.tipo == 'Blanco' %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}
+                                {% if item.pago_en_dolares and item.monto_usd %}{% include 'core/ui/badge.html' with tone="green" label="Cobrado en USD" only %}{% endif %}
                             </div>
-                            <div class="mt-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm">
-                                <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Detalle</p>
-                                <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-700">
-                                    <span class="font-medium">{{ item.forma_pago }}</span>
-                                    {% if item.cotizacion_usd %}
-                                    <span class="text-slate-300">•</span>
-                                    <span>Cotiz. ${{ item.cotizacion_usd|formato_numero }}</span>
-                                    {% endif %}
-                                </div>
+                            <div class="mt-2 text-sm text-ink-2">
+                                <span class="font-medium">{{ item.forma_pago }}</span>
+                                {% if item.cotizacion_usd %}<span class="muted"> · Cotiz. ${{ item.cotizacion_usd|formato_numero }}</span>{% endif %}
                             </div>
                         </td>
-                        <td class="px-5 py-4 text-right">
-                            <p class="text-base font-bold text-teal-700">${{ item.monto|formato_numero }}</p>
-                        </td>
-                        <td class="px-5 py-4 text-right">
+                        <td class="num strong">${{ item.monto|formato_numero }}</td>
+                        <td class="num">
                             {% if item.pago_en_dolares and item.monto_usd %}
-                            <p class="text-base font-bold text-emerald-700">USD {{ item.monto_usd|formato_numero }}</p>
-                            {% if item.cotizacion_usd %}
-                            <p class="text-xs text-slate-500 mt-2">Cotiz. ${{ item.cotizacion_usd|formato_numero }}</p>
-                            {% endif %}
+                            <p class="strong">USD {{ item.monto_usd|formato_numero }}</p>
+                            {% if item.cotizacion_usd %}<p class="text-xs muted mt-1">Cotiz. ${{ item.cotizacion_usd|formato_numero }}</p>{% endif %}
                             {% else %}
-                            <p class="text-sm font-semibold text-slate-300">-</p>
+                            <span class="muted">-</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -341,17 +280,13 @@
             </table>
         </div>
         {% else %}
-        <div class="px-6 py-4 text-center text-gray-500">
-            No hay cobranzas registradas con los filtros seleccionados
-        </div>
+        {% include 'core/ui/empty_state.html' with title="No hay cobranzas registradas con los filtros seleccionados" only %}
         {% endif %}
-    </div>
+    </section>
     {% else %}
-    <div class="card-elegant bg-white rounded-3xl shadow-xl p-12 text-center">
-        <i class="fas fa-filter-circle-dollar text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-2xl font-bold text-gray-700 mb-2">Usá los filtros para generar el reporte</h3>
-        <p class="text-gray-500 mb-6">La vista inicial ya no procesa todos los movimientos de cobranza hasta que confirmás la búsqueda.</p>
-    </div>
+    <section class="card card-elegant">
+        {% include 'core/ui/empty_state.html' with title="Usá los filtros para generar el reporte" text="La vista inicial no procesa todos los movimientos de cobranza hasta que confirmás la búsqueda." icon="fas fa-filter" only %}
+    </section>
     {% endif %}
 </div>
 {% endblock %}

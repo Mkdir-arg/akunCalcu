@@ -1,0 +1,51 @@
+{% load custom_filters %}
+<div class="table-wrap">
+<table class="tbl">
+    <thead>
+        <tr>
+            <th>Pedido</th>
+            <th>Factura</th>
+            <th>Cuenta</th>
+            <th>Tipo de cuenta</th>
+            <th>Fecha de pago</th>
+            <th class="num">Importe</th>
+            <th class="num">Saldo</th>
+            <th>Tipo</th>
+            <th><span class="sr-only">Acciones</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for compra in compras %}
+        {% url 'comercial:compra_detail' compra.pk as compra_detail_url %}
+        {% url 'comercial:compra_edit' compra.pk as compra_edit_url %}
+        {% url 'comercial:compra_delete' compra.pk as compra_delete_url %}
+        {% with_return_to compra_detail_url request.get_full_path as detail_href %}
+        {% with_return_to compra_edit_url request.get_full_path as edit_href %}
+        <tr>
+            <td><a class="strong" href="{{ detail_href }}">{{ compra.numero_pedido }}</a></td>
+            <td>{{ compra.numero_factura|default:"—" }}</td>
+            <td><span class="strong">{{ compra.cuenta.nombre }}</span></td>
+            <td>
+                {% if compra.cuenta.tipo_cuenta.tipo == 'colocadores' %}{% include 'core/ui/badge.html' with tone="blue" label=compra.cuenta.tipo_cuenta only %}
+                {% elif compra.cuenta.tipo_cuenta.tipo == 'colaboradores' %}{% include 'core/ui/badge.html' with tone="green" label=compra.cuenta.tipo_cuenta only %}
+                {% elif compra.cuenta.tipo_cuenta.tipo == 'fletes' %}{% include 'core/ui/badge.html' with tone="amber" label=compra.cuenta.tipo_cuenta only %}
+                {% elif compra.cuenta.tipo_cuenta.tipo == 'proveedores' %}{% include 'core/ui/badge.html' with tone="violet" label=compra.cuenta.tipo_cuenta only %}
+                {% else %}{% include 'core/ui/badge.html' with tone="gray" label=compra.cuenta.tipo_cuenta only %}{% endif %}
+            </td>
+            <td class="muted">{{ compra.fecha_pago|date:"d/m/Y" }}</td>
+            <td class="num strong">${{ compra.valor_total|formato_numero }}</td>
+            <td class="num"><span class="{% if compra.saldo > 0 %}text-warn strong{% endif %}">${{ compra.saldo|formato_numero }}</span></td>
+            <td>
+                {% if compra.con_factura %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}
+            </td>
+            <td class="num">
+                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del gasto" view_url=detail_href edit_url=edit_href delete_url=compra_delete_url delete_name=compra.numero_pedido only %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9">{% include 'core/ui/empty_state.html' with title="No hay gastos registrados" icon="fas fa-inbox" only %}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="gastos" only %}
