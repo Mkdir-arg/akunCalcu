@@ -287,7 +287,7 @@ class Presupuesto(models.Model):
         subtotal = self.get_subtotal_sin_iva()
         iva = self.get_iva()
         self.total = subtotal + iva
-        self.save(update_fields=['total'])
+        self.save(update_fields=['total', 'updated_at'])
 
     @classmethod
     def generar_numero(cls):

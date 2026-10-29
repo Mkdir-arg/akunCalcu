@@ -791,7 +791,7 @@ def _procesar_confirmacion(request, presupuesto):
             orden += creadas
         presupuesto.venta = venta
         presupuesto.estado = 'confirmado'
-        presupuesto.save(update_fields=['estado', 'venta'])
+        presupuesto.save(update_fields=['estado', 'venta', 'updated_at'])
 
     _avisar_confirmacion(request.user, presupuesto)
 
@@ -825,13 +825,13 @@ def cambiar_estado(request, pk):
         # re-marca el estado: la venta y el pedido ya existen, no se duplican.
         if presupuesto.venta_id:
             presupuesto.estado = 'confirmado'
-            presupuesto.save(update_fields=['estado'])
+            presupuesto.save(update_fields=['estado', 'updated_at'])
             messages.success(request, 'Estado actualizado a "Confirmado".')
             return redirect('presupuestos:presupuestos-detalle', pk=pk)
         return _procesar_confirmacion(request, presupuesto)
 
     presupuesto.estado = nuevo_estado
-    presupuesto.save(update_fields=['estado'])
+    presupuesto.save(update_fields=['estado', 'updated_at'])
     messages.success(request, f'Estado actualizado a "{presupuesto.get_estado_display()}".')
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
@@ -843,7 +843,7 @@ def eliminar(request, pk):
     numero = presupuesto.numero
     presupuesto.deleted_at = timezone.now()
     presupuesto.deleted_by = request.user
-    presupuesto.save(update_fields=['deleted_at', 'deleted_by'])
+    presupuesto.save(update_fields=['deleted_at', 'deleted_by', 'updated_at'])
     messages.success(request, f'Presupuesto {numero} eliminado correctamente.')
     return redirect('presupuestos:presupuestos-lista')
 

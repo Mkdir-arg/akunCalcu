@@ -2,9 +2,11 @@ from core.live import register
 
 from .models import AuditLog, Backup, HeartbeatIntegracion
 
+# Backup no tiene updated_at: se cuentan solo los terminados (completo o fallido), así el
+# cambio de estado al finalizar suma al count y el listado se entera.
 register(
     key='backups',
-    queryset=lambda user: Backup.objects.all(),
+    queryset=lambda user: Backup.objects.filter(status__in=['completed', 'failed']),
     date_field='created_at',
     permission='seguridad.backups',
 )

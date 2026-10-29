@@ -1505,6 +1505,17 @@ class PresupuestoUpdatedByTest(TestCase):
         p.refresh_from_db()
         self.assertIsNone(p.updated_by)
 
+    def test_cambiar_estado_mueve_updated_at(self):
+        """El tiempo real (fuente `presupuestos`) detecta cambios por updated_at."""
+        self.client.login(username='editor', password='testpass')
+        p = crear_presupuesto(self.creador)
+        viejo = timezone.now() - timedelta(days=1)
+        Presupuesto.objects.filter(pk=p.pk).update(updated_at=viejo)
+        self.client.post(f'/presupuestos/{p.pk}/estado/', {'estado': 'enviado'})
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'enviado')
+        self.assertGreater(p.updated_at, viejo)
+
 
 class ConfirmarPresupuestoTest(TestCase):
     """Confirmar un presupuesto (directo, sin popup de seña) genera venta SIN seña + pedido de fábrica."""
