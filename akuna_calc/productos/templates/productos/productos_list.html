@@ -1,97 +1,59 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
+{% block title %}Productos{% endblock %}
 
 {% block content %}
-<div class="max-w-full mx-auto px-4 animate-fade-in">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-box mr-3"></i>Productos
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de catálogo de productos</p>
-        </div>
-        <a href="{% url 'productos:producto_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i>Nuevo Producto
-        </a>
-    </div>
+<div>
+    {% url 'productos:producto_create' as create_url %}
+    {% include 'core/ui/page_header.html' with title="Productos" subtitle="Gestión de catálogo de productos" action_url=create_url action_label="Nuevo producto" only %}
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-2xl mb-4 animate-fade-in">
-                <i class="fas fa-check-circle mr-2"></i>{{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
+    <section class="card overflow-hidden" data-live="catalogo-productos">
         {% include 'core/includes/table_filters.html' with table_filter_id='catalogo-productos-table' show_status_filter=True table_filter_placeholder='Buscar por nombre, categoria o estado...' %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Categoría</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Precio por m²</th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th>Nombre</th>
+                        <th class="hidden md:table-cell">Categoría</th>
+                        <th class="num">Precio por m²</th>
+                        <th class="hidden sm:table-cell">Estado</th>
+                        <th></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for producto in productos %}
-                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="catalogo-productos-table" data-status="{% if producto.activo %}activo{% else %}inactivo{% endif %}">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-box text-white text-sm"></i>
-                                </div>
-                                <span class="font-semibold text-slate-800">{{ producto.nombre }}</span>
-                            </div>
-                        </td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 font-medium">
-                            {{ producto.get_categoria_display }}
-                        </td>
-                        <td class="px-6 py-4 text-base font-bold text-slate-800">
-                            ${{ producto.precio_m2|formato_numero }}
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4">
+                    <tr data-filter-row="catalogo-productos-table" data-status="{% if producto.activo %}activo{% else %}inactivo{% endif %}">
+                        <td class="strong">{{ producto.nombre }}</td>
+                        <td class="hidden md:table-cell">{{ producto.get_categoria_display }}</td>
+                        <td class="num strong">${{ producto.precio_m2|formato_numero }}</td>
+                        <td class="hidden sm:table-cell">
                             {% if producto.activo %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i>Activo
-                                </span>
+                                {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
                             {% else %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i>Inactivo
-                                </span>
+                                {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'productos:producto_update' producto.pk %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'productos:producto_toggle_active' producto.pk %}" class="inline-flex items-center {% if producto.activo %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas {% if producto.activo %}fa-times{% else %}fa-check{% endif %}"></i>
-                                </a>
-                            </div>
+                        <td class="num">
+                            {% url 'productos:producto_update' producto.pk as row_edit_url %}
+                            {% url 'productos:producto_toggle_active' producto.pk as row_toggle_url %}
+                            {% if producto.activo %}
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url extra_url=row_toggle_url extra_label="Desactivar" extra_icon="fas fa-ban" only %}
+                            {% else %}
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url extra_url=row_toggle_url extra_label="Activar" extra_icon="fas fa-check" only %}
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay productos registrados</p>
-                        </td>
+                        <td colspan="5">{% include 'core/ui/empty_state.html' with title="No hay productos registrados" icon="fas fa-inbox" action_url=create_url action_label="Nuevo producto" only %}</td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="catalogo-productos-table" class="hidden">
-                        <td colspan="5" class="px-6 py-8 text-center">
-                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay productos que coincidan con los filtros</p>
-                        </td>
+                        <td colspan="5">{% include 'core/ui/empty_state.html' with title="No hay productos que coincidan con los filtros" icon="fas fa-search" only %}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}

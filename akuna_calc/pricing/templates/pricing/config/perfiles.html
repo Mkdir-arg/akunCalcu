@@ -2,385 +2,134 @@
 {% block title %}Configuración - Perfiles{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-ruler-combined mr-3"></i>Perfiles
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de perfiles (mostrando los primeros 200)</p>
-        </div>
-        <a href="{% url 'config-perfil-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo Perfil
-        </a>
-    </div>
+<div>
+    {% url 'config-perfil-create' as create_url %}
+    {% include 'core/ui/page_header.html' with title="Perfiles" subtitle="Gestión de perfiles (mostrando los primeros 200)" action_url=create_url action_label="Nuevo Perfil" only %}
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-3">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-800">Filtros</h2>
-                    <p class="text-sm text-slate-500">Misma funcionalidad, en una barra más compacta.</p>
+    <section class="card overflow-hidden" data-live="fabrica-perfiles">
+        <div class="toolbar" style="display:block">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 mb-3">
+                <h2 class="text-base font-semibold text-ink">Filtros</h2>
+                <p class="text-sm text-ink-3 font-medium" data-filter-results-external>Mostrando {{ perfiles|length }} de {{ perfiles|length }} registros</p>
+            </div>
+            <form method="get" class="grid grid-cols-1 xl:grid-cols-[minmax(220px,1fr)_minmax(260px,1.2fr)_180px_auto] gap-3 items-end">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <div class="field">
+                    <label>Línea</label>
+                    <select name="linea" class="input">
+                        <option value="">Todas las líneas</option>
+                        {% for linea in lineas %}
+                        <option value="{{ linea.id }}" {% if selected_linea_id == linea.id|stringformat:'s' %}selected{% endif %}>{{ linea.nombre|default:"Sin nombre" }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <p class="text-sm text-slate-500 font-medium" data-filter-results-external>Mostrando {{ perfiles|length }} de {{ perfiles|length }} registros</p>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-[minmax(240px,1.1fr)_minmax(280px,1.2fr)_180px_auto] gap-3 items-end">
-                <form method="get" class="contents">
-                    <input type="hidden" name="sort" value="{{ sort }}">
-                    <input type="hidden" name="dir" value="{{ dir }}">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Línea</label>
-                        <select name="linea" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Todas las líneas</option>
-                            {% for linea in lineas %}
-                            <option value="{{ linea.id }}" {% if selected_linea_id == linea.id|stringformat:'s' %}selected{% endif %}>{{ linea.nombre|default:"Sin nombre" }}</option>
-                            {% endfor %}
-                        </select>
+                <div class="field">
+                    <label>Buscar</label>
+                    <div class="relative">
+                        <input type="text" data-filter-search placeholder="Buscar por codigo, linea, descripcion o tipo..." class="input" style="padding-left:36px">
+                        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-sm"></i>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Buscar</label>
-                        <div class="relative">
-                            <input
-                                type="text"
-                                data-filter-search
-                                placeholder="Buscar por codigo, linea, descripcion o tipo..."
-                                class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Estado</label>
-                        <select data-filter-status class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Todos</option>
-                            <option value="activo">Activos</option>
-                            <option value="inactivo">Inactivos</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col sm:flex-row xl:justify-end gap-2">
-                        <button type="submit" class="inline-flex items-center justify-center bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
-                            <i class="fas fa-filter mr-2"></i>Aplicar
-                        </button>
-                        <a href="?sort={{ sort }}&dir={{ dir }}" class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
-                            <i class="fas fa-broom mr-2"></i>Quitar
-                        </a>
-                        <button type="button" data-filter-reset class="inline-flex items-center justify-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold transition-colors whitespace-nowrap">
-                            <i class="fas fa-eraser mr-2"></i>Limpiar
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="field">
+                    <label>Estado</label>
+                    <select data-filter-status class="input">
+                        <option value="">Todos</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i>Aplicar</button>
+                    <a href="?sort={{ sort }}&dir={{ dir }}" class="btn btn-secondary"><i class="fas fa-broom"></i>Quitar</a>
+                    <button type="button" data-filter-reset class="btn btn-ghost"><i class="fas fa-eraser"></i>Limpiar</button>
+                </div>
+            </form>
         </div>
         <form method="post" action="{{ request.get_full_path }}" id="bulk-perfiles-form">
             {% csrf_token %}
-            <div class="border-b border-slate-200 bg-white px-6 py-5">
+            <div class="toolbar" style="display:block">
                 <div class="flex flex-col 2xl:flex-row 2xl:items-end 2xl:justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">Edición masiva de precios</h2>
-                        <p class="text-sm text-slate-500 mt-1"><span id="perfiles-seleccionados-cantidad" class="font-semibold text-slate-800">0</span> perfiles seleccionados</p>
-                        <p class="text-xs text-slate-500 mt-2">La acción actualiza solo <strong>Precio/kg</strong> y no modifica línea, descripción, tipo ni moneda.</p>
+                        <h2 class="text-base font-semibold text-ink">Edición masiva de precios</h2>
+                        <p class="text-sm text-ink-3 mt-1"><span id="perfiles-seleccionados-cantidad" class="strong">0</span> perfiles seleccionados</p>
+                        <p class="field-hint mt-1">La acción actualiza solo <strong>Precio/kg</strong> y no modifica línea, descripción, tipo ni moneda.</p>
                     </div>
-                    <div class="w-full 2xl:w-auto">
-                        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
-                            <div class="sm:min-w-[260px]">
-                                <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">{{ bulk_form.precio_kg.label }}</label>
-                                {{ bulk_form.precio_kg }}
-                                {% if bulk_form.precio_kg.errors %}
-                                <p class="text-red-600 text-xs mt-2">{{ bulk_form.precio_kg.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                            <button type="submit" id="aplicar-precio-masivo" class="btn-primary inline-flex items-center justify-center text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                <i class="fas fa-layer-group mr-2"></i>Aplicar precio masivo
-                            </button>
+                    <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                        <div class="field sm:min-w-[260px]">
+                            <label>{{ bulk_form.precio_kg.label }}</label>
+                            {{ bulk_form.precio_kg }}
+                            {% if bulk_form.precio_kg.errors %}
+                            <p class="field-error">{{ bulk_form.precio_kg.errors.0 }}</p>
+                            {% endif %}
                         </div>
+                        <button type="submit" id="aplicar-precio-masivo" class="btn btn-primary" disabled>
+                            <i class="fas fa-layer-group"></i>Aplicar precio masivo
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+            <div class="table-wrap">
+                <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider w-14">
-                            <input type="checkbox" id="seleccionar-todos-perfiles" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <th class="text-center">
+                            <input type="checkbox" id="seleccionar-todos-perfiles" >
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden md:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=tipo&dir={% if sort == 'tipo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Tipo{% if sort == 'tipo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th><a href="?sort=codigo&dir={% if sort == 'codigo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Código{% if sort == 'codigo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell num"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden lg:table-cell"><a href="?sort=tipo&dir={% if sort == 'tipo' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Tipo{% if sort == 'tipo' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}{{ linea_query }}" class="inline-flex items-center gap-1">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for perfil in perfiles %}
-                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="perfiles-table" data-status="{% if perfil.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
-                        <td class="px-4 py-4 text-center">
-                            <input type="checkbox" name="perfiles_seleccionados" value="{{ perfil.codigo }}" class="perfil-selector h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <tr data-filter-row="perfiles-table" data-status="{% if perfil.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="text-center">
+                            <input type="checkbox" name="perfiles_seleccionados" value="{{ perfil.codigo }}" class="perfil-selector">
                         </td>
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ perfil.codigo }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.linea.nombre|default:"-" }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ perfil.descripcion }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ perfil.precio_kg|default:"-" }}</td>
-                        <td class="hidden lg:table-cell px-6 py-4">
+                        <td class="strong">{{ perfil.codigo }}</td>
+                        <td class="hidden md:table-cell">{{ perfil.linea.nombre|default:"-" }}</td>
+                        <td class="hidden sm:table-cell">{{ perfil.descripcion }}</td>
+                        <td class="hidden md:table-cell num">{{ perfil.precio_kg|default:"-" }}</td>
+                        <td class="hidden lg:table-cell">
                             {% if perfil.tipo_perfil == 'Marco' %}
-                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold"><i class="fas fa-square mr-1"></i>Marco</span>
+                                {% include 'core/ui/badge.html' with tone="blue" label="Marco" icon="fas fa-square" only %}
                             {% elif perfil.tipo_perfil == 'Hojas' %}
-                                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold"><i class="fas fa-door-open mr-1"></i>Hojas</span>
+                                {% include 'core/ui/badge.html' with tone="violet" label="Hojas" icon="fas fa-door-open" only %}
                             {% else %}
-                                <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">-</span>
+                                <span class="muted">-</span>
                             {% endif %}
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4">
+                        <td class="hidden sm:table-cell">
                             {% if perfil.bloqueado == 'Si' %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
+                                {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                             {% else %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Activo</span>
+                                {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-perfil-edit' perfil.codigo %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if perfil.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-perfil-delete' perfil.codigo %}', '{{ perfil.codigo }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
+                        <td class="num">
+                            {% url 'config-perfil-edit' perfil.codigo as row_edit_url %}
+                            {% url 'config-perfil-delete' perfil.codigo as row_delete_url %}
+                            {% if perfil.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=perfil.codigo only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay perfiles registrados</p>
-                        </td>
+                        <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay perfiles registrados" icon="fas fa-inbox" only %}</td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="perfiles-table" class="hidden">
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay perfiles que coincidan con los filtros</p>
-                        </td>
+                        <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay perfiles que coincidan con los filtros" icon="fas fa-search" only %}</td>
                     </tr>
                 </tbody>
                 </table>
             </div>
         </form>
-    </div>
+    </section>
 </div>
 
-<script>
-function confirmarDesactivar(url, nombre) {
-    Swal.fire({
-        title: '¿Desactivar perfil?',
-        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    const perfilesRows = Array.from(document.querySelectorAll('[data-filter-row="perfiles-table"]'));
-    const perfilesEmptyStateRow = document.querySelector('[data-filter-empty="perfiles-table"]');
-    const filtersSearchInput = document.querySelector('[data-filter-search]');
-    const filtersStatusSelect = document.querySelector('[data-filter-status]');
-    const filtersResetButton = document.querySelector('[data-filter-reset]');
-    const externalResultsLabel = document.querySelector('[data-filter-results-external]');
-
-    function normalizeFilterText(value) {
-        return (value || '')
-            .toString()
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-    }
-
-    function applyPerfilesTableFilters() {
-        const searchTerm = normalizeFilterText(filtersSearchInput ? filtersSearchInput.value : '');
-        const selectedStatus = filtersStatusSelect ? filtersStatusSelect.value : '';
-        let visibleCount = 0;
-
-        perfilesRows.forEach(function (row) {
-            const rowText = normalizeFilterText(row.textContent);
-            const rowStatus = row.dataset.status || '';
-            const matchesSearch = !searchTerm || rowText.includes(searchTerm);
-            const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
-            const isVisible = matchesSearch && matchesStatus;
-
-            row.classList.toggle('hidden', !isVisible);
-            if (isVisible) {
-                visibleCount += 1;
-            }
-        });
-
-        if (perfilesEmptyStateRow) {
-            perfilesEmptyStateRow.classList.toggle('hidden', perfilesRows.length === 0 || visibleCount > 0);
-        }
-
-        if (externalResultsLabel) {
-            if (perfilesRows.length === 0) {
-                externalResultsLabel.textContent = 'Sin registros cargados';
-            } else {
-                externalResultsLabel.textContent = `Mostrando ${visibleCount} de ${perfilesRows.length} registros`;
-            }
-        }
-    }
-
-    if (filtersSearchInput) {
-        filtersSearchInput.addEventListener('input', applyPerfilesTableFilters);
-    }
-
-    if (filtersStatusSelect) {
-        filtersStatusSelect.addEventListener('change', applyPerfilesTableFilters);
-    }
-
-    if (filtersResetButton) {
-        filtersResetButton.addEventListener('click', function () {
-            if (filtersSearchInput) {
-                filtersSearchInput.value = '';
-            }
-            if (filtersStatusSelect) {
-                filtersStatusSelect.value = '';
-            }
-            applyPerfilesTableFilters();
-        });
-    }
-
-    const bulkForm = document.getElementById('bulk-perfiles-form');
-    if (!bulkForm) {
-        applyPerfilesTableFilters();
-        return;
-    }
-
-    const selectAllCheckbox = document.getElementById('seleccionar-todos-perfiles');
-    const selectedCount = document.getElementById('perfiles-seleccionados-cantidad');
-    const submitButton = document.getElementById('aplicar-precio-masivo');
-    const priceInput = document.getElementById('id_precio_kg');
-
-    function getAllSelectors() {
-        return Array.from(document.querySelectorAll('.perfil-selector'));
-    }
-
-    function getVisibleSelectors() {
-        return getAllSelectors().filter(function (checkbox) {
-            const row = checkbox.closest('tr');
-            return row && !row.classList.contains('hidden');
-        });
-    }
-
-    function updateBulkSelectionState() {
-        const allSelectors = getAllSelectors();
-        const visibleSelectors = getVisibleSelectors();
-        const checkedSelectors = allSelectors.filter(function (checkbox) {
-            return checkbox.checked;
-        });
-        const checkedVisibleSelectors = visibleSelectors.filter(function (checkbox) {
-            return checkbox.checked;
-        });
-
-        if (selectedCount) {
-            selectedCount.textContent = checkedSelectors.length;
-        }
-
-        if (selectAllCheckbox) {
-            selectAllCheckbox.checked = visibleSelectors.length > 0 && checkedVisibleSelectors.length === visibleSelectors.length;
-            selectAllCheckbox.indeterminate = checkedVisibleSelectors.length > 0 && checkedVisibleSelectors.length < visibleSelectors.length;
-        }
-
-        if (submitButton) {
-            submitButton.disabled = checkedSelectors.length === 0;
-        }
-    }
-
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function () {
-            getVisibleSelectors().forEach(function (checkbox) {
-                checkbox.checked = selectAllCheckbox.checked;
-            });
-            updateBulkSelectionState();
-        });
-    }
-
-    getAllSelectors().forEach(function (checkbox) {
-        checkbox.addEventListener('change', updateBulkSelectionState);
-    });
-
-    const scheduleUpdate = function () {
-        window.setTimeout(updateBulkSelectionState, 0);
-    };
-
-    if (filtersSearchInput) {
-        filtersSearchInput.addEventListener('input', scheduleUpdate);
-    }
-    if (filtersStatusSelect) {
-        filtersStatusSelect.addEventListener('change', scheduleUpdate);
-    }
-    if (filtersResetButton) {
-        filtersResetButton.addEventListener('click', scheduleUpdate);
-    }
-
-    bulkForm.addEventListener('submit', function (event) {
-        if (bulkForm.dataset.confirmed === 'true') {
-            return;
-        }
-
-        const checkedSelectors = getAllSelectors().filter(function (checkbox) {
-            return checkbox.checked;
-        });
-
-        if (!checkedSelectors.length) {
-            event.preventDefault();
-            Swal.fire({
-                title: 'Sin selección',
-                text: 'Selecciona al menos un perfil para aplicar la edición masiva.',
-                icon: 'warning',
-                confirmButtonColor: '#2563eb'
-            });
-            return;
-        }
-
-        if (!priceInput || !priceInput.value) {
-            return;
-        }
-
-        event.preventDefault();
-        Swal.fire({
-            title: '¿Actualizar precios?',
-            html: `<p>Se actualizará el <strong>Precio/kg</strong> de <strong>${checkedSelectors.length}</strong> perfiles.</p><p class="text-sm text-gray-600 mt-2">Nuevo valor: <strong>${priceInput.value}</strong></p>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#2563eb',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sí, actualizar',
-            cancelButtonText: 'Cancelar'
-        }).then(function (result) {
-            if (result.isConfirmed) {
-                bulkForm.dataset.confirmed = 'true';
-                bulkForm.submit();
-            }
-        });
-    });
-
-    applyPerfilesTableFilters();
-    updateBulkSelectionState();
-});
-</script>
 {% endblock %}

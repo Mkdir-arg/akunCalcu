@@ -2,46 +2,33 @@
 {% block title %}Configuración - Productos{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-box mr-3"></i>Productos
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de productos de fábrica</p>
-        </div>
-        <a href="{% url 'config-producto-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo Producto
-        </a>
-    </div>
+<div>
+    {% url 'config-producto-create' as create_url %}
+    {% include 'core/ui/page_header.html' with title="Productos" subtitle="Gestión de productos de fábrica" action_url=create_url action_label="Nuevo Producto" only %}
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+    <section class="card overflow-hidden" data-live="fabrica-productos">
         {% include 'core/includes/table_filters.html' with table_filter_id='productos-fabrica-table' show_status_filter=True table_filter_placeholder='Buscar por producto, linea o extrusora...' %}
-        <div id="acciones-masivas" class="hidden flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-3 bg-blue-50 border-b border-blue-100">
-            <span class="text-sm font-semibold text-blue-900"><i class="fas fa-check-square mr-1"></i><span data-seleccionados>0</span> seleccionado<span data-seleccionados-plural>s</span></span>
-            <div class="flex flex-wrap gap-2 sm:ml-auto">
-                <button type="button" onclick="accionMasiva('inactivar')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">
-                    <i class="fas fa-ban mr-1"></i>Inactivar seleccionados
-                </button>
-                <button type="button" onclick="accionMasiva('activar')" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-xs">
-                    <i class="fas fa-check mr-1"></i>Activar seleccionados
-                </button>
-                <button type="button" onclick="limpiarSeleccion()" class="inline-flex items-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold text-xs">
-                    <i class="fas fa-times mr-1"></i>Limpiar
-                </button>
+        <div id="acciones-masivas" class="hidden">
+            <div class="toolbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+                <span class="strong"><i class="fas fa-check-square"></i> <span data-seleccionados>0</span> seleccionado<span data-seleccionados-plural>s</span></span>
+                <div class="page-actions" style="margin-left:auto">
+                    <button type="button" onclick="accionMasiva('inactivar')" class="btn btn-secondary btn-sm"><i class="fas fa-ban"></i>Inactivar seleccionados</button>
+                    <button type="button" onclick="accionMasiva('activar')" class="btn btn-secondary btn-sm"><i class="fas fa-check"></i>Activar seleccionados</button>
+                    <button type="button" onclick="limpiarSeleccion()" class="btn btn-ghost btn-sm"><i class="fas fa-times"></i>Limpiar</button>
+                </div>
             </div>
         </div>
         <form id="form-estado-masivo" method="post" action="{% url 'config-productos-estado-masivo' %}" class="hidden">
             {% csrf_token %}
             <input type="hidden" name="accion" value="">
         </form>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-4 py-4 w-10 text-center"><input type="checkbox" data-select-all class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" title="Seleccionar todos los visibles"></th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">
+                        <th class="text-center"><input type="checkbox" data-select-all class="cursor-pointer" title="Seleccionar todos los visibles"></th>
+                        <th>
+                            <a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">
                                 Descripción
                                 {% if sort == 'descripcion' %}
                                     {% if dir == 'asc' %}
@@ -52,8 +39,8 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?sort=extrusora&dir={% if sort == 'extrusora' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">
+                        <th class="hidden sm:table-cell">
+                            <a href="?sort=extrusora&dir={% if sort == 'extrusora' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">
                                 Extrusora
                                 {% if sort == 'extrusora' %}
                                     {% if dir == 'asc' %}
@@ -64,8 +51,8 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">
+                        <th class="hidden sm:table-cell">
+                            <a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">
                                 Línea
                                 {% if sort == 'linea' %}
                                     {% if dir == 'asc' %}
@@ -76,8 +63,8 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">
+                        <th class="hidden sm:table-cell">
+                            <a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">
                                 Estado
                                 {% if sort == 'estado' %}
                                     {% if dir == 'asc' %}
@@ -88,61 +75,50 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for producto in productos %}
-                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="productos-fabrica-table" data-status="{% if producto.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
-                        <td class="px-4 py-4 text-center"><input type="checkbox" data-select-id="{{ producto.pk }}" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"></td>
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ producto.descripcion }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.extrusora.nombre }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ producto.linea.nombre }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
+                    <tr data-filter-row="productos-fabrica-table" data-status="{% if producto.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="text-center"><input type="checkbox" data-select-id="{{ producto.pk }}" class="cursor-pointer"></td>
+                        <td class="strong">{{ producto.descripcion }}</td>
+                        <td class="hidden sm:table-cell">{{ producto.extrusora.nombre }}</td>
+                        <td class="hidden sm:table-cell">{{ producto.linea.nombre }}</td>
+                        <td class="hidden sm:table-cell">
                             {% if producto.bloqueado == 'Si' %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
+                                {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                             {% else %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Activo</span>
+                                {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-producto-edit' producto.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
+                        <td class="num">
+                            <div class="inline-flex items-center gap-2">
                                 {% if producto.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-producto-delete' producto.pk %}', '{{ producto.descripcion|escapejs }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Inactivar: deja de ofrecerse en el cotizador">
-                                    <i class="fas fa-ban mr-1"></i>Inactivar
-                                </button>
+                                <button type="button" onclick="confirmarDesactivar('{% url 'config-producto-delete' producto.pk %}', '{{ producto.descripcion|escapejs }}')" class="btn btn-secondary btn-sm" title="Inactivar: deja de ofrecerse en el cotizador"><i class="fas fa-ban"></i>Inactivar</button>
                                 {% else %}
                                 <form method="post" action="{% url 'config-producto-activate' producto.pk %}" class="inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs" title="Activar: vuelve a ofrecerse en el cotizador">
-                                        <i class="fas fa-check mr-1"></i>Activar
-                                    </button>
+                                    <button type="submit" class="btn btn-secondary btn-sm" title="Activar: vuelve a ofrecerse en el cotizador"><i class="fas fa-check"></i>Activar</button>
                                 </form>
                                 {% endif %}
+                                {% url 'config-producto-edit' producto.pk as row_edit_url %}
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay productos registrados</p>
-                        </td>
+                        <td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay productos registrados" icon="fas fa-inbox" only %}</td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="productos-fabrica-table" class="hidden">
-                        <td colspan="6" class="px-6 py-8 text-center">
-                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay productos que coincidan con los filtros</p>
-                        </td>
+                        <td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay productos que coincidan con los filtros" icon="fas fa-search" only %}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
 
 <script>

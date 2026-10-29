@@ -2,106 +2,60 @@
 {% block title %}Configuración - Hojas{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-clone mr-3"></i>Hojas
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de hojas</p>
-        </div>
-        <a href="{% url 'config-hoja-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nueva Hoja
-        </a>
-    </div>
+<div>
+    {% url 'config-hoja-create' as create_url %}
+    {% include 'core/ui/page_header.html' with title="Hojas" subtitle="Gestión de hojas" action_url=create_url action_label="Nueva Hoja" only %}
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+    <section class="card overflow-hidden" data-live="fabrica-hojas">
         {% include 'core/includes/table_filters.html' with table_filter_id='hojas-table' show_status_filter=True table_filter_placeholder='Buscar por hoja, producto, marco o linea...' %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=extrusora&dir={% if sort == 'extrusora' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Extrusora{% if sort == 'extrusora' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=producto&dir={% if sort == 'producto' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Producto{% if sort == 'producto' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=marco&dir={% if sort == 'marco' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Marco{% if sort == 'marco' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=cantidad&dir={% if sort == 'cantidad' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Cantidad{% if sort == 'cantidad' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=extrusora&dir={% if sort == 'extrusora' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Extrusora{% if sort == 'extrusora' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=linea&dir={% if sort == 'linea' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Línea{% if sort == 'linea' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=producto&dir={% if sort == 'producto' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Producto{% if sort == 'producto' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=marco&dir={% if sort == 'marco' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Marco{% if sort == 'marco' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden md:table-cell"><a href="?sort=cantidad&dir={% if sort == 'cantidad' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Cantidad{% if sort == 'cantidad' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for hoja in hojas %}
-                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="hojas-table" data-status="{% if hoja.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ hoja.descripcion }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ hoja.marco.producto.extrusora.nombre }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ hoja.marco.producto.linea.nombre }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ hoja.marco.producto.descripcion }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700">{{ hoja.marco.descripcion }}</td>
-                        <td class="hidden md:table-cell px-6 py-4 text-sm text-slate-700">{{ hoja.cantidad|default:"-" }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
+                    <tr data-filter-row="hojas-table" data-status="{% if hoja.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="strong">{{ hoja.descripcion }}</td>
+                        <td class="hidden sm:table-cell">{{ hoja.marco.producto.extrusora.nombre }}</td>
+                        <td class="hidden sm:table-cell">{{ hoja.marco.producto.linea.nombre }}</td>
+                        <td class="hidden sm:table-cell">{{ hoja.marco.producto.descripcion }}</td>
+                        <td class="hidden sm:table-cell">{{ hoja.marco.descripcion }}</td>
+                        <td class="hidden md:table-cell">{{ hoja.cantidad|default:"-" }}</td>
+                        <td class="hidden sm:table-cell">
                             {% if hoja.bloqueado == 'Si' %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
+                                {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                             {% else %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Activo</span>
+                                {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-hoja-edit' hoja.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if hoja.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-hoja-delete' hoja.pk %}', '{{ hoja.descripcion }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
+                        <td class="num">
+                            {% url 'config-hoja-edit' hoja.pk as row_edit_url %}
+                            {% url 'config-hoja-delete' hoja.pk as row_delete_url %}
+                            {% if hoja.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=hoja.descripcion only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay hojas registradas</p>
-                        </td>
+                        <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay hojas registradas" icon="fas fa-inbox" only %}</td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="hojas-table" class="hidden">
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay hojas que coincidan con los filtros</p>
-                        </td>
+                        <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay hojas que coincidan con los filtros" icon="fas fa-search" only %}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
 
-<script>
-function confirmarDesactivar(url, nombre) {
-    Swal.fire({
-        title: '¿Desactivar hoja?',
-        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
 {% endblock %}

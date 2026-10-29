@@ -1,108 +1,71 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
+{% block title %}Calculadora{% endblock %}
 
 {% block content %}
-<!-- Header Section -->
-<div class="mb-8 animate-fade-in">
-    <div class="bg-white rounded-2xl shadow-lg p-6 lg:p-8 border-l-4 border-blue-500">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between">
-            <div>
-                <h1 class="text-2xl lg:text-4xl font-bold text-gray-900 mb-2">
-                    <i class="fas fa-calculator mr-3"></i>Calculadora Rápida
-                </h1>
-                <p class="text-gray-600 text-sm lg:text-base">Cálculo instantáneo de precios - Ingresá medidas en milímetros</p>
-            </div>
-            <div class="mt-4 lg:mt-0">
-                <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 shadow-xl">
-                    <div class="text-center">
-                        <p class="text-sm text-blue-50 mb-2 font-medium">Total Calculado</p>
-                        <p class="text-2xl lg:text-3xl font-bold text-white">$<span id="total-general-header">0,00</span></p>
-                    </div>
-                </div>
-            </div>
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Calculadora rápida</h1>
+        <p class="page-sub">Cálculo instantáneo de precios. Ingresá las medidas en milímetros.</p>
+    </div>
+    <div class="page-actions">
+        <div class="card card-pad" style="padding-top:10px;padding-bottom:10px;text-align:right">
+            <p class="sec-label">Total calculado</p>
+            <p class="num strong text-xl">$<span id="total-general-header">0,00</span></p>
         </div>
+        <button id="add-product-btn" type="button" class="btn btn-primary"><i class="fas fa-plus"></i>Agregar producto</button>
     </div>
 </div>
 
-<!-- Add Product Button -->
-<div class="mb-6 sm:mb-8 animate-scale-in">
-    <button id="add-product-btn" class="btn-primary w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-xl sm:rounded-2xl shadow-xl text-sm sm:text-base">
-        <i class="fas fa-plus mr-2 sm:mr-3"></i>
-        Agregar Producto
-    </button>
-</div>
-
 <!-- Product Selection Modal -->
-<div id="product-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden backdrop-blur-sm">
+<div id="product-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(20,20,24,.45)">
     <div class="flex items-center justify-center min-h-screen p-2 sm:p-4">
-        <div class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[80vh] shadow-2xl animate-scale-in">
-            <div class="flex justify-between items-center mb-4 sm:mb-8">
-                <h3 class="text-lg sm:text-2xl font-bold text-slate-800 tracking-tight">Seleccionar Producto</h3>
-                <button id="close-modal" class="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100">
-                    <i class="fas fa-times text-lg sm:text-xl"></i>
+        <div class="card w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto" style="padding:20px">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-ink">Seleccionar producto</h3>
+                <button id="close-modal" type="button" class="btn btn-ghost btn-icon" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-            
-            <!-- Search Filter -->
-            <div class="mb-4 sm:mb-6">
+
+            <div class="mb-4">
                 <div class="relative">
-                    <input type="text" 
-                           id="product-search" 
-                           class="w-full px-4 sm:px-6 py-3 sm:py-4 pl-10 sm:pl-12 bg-slate-50 border-2 border-slate-200 rounded-xl sm:rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 transition-all duration-300 text-sm sm:text-base"
-                           placeholder="Buscar productos...">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 sm:pl-4">
-                        <i class="fas fa-search text-slate-400 text-sm sm:text-base"></i>
-                    </div>
+                    <input type="text" id="product-search" class="input" style="padding-left:36px" placeholder="Buscar productos...">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 text-sm"></i>
                 </div>
             </div>
-            
-            <!-- Category Filter -->
-            <div class="mb-4 sm:mb-6">
-                <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                    <button class="category-filter active px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all" data-category="all">
-                        Todos
-                    </button>
-                    <button class="category-filter px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all" data-category="vidrios">
-                        Vidrios
-                    </button>
-                    <button class="category-filter px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all" data-category="panos_fijos">
-                        Paños Fijos
-                    </button>
-                    <button class="category-filter px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all" data-category="persianas">
-                        Persianas
-                    </button>
+
+            <div class="mb-4">
+                <div class="tabs" style="flex-wrap:wrap">
+                    <button type="button" class="category-filter tab active on" data-category="all">Todos</button>
+                    <button type="button" class="category-filter tab" data-category="vidrios">Vidrios</button>
+                    <button type="button" class="category-filter tab" data-category="panos_fijos">Paños fijos</button>
+                    <button type="button" class="category-filter tab" data-category="persianas">Persianas</button>
                 </div>
             </div>
-            
-            <!-- Products List -->
-            <div id="products-container" class="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
+
+            <div id="products-container" class="space-y-2 max-h-60 sm:max-h-80 overflow-y-auto">
                 {% for producto in productos %}
-                <button class="product-option card-elegant w-full text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 transition-all" 
+                <button type="button" class="product-option w-full text-left p-3 rounded-lg bg-white hover:bg-ground" style="border:1px solid var(--line)"
                         data-id="{{ producto.id }}"
                         data-nombre="{{ producto.nombre }}"
                         data-categoria="{{ producto.categoria }}"
                         data-precio="{{ producto.precio_m2 }}"
                         data-formula="{{ producto.formula }}"
                         data-search="{{ producto.nombre|lower }} {{ producto.categoria|lower }}">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
-                            <i class="fas fa-box text-white text-sm sm:text-base"></i>
-                        </div>
+                    <div class="flex items-center gap-3">
                         <div class="flex-1 min-w-0">
-                            <div class="font-semibold text-slate-900 mb-1 text-sm sm:text-base truncate">{{ producto.nombre }}</div>
-                            <div class="text-xs sm:text-sm text-slate-500 font-medium truncate">{{ producto.categoria }} - ${{ producto.precio_m2|formato_numero }}/m²</div>
+                            <div class="strong text-sm truncate">{{ producto.nombre }}</div>
+                            <div class="text-xs text-ink-3 truncate">{{ producto.categoria }} · ${{ producto.precio_m2|formato_numero }}/m²</div>
                         </div>
-                        <div class="text-right flex-shrink-0">
-                            <i class="fas fa-plus text-slate-400 text-sm sm:text-base"></i>
-                        </div>
+                        <i class="fas fa-plus text-ink-3 text-sm"></i>
                     </div>
                 </button>
                 {% endfor %}
             </div>
-            
-            <div id="no-results" class="hidden text-center py-6 sm:py-8">
-                <i class="fas fa-search text-slate-300 text-2xl sm:text-4xl mb-3 sm:mb-4"></i>
-                <p class="text-slate-500 font-medium text-sm sm:text-base">No se encontraron productos</p>
+
+            <div id="no-results" class="hidden">
+                {% include 'core/ui/empty_state.html' with title="No se encontraron productos" icon="fas fa-search" only %}
             </div>
         </div>
     </div>
@@ -112,29 +75,21 @@
 <div id="calculator-items" class="space-y-4"></div>
 
 <!-- Total Section -->
-<div id="total-section" class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 mt-8 hidden shadow-xl animate-fade-in">
-    <div class="flex flex-col lg:flex-row items-center justify-between text-white">
-        <div class="mb-6 lg:mb-0">
-            <h3 class="text-2xl font-bold mb-2">
-                <i class="fas fa-calculator mr-3"></i>Total General
-            </h3>
-            <p class="text-blue-50 font-medium">Cálculo en tiempo real</p>
+<div id="total-section" class="card card-pad mt-6 hidden">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div>
+            <h3 class="text-base font-semibold text-ink">Total general</h3>
+            <p class="muted text-sm">Cálculo en tiempo real</p>
         </div>
-        <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
-            <div class="text-center">
-                <p class="text-blue-50 mb-3 font-medium">Monto Total</p>
-                <p class="text-4xl font-bold text-white">$<span id="total-general">0,00</span></p>
-            </div>
+        <div class="text-right">
+            <p class="sec-label">Monto total</p>
+            <p class="num strong text-3xl">$<span id="total-general">0,00</span></p>
         </div>
     </div>
 </div>
 
-<!-- Action Buttons -->
-<div class="mt-8 sm:mt-12 flex justify-center animate-fade-in">
-    <a href="{% url 'productos:productos_list' %}" class="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl sm:rounded-2xl border-2 border-slate-300 hover:border-slate-400 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base">
-        <i class="fas fa-cog mr-2 sm:mr-3"></i>
-        Gestionar Productos
-    </a>
+<div class="mt-8 flex justify-center">
+    <a href="{% url 'productos:productos_list' %}" class="btn btn-secondary"><i class="fas fa-cog"></i>Gestionar productos</a>
 </div>
 
 <script>
@@ -159,59 +114,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemId = `item-${itemCounter}`;
         
         const itemHTML = `
-            <div id="${itemId}" class="card-elegant bg-white rounded-2xl shadow-xl overflow-hidden" data-precio="${producto.precio}" data-formula="${producto.formula}" data-producto-id="${producto.id}">
-                <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-box text-white text-sm"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-sm sm:text-base">${producto.nombre}</h3>
-                            <p class="text-xs text-slate-300">${producto.categoria} - $${formatNumber(parseFloat(producto.precio))}/m²</p>
-                        </div>
+            <div id="${itemId}" class="card overflow-hidden" data-precio="${producto.precio}" data-formula="${producto.formula}" data-producto-id="${producto.id}">
+                <div class="toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <div>
+                        <h3 class="strong text-sm">${producto.nombre}</h3>
+                        <p class="text-xs text-ink-3">${producto.categoria} · $${formatNumber(parseFloat(producto.precio))}/m²</p>
                     </div>
-                    <button type="button" class="remove-item text-white hover:text-red-300 p-2 transition-colors rounded-lg" data-item="${itemId}">
+                    <button type="button" class="remove-item btn btn-ghost btn-sm btn-icon" data-item="${itemId}" aria-label="Quitar producto">
                         <i class="fas fa-trash text-sm"></i>
                     </button>
                 </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-slate-50">
+
+                <div class="table-wrap">
+                    <table class="tbl">
+                        <thead>
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Alto (mm)</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Ancho (mm)</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">Cantidad</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600">${producto.formula === 'perimetro' ? 'Perímetro' : 'Área'}</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600">Subtotal</th>
+                                <th>Alto (mm)</th>
+                                <th>Ancho (mm)</th>
+                                <th>Cantidad</th>
+                                <th>${producto.formula === 'perimetro' ? 'Perímetro' : 'Área'}</th>
+                                <th class="num">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="border-t border-slate-200">
-                                <td class="px-4 py-3">
-                                    <input type="number" 
-                                           class="alto-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
-                                           min="0" 
-                                           placeholder="0">
-                                </td>
-                                <td class="px-4 py-3">
-                                    <input type="number" 
-                                           class="ancho-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
-                                           min="0" 
-                                           placeholder="0">
-                                </td>
-                                <td class="px-4 py-3">
-                                    <input type="number" 
-                                           class="cantidad-input w-20 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm" 
-                                           min="1" 
-                                           value="1">
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="area-display font-semibold text-slate-700">0.000</span> <span class="text-xs text-slate-500">${producto.formula === 'perimetro' ? 'm' : 'm²'}</span>
-                                </td>
-                                <td class="px-4 py-3 text-right">
-                                    <span class="text-lg font-bold text-slate-800">$<span class="subtotal-display">0.00</span></span>
-                                </td>
+                            <tr>
+                                <td><input type="number" class="alto-input input" min="0" placeholder="0"></td>
+                                <td><input type="number" class="ancho-input input" min="0" placeholder="0"></td>
+                                <td><input type="number" class="cantidad-input input" style="width:80px" min="1" value="1"></td>
+                                <td><span class="area-display strong">0.000</span> <span class="text-xs text-ink-3">${producto.formula === 'perimetro' ? 'm' : 'm²'}</span></td>
+                                <td class="num"><span class="text-lg strong">$<span class="subtotal-display">0.00</span></span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -366,12 +297,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.category-filter').forEach(filter => {
         filter.addEventListener('click', () => {
             document.querySelectorAll('.category-filter').forEach(f => {
-                f.classList.remove('active', 'bg-slate-700', 'text-white');
-                f.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+                f.classList.remove('active', 'on');
             });
             
-            filter.classList.add('active', 'bg-slate-700', 'text-white');
-            filter.classList.remove('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+            filter.classList.add('active', 'on');
             
             filterProducts();
         });
@@ -410,9 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize category filter styles
     document.querySelectorAll('.category-filter').forEach(filter => {
         if (filter.classList.contains('active')) {
-            filter.classList.add('bg-slate-700', 'text-white');
-        } else {
-            filter.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+            filter.classList.add('on');
         }
     });
     
