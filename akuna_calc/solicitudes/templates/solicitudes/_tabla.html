@@ -1,0 +1,65 @@
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th class="hidden md:table-cell">Asunto</th>
+                <th>Vendedor</th>
+                <th>Estado</th>
+                <th class="hidden sm:table-cell">Recibido</th>
+                <th class="num">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in page_obj %}
+            <tr>
+                <td>
+                    <p class="strong">{{ s.nombre_cliente|default:"Sin nombre" }}</p>
+                    {% if s.email %}<p class="muted text-xs"><i class="fas fa-envelope mr-1"></i>{{ s.email }}</p>{% endif %}
+                    {% if s.telefono %}<p class="muted text-xs"><i class="fas fa-phone mr-1"></i>{{ s.telefono }}</p>{% endif %}
+                </td>
+                <td class="hidden md:table-cell">
+                    <p>{{ s.asunto|default:"—" }}</p>
+                    {% if s.mensaje %}
+                    <p class="muted text-xs mt-1 truncate max-w-xs" title="{{ s.mensaje }}">{{ s.mensaje|truncatechars:70 }}</p>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if s.vendedor %}{{ s.vendedor.get_full_name|default:s.vendedor.username }}{% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if s.estado == 'contestada' %}
+                        {% include 'core/ui/badge.html' with tone="green" label="Contestada" dot=True only %}
+                    {% elif s.estado == 'sin_asignar' %}
+                        {% include 'core/ui/badge.html' with tone="red" label="Sin asignar" dot=True only %}
+                    {% elif s.estado == 'descartada' %}
+                        <span title="{{ s.notas }}">{% include 'core/ui/badge.html' with tone="gray" label="Descartada" dot=True only %}</span>
+                    {% else %}
+                        {% include 'core/ui/badge.html' with tone="blue" label="Asignada" dot=True only %}
+                    {% endif %}
+                </td>
+                <td class="hidden sm:table-cell muted whitespace-nowrap">{{ s.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                <td class="num">
+                    <div class="inline-flex items-center gap-1">
+                        {% if s.estado != 'contestada' %}
+                        <button type="button" onclick="marcarContestada('{% url 'solicitudes:marcar_contestada' s.pk %}', '{{ s.nombre_cliente|default:s.email|escapejs }}')" class="btn btn-secondary btn-sm btn-icon" title="Marcar contestada" aria-label="Marcar contestada">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                        {% if vendedores %}
+                        <button type="button" onclick="reasignar('{% url 'solicitudes:reasignar' s.pk %}')" class="btn btn-secondary btn-sm btn-icon" title="Reasignar" aria-label="Reasignar">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay solicitudes" text="Cuando llegue un pedido de presupuesto por email va a aparecer acá." icon="fas fa-inbox" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="solicitudes" only %}

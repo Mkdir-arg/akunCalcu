@@ -284,6 +284,13 @@ class EventoViewsTests(TestCase):
     def test_calendario_sin_login_redirige(self):
         self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 302)
 
+    def test_calendario_escalas_y_form_renderizan(self):
+        self.client.login(username='admin', password='pass1234')
+        for escala in ('dia', 'semana', 'mes'):
+            resp = self.client.get(reverse('agenda:calendario'), {'escala': escala})
+            self.assertEqual(resp.status_code, 200, escala)
+        self.assertEqual(self.client.get(reverse('agenda:crear')).status_code, 200)
+
     def test_calendario_con_login_200(self):
         self.client.login(username='admin', password='pass1234')
         self.assertEqual(self.client.get(reverse('agenda:calendario')).status_code, 200)
