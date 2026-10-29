@@ -1,49 +1,37 @@
 {% extends 'core/base.html' %}
 {% load custom_filters %}
 
-{% block title %}Configuración General{% endblock %}
+{% block title %}Configuración general{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Configuración General</h1>
+{% include 'core/ui/page_header.html' with title="Configuración general" subtitle="Valores que usa el sistema en cálculos y documentos." only %}
+
+<div class="card max-w-4xl overflow-hidden">
+    <div class="toolbar"><h2 class="strong">Valores de configuración</h2></div>
+
+    <div class="flex flex-wrap justify-between items-center gap-4 p-5 border-b border-line">
+        <div>
+            <h3 class="strong">Valor hora hombre</h3>
+            <p class="muted text-sm">Costo por hora de mano de obra.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-2xl font-semibold num">${{ valor_hora_hombre|formato_numero }}</span>
+            <a href="{% url 'configuracion-hora-hombre' %}" class="btn btn-secondary"><i class="fas fa-pen"></i>Editar</a>
+        </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold mb-4 text-gray-700">Valores de Configuración</h2>
-        
-        <div class="space-y-4">
-            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <div>
-                    <h3 class="font-semibold text-gray-800">Valor Hora Hombre</h3>
-                    <p class="text-sm text-gray-600">Costo por hora de mano de obra</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-2xl font-bold text-blue-600">${{ valor_hora_hombre|formato_numero }}</span>
-                    <a href="{% url 'configuracion-hora-hombre' %}"
-                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        Editar
-                    </a>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
-                <div>
-                    <h3 class="font-semibold text-gray-800">Datos de contacto de la empresa</h3>
-                    <p class="text-sm text-gray-600">Se usan en el pie de la Orden de Fabricación (PDF)</p>
-                    <div class="text-sm text-gray-700 mt-2 space-y-0.5">
-                        <p><span class="font-medium">{{ datos_empresa.empresa_nombre }}</span></p>
-                        <p>{{ datos_empresa.empresa_direccion }}</p>
-                        <p>{{ datos_empresa.empresa_telefonos }}</p>
-                        <p>{{ datos_empresa.empresa_web }}</p>
-                    </div>
-                </div>
-                <a href="{% url 'configuracion-datos-empresa' %}"
-                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shrink-0">
-                    Editar
-                </a>
+    <div class="flex flex-wrap justify-between items-start gap-4 p-5">
+        <div>
+            <h3 class="strong">Datos de contacto de la empresa</h3>
+            <p class="muted text-sm">Se usan en el pie de la Orden de Fabricación (PDF).</p>
+            <div class="text-sm text-ink-2 mt-2 space-y-0.5">
+                <p class="strong">{{ datos_empresa.empresa_nombre }}</p>
+                <p>{{ datos_empresa.empresa_direccion }}</p>
+                <p>{{ datos_empresa.empresa_telefonos }}</p>
+                <p>{{ datos_empresa.empresa_web }}</p>
             </div>
         </div>
+        <a href="{% url 'configuracion-datos-empresa' %}" class="btn btn-secondary shrink-0"><i class="fas fa-pen"></i>Editar</a>
     </div>
 </div>
 {% endblock %}

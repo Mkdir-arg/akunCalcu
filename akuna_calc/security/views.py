@@ -15,10 +15,23 @@ from django.db import IntegrityError
 from django.urls import reverse
 from .models import AuditLog, Backup, HeartbeatIntegracion, SecuritySettings
 from .merge import get_merge_entities, preview_merge, merge_records
+from core.avisos import crear_aviso
+from core.models import Aviso
 import json
 import os
 import subprocess
 from datetime import datetime
+
+
+def _avisar_backup_fallido(detalle=''):
+    from django.contrib.auth import get_user_model
+    staff = get_user_model().objects.filter(is_active=True).filter(Q(is_staff=True) | Q(is_superuser=True))
+    crear_aviso(
+        staff,
+        f'Falló un backup: {detalle}'.strip(': ') if detalle else 'Falló un backup.',
+        tipo=Aviso.TIPO_ERROR,
+        url=reverse('security:backup_list'),
+    )
 
 
 BACKUP_PASSWORD = "Modeoffputin.1167252190@!"
@@ -362,6 +375,7 @@ def backup_create(request):
         messages.success(request, '✅ Backup creado exitosamente')
     except Exception as e:
         messages.error(request, f'❌ Error al crear backup: {str(e)}')
+        _avisar_backup_fallido(str(e)[:150])
     
     return redirect('security:backup_list')
 
@@ -554,6 +568,7 @@ def backup_api_create(request):
                     backup.status = 'failed'
                     backup.error_message = f'mysqldump rc={process.returncode}: {err[:500]}'
                     backup.save()
+                    _avisar_backup_fallido(backup.filename)
                 else:
                     backup.size_bytes = total_bytes['count']
                     backup.status = 'completed'
@@ -563,6 +578,7 @@ def backup_api_create(request):
                 backup.status = 'failed'
                 backup.error_message = str(exc)[:500]
                 backup.save()
+                _avisar_backup_fallido(backup.filename)
                 raise
 
         response = StreamingHttpResponse(
@@ -577,4 +593,5 @@ def backup_api_create(request):
         backup.status = 'failed'
         backup.error_message = str(exc)[:500]
         backup.save()
+        _avisar_backup_fallido(backup.filename)
         return JsonResponse({'error': 'backup_failed', 'detail': str(exc)}, status=500)

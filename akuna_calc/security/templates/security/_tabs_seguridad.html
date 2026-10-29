@@ -1,0 +1,4 @@
+<div class="tabs" role="tablist" aria-label="Seguridad">
+    <a class="tab {% if activa == 'backups' %}on{% endif %}" href="{% url 'security:backup_list' %}" role="tab">Backups</a>
+    <a class="tab {% if activa == 'auditoria' %}on{% endif %}" href="{% url 'security:audit_list' %}" role="tab">Auditoría</a>
+</div>
