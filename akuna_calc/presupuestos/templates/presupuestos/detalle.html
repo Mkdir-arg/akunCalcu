@@ -64,87 +64,57 @@
 {% endblock %}
 
 {% block content %}
-<div class="px-2 sm:px-4">
+<div data-live-edit="presupuestos.presupuesto:{{ presupuesto.pk }}" data-live-edit-label="presupuesto">
 
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div class="sm:shrink-0">
-            <div class="flex items-center gap-3 mb-1">
-                <a href="{{ return_url }}" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 whitespace-nowrap">{{ presupuesto.numero }}</h1>
-                {% if presupuesto.estado == 'borrador' %}
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Borrador</span>
-                {% elif presupuesto.estado == 'enviado' %}
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Enviado</span>
-                {% elif presupuesto.estado == 'confirmado' %}
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Confirmado</span>
-                {% elif presupuesto.estado == 'vencido' %}
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">Vencido</span>
-                {% elif presupuesto.estado == 'cancelado' %}
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelado</span>
+    <div class="page-head">
+        <div>
+            <a href="{{ return_url }}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>Presupuestos</a>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="page-title">{{ presupuesto.numero }}</h1>
+                {% if presupuesto.estado == 'borrador' %}{% include 'core/ui/badge.html' with tone="gray" label="Borrador" dot=True only %}
+                {% elif presupuesto.estado == 'enviado' %}{% include 'core/ui/badge.html' with tone="blue" label="Enviado" dot=True only %}
+                {% elif presupuesto.estado == 'confirmado' %}{% include 'core/ui/badge.html' with tone="green" label="Confirmado" dot=True only %}
+                {% elif presupuesto.estado == 'vencido' %}{% include 'core/ui/badge.html' with tone="amber" label="Vencido" dot=True only %}
+                {% elif presupuesto.estado == 'cancelado' %}{% include 'core/ui/badge.html' with tone="red" label="Cancelado" dot=True only %}
                 {% endif %}
+                {% if presupuesto.es_pvc %}<span class="badge b-gray">PVC · USD</span>{% endif %}
             </div>
-            <p class="text-slate-500 font-medium pl-7">{{ presupuesto.cliente.get_nombre_completo }} · <span class="font-mono">{{ presupuesto.cliente.codigo }}</span></p>
+            <p class="page-sub">{{ presupuesto.cliente.get_nombre_completo }} · <span class="num">{{ presupuesto.cliente.codigo }}</span></p>
         </div>
-        <div class="flex gap-2 flex-wrap sm:justify-end">
+        <div class="page-actions">
             {% if not presupuesto.esta_bloqueado %}
-            {% url 'presupuestos:presupuestos-editar' presupuesto.pk as presupuesto_edit_url %}
-            <a href="{% with_return_to presupuesto_edit_url request.get_full_path %}"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-edit mr-2"></i>Editar
-            </a>
-            {% if es_pvc and presupuesto.tipo_obra %}
-            <a href="{% url 'presupuestos:presupuestos-importar' presupuesto.pk %}"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center"
-                title="Cargar los ítems desde el PDF de la cotización REHAU">
-                <i class="fas fa-file-import mr-2"></i>Importar cotización
-            </a>
-            {% endif %}
             {% if presupuesto.tipo_obra %}
-            <button onclick="abrirModalItem()"
-                class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>Agregar item
-            </button>
+            <button onclick="abrirModalItem()" class="btn btn-primary"><i class="fas fa-plus"></i>Agregar item</button>
             {% if not es_pvc %}
-            <button type="button" onclick="abrirModalEstructura()" id="btn-agregar-estructura"
-                class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center"
+            <button type="button" onclick="abrirModalEstructura()" id="btn-agregar-estructura" class="btn btn-secondary"
                 title="Varias aberturas sobre una pared, cotizadas como un conjunto">
-                <i class="fas fa-object-group mr-2"></i>Agregar estructura
+                <i class="fas fa-object-group"></i>Agregar estructura
             </button>
             {% endif %}
             {% else %}
-            <button type="button" disabled
-                class="bg-gray-200 text-gray-400 px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center cursor-not-allowed"
-                title="Define primero si el presupuesto es obra nueva o renovación">
-                <i class="fas fa-plus mr-2"></i>Agregar item
-            </button>
+            <button type="button" disabled class="btn btn-secondary" title="Define primero si el presupuesto es obra nueva o renovación"><i class="fas fa-plus"></i>Agregar item</button>
             {% if not es_pvc %}
-            <button type="button" disabled
-                class="bg-gray-200 text-gray-400 px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center cursor-not-allowed"
-                title="Define primero si el presupuesto es obra nueva o renovación">
-                <i class="fas fa-object-group mr-2"></i>Agregar estructura
-            </button>
+            <button type="button" disabled class="btn btn-secondary" title="Define primero si el presupuesto es obra nueva o renovación"><i class="fas fa-object-group"></i>Agregar estructura</button>
             {% endif %}
             {% endif %}
+            {% if es_pvc and presupuesto.tipo_obra %}
+            <a href="{% url 'presupuestos:presupuestos-importar' presupuesto.pk %}" class="btn btn-secondary" title="Cargar los ítems desde el PDF de la cotización REHAU"><i class="fas fa-file-import"></i>Importar cotización</a>
             {% endif %}
-            <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank"
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-file-pdf mr-2"></i>Presupuesto
-            </a>
-            <a href="{% url 'presupuestos:presupuestos-recibo' presupuesto.pk %}"
-                class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-receipt mr-2"></i>Recibo
-            </a>
-            <button onclick="comentarPresupuesto()"
-                class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-comment-dots mr-2"></i>Comentario presupuesto
-            </button>
-            <button onclick="confirmarEliminarPresupuesto()"
-                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm inline-flex items-center">
-                <i class="fas fa-trash mr-2"></i>Eliminar
-            </button>
+            {% endif %}
+            <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank" class="btn btn-secondary"><i class="fas fa-file-pdf"></i>Presupuesto</a>
+            <div class="kebab" data-kebab>
+                <button type="button" class="btn btn-secondary btn-icon" data-kebab-toggle aria-haspopup="true" aria-label="Más acciones"><i class="fas fa-ellipsis"></i></button>
+                <div class="kebab-menu" role="menu">
+                    {% if not presupuesto.esta_bloqueado %}
+                    {% url 'presupuestos:presupuestos-editar' presupuesto.pk as presupuesto_edit_url %}
+                    <a class="kebab-item" role="menuitem" href="{% with_return_to presupuesto_edit_url request.get_full_path %}"><i class="fas fa-pen"></i>Editar</a>
+                    {% endif %}
+                    <a class="kebab-item" role="menuitem" href="{% url 'presupuestos:presupuestos-recibo' presupuesto.pk %}"><i class="fas fa-receipt"></i>Recibo</a>
+                    <button type="button" class="kebab-item" role="menuitem" onclick="comentarPresupuesto()"><i class="fas fa-comment-dots"></i>Comentario presupuesto</button>
+                    <button type="button" class="kebab-item danger" role="menuitem" onclick="confirmarEliminarPresupuesto()"><i class="fas fa-trash"></i>Eliminar</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -155,170 +125,152 @@
         <div class="xl:col-span-3 space-y-5">
 
             <!-- Info del presupuesto -->
-            <div class="bg-white rounded-2xl shadow-lg p-5">
+            <div class="card card-pad">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Cliente</p>
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.cliente.get_nombre_completo }}</p>
-                        <p class="text-slate-400 text-xs font-mono">{{ presupuesto.cliente.codigo }}</p>
-                        {% if presupuesto.cliente.telefono %}<p class="text-slate-500 text-xs">{{ presupuesto.cliente.telefono }}</p>{% endif %}
+                        <p class="sec-label !mb-1">Cliente</p>
+                        <p class="strong">{{ presupuesto.cliente.get_nombre_completo }}</p>
+                        <p class="muted text-xs">{{ presupuesto.cliente.codigo }}</p>
+                        {% if presupuesto.cliente.telefono %}<p class="muted text-xs">{{ presupuesto.cliente.telefono }}</p>{% endif %}
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Fecha</p>
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.created_at|date:"d/m/Y" }}</p>
+                        <p class="sec-label !mb-1">Fecha</p>
+                        <p class="strong">{{ presupuesto.created_at|date:"d/m/Y" }}</p>
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Creado por</p>
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.created_by.get_full_name|default:presupuesto.created_by.username }}</p>
+                        <p class="sec-label !mb-1">Creado por</p>
+                        <p class="strong">{{ presupuesto.created_by.get_full_name|default:presupuesto.created_by.username }}</p>
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Editado por</p>
+                        <p class="sec-label !mb-1">Editado por</p>
                         {% if presupuesto.updated_by %}
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.updated_by.get_full_name|default:presupuesto.updated_by.username }}</p>
-                        <p class="text-slate-400 text-xs">{{ presupuesto.updated_at|date:"d/m/Y H:i" }}</p>
+                        <p class="strong">{{ presupuesto.updated_by.get_full_name|default:presupuesto.updated_by.username }}</p>
+                        <p class="muted text-xs">{{ presupuesto.updated_at|date:"d/m/Y H:i" }}</p>
                         {% else %}
-                        <p class="text-slate-400 font-semibold mt-1">Sin ediciones</p>
+                        <p class="muted">Sin ediciones</p>
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Vencimiento</p>
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
+                        <p class="sec-label !mb-1">Vencimiento</p>
+                        <p class="strong">{{ presupuesto.fecha_expiracion|date:"d/m/Y" }}</p>
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Total</p>
+                        <p class="sec-label !mb-1">Total</p>
                         {% if presupuesto.es_pvc %}
-                        <p class="text-blue-600 font-bold text-xl mt-1">US${{ presupuesto.get_total_usd|formato_numero }}</p>
-                        <p class="text-slate-400 text-xs">${{ presupuesto.total|formato_numero }}</p>
+                        <p class="strong num text-xl">US${{ presupuesto.get_total_usd|formato_numero }}</p>
+                        <p class="muted num text-xs">${{ presupuesto.total|formato_numero }}</p>
                         {% else %}
-                        <p class="text-blue-600 font-bold text-xl mt-1">${{ presupuesto.total|formato_numero }}</p>
+                        <p class="strong num text-xl">${{ presupuesto.total|formato_numero }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Tipo de obra</p>
-                        <p class="text-slate-800 font-semibold mt-1">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</p>
+                        <p class="sec-label !mb-1">Tipo de obra</p>
+                        <p class="strong">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</p>
                     </div>
                     {% if presupuesto.es_pvc %}
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Cotización USD</p>
-                        <p class="text-slate-800 font-semibold mt-1">
-                            <i class="fas fa-coins mr-1 text-blue-500"></i>${{ presupuesto.cotizacion_usd|formato_numero }}
-                        </p>
+                        <p class="sec-label !mb-1">Cotización USD</p>
+                        <p class="strong num">${{ presupuesto.cotizacion_usd|formato_numero }}</p>
                     </div>
                     {% endif %}
                     <div>
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Recargo interno</p>
+                        <p class="sec-label !mb-1">Recargo interno</p>
                         {% if presupuesto.tipo_obra == 'obra_nueva' %}
                             {% if presupuesto.es_pvc %}
-                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</p>
+                            <p class="strong num">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</p>
                             {% else %}
-                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</p>
+                            <p class="strong num">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</p>
                             {% endif %}
                         {% elif presupuesto.tipo_obra == 'renovacion' %}
                             {% if presupuesto.es_pvc %}
-                            <p class="text-slate-800 font-semibold mt-1">US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }} por unidad</p>
+                            <p class="strong num">US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }} por unidad</p>
                             {% else %}
-                            <p class="text-slate-800 font-semibold mt-1">${{ presupuesto.recargo_renovacion_unitario|formato_numero }} por unidad</p>
+                            <p class="strong num">${{ presupuesto.recargo_renovacion_unitario|formato_numero }} por unidad</p>
                             {% endif %}
                         {% else %}
-                        <p class="text-amber-600 font-semibold mt-1">Definir configuración</p>
+                        <p class="text-warn strong">Definir configuración</p>
                         {% endif %}
                     </div>
                     {% if presupuesto.notas %}
                     <div class="col-span-2 md:col-span-4">
-                        <p class="text-slate-400 font-medium text-xs uppercase tracking-wider">Notas</p>
-                        <p class="text-slate-700 mt-1">{{ presupuesto.notas }}</p>
+                        <p class="sec-label !mb-1">Notas</p>
+                        <p class="text-ink-2">{{ presupuesto.notas }}</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Items -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="px-5 py-4 border-b flex justify-between items-center gap-2 flex-wrap">
-                    <h2 class="text-lg font-bold text-slate-800">Items</h2>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <span class="text-slate-400 text-sm">{{ presupuesto.items.count }} item{{ presupuesto.items.count|pluralize:"s" }}</span>
+            <div class="card overflow-hidden">
+                <div class="px-5 py-4 border-b border-line flex justify-between items-center gap-2 flex-wrap">
+                    <h2 class="text-base font-semibold text-ink">Items <span class="muted font-medium">· {{ presupuesto.items.count }}</span></h2>
+                    <div class="flex items-center gap-2 flex-wrap">
                         {% if not presupuesto.esta_bloqueado %}
                         {% if presupuesto.items.count > 1 %}
-                        <button onclick="abrirModalOrden()" title="Cambiar el orden de los ítems"
-                            class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
-                            <i class="fas fa-arrow-up-arrow-down mr-1"></i>Orden
-                        </button>
+                        <button onclick="abrirModalOrden()" title="Cambiar el orden de los ítems" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-up-arrow-down"></i>Orden</button>
                         {% endif %}
-                        {% if presupuesto.tipo_obra %}
-                        <button onclick="abrirModalItem()"
-                            class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
-                            <i class="fas fa-plus mr-1"></i>Agregar
-                        </button>
-                        {% if not es_pvc %}
-                        <button onclick="abrirModalEstructura()"
-                            class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg font-semibold text-xs inline-flex items-center transition-colors">
-                            <i class="fas fa-object-group mr-1"></i>Estructura
-                        </button>
-                        {% endif %}
-                        {% else %}
-                        <span class="text-xs font-semibold text-amber-600">Define el tipo de obra para habilitar la carga</span>
+                        {% if not presupuesto.tipo_obra %}
+                        <span class="text-xs font-semibold text-warn">Define el tipo de obra para habilitar la carga</span>
                         {% endif %}
                         {% endif %}
                     </div>
                 </div>
 
                 {% if items_detalle %}
-                <div class="divide-y divide-gray-100">
+                <div>
                     {% for item in items_detalle %}
-                    <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
+                    <div class="px-5 py-4 border-b border-line-soft hover:bg-ground transition-colors">
                         <div class="flex justify-between items-center gap-4">
                             {% if item.dibujo %}
                             {% with item.pk|stringformat:"s" as item_id %}
                             {% with 'dibujo-mini-'|add:item_id as dibujo_id %}
                             {{ item.dibujo|json_script:dibujo_id }}
-                            <div class="dibujo-mini shrink-0 w-16 h-12 rounded-lg bg-white border border-slate-200 p-1 overflow-hidden"
+                            <div class="dibujo-mini shrink-0 w-16 h-12 rounded-lg bg-white border border-line p-1 overflow-hidden"
                                  data-dibujo="{{ dibujo_id }}" title="Esquema de la abertura"></div>
                             {% endwith %}
                             {% endwith %}
                             {% endif %}
                             <div class="flex-1 min-w-0">
-                                <p class="font-semibold text-slate-800 truncate">{{ item.descripcion }}</p>
-                                <p class="text-xs text-slate-500 mt-0.5">
+                                <p class="strong truncate">{{ item.descripcion }}</p>
+                                <p class="text-xs muted mt-0.5">
                                     {% if item.resumen_compacto %}
                                     {{ item.resumen_compacto }}
                                     {% else %}
                                     {{ item.ancho_mm }}mm x {{ item.alto_mm }}mm · Margen {{ item.margen_porcentaje }}%
-                                    {% if item.cantidad > 1 %} · <span class="text-blue-600">x{{ item.cantidad }} unidades</span>{% endif %}
+                                    {% if item.cantidad > 1 %} · <span class="text-accent">x{{ item.cantidad }} unidades</span>{% endif %}
                                     {% endif %}
                                 </p>
                             </div>
-                            <div class="text-right shrink-0">
+                            <div class="text-right shrink-0 num">
                                 {% if presupuesto.es_pvc %}
-                                <p class="font-bold text-slate-800">US${{ item.get_precio_total_usd|formato_numero }}</p>
+                                <p class="strong">US${{ item.get_precio_total_usd|formato_numero }}</p>
                                 {% if item.cantidad > 1 %}
-                                <p class="text-xs text-slate-400">US${{ item.get_precio_unitario_usd|formato_numero }} c/u</p>
+                                <p class="text-xs muted">US${{ item.get_precio_unitario_usd|formato_numero }} c/u</p>
                                 {% endif %}
                                 {% else %}
-                                <p class="font-bold text-slate-800">${{ item.precio_total|formato_numero }}</p>
+                                <p class="strong">${{ item.precio_total|formato_numero }}</p>
                                 {% if item.cantidad > 1 %}
-                                <p class="text-xs text-slate-400">${{ item.precio_unitario|formato_numero }} c/u</p>
+                                <p class="text-xs muted">${{ item.precio_unitario|formato_numero }} c/u</p>
                                 {% endif %}
                                 {% endif %}
                             </div>
                             <button type="button"
                                 onclick="verDetalleItemDesdeScript('resultado-item-{{ item.pk }}', '{{ item.descripcion|escapejs }}')"
-                                class="shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50"
-                                title="Ver desglose">
-                                <i class="fas fa-list-ul text-sm"></i>
+                                class="btn btn-ghost btn-sm btn-icon shrink-0" title="Ver desglose" aria-label="Ver desglose">
+                                <i class="fas fa-list-ul"></i>
                             </button>
                             {% if not presupuesto.esta_bloqueado %}
                             <button type="button"
                                 data-id="{{ item.pk }}" data-desc="{{ item.descripcion }}" data-cant="{{ item.cantidad }}" data-precio="{{ item.precio_unitario|stringformat:'f' }}"
                                 onclick="editarItemBtn(this)"
-                                class="shrink-0 text-gray-300 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50" title="Editar">
-                                <i class="fas fa-pen text-sm"></i>
+                                class="btn btn-ghost btn-sm btn-icon shrink-0" title="Editar" aria-label="Editar ítem">
+                                <i class="fas fa-pen"></i>
                             </button>
                             <form method="post" action="{% url 'presupuestos:presupuestos-item-eliminar' presupuesto.pk item.pk %}" class="shrink-0">
                                 {% csrf_token %}
                                 <button type="button" onclick="confirmarEliminarItem(this.form, '{{ item.descripcion|escapejs }}')"
-                                    class="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50">
-                                    <i class="fas fa-trash text-sm"></i>
+                                    class="btn btn-ghost btn-sm btn-icon text-danger" title="Eliminar" aria-label="Eliminar ítem">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </form>
                             {% endif %}
@@ -331,77 +283,75 @@
                     {% endwith %}
                     {% endfor %}
                 </div>
-                <div class="px-5 py-4 bg-slate-50 border-t space-y-2">
+                <div class="px-5 py-4 bg-ground border-t border-line space-y-2">
                     {% if presupuesto.es_pvc %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Subtotal ítems</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_total_items_usd|formato_numero }}</span>
+                        <span class="muted">Subtotal ítems</span>
+                        <span class="strong num">US${{ presupuesto.get_total_items_usd|formato_numero }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</span>
+                        <span class="muted">Colocación</span>
+                        <span class="strong num">US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-bold text-slate-700">Recargo renovación incluido</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_recargo_total_renovacion_usd|formato_numero }}</span>
+                        <span class="muted">Recargo renovación incluido</span>
+                        <span class="strong num">US${{ presupuesto.get_recargo_total_renovacion_usd|formato_numero }}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-700">US${{ presupuesto.get_iva_usd|formato_numero }}</span>
+                        <span class="muted">IVA (21%)</span>
+                        <span class="strong num">US${{ presupuesto.get_iva_usd|formato_numero }}</span>
                     </div>
                     {% endif %}
-                    <div class="pt-2 border-t flex justify-between items-center">
-                        <span class="font-bold text-slate-600">Total presupuesto</span>
-                        <span class="text-2xl font-bold text-blue-600">US${{ presupuesto.get_total_usd|formato_numero }}</span>
+                    <div class="pt-2 border-t border-line flex justify-between items-center">
+                        <span class="strong">Total presupuesto</span>
+                        <span class="text-2xl font-semibold text-ink num">US${{ presupuesto.get_total_usd|formato_numero }}</span>
                     </div>
                     {% else %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Subtotal ítems</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_total_items|formato_numero }}</span>
+                        <span class="muted">Subtotal ítems</span>
+                        <span class="strong num">${{ presupuesto.get_total_items|formato_numero }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</span>
+                        <span class="muted">Colocación</span>
+                        <span class="strong num">${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' and presupuesto.get_recargo_total_renovacion > 0 %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-bold text-slate-700">Recargo renovación incluido</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_recargo_total_renovacion|formato_numero }}</span>
+                        <span class="muted">Recargo renovación incluido</span>
+                        <span class="strong num">${{ presupuesto.get_recargo_total_renovacion|formato_numero }}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between items-center text-sm">
-                        <span class="font-semibold text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-700">${{ presupuesto.get_iva|formato_numero }}</span>
+                        <span class="muted">IVA (21%)</span>
+                        <span class="strong num">${{ presupuesto.get_iva|formato_numero }}</span>
                     </div>
                     {% endif %}
-                    <div class="pt-2 border-t flex justify-between items-center">
-                        <span class="font-bold text-slate-600">Total presupuesto</span>
-                        <span class="text-2xl font-bold text-blue-600">${{ presupuesto.total|formato_numero }}</span>
+                    <div class="pt-2 border-t border-line flex justify-between items-center">
+                        <span class="strong">Total presupuesto</span>
+                        <span class="text-2xl font-semibold text-ink num">${{ presupuesto.total|formato_numero }}</span>
                     </div>
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="px-5 py-14 text-center">
-                    <i class="fas fa-inbox text-slate-200 text-5xl mb-4"></i>
-                    <p class="text-slate-400 font-medium">No hay items todavia</p>
+                <div class="empty">
+                    <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                    <p class="empty-title">No hay items todavia</p>
                     {% if not presupuesto.esta_bloqueado %}
                     {% if presupuesto.tipo_obra %}
-                    <button onclick="abrirModalItem()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold text-sm inline-flex items-center transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Agregar el primer item
-                    </button>
-                    {% if not es_pvc %}
-                    <button onclick="abrirModalEstructura()" class="mt-3 ml-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-semibold text-sm inline-flex items-center transition-colors">
-                        <i class="fas fa-object-group mr-2"></i>Agregar estructura
-                    </button>
-                    {% endif %}
+                    <div class="flex gap-2 flex-wrap justify-center mt-2">
+                        <button onclick="abrirModalItem()" class="btn btn-secondary"><i class="fas fa-plus"></i>Agregar el primer item</button>
+                        {% if not es_pvc %}
+                        <button onclick="abrirModalEstructura()" class="btn btn-secondary"><i class="fas fa-object-group"></i>Agregar estructura</button>
+                        {% endif %}
+                    </div>
                     {% else %}
-                    <p class="mt-3 text-sm font-semibold text-amber-600">Define la configuración de obra para cargar el primer ítem.</p>
+                    <p class="empty-text text-warn">Define la configuración de obra para cargar el primer ítem.</p>
                     {% endif %}
                     {% endif %}
                 </div>
@@ -409,54 +359,50 @@
             </div>
 
             <!-- Comentarios -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="px-5 py-4 border-b">
-                    <h2 class="text-lg font-bold text-slate-800">Historial de comentarios</h2>
+            <div class="card overflow-hidden">
+                <div class="px-5 py-4 border-b border-line">
+                    <h2 class="text-base font-semibold text-ink">Historial de comentarios</h2>
                 </div>
-                <div class="divide-y divide-gray-100">
+                <div>
                     {% for comentario in presupuesto.comentarios.all %}
-                    <div class="px-5 py-4 {% if comentario.prioridad == 'importante' %}bg-red-50 border-l-4 border-red-500{% endif %}">
+                    <div class="px-5 py-4 border-b border-line-soft {% if comentario.prioridad == 'importante' %}bg-danger-soft{% endif %}">
                         <div class="flex items-start gap-3">
-                            <div class="w-8 h-8 rounded-full {% if comentario.prioridad == 'importante' %}bg-gradient-to-br from-red-500 to-red-600{% else %}bg-gradient-to-br from-blue-400 to-purple-500{% endif %} flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            <div class="w-8 h-8 rounded-full {% if comentario.prioridad == 'importante' %}bg-danger-soft text-danger{% else %}bg-accent-soft text-accent{% endif %} flex items-center justify-center text-xs font-semibold shrink-0">
                                 {{ comentario.autor.first_name|first|default:comentario.autor.username|first|upper }}
                             </div>
                             <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-sm font-semibold text-slate-800">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="text-sm strong">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
                                     {% if comentario.prioridad == 'importante' %}
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                        <i class="fas fa-exclamation-circle mr-1"></i>Importante
-                                    </span>
+                                    <span class="badge b-red"><i class="fas fa-exclamation-circle"></i>Importante</span>
                                     {% endif %}
-                                    <span class="text-xs text-slate-400">{{ comentario.created_at|date:"d/m/Y H:i" }}</span>
+                                    <span class="text-xs muted">{{ comentario.created_at|date:"d/m/Y H:i" }}</span>
                                 </div>
-                                <p class="text-sm {% if comentario.prioridad == 'importante' %}text-slate-900 font-medium{% else %}text-slate-700{% endif %}">{{ comentario.texto }}</p>
+                                <p class="text-sm {% if comentario.prioridad == 'importante' %}strong{% else %}text-ink-2{% endif %}">{{ comentario.texto }}</p>
                             </div>
                         </div>
                     </div>
                     {% empty %}
-                    <div class="px-5 py-6 text-center text-slate-400 text-sm">Sin comentarios todavia</div>
+                    <div class="px-5 py-6 text-center muted text-sm">Sin comentarios todavia</div>
                     {% endfor %}
                 </div>
-                <div class="px-5 py-4 bg-slate-50 border-t">
+                <div class="px-5 py-4 bg-ground border-t border-line">
                     <form method="post" action="{% url 'presupuestos:presupuestos-comentar' presupuesto.pk %}">
                         {% csrf_token %}
-                        {{ comentario_form.texto }}
-                        <div class="flex items-center justify-between mt-3">
+                        <div class="field">{{ comentario_form.texto }}</div>
+                        <div class="flex items-center justify-between mt-3 gap-3 flex-wrap">
                             <div class="flex items-center gap-4">
                                 {% for value, label in comentario_form.fields.prioridad.choices %}
                                 <label class="flex items-center cursor-pointer group">
                                     <input type="radio" name="prioridad" value="{{ value }}" {% if value == 'normal' %}checked{% endif %}
-                                        class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 {% if value == 'importante' %}text-red-600 focus:ring-red-500{% endif %}">
-                                    <span class="ml-2 text-sm font-medium {% if value == 'importante' %}text-red-600{% else %}text-slate-600{% endif %} group-hover:text-slate-800">
+                                        class="w-4 h-4 {% if value == 'importante' %}text-red-600 focus:ring-red-500{% else %}text-blue-600 focus:ring-blue-500{% endif %} border-gray-300">
+                                    <span class="ml-2 text-sm font-medium {% if value == 'importante' %}text-danger{% else %}text-ink-2{% endif %}">
                                         {% if value == 'importante' %}<i class="fas fa-exclamation-circle mr-1"></i>{% endif %}{{ label }}
                                     </span>
                                 </label>
                                 {% endfor %}
                             </div>
-                            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-xl font-semibold text-sm">
-                                <i class="fas fa-paper-plane mr-1"></i>Comentar
-                            </button>
+                            <button type="submit" class="btn btn-secondary"><i class="fas fa-paper-plane"></i>Comentar</button>
                         </div>
                     </form>
                 </div>
@@ -465,145 +411,143 @@
 
         <!-- Panel lateral (1/4) -->
         <div class="space-y-4">
-            <div class="bg-white rounded-2xl shadow-lg p-5">
-                <h3 class="font-bold text-slate-800 mb-3">Configuración de obra</h3>
+            <div class="card card-pad">
+                <h3 class="sec-label">Configuración de obra</h3>
                 {% if not presupuesto.esta_bloqueado %}
                 <form method="post" action="{% url 'presupuestos:presupuestos-configuracion-obra' presupuesto.pk %}">
                     {% csrf_token %}
                     {% if configuracion_form.non_field_errors %}
-                    <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div class="mb-3 rounded-lg border border-line bg-danger-soft px-3 py-2 text-sm text-danger">
                         {{ configuracion_form.non_field_errors.0 }}
                     </div>
                     {% endif %}
                     <div class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.tipo_obra.label }}</label>
+                        <div class="field">
+                            <label>{{ configuracion_form.tipo_obra.label }}</label>
                             {{ configuracion_form.tipo_obra }}
-                            {% if configuracion_form.tipo_obra.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.tipo_obra.errors.0 }}</p>{% endif %}
+                            {% if configuracion_form.tipo_obra.errors %}<p class="field-error">{{ configuracion_form.tipo_obra.errors.0 }}</p>{% endif %}
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.modalidad_sena.label }}</label>
+                        <div class="field">
+                            <label>{{ configuracion_form.modalidad_sena.label }}</label>
                             {{ configuracion_form.modalidad_sena }}
-                            {% if configuracion_form.modalidad_sena.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
+                            {% if configuracion_form.modalidad_sena.errors %}<p class="field-error">{{ configuracion_form.modalidad_sena.errors.0 }}</p>{% endif %}
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.validez_dias.label }}</label>
+                        <div class="field">
+                            <label>{{ configuracion_form.validez_dias.label }}</label>
                             {{ configuracion_form.validez_dias }}
-                            <p class="text-xs text-slate-400 mt-1">Cuántos días es válido el presupuesto. Define la fecha de vencimiento que se muestra en el PDF.</p>
-                            {% if configuracion_form.validez_dias.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.validez_dias.errors.0 }}</p>{% endif %}
+                            <p class="field-hint">Cuántos días es válido el presupuesto. Define la fecha de vencimiento que se muestra en el PDF.</p>
+                            {% if configuracion_form.validez_dias.errors %}<p class="field-error">{{ configuracion_form.validez_dias.errors.0 }}</p>{% endif %}
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.plazo_entrega_dias.label }}</label>
+                        <div class="field">
+                            <label>{{ configuracion_form.plazo_entrega_dias.label }}</label>
                             {{ configuracion_form.plazo_entrega_dias }}
-                            <p class="text-xs text-slate-400 mt-1">Plazo de entrega en días. Se muestra en el PDF. Dejar vacío si no aplica.</p>
-                            {% if configuracion_form.plazo_entrega_dias.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.plazo_entrega_dias.errors.0 }}</p>{% endif %}
+                            <p class="field-hint">Plazo de entrega en días. Se muestra en el PDF. Dejar vacío si no aplica.</p>
+                            {% if configuracion_form.plazo_entrega_dias.errors %}<p class="field-error">{{ configuracion_form.plazo_entrega_dias.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-obra-nueva-field">
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_obra_nueva.label }}</label>
+                        <div class="field" id="recargo-obra-nueva-field">
+                            <label>{{ configuracion_form.recargo_obra_nueva.label }}</label>
                             {{ configuracion_form.recargo_obra_nueva }}
-                            <p class="text-xs text-slate-400 mt-1">Solo para obra nueva. Se suma al total del presupuesto.{% if es_pvc %} En dólares: se guarda convertido con la cotización del presupuesto.{% endif %}</p>
-                            {% if configuracion_form.recargo_obra_nueva.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_obra_nueva.errors.0 }}</p>{% endif %}
+                            <p class="field-hint">Solo para obra nueva. Se suma al total del presupuesto.{% if es_pvc %} En dólares: se guarda convertido con la cotización del presupuesto.{% endif %}</p>
+                            {% if configuracion_form.recargo_obra_nueva.errors %}<p class="field-error">{{ configuracion_form.recargo_obra_nueva.errors.0 }}</p>{% endif %}
                         </div>
-                        <div id="recargo-renovacion-field">
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ configuracion_form.recargo_renovacion_unitario.label }}</label>
+                        <div class="field" id="recargo-renovacion-field">
+                            <label>{{ configuracion_form.recargo_renovacion_unitario.label }}</label>
                             {{ configuracion_form.recargo_renovacion_unitario }}
-                            <p class="text-xs text-slate-400 mt-1">Solo para renovación. Se suma por cada unidad agregada.{% if es_pvc %} En dólares: se guarda convertido con la cotización del presupuesto.{% endif %}</p>
-                            {% if configuracion_form.recargo_renovacion_unitario.errors %}<p class="text-red-600 text-xs mt-1">{{ configuracion_form.recargo_renovacion_unitario.errors.0 }}</p>{% endif %}
+                            <p class="field-hint">Solo para renovación. Se suma por cada unidad agregada.{% if es_pvc %} En dólares: se guarda convertido con la cotización del presupuesto.{% endif %}</p>
+                            {% if configuracion_form.recargo_renovacion_unitario.errors %}<p class="field-error">{{ configuracion_form.recargo_renovacion_unitario.errors.0 }}</p>{% endif %}
                         </div>
-                        <div class="border-t pt-3">
+                        <div class="border-t border-line pt-3">
                             <label class="flex items-center cursor-pointer">
                                 {{ configuracion_form.aplicar_iva }}
-                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.aplicar_iva.label }}</span>
+                                <span class="ml-2 text-sm strong">{{ configuracion_form.aplicar_iva.label }}</span>
                             </label>
-                            <p class="text-xs text-slate-400 mt-1 ml-6">En el PDF se mostrará el IVA como renglón separado, esté o no incluido en el total.</p>
-                            {% if configuracion_form.aplicar_iva.errors %}<p class="text-red-600 text-xs mt-1 ml-6">{{ configuracion_form.aplicar_iva.errors.0 }}</p>{% endif %}
+                            <p class="field-hint ml-6">En el PDF se mostrará el IVA como renglón separado, esté o no incluido en el total.</p>
+                            {% if configuracion_form.aplicar_iva.errors %}<p class="field-error ml-6">{{ configuracion_form.aplicar_iva.errors.0 }}</p>{% endif %}
                         </div>
-                        <div class="border-t pt-3 space-y-2">
+                        <div class="border-t border-line pt-3 space-y-2">
                             <label class="flex items-center cursor-pointer">
                                 {{ configuracion_form.incluye_flete }}
-                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.incluye_flete.label }}</span>
+                                <span class="ml-2 text-sm strong">{{ configuracion_form.incluye_flete.label }}</span>
                             </label>
                             <label class="flex items-center cursor-pointer">
                                 {{ configuracion_form.incluye_colocacion }}
-                                <span class="ml-2 text-sm font-semibold text-slate-700">{{ configuracion_form.incluye_colocacion.label }}</span>
+                                <span class="ml-2 text-sm strong">{{ configuracion_form.incluye_colocacion.label }}</span>
                             </label>
-                            <p class="text-xs text-slate-400 mt-1 ml-6">Definen el texto de Observaciones en el PDF (flete y/o colocación).</p>
+                            <p class="field-hint ml-6">Definen el texto de Observaciones en el PDF (flete y/o colocación).</p>
                         </div>
                     </div>
-                    <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-semibold text-sm transition-colors">
-                        Guardar configuración
-                    </button>
+                    <button type="submit" class="btn btn-secondary w-full mt-4" style="justify-content:center">Guardar configuración</button>
                     {% if not presupuesto.tipo_obra %}
-                    <p class="mt-3 text-xs font-semibold text-amber-600">Debes guardar esta configuración antes de agregar ítems.</p>
+                    <p class="mt-3 text-xs font-semibold text-warn">Debes guardar esta configuración antes de agregar ítems.</p>
                     {% endif %}
                 </form>
                 {% else %}
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Tipo</span>
-                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_tipo_obra_display|default:'Sin definir' }}</span>
+                        <span class="muted">Tipo</span>
+                        <span class="strong text-right">{{ presupuesto.get_tipo_obra_display|default:'Sin definir' }}</span>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Seña</span>
-                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
+                        <span class="muted">Seña</span>
+                        <span class="strong text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}{% endif %}</span>
+                        <span class="muted">Colocación</span>
+                        <span class="strong text-right num">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}{% endif %}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Recargo unitario</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }}{% else %}${{ presupuesto.recargo_renovacion_unitario|formato_numero }}{% endif %}</span>
+                        <span class="muted">Recargo unitario</span>
+                        <span class="strong text-right num">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }}{% else %}${{ presupuesto.recargo_renovacion_unitario|formato_numero }}{% endif %}</span>
                     </div>
                     {% endif %}
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Flete</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.incluye_flete %}Incluido{% else %}No incluido{% endif %}</span>
+                        <span class="muted">Flete</span>
+                        <span class="strong text-right">{% if presupuesto.incluye_flete %}Incluido{% else %}No incluido{% endif %}</span>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.incluye_colocacion %}Incluida{% else %}No incluida{% endif %}</span>
+                        <span class="muted">Colocación</span>
+                        <span class="strong text-right">{% if presupuesto.incluye_colocacion %}Incluida{% else %}No incluida{% endif %}</span>
                     </div>
                     <div class="flex justify-between gap-3">
-                        <span class="text-slate-500">Plazo de entrega</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.plazo_entrega_dias %}{{ presupuesto.plazo_entrega_dias }} día{{ presupuesto.plazo_entrega_dias|pluralize:"s" }}{% else %}No especificado{% endif %}</span>
+                        <span class="muted">Plazo de entrega</span>
+                        <span class="strong text-right">{% if presupuesto.plazo_entrega_dias %}{{ presupuesto.plazo_entrega_dias }} día{{ presupuesto.plazo_entrega_dias|pluralize:"s" }}{% else %}No especificado{% endif %}</span>
                     </div>
                 </div>
                 {% endif %}
             </div>
 
             {% if not presupuesto.esta_bloqueado or presupuesto.estado == 'confirmado' %}
-            <div class="bg-white rounded-2xl shadow-lg p-5">
-                <h3 class="font-bold text-slate-800 mb-3">Cambiar estado</h3>
+            <div class="card card-pad">
+                <h3 class="sec-label">Cambiar estado</h3>
                 <form id="form-cambiar-estado" method="post" action="{% url 'presupuestos:presupuestos-estado' presupuesto.pk %}" data-estado-actual="{{ presupuesto.estado }}" data-incluye-colocacion="{{ presupuesto.incluye_colocacion|yesno:'1,0' }}" data-monto-colocacion="{{ presupuesto.get_monto_colocacion|unlocalize }}" data-es-pvc="{{ presupuesto.es_pvc|yesno:'1,0' }}" data-cotizacion-usd="{{ presupuesto.cotizacion_usd|default:0|unlocalize }}">
                     {% csrf_token %}
-                    <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-blue-500">
-                        {% for value, label in presupuesto.ESTADO_CHOICES %}
-                        <option value="{{ value }}" {% if value == presupuesto.estado %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="w-full bg-slate-700 hover:bg-slate-800 text-white py-2 rounded-xl font-semibold text-sm transition-colors">
-                        Actualizar estado
-                    </button>
+                    <div class="field mb-3">
+                        <select name="estado">
+                            {% for value, label in presupuesto.ESTADO_CHOICES %}
+                            <option value="{{ value }}" {% if value == presupuesto.estado %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-secondary w-full" style="justify-content:center">Actualizar estado</button>
                 </form>
             </div>
             {% endif %}
 
             {% if presupuesto.estado == 'confirmado' and presupuesto.venta %}
-            <div class="bg-white rounded-2xl shadow-lg p-5">
-                <h3 class="font-bold text-slate-800 mb-3">Generado al confirmar</h3>
+            <div class="card card-pad">
+                <h3 class="sec-label">Generado al confirmar</h3>
                 <div class="space-y-2 text-sm">
-                    <a href="{% url 'comercial:venta_detail' presupuesto.venta.pk %}" class="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                        <span class="text-slate-700"><i class="fas fa-dollar-sign mr-2 text-blue-600"></i>Venta {{ presupuesto.venta.numero_pedido }}</span>
-                        <i class="fas fa-chevron-right text-slate-400 text-xs"></i>
+                    <a href="{% url 'comercial:venta_detail' presupuesto.venta.pk %}" class="flex items-center justify-between px-3 py-2 rounded-lg border border-line hover:bg-ground transition-colors">
+                        <span class="text-ink-2"><i class="fas fa-dollar-sign mr-2 text-ink-3"></i>Venta {{ presupuesto.venta.numero_pedido }}</span>
+                        <i class="fas fa-chevron-right text-ink-3 text-xs"></i>
                     </a>
                     {% with pedido_fabrica=presupuesto.pedidos_fabrica.first %}
                     {% if pedido_fabrica %}
-                    <a href="{% url 'plantillas:pedido_detail' pedido_fabrica.pk %}" class="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                        <span class="text-slate-700"><i class="fas fa-industry mr-2 text-blue-600"></i>Pedido de fábrica {{ pedido_fabrica.numero }}</span>
-                        <i class="fas fa-chevron-right text-slate-400 text-xs"></i>
+                    <a href="{% url 'plantillas:pedido_detail' pedido_fabrica.pk %}" class="flex items-center justify-between px-3 py-2 rounded-lg border border-line hover:bg-ground transition-colors">
+                        <span class="text-ink-2"><i class="fas fa-industry mr-2 text-ink-3"></i>Pedido de fábrica {{ pedido_fabrica.numero }}</span>
+                        <i class="fas fa-chevron-right text-ink-3 text-xs"></i>
                     </a>
                     {% endif %}
                     {% endwith %}
@@ -611,53 +555,53 @@
             </div>
             {% endif %}
 
-            <div class="bg-white rounded-2xl shadow-lg p-5">
-                <h3 class="font-bold text-slate-800 mb-3">Resumen</h3>
+            <div class="card card-pad">
+                <h3 class="sec-label">Resumen</h3>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Items</span>
-                        <span class="font-semibold text-slate-800">{{ presupuesto.items.count }}</span>
+                        <span class="muted">Items</span>
+                        <span class="strong">{{ presupuesto.items.count }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Creado por</span>
-                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.created_by.get_full_name|default:presupuesto.created_by.username }}</span>
+                        <span class="muted">Creado por</span>
+                        <span class="strong text-right">{{ presupuesto.created_by.get_full_name|default:presupuesto.created_by.username }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Actualizado</span>
-                        <span class="font-semibold text-slate-800">{{ presupuesto.updated_at|date:"d/m/Y" }}</span>
+                        <span class="muted">Actualizado</span>
+                        <span class="strong">{{ presupuesto.updated_at|date:"d/m/Y" }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Tipo de obra</span>
-                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</span>
+                        <span class="muted">Tipo de obra</span>
+                        <span class="strong text-right">{{ presupuesto.get_tipo_obra_display|default:'Pendiente' }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Modalidad de seña</span>
-                        <span class="font-semibold text-slate-800 text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
+                        <span class="muted">Modalidad de seña</span>
+                        <span class="strong text-right">{{ presupuesto.get_modalidad_sena_display }}</span>
                     </div>
                     {% if presupuesto.tipo_obra == 'obra_nueva' %}
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Colocación</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}{% endif %}</span>
+                        <span class="muted">Colocación</span>
+                        <span class="strong text-right num">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_obra_nueva_aplicado_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_obra_nueva_aplicado|formato_numero }}{% endif %}</span>
                     </div>
                     {% elif presupuesto.tipo_obra == 'renovacion' %}
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Recargo por unidad</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }}{% else %}${{ presupuesto.recargo_renovacion_unitario|formato_numero }}{% endif %}</span>
+                        <span class="muted">Recargo por unidad</span>
+                        <span class="strong text-right num">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_renovacion_unitario_usd|formato_numero }}{% else %}${{ presupuesto.recargo_renovacion_unitario|formato_numero }}{% endif %}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Recargo acumulado</span>
-                        <span class="font-semibold text-slate-800 text-right">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_total_renovacion_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_total_renovacion|formato_numero }}{% endif %}</span>
+                        <span class="muted">Recargo acumulado</span>
+                        <span class="strong text-right num">{% if presupuesto.es_pvc %}US${{ presupuesto.get_recargo_total_renovacion_usd|formato_numero }}{% else %}${{ presupuesto.get_recargo_total_renovacion|formato_numero }}{% endif %}</span>
                     </div>
                     {% endif %}
                     {% if presupuesto.aplicar_iva %}
                     <div class="flex justify-between">
-                        <span class="text-slate-500">IVA (21%)</span>
-                        <span class="font-semibold text-slate-800 text-right">${{ presupuesto.get_iva|formato_numero }}</span>
+                        <span class="muted">IVA (21%)</span>
+                        <span class="strong text-right num">${{ presupuesto.get_iva|formato_numero }}</span>
                     </div>
                     {% endif %}
-                    <div class="border-t pt-2 mt-2 flex justify-between">
-                        <span class="font-bold text-slate-700">Total</span>
-                        <span class="font-bold text-blue-600 text-lg">${{ presupuesto.total|formato_numero }}</span>
+                    <div class="border-t border-line pt-2 mt-2 flex justify-between">
+                        <span class="strong">Total</span>
+                        <span class="font-semibold text-ink text-lg num">${{ presupuesto.total|formato_numero }}</span>
                     </div>
                 </div>
             </div>
@@ -788,7 +732,7 @@
                 <button onclick="cerrarModalOrden()"
                     class="px-5 py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-white transition-colors">Cancelar</button>
                 <button onclick="guardarOrden()"
-                    class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold text-sm inline-flex items-center gap-2 transition-all">
+                    class="btn btn-primary">
                     <i class="fas fa-check"></i>Guardar orden
                 </button>
             </div>
@@ -1169,7 +1113,7 @@ function verDetalleItem(resultado, descripcion) {
     let html = '';
 
     // Precio total
-    html += '<div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">';
+    html += '<div class="bg-brand rounded-2xl p-5 text-white mb-4">';
     html += '<p class="text-sm opacity-80 mb-1">Precio Total</p>';
     html += '<p class="text-3xl font-bold">$' + fmt(resultado.precio_total) + '</p>';
     html += '<div class="flex gap-6 mt-2 text-sm opacity-80">';
@@ -1199,7 +1143,7 @@ function verDetalleItem(resultado, descripcion) {
     // Vidrio
     if (d.vidrios) {
         html += buildSection('Vidrio', 'fa-square', 'purple', r.total_vidrios, [
-            '<div class="flex justify-between font-medium"><span>' + d.vidrios.codigo + ' - ' + d.vidrios.descripcion + '</span><span class="text-purple-600">$' + fmt(d.vidrios.precio_total) + '</span></div>' +
+            '<div class="flex justify-between font-medium"><span>' + d.vidrios.codigo + ' - ' + d.vidrios.descripcion + '</span><span class="text-violet">$' + fmt(d.vidrios.precio_total) + '</span></div>' +
             '<div class="text-xs text-gray-500 mt-0.5">' + d.vidrios.ancho_mm + 'mm x ' + d.vidrios.alto_mm + 'mm = ' + d.vidrios.area_m2 + 'm2 x $' + d.vidrios.precio_m2 + '/m2' + (d.vidrios.cantidad_hojas > 1 ? ' x ' + d.vidrios.cantidad_hojas + ' hojas' : '') + '</div>'
         ]);
     }
@@ -1207,7 +1151,7 @@ function verDetalleItem(resultado, descripcion) {
     // Secciones (tirantes)
     if (d.secciones && d.secciones.length > 0) {
         html += buildSection('Secciones', 'fa-grip-lines', 'purple', r.total_secciones, d.secciones.map(i =>
-            '<div class="flex justify-between font-medium"><span>Sección ' + i.orden + ': ' + i.descripcion + '</span><span class="text-purple-600">$' + fmt(i.precio_total) + '</span></div>' +
+            '<div class="flex justify-between font-medium"><span>Sección ' + i.orden + ': ' + i.descripcion + '</span><span class="text-violet">$' + fmt(i.precio_total) + '</span></div>' +
             '<div class="text-xs text-gray-500 mt-0.5">' + i.ancho_mm + 'mm x ' + i.alto_mm + 'mm = ' + i.area_m2 + 'm2 x $' + i.precio_m2 + '/m2' + (i.cantidad_hojas > 1 ? ' x ' + i.cantidad_hojas + ' hojas' : '') + '</div>'
         ));
     }
@@ -1272,7 +1216,7 @@ function verDetalleEstructura(resultado, descripcion) {
     const th = (t, right) => '<th class="py-1.5 pr-3 font-semibold whitespace-nowrap ' + (right ? 'text-right pr-0' : '') + '">' + t + '</th>';
     const td = (t, right) => '<td class="py-1.5 pr-3 align-top ' + (right ? 'text-right pr-0 font-semibold' : '') + '">' + t + '</td>';
 
-    let html = '<div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">';
+    let html = '<div class="bg-brand rounded-2xl p-5 text-white mb-4">';
     html += '<p class="text-sm opacity-80 mb-1">Precio Total</p>';
     html += '<p class="text-3xl font-bold">$' + fmt(resultado.precio_total) + '</p>';
     html += '<div class="flex gap-x-6 gap-y-1 mt-2 text-sm opacity-80 flex-wrap">';
@@ -1461,7 +1405,7 @@ const FormularioPVC = () => {
             </div>
 
             {valorUsd > 0 && (
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-4 text-white">
+                <div className="bg-brand rounded-xl p-4 text-white">
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-sm opacity-80">Precio unitario con margen</span>
                         <span className="text-xl font-bold">US${fmt(precioConMargenUsd)}</span>
@@ -1476,7 +1420,7 @@ const FormularioPVC = () => {
             )}
 
             <button onClick={guardar} disabled={saving}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center">
+                className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center">
                 {saving ? <><i className="fas fa-spinner fa-spin mr-2"></i>Guardando...</> : <><i className="fas fa-check mr-2"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
             </button>
         </div>
@@ -1736,7 +1680,7 @@ const TirantesEditor = ({ ancho, alto, tirantes, vidrios, materiales, perfiles, 
                             </div>
                             <div className="flex gap-1.5 mb-2">
                                 <button type="button" onClick={() => setSeccion(i, { material: { tipo: 'vidrio', codigo: null, id: null } })}
-                                    className={`flex-1 py-1 rounded text-xs font-semibold border ${mat.tipo === 'ciego' ? 'bg-white border-gray-200 text-gray-500' : 'bg-purple-100 border-purple-300 text-purple-700'}`}>Vidrio</button>
+                                    className={`flex-1 py-1 rounded text-xs font-semibold border ${mat.tipo === 'ciego' ? 'bg-white border-gray-200 text-gray-500' : 'bg-violet-soft border-line text-violet'}`}>Vidrio</button>
                                 <button type="button" onClick={() => setSeccion(i, { material: { tipo: 'ciego', codigo: null, id: null } })}
                                     className={`flex-1 py-1 rounded text-xs font-semibold border ${mat.tipo === 'ciego' ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-gray-200 text-gray-500'}`}>Ciego (chapa/panel)</button>
                             </div>
@@ -2411,7 +2355,7 @@ const CotizadorModal = () => {
                             </div>
                             {vista === '3d' ? (
                                 <div ref={viewerRef} title="Diseño 3D de la abertura — arrastrá para rotar"
-                                    className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200"></div>
+                                    className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-ground border border-slate-200"></div>
                             ) : (
                                 <div title="Elevación técnica con cotas en mm"
                                     className="w-full h-72 rounded-2xl mb-4 overflow-hidden bg-white border border-slate-200 p-2"
@@ -2423,7 +2367,7 @@ const CotizadorModal = () => {
                                 <span><i className="fas fa-cube mr-2 opacity-50"></i>Sin vista previa 3D para este producto</span>
                             </div>
                         )}
-                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-5 text-white mb-4">
+                        <div className="bg-brand rounded-2xl p-5 text-white mb-4">
                             <p className="text-sm opacity-80 mb-1">Precio unitario</p>
                             <p className="text-4xl font-bold">${fmt(result.precio_total)}</p>
                             {cantidad > 1 && <p className="text-sm opacity-80 mt-2">x {cantidad} = <strong>${fmt(result.precio_total * cantidad)}</strong></p>}
@@ -2576,12 +2520,12 @@ const CotizadorModal = () => {
                     </button>
                     {modulo ? (
                         <button onClick={aplicarModulo} disabled={desactualizado}
-                            className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                            className="px-6 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
                             <i className="fas fa-check"></i>Aplicar a la abertura
                         </button>
                     ) : (
                     <button onClick={guardar} disabled={saving}
-                        className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                        className="px-6 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
                         {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> : <><i className="fas fa-check"></i>{editId ? 'Guardar cambios' : 'Agregar al presupuesto'}</>}
                     </button>
                     )}

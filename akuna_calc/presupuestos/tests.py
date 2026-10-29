@@ -758,7 +758,7 @@ class PresupuestosViewsTest(TestCase):
         self.assertEqual(res.status_code, 200)
         presupuestos = list(res.context['presupuestos'])
         self.assertEqual(presupuestos[0].item_count, 2)
-        self.assertContains(res, 'text-center text-sm text-slate-600">2</td>')
+        self.assertContains(res, '<td class="num">2</td>')
 
     def test_crear_requiere_login(self):
         res = self.client.get('/presupuestos/nuevo/')
@@ -1317,7 +1317,7 @@ class PresupuestoPvcUsdViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Presupuesto USD')
+        self.assertContains(res, 'PVC · USD')
 
     def test_lista_no_muestra_badge_usd_para_presupuesto_aluminio(self):
         crear_presupuesto(self.user)
@@ -1325,7 +1325,7 @@ class PresupuestoPvcUsdViewsTest(TestCase):
         res = self.client.get('/presupuestos/')
 
         self.assertEqual(res.status_code, 200)
-        self.assertNotContains(res, 'Presupuesto USD')
+        self.assertNotContains(res, 'PVC · USD')
 
     def test_pdf_presupuesto_pvc_muestra_totales_en_usd(self):
         p = crear_presupuesto_pvc(self.user, cotizacion_usd=Decimal('1000'))
@@ -3427,3 +3427,59 @@ class EstructuraConfirmarTest(EstructuraPresupuestoBase):
         self.assertEqual([o.orden for o in ordenes], [1, 2])
         self.assertEqual(ordenes[1].numero, ordenes[0].numero + 1)
         self.assertEqual([o.medidas.get().item for o in ordenes], ['1', '1'])
+
+
+class RediseñoTallerPresupuestosTest(TestCase):
+    """Pantallas en estilo Taller: status, parcial en vivo y aviso al confirmar."""
+
+    def setUp(self):
+        self.admin_role, _ = RolSistema.objects.get_or_create(
+            codigo='admin',
+            defaults={'nombre': 'Admin', 'descripcion': 'Acceso total.', 'acceso_total': True, 'activo': True},
+        )
+        self.user = User.objects.create_user('tallerpres', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=self.admin_role)
+        self.otro = User.objects.create_user('tallerotro', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.otro, rol=self.admin_role)
+        self.sin_acceso = User.objects.create_user('tallersin', password='testpass')
+        PerfilAccesoUsuario.objects.create(usuario=self.sin_acceso, permisos=['comercial.ventas'])
+        self.client = Client()
+        self.client.login(username='tallerpres', password='testpass')
+        self.p = crear_presupuesto(self.user)
+
+    def test_status_de_cada_pantalla(self):
+        for url in ['/presupuestos/', '/presupuestos/nuevo/', f'/presupuestos/{self.p.pk}/',
+                    f'/presupuestos/{self.p.pk}/editar/']:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_lista_marca_data_live_y_partial_devuelve_solo_contenido(self):
+        res = self.client.get('/presupuestos/')
+        self.assertContains(res, 'data-live="presupuestos"')
+        self.assertContains(res, 'data-live-partial')
+        parcial = self.client.get('/presupuestos/?partial=1')
+        self.assertEqual(parcial.status_code, 200)
+        self.assertContains(parcial, self.p.numero)
+        self.assertNotContains(parcial, '<html')
+        self.assertNotContains(parcial, 'data-live="presupuestos"')
+
+    def test_detalle_marca_data_live_edit(self):
+        res = self.client.get(f'/presupuestos/{self.p.pk}/')
+        self.assertContains(res, f'data-live-edit="presupuestos.presupuesto:{self.p.pk}"')
+
+    def test_fuente_live_registrada_y_excluye_eliminados(self):
+        from core import live
+        fuente = live.get_source('presupuestos')
+        self.assertIsNotNone(fuente)
+        borrado = crear_presupuesto(self.user)
+        Presupuesto.objects.filter(pk=borrado.pk).update(deleted_at=timezone.now())
+        self.assertEqual(fuente.snapshot(self.user)['count'], 1)
+
+    def test_confirmar_avisa_a_otros_usuarios_con_acceso(self):
+        from core.models import Aviso
+        Presupuesto.objects.filter(pk=self.p.pk).update(total=Decimal('100000'))
+        res = self.client.post(f'/presupuestos/{self.p.pk}/estado/', {'estado': 'confirmado'})
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(Aviso.objects.filter(usuario=self.otro, tipo='exito', texto__contains=self.p.numero).exists())
+        self.assertFalse(Aviso.objects.filter(usuario=self.user).exists())
+        self.assertFalse(Aviso.objects.filter(usuario=self.sin_acceso).exists())

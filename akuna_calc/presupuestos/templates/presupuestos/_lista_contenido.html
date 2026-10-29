@@ -1,0 +1,103 @@
+{% load custom_filters %}
+<div class="tabs mb-5" role="tablist" aria-label="Estado">
+    <a class="tab{% if not estado_actual %} on{% endif %}" role="tab" href="?{% if q %}q={{ q|urlencode }}{% endif %}">Todos <span class="cnt">{{ kpis.total|default:0 }}</span></a>
+    <a class="tab{% if estado_actual == 'borrador' %} on{% endif %}" role="tab" href="?estado=borrador{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Borradores <span class="cnt">{{ kpis.borradores|default:0 }}</span></a>
+    <a class="tab{% if estado_actual == 'enviado' %} on{% endif %}" role="tab" href="?estado=enviado{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Enviados <span class="cnt">{{ kpis.enviados|default:0 }}</span></a>
+    <a class="tab{% if estado_actual == 'confirmado' %} on{% endif %}" role="tab" href="?estado=confirmado{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Confirmados <span class="cnt">{{ kpis.confirmados|default:0 }}</span>{% if kpis.monto_confirmado %}<span class="muted num">${{ kpis.monto_confirmado|formato_numero }}</span>{% endif %}</a>
+</div>
+
+<section class="card overflow-hidden">
+    <form method="get" class="toolbar">
+        <div class="field" style="flex:1 1 260px;max-width:340px">
+            <input type="text" name="q" value="{{ q }}" class="input" aria-label="Buscar presupuestos" placeholder="Número, cliente, ID (C-123), estado, total...">
+        </div>
+        <div class="field" style="width:11rem">
+            <select name="estado" aria-label="Estado">
+                <option value="">Estado: todos</option>
+                {% for value, label in estados %}
+                <option value="{{ value }}" {% if value == estado_actual %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if puede_ver_creador %}
+        <div class="field" style="width:14rem">
+            <select name="creado_por" aria-label="Creado por">
+                <option value="">Creado por: todos</option>
+                {% for u in usuarios_creadores %}
+                <option value="{{ u.pk }}" {% if u.pk|stringformat:"s" == creado_por_actual %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-filter"></i>Filtrar</button>
+        {% if q or estado_actual or creado_por_actual %}
+        <a href="{% url 'presupuestos:presupuestos-lista' %}" class="btn btn-ghost btn-sm"><i class="fas fa-times"></i>Limpiar</a>
+        {% endif %}
+        <span class="muted ml-auto text-sm">{{ presupuestos|length }} presupuesto{{ presupuestos|length|pluralize }}</span>
+    </form>
+
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Cliente</th>
+                    <th class="num">Ítems</th>
+                    <th>Estado</th>
+                    <th>Creación</th>
+                    {% if puede_ver_creador %}<th>Usuario</th>{% endif %}
+                    <th>Vencimiento</th>
+                    <th class="num">Total</th>
+                    <th><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in presupuestos %}
+                {% url 'presupuestos:presupuestos-detalle' p.pk as presupuesto_detalle_url %}
+                <tr>
+                    <td>
+                        <a class="strong" href="{% with_return_to presupuesto_detalle_url list_return_url %}">{{ p.numero }}</a>
+                        <div class="mt-1"><span class="badge b-gray">{{ p.get_tipo_material_display }}{% if p.es_pvc %} · USD{% endif %}</span></div>
+                    </td>
+                    <td>
+                        <span class="strong">{{ p.cliente.get_nombre_completo }}</span><br>
+                        <span class="muted text-xs">{{ p.cliente.codigo }}</span>
+                    </td>
+                    <td class="num">{{ p.item_count }}</td>
+                    <td>
+                        {% if p.estado == 'borrador' %}{% include 'core/ui/badge.html' with tone="gray" label="Borrador" dot=True only %}
+                        {% elif p.estado == 'enviado' %}{% include 'core/ui/badge.html' with tone="blue" label="Enviado" dot=True only %}
+                        {% elif p.estado == 'confirmado' %}{% include 'core/ui/badge.html' with tone="green" label="Confirmado" dot=True only %}
+                        {% elif p.estado == 'vencido' %}{% include 'core/ui/badge.html' with tone="amber" label="Vencido" dot=True only %}
+                        {% elif p.estado == 'cancelado' %}{% include 'core/ui/badge.html' with tone="red" label="Cancelado" dot=True only %}
+                        {% endif %}
+                    </td>
+                    <td class="muted">{{ p.created_at|date:"d/m/Y" }}</td>
+                    {% if puede_ver_creador %}
+                    <td class="muted">{{ p.created_by.get_full_name|default:p.created_by.username }}</td>
+                    {% endif %}
+                    <td class="muted">
+                        {{ p.fecha_expiracion|date:"d/m/Y" }}
+                        <span class="block text-xs">{{ p.get_resumen_flete_colocacion }}</span>
+                    </td>
+                    <td class="num strong">
+                        {% if p.es_pvc %}US${{ p.get_total_usd|formato_numero }}{% else %}${{ p.total|formato_numero }}{% endif %}
+                    </td>
+                    <td class="num">
+                        {% url 'presupuestos:presupuestos-pdf' p.pk as presupuesto_pdf_url %}
+                        {% url 'presupuestos:presupuestos-eliminar' p.pk as presupuesto_eliminar_url %}
+                        {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones de presupuesto" view_url=presupuesto_detalle_url extra_url=presupuesto_pdf_url extra_label="Descargar PDF" extra_icon="fas fa-file-pdf" delete_url=presupuesto_eliminar_url delete_name=p.numero only %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if puede_ver_creador %}9{% else %}8{% endif %}">
+                        {% url 'presupuestos:presupuestos-crear' as presupuesto_crear_url %}
+                        {% include 'core/ui/empty_state.html' with title="No hay presupuestos" icon="fas fa-file-invoice" action_url=presupuesto_crear_url action_label="Crear el primero" only %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

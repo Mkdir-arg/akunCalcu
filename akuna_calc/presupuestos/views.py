@@ -20,8 +20,9 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from xhtml2pdf import pisa
 
+from core.avisos import crear_aviso
 from core.navigation import append_return_to, resolve_return_url
-from usuarios.access_control import get_access_profile, user_has_full_access
+from usuarios.access_control import get_access_profile, user_has_any_access, user_has_full_access
 from comercial.models import Cliente, Venta
 from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
 from plantillas.utils import cortar_a_max_length
@@ -178,7 +179,13 @@ def lista(request):
             presupuestos_creados__deleted_at__isnull=True
         ).distinct().order_by('first_name', 'last_name', 'username')
 
-    return render(request, 'presupuestos/lista.html', {
+    params = request.GET.copy()
+    params.pop('partial', None)
+    list_return_url = request.path + ('?' + params.urlencode() if params else '')
+    template = 'presupuestos/_lista_contenido.html' if request.GET.get('partial') else 'presupuestos/lista.html'
+
+    return render(request, template, {
+        'list_return_url': list_return_url,
         'presupuestos': qs,
         'estado_actual': estado,
         'q': q,
@@ -734,6 +741,19 @@ def _crear_ordenes_desde_item(pedido, item, numero, orden, presupuesto, posicion
     return 1
 
 
+def _avisar_confirmacion(actor, presupuesto):
+    destinatarios = [
+        u for u in User.objects.filter(is_active=True).exclude(pk=actor.pk)
+        if user_has_any_access(u, 'presupuestos.view')
+    ]
+    crear_aviso(
+        destinatarios,
+        f'Presupuesto {presupuesto.numero} confirmado por {actor.get_full_name() or actor.username}.',
+        tipo='exito',
+        url=reverse('presupuestos:presupuestos-detalle', args=[presupuesto.pk]),
+    )
+
+
 def _procesar_confirmacion(request, presupuesto):
     """Confirma el presupuesto generando la venta y el pedido de fábrica (todo o nada)."""
     if presupuesto.venta_id:
@@ -772,6 +792,8 @@ def _procesar_confirmacion(request, presupuesto):
         presupuesto.venta = venta
         presupuesto.estado = 'confirmado'
         presupuesto.save(update_fields=['estado', 'venta'])
+
+    _avisar_confirmacion(request.user, presupuesto)
 
     messages.success(
         request,
