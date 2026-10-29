@@ -37,7 +37,7 @@
                         <td class="num">
                             {% url 'config-vidrio-edit' vidrio.codigo as row_edit_url %}
                             {% url 'config-vidrio-delete' vidrio.codigo as row_delete_url %}
-                            {% if vidrio.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=vidrio.codigo only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
+                            {% if vidrio.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=vidrio.codigo delete_label="Desactivar" delete_verb="desactivar" delete_icon="fas fa-ban" only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
                         </td>
                     </tr>
                     {% empty %}

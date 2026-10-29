@@ -512,13 +512,14 @@
         if (del) {
             const url = del.getAttribute('data-taller-delete');
             const name = del.getAttribute('data-name') || 'este registro';
+            const verb = del.getAttribute('data-verb') || 'eliminar';
             closeTallerMenus();
             Swal.fire({
                 icon: 'warning',
-                title: '¿Eliminar?',
-                text: '¿Está seguro que desea eliminar ' + name + '?',
+                title: '¿' + verb.charAt(0).toUpperCase() + verb.slice(1) + '?',
+                text: '¿Está seguro que desea ' + verb + ' ' + name + '?',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
+                confirmButtonText: 'Sí, ' + verb,
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#B42318'
             }).then(function (res) {

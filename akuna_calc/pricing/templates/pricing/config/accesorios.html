@@ -42,7 +42,7 @@
                             {% with cod=accesorio.codigo|urlencode tip=accesorio.tipo|default_if_none:''|urlencode %}
                             {% with qs='?codigo='|add:cod|add:'&tipo='|add:tip %}
                             {% with eu=accesorio_edit_url|add:qs|safe du=accesorio_delete_url|add:qs|safe %}
-                            {% if accesorio.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=eu delete_url=du delete_name=accesorio.codigo only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=eu only %}{% endif %}
+                            {% if accesorio.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=eu delete_url=du delete_name=accesorio.codigo delete_label="Desactivar" delete_verb="desactivar" delete_icon="fas fa-ban" only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=eu only %}{% endif %}
                             {% endwith %}{% endwith %}{% endwith %}
                         </td>
                     </tr>

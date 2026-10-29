@@ -33,7 +33,7 @@
                         <td class="num">
                             {% url 'config-tratamiento-edit' tratamiento.pk as row_edit_url %}
                             {% url 'config-tratamiento-delete' tratamiento.pk as row_delete_url %}
-                            {% if tratamiento.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=tratamiento.descripcion only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
+                            {% if tratamiento.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=tratamiento.descripcion delete_label="Desactivar" delete_verb="desactivar" delete_icon="fas fa-ban" only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
                         </td>
                     </tr>
                     {% empty %}

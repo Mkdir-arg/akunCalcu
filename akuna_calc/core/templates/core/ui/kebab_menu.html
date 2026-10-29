@@ -3,6 +3,8 @@ Menú de fila «⋯». Parámetros (todos opcionales):
   kebab_label (aria-label, ej. "Acciones de P-0412"),
   view_url, edit_url, extra_url + extra_label + extra_icon,
   delete_url + delete_name  -> pide confirmación (SweetAlert) y hace POST con CSRF a delete_url.
+  delete_label / delete_verb / delete_icon (default «Eliminar» / «eliminar» / fa-trash):
+    para acciones que en realidad desactivan, ej. delete_label="Desactivar" delete_verb="desactivar".
 Usar siempre con `only`, para no heredar variables de la fila anterior.
 {% endcomment %}
 <div class="kebab" data-kebab>
@@ -13,6 +15,6 @@ Usar siempre con `only`, para no heredar variables de la fila anterior.
         {% if view_url %}<a class="kebab-item" role="menuitem" href="{{ view_url }}"><i class="fas fa-eye"></i>Ver</a>{% endif %}
         {% if edit_url %}<a class="kebab-item" role="menuitem" href="{{ edit_url }}"><i class="fas fa-pen"></i>Editar</a>{% endif %}
         {% if extra_url %}<a class="kebab-item" role="menuitem" href="{{ extra_url }}"><i class="{{ extra_icon|default:'fas fa-arrow-right' }}"></i>{{ extra_label }}</a>{% endif %}
-        {% if delete_url %}<button type="button" class="kebab-item danger" role="menuitem" data-taller-delete="{{ delete_url }}" data-name="{{ delete_name|default:'este registro' }}"><i class="fas fa-trash"></i>Eliminar</button>{% endif %}
+        {% if delete_url %}<button type="button" class="kebab-item danger" role="menuitem" data-taller-delete="{{ delete_url }}" data-name="{{ delete_name|default:'este registro' }}" data-verb="{{ delete_verb|default:'eliminar' }}"><i class="{{ delete_icon|default:'fas fa-trash' }}"></i>{{ delete_label|default:'Eliminar' }}</button>{% endif %}
     </div>
 </div>

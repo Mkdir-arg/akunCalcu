@@ -27,7 +27,7 @@
                         <td class="num">
                             {% url 'config-material-ciego-edit' material.pk as row_edit_url %}
                             {% url 'config-material-ciego-delete' material.pk as row_delete_url %}
-                            {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=material.nombre only %}
+                            {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=material.nombre delete_label="Desactivar" delete_verb="desactivar" delete_icon="fas fa-ban" only %}
                         </td>
                     </tr>
                     {% empty %}
