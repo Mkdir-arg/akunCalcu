@@ -1,84 +1,84 @@
 <div id="clienteModal" data-select2-dropdown-parent data-url="{{ url }}" data-target="{{ target }}" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-            <h2 class="text-2xl font-bold text-slate-800">Nuevo Cliente</h2>
-            <button type="button" data-cliente-modal-close class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-2xl"></i>
+    <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto" style="box-shadow:0 12px 32px rgba(16,24,40,.18)">
+        <div class="sticky top-0 bg-white border-b border-line px-6 py-4 flex justify-between items-center" style="border-radius:14px 14px 0 0">
+            <h2 class="strong" style="font-size:18px">Nuevo Cliente</h2>
+            <button type="button" data-cliente-modal-close class="btn btn-ghost btn-sm btn-icon" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
         <form id="clienteForm" class="p-6 space-y-4" novalidate>
             {% csrf_token %}
-            <p class="text-red-600 text-sm" data-error-for="__all__"></p>
+            <p class="field-error" data-error-for="__all__"></p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <div class="field">
+                <label>Nombre *</label>
                 {{ form.nombre }}
-                <span class="text-red-600 text-sm" data-error-for="nombre"></span>
+                <span class="field-error" data-error-for="nombre"></span>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+            <div class="field">
+                <label>Apellido *</label>
                 {{ form.apellido }}
-                <span class="text-red-600 text-sm" data-error-for="apellido"></span>
+                <span class="field-error" data-error-for="apellido"></span>
             </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
+            <div class="field">
+                <label>Razón Social</label>
                 {{ form.razon_social }}
-                <span class="text-red-600 text-sm" data-error-for="razon_social"></span>
+                <span class="field-error" data-error-for="razon_social"></span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+            <div class="field">
+                <label>CUIT</label>
                 {{ form.cuit }}
-                <span class="text-red-600 text-sm" data-error-for="cuit"></span>
+                <span class="field-error" data-error-for="cuit"></span>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+            <div class="field">
+                <label>DNI</label>
                 {{ form.dni }}
-                <span class="text-red-600 text-sm" data-error-for="dni"></span>
+                <span class="field-error" data-error-for="dni"></span>
             </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Condición IVA</label>
+            <div class="field">
+                <label>Condición IVA</label>
                 {{ form.condicion_iva }}
-                <span class="text-red-600 text-sm" data-error-for="condicion_iva"></span>
+                <span class="field-error" data-error-for="condicion_iva"></span>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+            <div class="field">
+                <label>Dirección *</label>
                 {{ form.direccion }}
-                <span class="text-red-600 text-sm" data-error-for="direccion"></span>
+                <span class="field-error" data-error-for="direccion"></span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Localidad *</label>
+            <div class="field">
+                <label>Localidad *</label>
                 {{ form.localidad }}
-                <span class="text-red-600 text-sm" data-error-for="localidad"></span>
+                <span class="field-error" data-error-for="localidad"></span>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
+            <div class="field">
+                <label>Provincia</label>
                 {{ form.provincia }}
-                <span class="text-red-600 text-sm" data-error-for="provincia"></span>
+                <span class="field-error" data-error-for="provincia"></span>
             </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <div class="field">
+                <label>Teléfono</label>
                 {{ form.telefono }}
-                <span class="text-red-600 text-sm" data-error-for="telefono"></span>
+                <span class="field-error" data-error-for="telefono"></span>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <div class="field">
+                <label>Email</label>
                 {{ form.email }}
-                <span class="text-red-600 text-sm" data-error-for="email"></span>
+                <span class="field-error" data-error-for="email"></span>
             </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" data-cliente-modal-close class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all">
+                <button type="button" data-cliente-modal-close class="btn btn-secondary">
                     Cancelar
                 </button>
-                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save mr-2"></i>Guardar Cliente
                 </button>
             </div>

@@ -5,126 +5,51 @@
 {% block title %}Venta #{{ venta.numero_pedido }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto animate-fade-in px-4">
+<div data-live-edit="comercial.venta:{{ venta.pk }}" data-live-edit-label="venta">
 
     <!-- Header -->
-    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-6">
-        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 lg:px-8 py-7 text-white">
-            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-3 mb-3">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
-                            Detalle de venta
-                        </span>
-                        <span id="badge-estado" class="px-4 py-1.5 rounded-full text-sm font-bold shadow
-                            {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900
-                            {% elif venta.estado == 'entregado' %}bg-blue-300 text-blue-900
-                            {% else %}bg-green-400 text-green-900{% endif %}">
-                            <i class="fas fa-circle mr-1 text-xs"></i>{{ venta.get_estado_display }}
-                        </span>
-                    </div>
-                    <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-white">
-                        Venta #{{ venta.numero_pedido }}
-                    </h1>
-                    <p class="text-slate-300 mt-2 text-sm lg:text-base">
-                        {{ venta.cliente.get_nombre_completo }} · <span class="font-mono">{{ venta.cliente.codigo }}</span>
-                    </p>
-                    <div class="flex flex-wrap items-center gap-3 mt-4 text-sm">
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100">
-                            <i class="far fa-calendar mr-2"></i>{{ venta.created_at|date:"d/m/Y H:i" }}
-                        </span>
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 {% if dias_abierta > 60 %}text-red-200{% elif dias_abierta > 30 %}text-yellow-200{% else %}text-slate-100{% endif %}">
-                            <i class="fas fa-clock mr-2"></i>
-                            {% if dias_abierta == 0 %}Creada hoy
-                            {% elif dias_abierta == 1 %}Hace 1 día
-                            {% else %}Hace {{ dias_abierta }} días{% endif %}
-                        </span>
-                        {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
-                        <a href="{% with_return_to cliente_detail_url request.get_full_path %}" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 text-slate-100 hover:bg-white/20 transition-all">
-                            <i class="fas fa-user mr-2"></i>Ver cliente
-                        </a>
-                    </div>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-3 xl:min-w-[260px] xl:justify-end">
-                    <a href="{{ venta_edit_url }}"
-                       class="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-blue-900/20">
-                        <i class="fas fa-edit mr-2"></i>Editar venta
-                    </a>
-                    <a href="{{ return_url }}"
-                       class="inline-flex items-center justify-center bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-2xl font-semibold text-sm transition-all border border-white/15">
-                        <i class="fas fa-arrow-left mr-2"></i>Volver
-                    </a>
-                </div>
+    <div class="page-head">
+        <div class="min-w-0">
+            <a href="{{ return_url }}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>Volver</a>
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+                <span class="sec-label" style="margin:0">Detalle de venta</span>
+                <span id="badge-estado" class="badge {% if venta.estado == 'pendiente' %}b-amber{% elif venta.estado == 'entregado' %}b-blue{% else %}b-green{% endif %}"><span class="dot"></span>{{ venta.get_estado_display }}</span>
+            </div>
+            <h1 class="page-title">Venta #{{ venta.numero_pedido }}</h1>
+            <p class="page-sub">{{ venta.cliente.get_nombre_completo }} · {{ venta.cliente.codigo }}</p>
+            <div class="flex flex-wrap items-center gap-3 mt-3 text-sm muted">
+                <span><i class="far fa-calendar mr-1"></i>{{ venta.created_at|date:"d/m/Y H:i" }}</span>
+                <span {% if dias_abierta > 60 %}class="text-danger"{% elif dias_abierta > 30 %}class="text-warn"{% endif %}>
+                    <i class="fas fa-clock mr-1"></i>
+                    {% if dias_abierta == 0 %}Creada hoy
+                    {% elif dias_abierta == 1 %}Hace 1 día
+                    {% else %}Hace {{ dias_abierta }} días{% endif %}
+                </span>
+                {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
+                <a href="{% with_return_to cliente_detail_url request.get_full_path %}"><i class="fas fa-user mr-1"></i>Ver cliente</a>
             </div>
         </div>
-
-        <div class="px-6 lg:px-8 py-5 bg-slate-50 border-t border-slate-200">
-            <div class="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr] gap-4">
-                <div class="bg-white rounded-2xl border border-slate-200 p-4">
-                    <div class="flex items-center justify-between gap-3 mb-3">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Estado de la venta</p>
-                            <p class="text-sm text-slate-600 mt-1">Cambiá el estado sin salir del detalle.</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2" id="estado-btn-group">
-                        <button onclick="cambiarEstadoInline('pendiente')"
-                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                                {% if venta.estado == 'pendiente' %}bg-yellow-400 text-yellow-900 border-yellow-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-yellow-300 hover:bg-yellow-50{% endif %}">
-                            <i class="fas fa-clock mr-2"></i>Pendiente
-                        </button>
-                        <button onclick="cambiarEstadoInline('entregado')"
-                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                                {% if venta.estado == 'entregado' %}bg-blue-400 text-blue-950 border-blue-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50{% endif %}">
-                            <i class="fas fa-truck mr-2"></i>Entregado
-                        </button>
-                        <button onclick="cambiarEstadoInline('colocado')"
-                                class="estado-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                                {% if venta.estado == 'colocado' %}bg-green-400 text-green-950 border-green-400 shadow{% else %}bg-white text-slate-700 border-slate-200 hover:border-green-300 hover:bg-green-50{% endif %}">
-                            <i class="fas fa-check-double mr-2"></i>Colocado
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 mb-1">Acciones</p>
-                    <p class="text-sm text-slate-600 mb-3">Herramientas rápidas sin sobrecargar el encabezado.</p>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="abrirWhatsApp()"
-                           class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <i class="fab fa-whatsapp mr-2 text-base"></i>WhatsApp
-                        </button>
-                        {% if puede_generar_recibo %}
-                        <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer"
-                           class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <i class="fas fa-file-pdf mr-2"></i>Ver Recibo PDF
-                        </a>
-                        {% else %}
-                        <span class="inline-flex items-center bg-gray-300 text-gray-500 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-not-allowed">
-                            <i class="fas fa-file-pdf mr-2"></i>Sin pagos
-                        </span>
-                        {% endif %}
-                                <a href="{{ venta_duplicate_url }}"
-                           onclick="return confirm('¿Duplicar esta venta?')"
-                           class="inline-flex items-center bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all">
-                            <i class="fas fa-copy mr-2"></i>Duplicar
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <div class="page-actions">
+            <button type="button" onclick="abrirWhatsApp()" class="btn btn-secondary"><i class="fab fa-whatsapp"></i>WhatsApp</button>
+            {% if puede_generar_recibo %}
+            <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fas fa-file-pdf"></i>Ver recibo PDF</a>
+            {% else %}
+            <span class="btn btn-secondary is-disabled" aria-disabled="true"><i class="fas fa-file-pdf"></i>Sin pagos</span>
+            {% endif %}
+            <a href="{{ venta_duplicate_url }}" onclick="return confirm('¿Duplicar esta venta?')" class="btn btn-secondary"><i class="fas fa-copy"></i>Duplicar</a>
+            <a href="{{ venta_edit_url }}" class="btn btn-primary"><i class="fas fa-pen"></i>Editar venta</a>
         </div>
     </div>
 
-    {% if messages %}
-    <div class="space-y-3 mb-6">
-    {% for message in messages %}
-    <div class="p-4 rounded-2xl animate-fade-in {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-300{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-300{% else %}bg-blue-100 text-blue-800 border border-blue-300{% endif %}">
-        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} mr-2"></i>{{ message }}
+    <div class="card card-pad mb-4">
+        <p class="sec-label">Estado de la venta</p>
+        <p class="muted text-sm mb-3">Cambiá el estado sin salir del detalle.</p>
+        <div class="flex flex-wrap gap-2" id="estado-btn-group">
+            <button onclick="cambiarEstadoInline('pendiente')" class="estado-btn btn btn-sm {% if venta.estado == 'pendiente' %}btn-primary{% else %}btn-secondary{% endif %}"><i class="fas fa-clock"></i>Pendiente</button>
+            <button onclick="cambiarEstadoInline('entregado')" class="estado-btn btn btn-sm {% if venta.estado == 'entregado' %}btn-primary{% else %}btn-secondary{% endif %}"><i class="fas fa-truck"></i>Entregado</button>
+            <button onclick="cambiarEstadoInline('colocado')" class="estado-btn btn btn-sm {% if venta.estado == 'colocado' %}btn-primary{% else %}btn-secondary{% endif %}"><i class="fas fa-check-double"></i>Colocado</button>
+        </div>
     </div>
-    {% endfor %}
-    </div>
-    {% endif %}
 
     {% if forzar_colocado %}
     <!-- SweetAlert2 obligatorio se dispara desde JS -->
@@ -132,105 +57,63 @@
 
     <!-- KPI Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
-        <!-- Cliente -->
-        <div class="card-elegant bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-user-tie text-green-600"></i>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-[0.14em] text-slate-400 font-semibold">Cliente</p>
-                    <p class="text-sm font-bold text-slate-800 truncate">{{ venta.cliente }}</p>
-                    <p class="text-xs font-mono text-slate-400">{{ venta.cliente.codigo }}</p>
-                    <p class="text-xs text-slate-400">{{ venta.cliente.get_condicion_iva_display }}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Cliente</p>
+            <p class="strong truncate">{{ venta.cliente }}</p>
+            <p class="muted text-sm">{{ venta.cliente.codigo }} · {{ venta.cliente.get_condicion_iva_display }}</p>
         </div>
-
-        <!-- Valor Total -->
-        <div class="card-elegant bg-blue-600 rounded-2xl shadow-sm p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-dollar-sign text-white"></i>
-                </div>
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.14em] text-blue-100 font-semibold">Valor Total</p>
-                    <p class="text-xl font-bold text-white leading-tight">${{ venta.get_total_con_percepciones|formato_numero }}</p>
-                    <p class="text-xs text-blue-100/90" id="total-usd">{% if venta.venta_en_dolares and venta.valor_total_usd %}USD {{ venta.valor_total_usd|formato_numero }}{% if venta.cotizacion_usd %} a ${{ venta.cotizacion_usd|formato_numero }}{% endif %}{% endif %}</p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Valor total</p>
+            <p class="page-title" style="font-size:22px">${{ venta.get_total_con_percepciones|formato_numero }}</p>
+            <p class="muted text-sm" id="total-usd">{% if venta.venta_en_dolares and venta.valor_total_usd %}USD {{ venta.valor_total_usd|formato_numero }}{% if venta.cotizacion_usd %} a ${{ venta.cotizacion_usd|formato_numero }}{% endif %}{% endif %}</p>
         </div>
-
-        <!-- Total Pagado -->
-        <div class="card-elegant bg-purple-600 rounded-2xl shadow-sm p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-hand-holding-usd text-white"></i>
-                </div>
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.14em] text-purple-100 font-semibold">Total Pagado</p>
-                    <p class="text-xl font-bold text-white leading-tight">${{ total_pagado|formato_numero }}</p>
-                    <p class="text-xs text-purple-100/90" id="pagado-usd"></p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Total pagado</p>
+            <p class="page-title" style="font-size:22px">${{ total_pagado|formato_numero }}</p>
+            <p class="muted text-sm" id="pagado-usd"></p>
         </div>
-
-        <!-- Saldo -->
-        <div class="card-elegant {% if venta.saldo > 0 %}bg-orange-500{% else %}bg-green-600{% endif %} rounded-2xl shadow-sm p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 {% if venta.saldo > 0 %}bg-white/15{% else %}bg-white/15{% endif %} rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-{% if venta.saldo > 0 %}exclamation-circle{% else %}check-circle{% endif %} text-white"></i>
-                </div>
-                <div>
-                    <p class="text-[11px] uppercase tracking-[0.14em] {% if venta.saldo > 0 %}text-orange-100{% else %}text-green-100{% endif %} font-semibold">Saldo Pendiente</p>
-                    <p class="text-xl font-bold text-white leading-tight">${{ venta.saldo|formato_numero }}</p>
-                    <p class="text-xs {% if venta.saldo > 0 %}text-orange-100/90{% else %}text-green-100/90{% endif %}" id="saldo-usd"></p>
-                </div>
-            </div>
+        <div class="card card-pad">
+            <p class="sec-label">Saldo pendiente</p>
+            <p class="page-title{% if venta.saldo > 0 %} text-warn{% else %} text-ok{% endif %}" style="font-size:22px">${{ venta.saldo|formato_numero }}</p>
+            <p class="muted text-sm" id="saldo-usd"></p>
         </div>
     </div>
 
     <!-- Barra de progreso -->
-    <div class="bg-white rounded-2xl shadow p-5 mb-6">
+    <div class="card card-pad mb-5">
         <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-bold text-slate-700">Progreso de cobro</span>
-            <span class="text-sm font-bold {% if porcentaje_cobrado == 100 %}text-green-600{% elif porcentaje_cobrado >= 50 %}text-blue-600{% else %}text-orange-600{% endif %}">
-                {{ porcentaje_cobrado }}% cobrado
-            </span>
+            <span class="strong">Progreso de cobro</span>
+            <span class="strong">{{ porcentaje_cobrado }}% cobrado</span>
         </div>
-        <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
-            <div class="h-4 rounded-full transition-all duration-700
-                {% if porcentaje_cobrado == 100 %}bg-gradient-to-r from-green-400 to-green-600
-                {% elif porcentaje_cobrado >= 50 %}bg-gradient-to-r from-blue-400 to-blue-600
-                {% else %}bg-gradient-to-r from-orange-400 to-orange-500{% endif %}"
-                style="width: {{ porcentaje_cobrado }}%"></div>
+        <div style="height:8px;border-radius:999px;background:#EAECF0;overflow:hidden">
+            <div style="height:100%;border-radius:999px;background:var(--t-accent);width: {{ porcentaje_cobrado }}%"></div>
         </div>
-        <div class="flex justify-between text-xs text-slate-400 mt-1">
+        <div class="flex justify-between muted text-xs mt-2">
             <span>Seña: ${{ venta.sena|formato_numero }}{% if venta.sena_en_dolares and venta.sena_usd %} · USD {{ venta.sena_usd|formato_numero }}{% if venta.cotizacion_sena_usd %} a ${{ venta.cotizacion_sena_usd|formato_numero }}{% endif %}{% endif %}</span>
             <span>Pagado: ${{ total_pagado|formato_numero }} / ${{ venta.get_total_con_percepciones|formato_numero }}</span>
         </div>
     </div>
 
     <!-- Banner cotización dólar -->
-    <div id="dolar-banner" class="hidden bg-white rounded-2xl shadow p-4 mb-6 border border-slate-100">
+    <div id="dolar-banner" class="hidden card card-pad mb-5">
         <div class="flex flex-wrap gap-6 items-center justify-between">
             <div class="flex items-center gap-2">
-                <i class="fas fa-exchange-alt text-green-600"></i>
-                <span class="text-sm font-bold text-slate-700">Cotización en dólares (Blue)</span>
-                <span id="dolar-tipo" class="text-xs text-slate-400"></span>
+                <i class="fas fa-exchange-alt muted"></i>
+                <span class="strong">Cotización en dólares (Blue)</span>
+                <span id="dolar-tipo" class="muted text-xs"></span>
             </div>
             <div class="flex flex-wrap gap-6">
                 <div class="text-center">
-                    <p class="text-xs text-slate-500 font-semibold uppercase">Total venta</p>
-                    <p class="text-lg font-bold text-blue-600" id="banner-total-usd">—</p>
+                    <p class="sec-label" style="margin:0">Total venta</p>
+                    <p class="strong" style="font-size:18px" id="banner-total-usd">—</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-xs text-slate-500 font-semibold uppercase">Cobrado</p>
-                    <p class="text-lg font-bold text-purple-600" id="banner-pagado-usd">—</p>
+                    <p class="sec-label" style="margin:0">Cobrado</p>
+                    <p class="strong" style="font-size:18px" id="banner-pagado-usd">—</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-xs text-slate-500 font-semibold uppercase">Saldo pendiente</p>
-                    <p class="text-lg font-bold {% if venta.saldo > 0 %}text-orange-500{% else %}text-green-600{% endif %}" id="banner-saldo-usd">—</p>
+                    <p class="sec-label" style="margin:0">Saldo pendiente</p>
+                    <p class="strong{% if venta.saldo > 0 %} text-warn{% else %} text-ok{% endif %}" style="font-size:18px" id="banner-saldo-usd">—</p>
                 </div>
             </div>
         </div>
@@ -240,33 +123,33 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Registrar Pago / Pagada -->
         {% if venta.saldo > 0 %}
-        <div class="card-elegant bg-white rounded-3xl shadow-xl border border-slate-200 p-6 lg:col-span-2">
+        <div class="card card-pad lg:col-span-2">
             <div class="mb-5">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-cash-register mr-2 text-green-600"></i>Registrar Pago</h3>
-                    <p id="pago-form-intro" class="text-sm text-slate-500 mt-1">Cargá el cobro en pesos o registrá un pago en dólares para que el sistema calcule su impacto en saldo.</p>
+                    <h3 class="strong" style="font-size:18px">Registrar Pago</h3>
+                    <p id="pago-form-intro" class="muted text-sm mt-1">Cargá el cobro en pesos o registrá un pago en dólares para que el sistema calcule su impacto en saldo.</p>
                 </div>
             </div>
             <form method="post" action="{% url 'comercial:registrar_pago' venta.pk %}">
                 {% csrf_token %}
                 <div class="space-y-4">
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 lg:p-5">
+                    <div class="card card-pad">
                         <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
                             <div class="xl:col-span-4">
-                                <label id="monto-pesos-label" class="block text-sm font-medium text-slate-700 mb-2">Monto que impacta en saldo (pesos) <span class="text-red-500">*</span></label>
+                                <label id="monto-pesos-label" class="field-label">Monto que impacta en saldo (pesos) <span class="text-danger">*</span></label>
                                 <input type="number" id="monto-pesos-input" name="monto" step="0.01" max="{{ venta.saldo }}" required
-                                       class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                                       class="input"
                                        onchange="calcularTotalesPago()">
-                                <p id="monto-pesos-help" class="text-xs text-slate-500 mt-1">Máximo: ${{ venta.saldo|formato_numero }}</p>
+                                <p id="monto-pesos-help" class="field-hint">Máximo: ${{ venta.saldo|formato_numero }}</p>
                             </div>
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
+                                <label class="field-label">Fecha de Pago <span class="text-danger">*</span></label>
                                 <input type="date" name="fecha_pago" value="{{ today|date:'Y-m-d' }}" required
-                                       class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                       class="input">
                             </div>
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
-                                <select name="forma_pago" required class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <label class="field-label">Forma de Pago <span class="text-danger">*</span></label>
+                                <select name="forma_pago" required class="input">
                                     <option value="transferencia">Transferencia</option>
                                     <option value="efectivo">Efectivo</option>
                                     <option value="cheque">Cheque</option>
@@ -275,96 +158,96 @@
                             </div>
 
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Venta <span class="text-red-500">*</span></label>
-                                <select name="con_factura" required class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <label class="field-label">Tipo de Venta <span class="text-danger">*</span></label>
+                                <select name="con_factura" required class="input">
                                     <option value="true" {% if venta.con_factura %}selected{% endif %}>Blanco (con factura)</option>
                                     <option value="false" {% if not venta.con_factura %}selected{% endif %}>Negro (sin factura)</option>
                                 </select>
                             </div>
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Número de Factura</label>
+                                <label class="field-label">Número de Factura</label>
                                 <input type="text" name="numero_factura" placeholder="Ej: 0001-00001234"
-                                       class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                       class="input">
                             </div>
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Factura</label>
-                                <input type="date" name="fecha_factura" class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <label class="field-label">Fecha de Factura</label>
+                                <input type="date" name="fecha_factura" class="input">
                             </div>
                             <div class="xl:col-span-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
+                                <label class="field-label">Observaciones</label>
                                 <textarea name="observaciones" rows="1"
-                                          class="w-full px-4 py-3 border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                                          class="input"></textarea>
                             </div>
                         </div>
                     </div>
 
                     <!-- Pago en dólares -->
-                    <div class="border-t border-slate-200 pt-4">
-                        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                    <div class="border-t border-line pt-4">
+                        <div class="card card-pad">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" id="pago_en_dolares_check" name="pago_en_dolares" value="true"
                                            onchange="toggleCamposDolares()"
-                                           class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
-                                    <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pagó en dólares</span>
+                                           style="accent-color:var(--t-accent);width:18px;height:18px">
+                                    <span class="strong">Pagó en dólares</span>
                                 </label>
-                                <p id="pago-usd-help" class="text-xs text-emerald-700 md:text-right">Si completás USD y cotización, el monto en pesos se calcula solo y ese es el que impacta en el saldo.</p>
+                                <p id="pago-usd-help" class="field-hint md:text-right">Si completás USD y cotización, el monto en pesos se calcula solo y ese es el que impacta en el saldo.</p>
                             </div>
 
-                            <div id="campos-dolares" class="hidden mt-4 pt-4 border-t border-emerald-200">
+                            <div id="campos-dolares" class="hidden mt-4 pt-4 border-t border-line">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-2">Monto USD</label>
+                                        <label class="field-label">Monto USD</label>
                                         <input type="number" id="monto-usd-input" name="monto_usd" step="0.01" min="0" placeholder="Ej: 500"
                                                oninput="actualizarMontoPesosDesdeUsd()"
-                                               class="w-full px-4 py-3 border border-emerald-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                                               class="input">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-2">Cotización usada</label>
+                                        <label class="field-label">Cotización usada</label>
                                         <input type="number" name="cotizacion_usd" id="cotizacion_usd_input" step="0.01" min="0" placeholder="Ej: 1350"
                                                oninput="actualizarMontoPesosDesdeUsd()"
-                                               class="w-full px-4 py-3 border border-emerald-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                                               class="input">
                                     </div>
                                 </div>
-                                <p class="text-xs text-emerald-800 mt-3">El cliente puede pagar en USD, pero el saldo de la venta siempre se descuenta en pesos.</p>
+                                <p class="field-hint">El cliente puede pagar en USD, pero el saldo de la venta siempre se descuenta en pesos.</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Retenciones -->
-                    <div class="border-t border-slate-200 pt-4">
-                        <h4 class="text-base font-bold text-slate-800 mb-3"><i class="fas fa-file-invoice-dollar mr-2"></i>Retenciones</h4>
+                    <div class="border-t border-line pt-4">
+                        <h4 class="sec-label">Retenciones</h4>
                         <div id="retenciones-container" class="space-y-3"></div>
                         <button type="button" onclick="agregarRetencion()"
-                                class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all text-sm">
-                            <i class="fas fa-plus mr-2"></i>Agregar Retención
+                                class="btn btn-secondary btn-sm mt-3">
+                            <i class="fas fa-plus"></i>Agregar retención
                         </button>
-                        <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <div class="mt-3 card card-pad">
                             <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium text-slate-700">Total Retenciones:</span>
-                                <span id="total-retenciones-pago" class="text-base font-bold text-red-700">$0,00</span>
+                                <span class="muted">Total retenciones:</span>
+                                <span id="total-retenciones-pago" class="strong">$0,00</span>
                             </div>
                             <div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
-                                <span class="text-sm font-bold text-slate-800">Monto Neto a Cobrar:</span>
-                                <span id="monto-neto-cobrar" class="text-lg font-bold text-green-700">$0,00</span>
+                                <span class="strong">Monto neto a cobrar:</span>
+                                <span id="monto-neto-cobrar" class="strong" style="font-size:18px">$0,00</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="flex justify-end pt-2">
-                    <button type="submit" class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
-                        <i class="fas fa-check mr-2"></i>Registrar Pago
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i>Registrar pago
                     </button>
                     </div>
                 </div>
             </form>
         </div>
         {% else %}
-        <div class="card-elegant bg-gradient-to-br from-green-50 to-green-100 rounded-3xl shadow-xl p-6 border-2 border-green-300 lg:col-span-2">
+        <div class="card card-pad lg:col-span-2">
             <div class="text-center py-8">
-                <i class="fas fa-check-circle text-green-600 text-6xl mb-4"></i>
-                <h3 class="text-2xl font-bold text-green-800 mb-2">Venta Cobrada</h3>
-                <p class="text-green-700">Esta venta ha sido pagada en su totalidad</p>
+                <i class="fas fa-check-circle text-ok" style="font-size:40px;margin-bottom:12px"></i>
+                <h3 class="strong" style="font-size:20px">Venta Cobrada</h3>
+                <p class="muted">Esta venta ha sido pagada en su totalidad</p>
             </div>
         </div>
         {% endif %}
@@ -373,89 +256,85 @@
     <!-- Timeline + Notas (2 columnas) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Notas Internas -->
-        <div class="card-elegant bg-white rounded-3xl shadow-xl p-6 lg:col-span-2">
+        <div class="card card-pad lg:col-span-2">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-sticky-note mr-2"></i>Notas Internas</h3>
-                <span class="text-xs text-slate-400 italic">Solo visible para el equipo</span>
+                <h3 class="strong" style="font-size:18px">Notas Internas</h3>
+                <span class="muted text-xs">Solo visible para el equipo</span>
             </div>
             <textarea id="notas-internas-input" rows="8"
                       placeholder="Escribí notas internas sobre esta venta: acuerdos, recordatorios, detalles del pedido..."
-                      class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-700 resize-none">{{ venta.notas_internas }}</textarea>
+                      class="input" style="resize:none;height:auto">{{ venta.notas_internas }}</textarea>
             <div class="flex justify-between items-center mt-3">
-                <span id="notas-status" class="text-xs text-slate-400"></span>
+                <span id="notas-status" class="muted text-xs"></span>
                 <button onclick="guardarNotas()"
-                        class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar Nota
+                        class="btn btn-primary btn-sm">
+                    <i class="fas fa-save"></i>Guardar nota
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Resumen de deuda + Historial de Pagos -->
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
+    <div class="card overflow-hidden mb-6">
         <!-- Resumen -->
-        <div class="bg-gradient-to-r from-slate-100 to-slate-200 px-6 py-4 border-b border-slate-300">
+        <div class="px-6 py-4 border-b border-line">
             <div class="flex flex-wrap gap-6 items-center">
                 <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Valor venta</span>
-                    <p class="text-lg font-bold text-slate-800">${{ venta.get_total_con_percepciones|formato_numero }}</p>
+                    <span class="sec-label" style="margin:0">Valor venta</span>
+                    <p class="strong" style="font-size:18px">${{ venta.get_total_con_percepciones|formato_numero }}</p>
                 </div>
-                <div class="text-slate-300 text-xl">−</div>
+                <div class="muted" style="font-size:20px">−</div>
                 <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Total cobrado</span>
-                    <p class="text-lg font-bold text-purple-700">${{ total_pagado|formato_numero }}</p>
+                    <span class="sec-label" style="margin:0">Total cobrado</span>
+                    <p class="strong" style="font-size:18px">${{ total_pagado|formato_numero }}</p>
                 </div>
-                <div class="text-slate-300 text-xl">=</div>
+                <div class="muted" style="font-size:20px">=</div>
                 <div>
-                    <span class="text-xs text-slate-500 font-semibold uppercase">Saldo restante</span>
-                    <p class="text-lg font-bold {% if venta.saldo > 0 %}text-orange-600{% else %}text-green-600{% endif %}">${{ venta.saldo|formato_numero }}</p>
+                    <span class="sec-label" style="margin:0">Saldo restante</span>
+                    <p class="strong{% if venta.saldo > 0 %} text-warn{% else %} text-ok{% endif %}" style="font-size:18px">${{ venta.saldo|formato_numero }}</p>
                 </div>
             </div>
         </div>
 
         <!-- Header tabla -->
-        <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4">
-            <h3 class="text-xl font-bold text-white">
-                <i class="fas fa-history mr-2"></i>Historial de Pagos
-            </h3>
-        </div>
+        <div class="px-6 py-4 border-b border-line"><h3 class="sec-label" style="margin:0">Historial de pagos</h3></div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-slate-50">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Fecha</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Monto</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Forma de Pago</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Detalle</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Notas</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Registrado por</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>Forma de Pago</th>
+                        <th>Detalle</th>
+                        <th>Notas</th>
+                        <th>Registrado por</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     <!-- Seña inicial -->
-                    <tr class="bg-blue-50">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha-sena">{{ venta.created_at|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4 text-base font-bold text-blue-700">
+                    <tr>
+                        <td data-field="fecha-sena">{{ venta.created_at|date:"d/m/Y" }}</td>
+                        <td class="strong">
                             ${{ venta.sena|formato_numero }}
                             {% if venta.sena_en_dolares and venta.sena_usd %}
-                            <p class="text-xs font-semibold text-emerald-700 mt-1">USD {{ venta.sena_usd|formato_numero }}{% if venta.cotizacion_sena_usd %} a ${{ venta.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
+                            <p class="muted text-xs mt-1">USD {{ venta.sena_usd|formato_numero }}{% if venta.cotizacion_sena_usd %} a ${{ venta.cotizacion_sena_usd|formato_numero }}{% endif %}</p>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700">
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Seña Inicial</span>
+                        <td>
+                            <span class="badge b-blue">Seña inicial</span>
                         </td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="px-3 py-1 {% if venta.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
+                        <td>
+                            <span class="badge b-gray">
                                 {% if venta.con_factura %}Blanco{% else %}Negro{% endif %}
                             </span>
-                            <p class="text-xs text-slate-500 mt-2">Factura: {% if venta.numero_factura %}{{ venta.numero_factura }}{% else %}—{% endif %}</p>
+                            <p class="muted text-xs mt-2">Factura: {% if venta.numero_factura %}{{ venta.numero_factura }}{% else %}—{% endif %}</p>
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-600">Pago inicial de la venta</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">—</td>
-                        <td class="px-6 py-4 text-center">
-                            <button onclick="editarSena('{{ venta.created_at|date:'Y-m-d' }}')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                        <td class="muted">Pago inicial de la venta</td>
+                        <td class="muted">—</td>
+                        <td class="num">
+                            <button onclick="editarSena('{{ venta.created_at|date:'Y-m-d' }}')" class="btn btn-ghost btn-sm">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                         </td>
@@ -463,66 +342,66 @@
 
                     <!-- Pagos adicionales -->
                     {% for pago in pagos %}
-                    <tr class="hover:bg-slate-50 transition-colors" id="pago-row-{{ pago.id }}">
-                        <td class="px-6 py-4 text-sm text-slate-700 font-medium" data-field="fecha">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
-                        <td class="px-6 py-4" data-field="monto">
-                            <div class="text-base font-bold text-green-700">${{ pago.monto|formato_numero }}</div>
+                    <tr id="pago-row-{{ pago.id }}">
+                        <td data-field="fecha">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
+                        <td data-field="monto">
+                            <div class="strong">${{ pago.monto|formato_numero }}</div>
                             {% if pago.pago_en_dolares and pago.monto_usd %}
-                            <div class="text-xs text-emerald-700 mt-1 font-semibold">
-                                <span class="inline-flex items-center px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 mr-2">Cobro en USD</span>
+                            <div class="muted text-xs mt-1">
+                                <span class="badge b-green mr-2">Cobro en USD</span>
                                 USD {{ pago.monto_usd|formato_numero }}
-                                {% if pago.cotizacion_usd %}<span class="text-slate-500 ml-1">a ${{ pago.cotizacion_usd|formato_numero }}</span>{% endif %}
+                                {% if pago.cotizacion_usd %}<span class="muted ml-1">a ${{ pago.cotizacion_usd|formato_numero }}</span>{% endif %}
                             </div>
                             {% endif %}
                             {% if pago.retenciones.exists %}
-                            <div class="text-xs text-red-600 mt-1">
+                            <div class="text-danger text-xs mt-1">
                                 <i class="fas fa-minus-circle mr-1"></i>Ret: ${{ pago.get_total_retenciones|formato_numero }}
-                                <span class="text-slate-500 mx-1">→</span>
-                                <span class="text-green-600 font-semibold">Neto: ${{ pago.get_monto_neto|formato_numero }}</span>
+                                <span class="muted mx-1">→</span>
+                                <span class="strong">Neto: ${{ pago.get_monto_neto|formato_numero }}</span>
                             </div>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-700" data-field="forma_pago">
-                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">{{ pago.get_forma_pago_display }}</span>
+                        <td data-field="forma_pago">
+                            <span class="badge b-gray">{{ pago.get_forma_pago_display }}</span>
                         </td>
-                        <td class="px-6 py-4 text-sm" data-field="con_factura">
-                            <span class="px-3 py-1 {% if pago.con_factura %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} rounded-full text-xs font-semibold">
+                        <td data-field="con_factura">
+                            <span class="badge b-gray">
                                 {% if pago.con_factura %}Blanco{% else %}Negro{% endif %}
                             </span>
-                            <p class="text-xs text-slate-500 mt-2" data-field="numero_factura">Factura: {% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}—{% endif %}</p>
+                            <p class="muted text-xs mt-2" data-field="numero_factura">Factura: {% if pago.numero_factura %}{{ pago.numero_factura }}{% else %}—{% endif %}</p>
                             {% if pago.pago_en_dolares %}
-                            <p class="text-xs text-emerald-700 mt-2 font-medium">Se descontó en saldo por ${{ pago.monto|formato_numero }}</p>
+                            <p class="muted text-xs mt-2">Se descontó en saldo por ${{ pago.monto|formato_numero }}</p>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-600" data-field="observaciones">
+                        <td class="muted" data-field="observaciones">
                             {{ pago.observaciones|default:"—" }}
                             {% if pago.retenciones.exists %}
-                            <button type="button" onclick="toggleRetenciones({{ pago.id }})" class="ml-2 text-blue-600 hover:text-blue-800 text-xs">
+                            <button type="button" onclick="toggleRetenciones({{ pago.id }})" class="btn btn-ghost btn-sm">
                                 <i class="fas fa-info-circle"></i> Ver retenciones
                             </button>
-                            <div id="retenciones-{{ pago.id }}" class="hidden mt-2 p-2 bg-slate-50 rounded border border-slate-200 text-xs">
+                            <div id="retenciones-{{ pago.id }}" class="hidden mt-2 p-2 card text-xs">
                                 {% for retencion in pago.retenciones.all %}
-                                <div class="flex justify-between items-center py-1 {% if not forloop.last %}border-b border-slate-200{% endif %}">
+                                <div class="flex justify-between items-center py-1 {% if not forloop.last %}border-b border-line{% endif %}">
                                     <span>
-                                        <span class="font-semibold text-slate-700">{{ retencion.get_tipo_display }}</span>
-                                        {% if retencion.concepto %}<span class="text-slate-500"> - {{ retencion.concepto }}</span>{% endif %}
-                                        {% if retencion.numero_comprobante %}<span class="text-slate-400"> ({{ retencion.numero_comprobante }})</span>{% endif %}
+                                        <span class="strong">{{ retencion.get_tipo_display }}</span>
+                                        {% if retencion.concepto %}<span class="muted"> - {{ retencion.concepto }}</span>{% endif %}
+                                        {% if retencion.numero_comprobante %}<span class="muted"> ({{ retencion.numero_comprobante }})</span>{% endif %}
                                     </span>
-                                    <span class="font-bold text-red-600">-${{ retencion.importe_retenido|formato_numero }}</span>
+                                    <span class="strong text-danger">-${{ retencion.importe_retenido|formato_numero }}</span>
                                 </div>
                                 {% endfor %}
                             </div>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ pago.created_by.username }}</td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="muted">{{ pago.created_by.username }}</td>
+                        <td class="num">
                             <div class="flex items-center justify-center gap-2">
                                 <button onclick="editarPago({{ pago.id }}, '{{ pago.fecha_pago|date:'Y-m-d' }}', {{ pago.monto|stringformat:".2f" }}, '{{ pago.forma_pago }}', '{{ pago.numero_factura|escapejs }}', '{{ pago.observaciones|escapejs }}', {{ pago.con_factura|lower }}, {{ pago.pago_en_dolares|lower }}, {{ pago.monto_usd|default:'null' }}, {{ pago.cotizacion_usd|default:'null' }})"
-                                        class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                        class="btn btn-ghost btn-sm">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button onclick="eliminarPago({{ pago.id }}, {{ pago.monto|stringformat:".2f" }})"
-                                        class="text-red-600 hover:text-red-800 font-medium text-sm">
+                                        class="btn btn-ghost btn-sm text-danger">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -530,11 +409,11 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="bg-gradient-to-r from-slate-700 to-slate-800">
+                <tfoot>
                     <tr>
-                        <td class="px-6 py-4 text-right text-base font-bold text-white">TOTAL PAGADO:</td>
-                        <td class="px-6 py-4 text-2xl font-bold text-white">${{ total_pagado|formato_numero }}</td>
-                        <td colspan="6" class="px-6 py-4"></td>
+                        <td class="num strong">Total pagado</td>
+                        <td class="strong">${{ total_pagado|formato_numero }}</td>
+                        <td colspan="6"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -545,29 +424,29 @@
 
 <!-- Modal Editar Pago -->
 <div id="editarPagoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white"><i class="fas fa-edit mr-2"></i>Editar Pago</h2>
-            <button type="button" onclick="cerrarModalEditar()" class="text-white hover:text-gray-200">
-                <i class="fas fa-times text-2xl"></i>
+    <div class="card max-w-2xl w-full" style="box-shadow:0 12px 32px rgba(16,24,40,.18)">
+        <div class="px-6 py-4 flex justify-between items-center border-b border-line">
+            <h2 class="strong" style="font-size:18px">Editar Pago</h2>
+            <button type="button" onclick="cerrarModalEditar()" class="btn btn-ghost btn-sm btn-icon" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         <form id="editarPagoForm" class="p-6 space-y-4">
             <input type="hidden" id="edit_pago_id">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto <span class="text-red-500">*</span></label>
-                    <input type="number" id="edit_monto" step="0.01" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="field-label">Monto <span class="text-danger">*</span></label>
+                    <input type="number" id="edit_monto" step="0.01" required class="input">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Pago <span class="text-red-500">*</span></label>
-                    <input type="date" id="edit_fecha_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="field-label">Fecha de Pago <span class="text-danger">*</span></label>
+                    <input type="date" id="edit_fecha_pago" required class="input">
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago <span class="text-red-500">*</span></label>
-                    <select id="edit_forma_pago" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="field-label">Forma de Pago <span class="text-danger">*</span></label>
+                    <select id="edit_forma_pago" required class="input">
                         <option value="transferencia">Transferencia</option>
                         <option value="efectivo">Efectivo</option>
                         <option value="cheque">Cheque</option>
@@ -575,47 +454,47 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Venta <span class="text-red-500">*</span></label>
-                    <select id="edit_con_factura" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="field-label">Tipo de Venta <span class="text-danger">*</span></label>
+                    <select id="edit_con_factura" required class="input">
                         <option value="true">Blanco (con factura)</option>
                         <option value="false">Negro (sin factura)</option>
                     </select>
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Número de Factura</label>
-                <input type="text" id="edit_numero_factura" placeholder="Ej: 0001-00001234" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label class="field-label">Número de Factura</label>
+                <input type="text" id="edit_numero_factura" placeholder="Ej: 0001-00001234" class="input">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Observaciones</label>
-                <textarea id="edit_observaciones" rows="3" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <label class="field-label">Observaciones</label>
+                <textarea id="edit_observaciones" rows="3" class="input"></textarea>
             </div>
             <!-- Dólares en edición -->
-            <div class="border-t pt-4">
+            <div class="border-t border-line pt-4">
                 <label class="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" id="edit_pago_en_dolares" onchange="toggleCamposDolaresEdit()"
-                           class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 w-5 h-5">
-                    <span class="text-sm font-bold text-slate-800"><i class="fas fa-dollar-sign mr-1 text-green-600"></i>Pagó en dólares</span>
+                           style="accent-color:var(--t-accent);width:18px;height:18px">
+                    <span class="strong">Pagó en dólares</span>
                 </label>
-                <div id="campos-dolares-edit" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <div id="campos-dolares-edit" class="hidden mt-3">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-green-800 mb-1">Monto USD</label>
+                            <label class="field-label">Monto USD</label>
                             <input type="number" id="edit_monto_usd" step="0.01" min="0" placeholder="Ej: 500"
-                                   class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                                   class="input">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-green-800 mb-1">Cotización usada</label>
+                            <label class="field-label">Cotización usada</label>
                             <input type="number" id="edit_cotizacion_usd" step="0.01" min="0" placeholder="Ej: 1350"
-                                   class="w-full px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 text-sm">
+                                   class="input">
                         </div>
                     </div>
                 </div>
             </div>
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="cerrarModalEditar()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-all">Cancelar</button>
-                <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar Cambios
+                <button type="button" onclick="cerrarModalEditar()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>Guardar Cambios
                 </button>
             </div>
         </form>
@@ -624,22 +503,22 @@
 
 <!-- Modal Editar Seña -->
 <div id="editarSenaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white"><i class="fas fa-calendar mr-2"></i>Editar Fecha Seña</h2>
-            <button type="button" onclick="cerrarModalSena()" class="text-white hover:text-gray-200">
-                <i class="fas fa-times text-2xl"></i>
+    <div class="card max-w-md w-full" style="box-shadow:0 12px 32px rgba(16,24,40,.18)">
+        <div class="px-6 py-4 flex justify-between items-center border-b border-line">
+            <h2 class="strong" style="font-size:18px">Editar Fecha Seña</h2>
+            <button type="button" onclick="cerrarModalSena()" class="btn btn-ghost btn-sm btn-icon" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="p-6 space-y-4">
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Nueva Fecha</label>
-                <input type="date" id="sena_fecha" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label class="field-label">Nueva Fecha</label>
+                <input type="date" id="sena_fecha" class="input">
             </div>
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="cerrarModalSena()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-all">Cancelar</button>
-                <button type="button" onclick="guardarFechaSena()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all">
-                    <i class="fas fa-save mr-2"></i>Guardar
+                <button type="button" onclick="cerrarModalSena()" class="btn btn-secondary">Cancelar</button>
+                <button type="button" onclick="guardarFechaSena()" class="btn btn-primary">
+                    <i class="fas fa-save"></i>Guardar
                 </button>
             </div>
         </div>
@@ -716,9 +595,9 @@ fetch('https://dolarapi.com/v1/dolares/blue')
 
 // ── Cambiar estado inline ────────────────────────────────────────
 const ESTADO_CONFIG = {
-    pendiente: { texto: 'Pendiente', badge: 'bg-yellow-400 text-yellow-900', icon: 'fa-clock',        active: 'bg-yellow-400 text-yellow-900 shadow' },
-    entregado: { texto: 'Entregado', badge: 'bg-blue-300 text-blue-900',    icon: 'fa-truck',        active: 'bg-blue-300 text-blue-900 shadow' },
-    colocado:  { texto: 'Colocado',  badge: 'bg-green-400 text-green-900',  icon: 'fa-check-double', active: 'bg-green-400 text-green-900 shadow' },
+    pendiente: { texto: 'Pendiente', badge: 'b-amber', icon: 'fa-clock',        active: 'btn-primary' },
+    entregado: { texto: 'Entregado', badge: 'b-blue',    icon: 'fa-truck',        active: 'btn-primary' },
+    colocado:  { texto: 'Colocado',  badge: 'b-green',  icon: 'fa-check-double', active: 'btn-primary' },
 };
 
 function cambiarEstadoInline(nuevoEstado) {
@@ -733,16 +612,16 @@ function cambiarEstadoInline(nuevoEstado) {
             const cfg = ESTADO_CONFIG[nuevoEstado];
             // Actualizar badge del header
             const badge = document.getElementById('badge-estado');
-            badge.className = `px-4 py-1.5 rounded-full text-sm font-bold shadow ${cfg.badge}`;
-            badge.innerHTML = `<i class="fas fa-circle mr-1 text-xs"></i>${cfg.texto}`;
+            badge.className = `badge ${cfg.badge}`;
+            badge.innerHTML = `<span class="dot"></span>${cfg.texto}`;
             // Actualizar botones pill
             document.querySelectorAll('.estado-btn').forEach(btn => {
                 const btnEstado = btn.getAttribute('onclick').match(/'(\w+)'/)[1];
                 const btnCfg = ESTADO_CONFIG[btnEstado];
                 if (btnEstado === nuevoEstado) {
-                    btn.className = `estado-btn px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${btnCfg.active}`;
+                    btn.className = `estado-btn btn btn-sm ${btnCfg.active}`;
                 } else {
-                    btn.className = 'estado-btn px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-white hover:bg-white hover:bg-opacity-20';
+                    btn.className = 'estado-btn btn btn-sm btn-secondary';
                 }
             });
             Swal.fire({toast: true, position: 'top-end', icon: 'success',
@@ -759,7 +638,7 @@ function guardarNotas() {
     const nota = document.getElementById('notas-internas-input').value;
     const status = document.getElementById('notas-status');
     status.textContent = 'Guardando...';
-    status.className = 'text-xs text-slate-400';
+    status.className = 'muted text-xs';
 
     const data = new FormData();
     data.append('csrfmiddlewaretoken', CSRF_TOKEN);
@@ -770,16 +649,16 @@ function guardarNotas() {
     .then(d => {
         if (d.success) {
             status.textContent = 'Guardado correctamente';
-            status.className = 'text-xs text-green-600 font-medium';
-            setTimeout(() => { status.textContent = ''; status.className = 'text-xs text-slate-400'; }, 3000);
+            status.className = 'text-ok text-xs';
+            setTimeout(() => { status.textContent = ''; status.className = 'muted text-xs'; }, 3000);
         } else {
             status.textContent = 'Error: ' + (d.error || 'desconocido');
-            status.className = 'text-xs text-red-500';
+            status.className = 'text-danger text-xs';
         }
     })
     .catch(err => {
         status.textContent = 'Error de conexión';
-        status.className = 'text-xs text-red-500';
+        status.className = 'text-danger text-xs';
         console.error('guardarNotas error:', err);
     });
 }
@@ -791,17 +670,17 @@ function agregarRetencion() {
     const container = document.getElementById('retenciones-container');
     const div = document.createElement('div');
     div.id = `retencion-${retencionCount}`;
-    div.className = 'p-3 bg-red-50 border border-red-200 rounded-lg space-y-2';
+    div.className = 'card card-pad space-y-2';
     div.innerHTML = `
         <div class="flex justify-between items-center">
-            <span class="font-semibold text-red-700 text-sm">Retención #${retencionCount}</span>
-            <button type="button" onclick="eliminarRetencionForm(${retencionCount})" class="text-red-500 hover:text-red-700">
+            <span class="strong">Retención #${retencionCount}</span>
+            <button type="button" onclick="eliminarRetencionForm(${retencionCount})" class="btn btn-ghost btn-sm btn-icon" aria-label="Quitar">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="grid grid-cols-2 gap-2">
             <select name="retencion_tipo_${retencionCount}" onchange="calcularTotalesPago()"
-                    class="px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500">
+                    class="input">
                 <option value="ganancias">Ganancias</option>
                 <option value="iibb">Ingresos Brutos</option>
                 <option value="iva">IVA</option>
@@ -810,12 +689,12 @@ function agregarRetencion() {
             </select>
             <input type="number" name="retencion_importe_${retencionCount}" placeholder="Importe" step="0.01" min="0"
                    onchange="calcularTotalesPago()"
-                   class="px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500">
+                   class="input">
         </div>
         <input type="text" name="retencion_concepto_${retencionCount}" placeholder="Concepto (opcional)"
-               class="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500">
+               class="input">
         <input type="text" name="retencion_comprobante_${retencionCount}" placeholder="N° Comprobante (opcional)"
-               class="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-500">
+               class="input">
         <input type="hidden" name="retencion_count" value="${retencionCount}">
     `;
     container.appendChild(div);
@@ -856,7 +735,7 @@ function actualizarMontoPesosDesdeUsd() {
         montoInput.readOnly = false;
         montoInput.required = true;
         montoInput.classList.remove('bg-emerald-50', 'border-emerald-300');
-        label.innerHTML = 'Monto que impacta en saldo (pesos) <span class="text-red-500">*</span>';
+        label.innerHTML = 'Monto que impacta en saldo (pesos) <span class="text-danger">*</span>';
         help.textContent = 'Máximo: ${{ venta.saldo|formato_numero }}';
         intro.textContent = 'Cargá el cobro en pesos o registrá un pago en dólares para que el sistema calcule su impacto en saldo.';
         calcularTotalesPago();

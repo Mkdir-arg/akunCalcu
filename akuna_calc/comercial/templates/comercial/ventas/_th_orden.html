@@ -1,0 +1,7 @@
+{% comment %}Cabecera ordenable. Parámetros: campo, label, num (opcional: alinea a la derecha). Usa orden_actual y query_sin_orden del contexto.{% endcomment %}
+<th{% if num %} class="num"{% endif %}>
+    <a href="?orden={% if orden_actual == campo %}-{{ campo }}{% else %}{{ campo }}{% endif %}{% if query_sin_orden %}&amp;{{ query_sin_orden }}{% endif %}" class="muted inline-flex items-center gap-1">
+        {{ label }}
+        {% if orden_actual == campo %}<i class="fas fa-sort-up"></i>{% elif orden_actual|slice:"1:" == campo and orden_actual|slice:":1" == "-" %}<i class="fas fa-sort-down"></i>{% else %}<i class="fas fa-sort" style="opacity:.4"></i>{% endif %}
+    </a>
+</th>

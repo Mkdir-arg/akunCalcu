@@ -1,0 +1,8 @@
+{% comment %}Pestañas del módulo Comercial. Parámetro: active (tablero|clientes|ventas|gastos|cuentas). Usar con `only`.{% endcomment %}
+<nav class="tabs" aria-label="Comercial" style="margin-bottom:20px">
+    <a class="tab{% if active == 'tablero' %} on{% endif %}" href="{% url 'comercial:dashboard' %}"{% if active == 'tablero' %} aria-current="page"{% endif %}>Tablero</a>
+    <a class="tab{% if active == 'clientes' %} on{% endif %}" href="{% url 'comercial:clientes_list' %}"{% if active == 'clientes' %} aria-current="page"{% endif %}>Clientes</a>
+    <a class="tab{% if active == 'ventas' %} on{% endif %}" href="{% url 'comercial:ventas_list' %}"{% if active == 'ventas' %} aria-current="page"{% endif %}>Ventas</a>
+    <a class="tab{% if active == 'gastos' %} on{% endif %}" href="{% url 'comercial:compras_list' %}"{% if active == 'gastos' %} aria-current="page"{% endif %}>Gastos</a>
+    <a class="tab{% if active == 'cuentas' %} on{% endif %}" href="{% url 'comercial:cuentas_list' %}"{% if active == 'cuentas' %} aria-current="page"{% endif %}>Cuentas</a>
+</nav>

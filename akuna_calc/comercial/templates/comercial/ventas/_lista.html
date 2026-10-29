@@ -1,0 +1,177 @@
+{% load custom_filters %}
+<!-- ═══ VISTA TABLA ══════════════════════════════════════════════════ -->
+<div id="vista-tabla">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    {% include 'comercial/ventas/_th_orden.html' with campo='numero_pedido' label='Pedido' %}
+                    <th class="hidden lg:table-cell">Factura</th>
+                    <th class="hidden xl:table-cell">F. factura</th>
+                    <th class="hidden xl:table-cell">F. pago</th>
+                    {% include 'comercial/ventas/_th_orden.html' with campo='cliente__nombre' label='Cliente' %}
+                    {% include 'comercial/ventas/_th_orden.html' with campo='valor_total' label='Total' num=True %}
+                    {% include 'comercial/ventas/_th_orden.html' with campo='saldo' label='Saldo' num=True %}
+                    <th>Estado</th>
+                    <th class="hidden sm:table-cell">Tipo</th>
+                    <th><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas %}
+                {% url 'comercial:venta_detail' venta.pk as venta_detail_url %}
+                {% url 'comercial:venta_edit' venta.pk as venta_edit_url %}
+                {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
+                <tr id="fila-venta-{{ venta.pk }}">
+                    <td>
+                        <a class="strong" href="{% with_return_to venta_detail_url return_path %}">{{ venta.numero_pedido }}</a>
+                        <span class="muted block" style="font-size:12px">{{ venta.created_at|date:"d/m/Y" }}</span>
+                        {% if venta.venta_en_dolares or venta.sena_en_dolares %}
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% if venta.venta_en_dolares %}{% include 'core/ui/badge.html' with tone="blue" label="Venta USD" icon="fas fa-coins" only %}{% endif %}
+                            {% if venta.sena_en_dolares %}{% include 'core/ui/badge.html' with tone="green" label="Seña USD" icon="fas fa-dollar-sign" only %}{% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="hidden lg:table-cell">
+                        {% with facturas=venta.get_facturas_relacionadas %}
+                            {% if facturas %}
+                                {% for factura in facturas %}
+                                    {% if forloop.first %}<span class="strong">{{ factura }}</span>{% else %}<span class="muted block" style="font-size:12px"><i class="fas fa-receipt"></i> {{ factura }}</span>{% endif %}
+                                {% endfor %}
+                            {% else %}<span class="muted">—</span>{% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="hidden xl:table-cell">{% if venta.fecha_factura %}{{ venta.fecha_factura|date:"d/m/Y" }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                    <td class="hidden xl:table-cell">{% if venta.fecha_pago %}{{ venta.fecha_pago|date:"d/m/Y" }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                    <td>
+                        <a class="strong" href="{% with_return_to cliente_detail_url return_path %}">{{ venta.cliente }}</a>
+                        <span class="muted block" style="font-size:12px">{{ venta.cliente.codigo }}{% if venta.cliente.razon_social %} · {{ venta.cliente.razon_social }}{% endif %}</span>
+                    </td>
+                    <td class="num strong">
+                        ${{ venta.get_total_con_percepciones|formato_numero }}
+                        {% if venta.tiene_percepciones %}<span class="muted block" style="font-size:12px">+percepciones</span>{% endif %}
+                    </td>
+                    <td class="num strong{% if venta.saldo > 0 %} text-warn{% endif %}">${{ venta.saldo|formato_numero }}</td>
+                    <td>
+                        <select onchange="cambiarEstado({{ venta.pk }}, this)" aria-label="Estado de la venta {{ venta.numero_pedido }}"
+                                class="no-select2 estado-select badge {% if venta.estado == 'pendiente' %}b-amber{% elif venta.estado == 'entregado' %}b-blue{% else %}b-green{% endif %}" style="border:0;cursor:pointer;height:28px">
+                            <option value="pendiente" {% if venta.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="entregado" {% if venta.estado == 'entregado' %}selected{% endif %}>Entregado</option>
+                            <option value="colocado" {% if venta.estado == 'colocado' %}selected{% endif %}>Colocado</option>
+                        </select>
+                    </td>
+                    <td class="hidden sm:table-cell">
+                        {% if venta.con_factura %}{% include 'core/ui/badge.html' with tone="gray" label="Blanco" only %}{% else %}{% include 'core/ui/badge.html' with tone="gray" label="Negro" only %}{% endif %}
+                    </td>
+                    <td class="num" style="white-space:nowrap">
+                        {% if venta.tiene_pagos %}
+                        <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm btn-icon" title="Vista previa del recibo PDF" aria-label="Recibo PDF de la venta {{ venta.numero_pedido }}"><i class="fas fa-file-pdf"></i></a>
+                        {% endif %}
+                        {% with_return_to venta_detail_url return_path as view_href %}
+                        {% with_return_to venta_edit_url return_path as edit_href %}
+                        {% url 'comercial:venta_delete' venta.pk as venta_delete_url %}
+                        {% if venta.con_factura %}
+                            {% if venta.factura_electronica %}
+                                {% url 'facturacion:detalle_factura' venta.factura_electronica.id as factura_href %}
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones de la venta" view_url=view_href edit_url=edit_href extra_url=factura_href extra_label="Ver factura" extra_icon="fas fa-file-invoice" delete_url=venta_delete_url delete_name=venta.numero_pedido only %}
+                            {% else %}
+                                {% url 'facturacion:crear_factura_desde_venta' venta.id as factura_href %}
+                                {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones de la venta" view_url=view_href edit_url=edit_href extra_url=factura_href extra_label="Generar factura" extra_icon="fas fa-file-invoice-dollar" delete_url=venta_delete_url delete_name=venta.numero_pedido only %}
+                            {% endif %}
+                        {% else %}
+                            {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones de la venta" view_url=view_href edit_url=edit_href delete_url=venta_delete_url delete_name=venta.numero_pedido only %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">
+                        {% url 'comercial:ventas_list' as ventas_list_url %}
+                        {% include 'core/ui/empty_state.html' with title="No hay ventas para los filtros seleccionados" icon="fas fa-inbox" action_url=ventas_list_url action_label="Limpiar filtros" only %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if ventas %}
+            <tfoot>
+                <tr>
+                    <td colspan="5" class="strong">Totales del filtro ({{ total_count }} ventas)</td>
+                    <td class="num strong">${{ total_monto|formato_numero }}</td>
+                    <td class="num strong">${{ total_saldo|formato_numero }}</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+    {% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="ventas" only %}
+</div>
+
+<!-- ═══ VISTA KANBAN ═════════════════════════════════════════════════ -->
+<div id="vista-kanban" class="hidden" style="padding:16px">
+    {% if page_obj.has_other_pages %}
+    <div class="badge b-amber mb-3" style="height:auto;padding:8px 12px;white-space:normal">
+        <i class="fas fa-info-circle"></i>
+        Mostrando página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}). Filtrá para reducir resultados.
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {% for col_estado, col_color, col_bg, col_border, col_badge, col_header in col_estados %}
+        <div>
+            <div class="card card-pad flex items-center justify-between mb-3" style="padding:12px 16px">
+                <div class="flex items-center gap-3">
+                    <span id="cnt-{{ col_estado }}" class="page-title" style="font-size:24px">0</span>
+                    <div>
+                        {% if col_estado == 'pendiente' %}{% include 'core/ui/badge.html' with tone="amber" label="Pendiente" dot=True only %}{% elif col_estado == 'entregado' %}{% include 'core/ui/badge.html' with tone="blue" label="Entregado" dot=True only %}{% else %}{% include 'core/ui/badge.html' with tone="green" label="Colocado" dot=True only %}{% endif %}
+                        <p class="muted" style="font-size:12px;margin-top:2px">pedidos</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="muted" style="font-size:12px">Saldo total</p>
+                    <p id="sum-{{ col_estado }}" class="strong">$0</p>
+                </div>
+            </div>
+            <div id="col-{{ col_estado }}"
+                 class="kanban-col rounded-xl p-2.5 space-y-2.5"
+                 ondragover="onDragOver(event)" ondrop="onDrop(event, '{{ col_estado }}')" ondragleave="onDragLeave(event)">
+                {% for venta in ventas %}{% if venta.estado == col_estado %}
+                {% url 'comercial:venta_detail' venta.pk as venta_detail_url %}
+                {% url 'comercial:cliente_detail' venta.cliente.pk as cliente_detail_url %}
+                <div class="kanban-card card p-3 cursor-grab active:cursor-grabbing"
+                     draggable="true" data-id="{{ venta.pk }}" data-estado="{{ col_estado }}" ondragstart="onDragStart(event)">
+                    <div class="flex justify-between items-start mb-1.5">
+                        <a class="strong" href="{% with_return_to venta_detail_url return_path %}">#{{ venta.numero_pedido }}</a>
+                        <span class="muted" style="font-size:12px">{{ venta.created_at|date:"d/m" }}</span>
+                    </div>
+                    <a href="{% with_return_to cliente_detail_url return_path %}" class="block mb-2 truncate" style="font-size:13px">{{ venta.cliente }} <span class="muted">{{ venta.cliente.codigo }}</span></a>
+                    {% if venta.venta_en_dolares or venta.sena_en_dolares %}
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        {% if venta.venta_en_dolares %}{% include 'core/ui/badge.html' with tone="blue" label="Venta USD" icon="fas fa-coins" only %}{% endif %}
+                        {% if venta.sena_en_dolares %}{% include 'core/ui/badge.html' with tone="green" label="Seña USD" icon="fas fa-dollar-sign" only %}{% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between items-end pt-2 border-t border-line">
+                        <div>
+                            <p class="muted" style="font-size:12px">Total</p>
+                            <p class="strong">${{ venta.valor_total|formato_numero }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="muted" style="font-size:12px">Saldo</p>
+                            <p class="strong" data-saldo="{{ venta.saldo }}">${{ venta.saldo|formato_numero }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 mt-2 pt-2 border-t border-line">
+                        <a href="{% with_return_to venta_detail_url return_path %}" class="btn btn-secondary btn-sm flex-1 justify-center"><i class="fas fa-eye"></i>Ver</a>
+                        {% if venta.tiene_pagos %}
+                        <a href="{% url 'comercial:descargar_pdf_recibo_venta' venta.pk %}#zoom=140" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm btn-icon" title="Vista previa del recibo PDF" aria-label="Recibo PDF"><i class="fas fa-file-pdf"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
