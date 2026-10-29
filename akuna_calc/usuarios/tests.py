@@ -183,7 +183,18 @@ class UserAccessFlowTest(TestCase):
 		response = self.client.get(reverse('user_list'))
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'Gestión de Usuarios')
+		self.assertContains(response, 'Administración de accesos al sistema')
+		self.assertContains(response, 'data-live="usuarios,usuarios_perfiles"')
+
+		partial = self.client.get(reverse('user_list') + '?partial=1')
+		self.assertEqual(partial.status_code, 200)
+		self.assertNotContains(partial, '<html')
+		self.assertContains(partial, 'admin_user')
+
+		for name, args in (('user_create', []), ('user_update', [user.pk])):
+			form_response = self.client.get(reverse(name, args=args))
+			self.assertEqual(form_response.status_code, 200)
+			self.assertContains(form_response, 'permissionsCard')
 
 	def test_shared_pricing_api_accepts_presupuestos_permission(self):
 		user = User.objects.create_user(username='presup_user', password='ClaveSegura123', is_active=True)

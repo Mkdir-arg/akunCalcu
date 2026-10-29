@@ -1,182 +1,120 @@
 {% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ck { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 8px; font: 500 14px Inter, sans-serif; color: #344054; cursor: pointer; }
+    .ck:hover { background: #F9FAFB; }
+    .ck input { width: 16px; height: 16px; accent-color: #1F4FD8; margin: 0; flex: none; }
+    .ck small { margin-left: auto; font: 400 11px Inter, sans-serif; color: #98A2B3; }
+    .sw { display: inline-flex; align-items: center; gap: 10px; font: 500 14px Inter, sans-serif; color: #344054; }
+    .sw input { width: 18px; height: 18px; accent-color: #1F4FD8; margin: 0; }
+    .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+    .perm-grid fieldset { margin: 0; padding: 14px 16px 10px; min-width: 0; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4">
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
-            <p class="text-slate-500 font-medium mt-1">Define rol, módulos visibles y subsecciones permitidas para este usuario.</p>
+{% url 'user_list' as url_lista %}
+{% include 'core/ui/page_header.html' with title=title subtitle="Definí el rol, los módulos visibles y las opciones permitidas." back_url=url_lista back_label="Usuarios" only %}
+
+<form method="post" class="flex flex-col gap-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="field-error card card-pad" style="background:#FEF3F2;border-color:#FECDCA;margin:0">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <section class="card card-pad">
+        <h2 class="strong" style="font-size:16px;margin:0 0 16px">Datos de la cuenta</h2>
+        <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+            <div class="field">
+                <label for="{{ form.username.id_for_label }}">Usuario</label>
+                {{ form.username }}
+                {% if form.username.errors %}<p class="field-error">{{ form.username.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}<p class="field-error">{{ form.email.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                {{ form.password }}
+                {% if not form.password.field.required %}<p class="field-hint">Dejá vacío para no cambiarla.</p>{% endif %}
+                {% if form.password.errors %}<p class="field-error">{{ form.password.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.rol_sistema.id_for_label }}">{{ form.rol_sistema.label }}</label>
+                {{ form.rol_sistema }}
+                <p class="field-hint">El rol Admin otorga acceso total. Si elegís ese rol, los checks de abajo se ignoran.</p>
+                {% if form.rol_sistema.errors %}<p class="field-error">{{ form.rol_sistema.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.numero_whatsapp.id_for_label }}">{{ form.numero_whatsapp.label }}</label>
+                {{ form.numero_whatsapp }}
+                <p class="field-hint">Si el usuario es vendedor, el bot le avisa por acá los pedidos de presupuesto asignados.</p>
+                {% if form.numero_whatsapp.errors %}<p class="field-error">{{ form.numero_whatsapp.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="flex items-center">
+                <label class="sw" for="{{ form.is_active.id_for_label }}">{{ form.is_active }}Usuario activo</label>
+            </div>
         </div>
+    </section>
+
+    <div id="fullAccessMessage" class="card card-pad {% if not form.selected_role_has_full_access %}hidden{% endif %}" style="background:#ECFDF3;border-color:#ABEFC6">
+        <h2 style="margin:0;font:600 16px Inter,sans-serif;color:#067647"><i class="fas fa-shield-halved mr-2"></i>Acceso total habilitado</h2>
+        <p style="margin:6px 0 0;font:400 14px Inter,sans-serif;color:#067647">Este rol ya incluye todos los módulos y opciones. No hace falta configurar permisos manuales.</p>
     </div>
 
-    <form method="post" class="space-y-6">
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-            <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {{ form.non_field_errors }}
+    <section id="permissionsCard" data-selected-role-has-full-access="{{ form.selected_role_has_full_access|yesno:'true,false' }}" aria-labelledby="perm-t" class="flex flex-col gap-3 {% if form.selected_role_has_full_access %}hidden{% endif %}">
+        <div class="flex flex-wrap justify-between items-end gap-3">
+            <div>
+                <h2 id="perm-t" style="margin:0;font:600 18px Inter,sans-serif">Permisos por módulo</h2>
+                <p class="muted" style="margin:4px 0 0;font-size:14px">Tildá solo lo que el usuario puede entrar y ver en el menú lateral.</p>
             </div>
-            {% endif %}
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Usuario</label>
-                    {{ form.username }}
-                    {% if form.username.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Email</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div>
-                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Nombre</label>
-                    {{ form.first_name }}
-                    {% if form.first_name.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Apellido</label>
-                    {{ form.last_name }}
-                    {% if form.last_name.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div>
-                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
-                    {{ form.password }}
-                    {% if form.password.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.rol_sistema.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">{{ form.rol_sistema.label }}</label>
-                    {{ form.rol_sistema }}
-                    <p class="mt-2 text-xs text-slate-500">El rol Admin otorga acceso total. Si eliges ese rol, los checks de abajo se ignoran.</p>
-                    {% if form.rol_sistema.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.rol_sistema.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div>
-                    <label for="{{ form.numero_whatsapp.id_for_label }}" class="block text-sm font-semibold text-slate-700 mb-2">{{ form.numero_whatsapp.label }}</label>
-                    {{ form.numero_whatsapp }}
-                    <p class="mt-2 text-xs text-slate-500">Si el usuario es vendedor, el bot le avisa por acá los pedidos de presupuesto asignados.</p>
-                    {% if form.numero_whatsapp.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.numero_whatsapp.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div class="flex items-center gap-3">
-                    {{ form.is_active }}
-                    <label for="{{ form.is_active.id_for_label }}" class="text-sm font-semibold text-slate-700">Usuario activo</label>
-                </div>
-            </div>
+            <span class="badge b-blue" id="permTotalBadge">0 opciones seleccionadas</span>
         </div>
 
-        <div id="fullAccessMessage" class="bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 {% if not form.selected_role_has_full_access %}hidden{% endif %}">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-white text-emerald-600 flex items-center justify-center shadow-sm shrink-0">
-                    <i class="fas fa-shield-alt"></i>
+        {% if form.access_codes.errors %}
+        <p class="field-error" style="margin:0">{{ form.access_codes.errors.0 }}</p>
+        {% endif %}
+
+        <div class="perm-grid">
+            {% for group in form.permission_groups %}
+            <fieldset class="card" data-permission-group>
+                <legend style="display:none">{{ group.label }}</legend>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="strong"><i class="{{ group.icon }} muted mr-2"></i>{{ group.label }}</span>
+                    <span class="badge b-blue" data-group-badge>{{ group.selected_count }} de {{ group.items|length }}</span>
                 </div>
-                <div>
-                    <h2 class="text-lg font-bold text-emerald-900">Acceso total habilitado</h2>
-                    <p class="text-sm text-emerald-800 mt-1">Este rol ya incluye todos los módulos y opciones. No hace falta configurar permisos manuales.</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="permissionsCard" data-selected-role-has-full-access="{{ form.selected_role_has_full_access|yesno:'true,false' }}" class="bg-white rounded-2xl shadow-lg p-6 {% if form.selected_role_has_full_access %}hidden{% endif %}">
-            <div class="mb-6">
-                <h2 class="text-xl font-bold text-slate-800">Permisos por módulo</h2>
-                <p class="text-slate-500 text-sm mt-1">Marca únicamente las opciones a las que el usuario puede entrar y ver en el menú lateral.</p>
-            </div>
-
-            {% if form.access_codes.errors %}
-            <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {{ form.access_codes.errors.0 }}
-            </div>
-            {% endif %}
-
-            <div class="border-b border-slate-200 pb-4">
-                <div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Permisos por módulo">
-                {% for group in form.permission_groups %}
-                    <button
-                        type="button"
-                        class="permission-tab shrink-0 rounded-2xl border px-4 py-3 text-left transition-colors {% if forloop.first %}border-blue-200 bg-blue-50 text-blue-700{% else %}border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-200 hover:text-blue-700{% endif %}"
-                        data-tab-target="permission-panel-{{ forloop.counter0 }}"
-                        data-selected-count="{{ group.selected_count }}"
-                        aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                                <i class="{{ group.icon }}"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold">{{ group.label }}</p>
-                                <p class="text-xs opacity-80">{{ group.selected_count }} seleccionadas</p>
-                            </div>
-                        </div>
-                    </button>
+                {% for item in group.items %}
+                <label class="ck">
+                    <input type="checkbox" name="access_codes" value="{{ item.code }}" {% if item.selected %}checked{% endif %}>{{ item.label }}<small>{{ item.code }}</small>
+                </label>
                 {% endfor %}
-                </div>
-            </div>
-
-            <div class="mt-6 space-y-4">
-                {% for group in form.permission_groups %}
-                <div id="permission-panel-{{ forloop.counter0 }}" class="permission-panel {% if not forloop.first %}hidden{% endif %}">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                        <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow-sm">
-                            <i class="{{ group.icon }}"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-slate-800">{{ group.label }}</h3>
-                            <p class="text-xs text-slate-500">Elegí las opciones visibles y habilitadas dentro de este módulo.</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                        {% for item in group.items %}
-                        <label class="flex items-start gap-3 rounded-xl bg-white px-4 py-3 border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer">
-                            <input type="checkbox" name="access_codes" value="{{ item.code }}" {% if item.selected %}checked{% endif %} class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <div>
-                                <p class="text-sm font-semibold text-slate-700">{{ item.label }}</p>
-                                <p class="text-xs text-slate-500">Código: {{ item.code }}</p>
-                            </div>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                </div>
-                {% endfor %}
-            </div>
+            </fieldset>
+            {% endfor %}
         </div>
+    </section>
 
-        <div class="flex justify-end gap-3 pt-2">
-            <a href="{% url 'user_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                <i class="fas fa-save mr-2"></i>Guardar
-            </button>
-        </div>
-    </form>
-</div>
+    <div class="card flex flex-wrap gap-3 items-center justify-end" style="padding:14px 20px">
+        <a href="{% url 'user_list' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar usuario</button>
+    </div>
+</form>
 
 {{ form.full_access_role_ids|json_script:"full-access-role-ids" }}
 
@@ -186,50 +124,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const permissionsCard = document.getElementById('permissionsCard');
     const fullAccessMessage = document.getElementById('fullAccessMessage');
     const fullAccessRoleIds = JSON.parse(document.getElementById('full-access-role-ids').textContent);
-    const tabs = Array.from(document.querySelectorAll('.permission-tab'));
-    const panels = Array.from(document.querySelectorAll('.permission-panel'));
+    const totalBadge = document.getElementById('permTotalBadge');
+    const groups = Array.from(document.querySelectorAll('[data-permission-group]'));
 
     function setPermissionsVisibility() {
         if (!roleSelect || !permissionsCard || !fullAccessMessage) {
             return;
         }
-
         const hasFullAccess = fullAccessRoleIds.includes(roleSelect.value);
         permissionsCard.classList.toggle('hidden', hasFullAccess);
         fullAccessMessage.classList.toggle('hidden', !hasFullAccess);
     }
 
-    function activateTab(tab) {
-        const targetId = tab.dataset.tabTarget;
-
-        tabs.forEach((currentTab) => {
-            const isActive = currentTab === tab;
-            currentTab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            currentTab.classList.toggle('border-blue-200', isActive);
-            currentTab.classList.toggle('bg-blue-50', isActive);
-            currentTab.classList.toggle('text-blue-700', isActive);
-            currentTab.classList.toggle('border-slate-200', !isActive);
-            currentTab.classList.toggle('bg-slate-50', !isActive);
-            currentTab.classList.toggle('text-slate-600', !isActive);
+    function updateCounts() {
+        let total = 0;
+        groups.forEach(function (group) {
+            const boxes = group.querySelectorAll('input[name="access_codes"]');
+            const checked = group.querySelectorAll('input[name="access_codes"]:checked').length;
+            total += checked;
+            const badge = group.querySelector('[data-group-badge]');
+            if (badge) { badge.textContent = checked + ' de ' + boxes.length; }
         });
-
-        panels.forEach((panel) => {
-            panel.classList.toggle('hidden', panel.id !== targetId);
-        });
+        if (totalBadge) { totalBadge.textContent = total + (total === 1 ? ' opción seleccionada' : ' opciones seleccionadas'); }
     }
 
-    tabs.forEach((tab) => {
-        tab.addEventListener('click', function () {
-            activateTab(tab);
-        });
-    });
-
-    const initialTab = tabs.find((tab) => Number(tab.dataset.selectedCount || '0') > 0) || tabs[0];
-    if (initialTab) {
-        activateTab(initialTab);
-    }
+    groups.forEach(function (group) { group.addEventListener('change', updateCounts); });
+    updateCounts();
 
     if (roleSelect) {
+        // Select2 dispara change vía jQuery; se bindea con jQuery y también nativo.
+        if (window.jQuery) { window.jQuery(roleSelect).on('change', setPermissionsVisibility); }
         roleSelect.addEventListener('change', setPermissionsVisibility);
         setPermissionsVisibility();
     }

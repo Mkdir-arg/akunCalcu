@@ -19,7 +19,8 @@ def user_list(request):
     for managed_user in users:
         managed_user.role_label = get_user_role_label(managed_user)
         managed_user.access_summary = get_user_access_summary(managed_user)
-    return render(request, 'usuarios/user_list.html', {'users': users})
+    template = 'usuarios/_tabla.html' if request.GET.get('partial') == '1' else 'usuarios/user_list.html'
+    return render(request, template, {'users': users})
 
 @login_required
 @user_passes_test(is_staff)

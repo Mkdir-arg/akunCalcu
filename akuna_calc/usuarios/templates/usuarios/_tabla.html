@@ -1,0 +1,60 @@
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th class="hidden md:table-cell">Email</th>
+                <th class="hidden md:table-cell">Perfil</th>
+                <th class="hidden lg:table-cell">Accesos</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center justify-center rounded-full bg-accent-soft text-accent font-semibold text-xs shrink-0" style="width:32px;height:32px">{{ user.username|slice:":1"|upper }}</span>
+                        <span class="strong">{{ user.username }}</span>
+                    </div>
+                </td>
+                <td class="hidden md:table-cell">{{ user.email|default:"—" }}</td>
+                <td class="hidden md:table-cell">
+                    <p class="strong" style="margin:0;font-weight:500">{{ user.role_label }}</p>
+                    {% if user.first_name or user.last_name %}<p class="muted text-xs" style="margin:2px 0 0">{{ user.first_name }} {{ user.last_name }}</p>{% endif %}
+                </td>
+                <td class="hidden lg:table-cell muted">{{ user.access_summary }}</td>
+                <td>
+                    {% if user.is_active %}
+                        {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
+                    {% else %}
+                        {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
+                    {% endif %}
+                </td>
+                <td class="num">
+                    <div class="kebab" data-kebab>
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" data-kebab-toggle aria-haspopup="true" aria-label="Acciones de {{ user.username }}">
+                            <i class="fas fa-ellipsis"></i>
+                        </button>
+                        <div class="kebab-menu" role="menu">
+                            <a class="kebab-item" role="menuitem" href="{% url 'user_update' user.pk %}"><i class="fas fa-pen"></i>Editar permisos</a>
+                            <form method="post" action="{% url 'user_toggle' user.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="kebab-item{% if user.is_active %} danger{% endif %}" role="menuitem" style="width:100%">
+                                    <i class="fas fa-toggle-{% if user.is_active %}off{% else %}on{% endif %}"></i>{% if user.is_active %}Desactivar usuario{% else %}Activar usuario{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay usuarios registrados" icon="fas fa-users" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="pager"><span class="muted">{{ users|length }} usuario{{ users|length|pluralize }}</span></div>
