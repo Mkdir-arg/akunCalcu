@@ -3,78 +3,67 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
-        {% if presupuesto %}
-        <p class="text-slate-500 font-medium mt-1">{{ presupuesto.numero }}</p>
-        {% endif %}
-    </div>
+{% include 'core/ui/page_header.html' with title=titulo subtitle=presupuesto.numero back_url=return_url back_label="Volver" only %}
 
-    <div class="bg-white rounded-2xl shadow-lg p-6">
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="_return_to" value="{{ return_url }}">
-            {% if solicitud %}
-            <input type="hidden" name="solicitud_id" value="{{ solicitud.pk }}">
-            <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4">
-                <p class="text-sm font-bold text-blue-900 mb-2"><i class="fas fa-inbox mr-1"></i>Pedido recibido por email</p>
-                <div class="text-sm text-slate-700 space-y-1">
-                    {% if solicitud.nombre_cliente %}<p><i class="fas fa-user w-4 text-slate-400 mr-1"></i>{{ solicitud.nombre_cliente }}</p>{% endif %}
-                    {% if solicitud.telefono %}<p><i class="fas fa-phone w-4 text-slate-400 mr-1"></i>{{ solicitud.telefono }}</p>{% endif %}
-                    {% if solicitud.email %}<p><i class="fas fa-envelope w-4 text-slate-400 mr-1"></i>{{ solicitud.email }}</p>{% endif %}
-                    {% if solicitud.mensaje %}<p class="text-slate-500 mt-2">{{ solicitud.mensaje|truncatechars:200 }}</p>{% endif %}
-                </div>
-                {% if crear_cliente_url %}
-                <a href="{{ crear_cliente_url }}" class="inline-flex items-center mt-3 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">
-                    <i class="fas fa-user-plus mr-1"></i>Crear cliente con estos datos
-                </a>
-                {% endif %}
-                <p class="text-xs text-slate-500 mt-2">Elegí el cliente en el desplegable, o creá uno nuevo con los datos del pedido. Al guardar, la solicitud queda atendida.</p>
+<div class="card card-pad max-w-2xl" data-live-edit="{% if presupuesto %}presupuestos.presupuesto:{{ presupuesto.pk }}{% endif %}" data-live-edit-label="presupuesto">
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="_return_to" value="{{ return_url }}">
+        {% if solicitud %}
+        <input type="hidden" name="solicitud_id" value="{{ solicitud.pk }}">
+        <div class="mb-6 rounded-xl border border-line bg-accent-soft px-4 py-4">
+            <p class="text-sm font-semibold text-accent mb-2"><i class="fas fa-inbox mr-1"></i>Pedido recibido por email</p>
+            <div class="text-sm text-ink-2 space-y-1">
+                {% if solicitud.nombre_cliente %}<p><i class="fas fa-user w-4 text-ink-3 mr-1"></i>{{ solicitud.nombre_cliente }}</p>{% endif %}
+                {% if solicitud.telefono %}<p><i class="fas fa-phone w-4 text-ink-3 mr-1"></i>{{ solicitud.telefono }}</p>{% endif %}
+                {% if solicitud.email %}<p><i class="fas fa-envelope w-4 text-ink-3 mr-1"></i>{{ solicitud.email }}</p>{% endif %}
+                {% if solicitud.mensaje %}<p class="text-ink-3 mt-2">{{ solicitud.mensaje|truncatechars:200 }}</p>{% endif %}
             </div>
+            {% if crear_cliente_url %}
+            <a href="{{ crear_cliente_url }}" class="btn btn-secondary btn-sm mt-3"><i class="fas fa-user-plus"></i>Crear cliente con estos datos</a>
             {% endif %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cliente.label }}</label>
-                    <div class="flex gap-2">
-                        {{ form.cliente }}
-                        <button type="button" onclick="openClienteModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all" title="Crear nuevo cliente">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    {% if form.cliente.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cliente.errors.0 }}</p>{% endif %}
+            <p class="field-hint">Elegí el cliente en el desplegable, o creá uno nuevo con los datos del pedido. Al guardar, la solicitud queda atendida.</p>
+        </div>
+        {% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="field md:col-span-2">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+                <div class="flex gap-2">
+                    {{ form.cliente }}
+                    <button type="button" onclick="openClienteModal()" class="btn btn-secondary btn-icon" title="Crear nuevo cliente" aria-label="Crear nuevo cliente">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.tipo_material.label }}</label>
-                    {{ form.tipo_material }}
-                    {% if form.tipo_material.errors %}<p class="text-red-600 text-xs mt-1">{{ form.tipo_material.errors.0 }}</p>{% endif %}
-                </div>
-                <div id="campo-cotizacion-usd">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.cotizacion_usd.label }}</label>
-                    {{ form.cotizacion_usd }}
-                    <p class="text-xs text-slate-400 mt-1">{{ form.cotizacion_usd.help_text }}</p>
-                    {% if form.cotizacion_usd.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cotizacion_usd.errors.0 }}</p>{% endif %}
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.fecha_expiracion.label }}</label>
-                    {{ form.fecha_expiracion }}
-                    {% if form.fecha_expiracion.errors %}<p class="text-red-600 text-xs mt-1">{{ form.fecha_expiracion.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ form.notas.label }}</label>
-                    {{ form.notas }}
-                    {% if form.notas.errors %}<p class="text-red-600 text-xs mt-1">{{ form.notas.errors.0 }}</p>{% endif %}
-                </div>
+                {% if form.cliente.errors %}<p class="field-error">{{ form.cliente.errors.0 }}</p>{% endif %}
             </div>
+            <div class="field">
+                <label for="{{ form.tipo_material.id_for_label }}">{{ form.tipo_material.label }}</label>
+                {{ form.tipo_material }}
+                {% if form.tipo_material.errors %}<p class="field-error">{{ form.tipo_material.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field" id="campo-cotizacion-usd">
+                <label for="{{ form.cotizacion_usd.id_for_label }}">{{ form.cotizacion_usd.label }}</label>
+                {{ form.cotizacion_usd }}
+                <p class="field-hint">{{ form.cotizacion_usd.help_text }}</p>
+                {% if form.cotizacion_usd.errors %}<p class="field-error">{{ form.cotizacion_usd.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field">
+                <label for="{{ form.fecha_expiracion.id_for_label }}">{{ form.fecha_expiracion.label }}</label>
+                {{ form.fecha_expiracion }}
+                {% if form.fecha_expiracion.errors %}<p class="field-error">{{ form.fecha_expiracion.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="field md:col-span-2">
+                <label for="{{ form.notas.id_for_label }}">{{ form.notas.label }}</label>
+                {{ form.notas }}
+                {% if form.notas.errors %}<p class="field-error">{{ form.notas.errors.0 }}</p>{% endif %}
+            </div>
+        </div>
 
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <a href="{{ return_url }}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                    <i class="fas fa-save mr-2"></i>Guardar
-                </button>
-            </div>
-        </form>
-    </div>
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-line">
+            <a href="{{ return_url }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>Guardar</button>
+        </div>
+    </form>
 </div>
 
 {% modal_nuevo_cliente '#id_cliente' %}
