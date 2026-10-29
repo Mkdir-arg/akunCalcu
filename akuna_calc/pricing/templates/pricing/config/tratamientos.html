@@ -2,98 +2,52 @@
 {% block title %}Configuración - Tratamientos{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="max-w-full mx-auto px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">
-                <i class="fas fa-paint-brush mr-3"></i>Tratamientos
-            </h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de tratamientos de superficie</p>
-        </div>
-        <a href="{% url 'config-tratamiento-create' %}" class="btn-primary inline-flex items-center text-white px-6 py-3 rounded-2xl font-semibold shadow-xl">
-            <i class="fas fa-plus mr-2"></i>Nuevo Tratamiento
-        </a>
-    </div>
+<div>
+    {% url 'config-tratamiento-create' as create_url %}
+    {% include 'core/ui/page_header.html' with title="Tratamientos" subtitle="Gestión de tratamientos de superficie" action_url=create_url action_label="Nuevo Tratamiento" only %}
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+    <section class="card overflow-hidden">
         {% include 'core/includes/table_filters.html' with table_filter_id='tratamientos-table' show_status_filter=True table_filter_placeholder='Buscar por descripcion o estado...' %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1 hover:text-slate-200">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1 hover:text-slate-200">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                        <th><a href="?sort=descripcion&dir={% if sort == 'descripcion' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Descripción{% if sort == 'descripcion' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=precio_kg&dir={% if sort == 'precio_kg' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Precio/kg{% if sort == 'precio_kg' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="hidden sm:table-cell"><a href="?sort=estado&dir={% if sort == 'estado' and dir == 'asc' %}desc{% else %}asc{% endif %}" class="inline-flex items-center gap-1">Estado{% if sort == 'estado' %}<i class="fas {% if dir == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for tratamiento in tratamientos %}
-                    <tr class="hover:bg-slate-50 transition-colors" data-filter-row="tratamientos-table" data-status="{% if tratamiento.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
-                        <td class="px-6 py-4 text-sm font-bold text-slate-800">{{ tratamiento.descripcion }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-slate-700 text-right">{{ tratamiento.precio_kg|default:"-" }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4">
+                    <tr data-filter-row="tratamientos-table" data-status="{% if tratamiento.bloqueado == 'Si' %}inactivo{% else %}activo{% endif %}">
+                        <td class="strong">{{ tratamiento.descripcion }}</td>
+                        <td class="hidden sm:table-cell num">{{ tratamiento.precio_kg|default:"-" }}</td>
+                        <td class="hidden sm:table-cell">
                             {% if tratamiento.bloqueado == 'Si' %}
-                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>
+                                {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                             {% else %}
-                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Activo</span>
+                                {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{% url 'config-tratamiento-edit' tratamiento.pk %}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if tratamiento.bloqueado != 'Si' %}
-                                <button onclick="confirmarDesactivar('{% url 'config-tratamiento-delete' tratamiento.pk %}', '{{ tratamiento.descripcion }}')" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-all text-xs">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
+                        <td class="num">
+                            {% url 'config-tratamiento-edit' tratamiento.pk as row_edit_url %}
+                            {% url 'config-tratamiento-delete' tratamiento.pk as row_delete_url %}
+                            {% if tratamiento.bloqueado != 'Si' %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url delete_url=row_delete_url delete_name=tratamiento.descripcion only %}{% else %}{% include 'core/ui/kebab_menu.html' with kebab_label="Acciones" edit_url=row_edit_url only %}{% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-center">
-                            <i class="fas fa-inbox text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay tratamientos registrados</p>
-                        </td>
+                        <td colspan="4">{% include 'core/ui/empty_state.html' with title="No hay tratamientos registrados" icon="fas fa-inbox" only %}</td>
                     </tr>
                     {% endfor %}
                     <tr data-filter-empty="tratamientos-table" class="hidden">
-                        <td colspan="4" class="px-6 py-8 text-center">
-                            <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                            <p class="text-slate-500 font-medium">No hay tratamientos que coincidan con los filtros</p>
-                        </td>
+                        <td colspan="4">{% include 'core/ui/empty_state.html' with title="No hay tratamientos que coincidan con los filtros" icon="fas fa-search" only %}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
 
-<script>
-function confirmarDesactivar(url, nombre) {
-    Swal.fire({
-        title: '¿Desactivar tratamiento?',
-        html: `<p>¿Estás seguro de desactivar <strong>${nombre}</strong>?</p><p class="text-sm text-gray-600 mt-2">El registro no será eliminado permanentemente.</p>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken.value}">`;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
 {% endblock %}

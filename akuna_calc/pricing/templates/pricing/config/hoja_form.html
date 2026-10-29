@@ -1,12 +1,11 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
-    </div>
+<div class="max-w-4xl mx-auto">
+    <div class="page-head"><div><h1 class="page-title">{{ titulo }}</h1>
+    </div></div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-6">
+    <div class="card card-pad">
         <form method="post" id="hojaForm">
             {% csrf_token %}
             <div class="grid grid-cols-1 gap-6">
@@ -14,11 +13,11 @@
                 {% if field.name == 'cantidad' %}
                     {# Ocultar campo cantidad siempre #}
                 {% else %}
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
+                <div class="field">
+                    <label>{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}
-                        <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
+                        <p class="field-error">{{ field.errors.0 }}</p>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -29,9 +28,9 @@
             <input type="hidden" name="formulas_present" value="1">
             <div class="mt-8 border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-slate-800">Fórmulas de Perfiles</h2>
+                    <h2 class="text-xl font-bold text-ink">Fórmulas de Perfiles</h2>
                     <div class="flex gap-2">
-                        <button type="button" onclick="agregarFormula()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                        <button type="button" onclick="agregarFormula()" class="btn btn-secondary btn-sm">
                             <i class="fas fa-plus mr-2"></i>Agregar Fórmula
                         </button>
                     </div>
@@ -54,9 +53,9 @@
 
             <div class="mt-8 border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-slate-800">Accesorios</h2>
+                    <h2 class="text-xl font-bold text-ink">Accesorios</h2>
                     <div class="flex gap-2">
-                        <button type="button" onclick="agregarAccesorio()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                        <button type="button" onclick="agregarAccesorio()" class="btn btn-secondary btn-sm">
                             <i class="fas fa-plus mr-2"></i>Agregar Accesorio
                         </button>
                     </div>
@@ -80,8 +79,8 @@
             <div class="mt-8 border-t pt-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">Fórmulas de Vidrio</h2>
-                        <p class="text-sm text-slate-500 mt-1">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
+                        <h2 class="text-xl font-bold text-ink">Fórmulas de Vidrio</h2>
+                        <p class="page-sub">Puede usar fórmulas con <strong>Ancho</strong> y <strong>Alto</strong>. Ejemplos: <code>149</code>, <code>(Ancho-149)/2</code>, <code>Alto-50</code></p>
                     </div>
                 </div>
                 {% if vidrios_relacionados %}
@@ -100,9 +99,9 @@
                                 <td class="border px-4 py-2 align-top">
                                     <input type="hidden" name="relacion_id" value="{{ vidrio_rel.relacion_id }}">
                                     <input type="hidden" name="vidrio_codigo" value="{{ vidrio_rel.vidrio_codigo }}">
-                                    <div class="font-medium text-slate-800">{{ vidrio_rel.vidrio_codigo }}</div>
+                                    <div class="font-medium text-ink">{{ vidrio_rel.vidrio_codigo }}</div>
                                     {% if vidrio_rel.vidrio_descripcion %}
-                                    <div class="text-xs text-slate-500 mt-1">{{ vidrio_rel.vidrio_descripcion }}</div>
+                                    <div class="field-hint">{{ vidrio_rel.vidrio_descripcion }}</div>
                                     {% endif %}
                                 </td>
                                 <td class="border px-4 py-2">
@@ -124,10 +123,10 @@
             </div>
             {% endif %}
 
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <a href="{% url 'config-hojas' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                    <i class="fas fa-save mr-2"></i>Guardar
+            <div class="flex justify-end gap-3 mt-6 pt-4" style="border-top:1px solid var(--line)">
+                <a href="{% url 'config-hojas' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>Guardar
                 </button>
             </div>
         </form>
@@ -286,7 +285,7 @@ function _crearFila(idx, datos) {
             <input type="text" name="angulo_${idx}" value="${datos.angulo || '90'}" placeholder="90" class="w-full px-2 py-1 border rounded">
         </td>
         <td class="px-4 py-2">
-            <button type="button" onclick="eliminarFormula(this)" class="text-red-600 hover:text-red-800">
+            <button type="button" onclick="eliminarFormula(this)" class="text-danger">
                 <i class="fas fa-trash"></i>
             </button>
         </td>
@@ -386,7 +385,7 @@ function _agregarFilaAccesorio(datos) {
             <input type="checkbox" name="obligatorio_${accesorioIndex}" class="w-4 h-4" ${datos.obligatorio === 'Si' ? 'checked' : ''}>
         </td>
         <td class="px-4 py-2">
-            <button type="button" onclick="eliminarAccesorio(this)" class="text-red-600 hover:text-red-800">
+            <button type="button" onclick="eliminarAccesorio(this)" class="text-danger">
                 <i class="fas fa-trash"></i>
             </button>
         </td>

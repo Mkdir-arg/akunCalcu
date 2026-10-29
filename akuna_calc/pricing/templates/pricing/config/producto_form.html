@@ -1,29 +1,28 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ titulo }}</h1>
-    </div>
+<div class="max-w-2xl mx-auto">
+    <div class="page-head"><div><h1 class="page-title">{{ titulo }}</h1>
+    </div></div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-6">
+    <div class="card card-pad">
         <form method="post">
             {% csrf_token %}
             <div class="grid grid-cols-1 gap-6">
                 {% for field in form %}
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">{{ field.label }}</label>
+                <div class="field">
+                    <label>{{ field.label }}</label>
                     {{ field }}
                     {% if field.errors %}
-                        <p class="text-red-600 text-xs mt-1">{{ field.errors.0 }}</p>
+                        <p class="field-error">{{ field.errors.0 }}</p>
                     {% endif %}
                 </div>
                 {% endfor %}
             </div>
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <a href="{% url 'config-productos' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-2xl font-semibold">Cancelar</a>
-                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                    <i class="fas fa-save mr-2"></i>Guardar
+            <div class="flex justify-end gap-3 mt-6 pt-4" style="border-top:1px solid var(--line)">
+                <a href="{% url 'config-productos' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>Guardar
                 </button>
             </div>
         </form>
