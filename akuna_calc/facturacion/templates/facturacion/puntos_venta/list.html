@@ -1,68 +1,46 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
-{% block title %}Puntos de Venta{% endblock %}
+{% block title %}Puntos de venta{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto animate-fade-in px-4">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight">Puntos de Venta</h1>
-            <p class="text-slate-500 font-medium mt-1">Gestión de puntos de venta AFIP</p>
-        </div>
-        <a href="{% url 'facturacion:punto_venta_create' %}" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg transition-all">
-            <i class="fas fa-plus mr-2"></i>Nuevo Punto de Venta
-        </a>
-    </div>
+{% url 'facturacion:punto_venta_create' as url_crear %}
+{% include 'core/ui/page_header.html' with title="Puntos de venta" subtitle="Puntos de venta habilitados en ARCA." action_url=url_crear action_label="Nuevo punto de venta" only %}
 
-    <div class="card-elegant bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gradient-to-r from-slate-700 to-slate-800">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Número</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for punto in puntos %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-lg font-bold text-slate-800">{{ punto.numero|stringformat:"04d" }}</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="font-semibold text-slate-700">{{ punto.nombre }}</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            {% if punto.activo %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i> Activo
-                                </span>
-                            {% else %}
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i> Inactivo
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{% url 'facturacion:punto_venta_edit' punto.pk %}" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-inbox text-4xl mb-2"></i>
-                            <p class="font-medium">No hay puntos de venta registrados</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<section class="card overflow-hidden">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for punto in puntos %}
+                <tr>
+                    <td class="strong">{{ punto.numero|stringformat:"04d" }}</td>
+                    <td>{{ punto.nombre }}</td>
+                    <td>
+                        {% if punto.activo %}
+                            {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
+                        {% else %}
+                            {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
+                        {% endif %}
+                    </td>
+                    <td class="num">
+                        {% url 'facturacion:punto_venta_edit' punto.pk as url_editar %}
+                        {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del punto de venta" edit_url=url_editar only %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">{% include 'core/ui/empty_state.html' with title="No hay puntos de venta registrados" action_url=url_crear action_label="Nuevo punto de venta" only %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</div>
+</section>
 {% endblock %}

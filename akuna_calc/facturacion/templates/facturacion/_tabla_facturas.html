@@ -1,0 +1,47 @@
+{% load custom_filters %}
+{% url 'facturacion:crear_factura' as url_crear %}
+<div class="toolbar">
+    <span class="muted text-sm">{{ facturas|length }} comprobante{{ facturas|length|pluralize }}</span>
+</div>
+<div class="table-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th class="num">Total</th>
+                <th>Estado</th>
+                <th>CAE</th>
+                <th><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for factura in facturas %}
+            <tr>
+                <td><a class="strong" href="{% url 'facturacion:detalle_factura' factura.id %}">{{ factura.get_numero_completo }}</a></td>
+                <td>{% include 'core/ui/badge.html' with tone="gray" label=factura.get_tipo_display only %}</td>
+                <td>{{ factura.cliente.nombre }} {{ factura.cliente.apellido }}</td>
+                <td class="muted">{{ factura.fecha|date:"d/m/Y" }}</td>
+                <td class="num strong">${{ factura.total|formato_numero }}</td>
+                <td>
+                    {% if factura.estado == 'autorizada' %}
+                        {% include 'core/ui/badge.html' with tone="green" label="Autorizada" dot=True only %}
+                    {% elif factura.estado == 'rechazada' %}
+                        {% include 'core/ui/badge.html' with tone="red" label="Rechazada" dot=True only %}
+                    {% else %}
+                        {% include 'core/ui/badge.html' with tone="amber" label=factura.get_estado_display dot=True only %}
+                    {% endif %}
+                </td>
+                <td class="muted">{{ factura.cae|default:"—" }}</td>
+                <td class="num"><a class="btn btn-secondary btn-sm" href="{% url 'facturacion:detalle_factura' factura.id %}">Ver</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">{% include 'core/ui/empty_state.html' with title="No hay facturas registradas" icon="fas fa-file-invoice-dollar" action_url=url_crear action_label="Nueva factura" only %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
