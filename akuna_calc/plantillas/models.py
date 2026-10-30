@@ -1,20 +1,33 @@
+import re
+
 from django.db import models
 from django.db.models import Max
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class PedidoFabrica(models.Model):
     ESTADO_CHOICES = [
-        ('BORRADOR', 'Borrador'),
-        ('EN_PROCESO', 'En Proceso'),
-        ('COMPLETADO', 'Completado'),
-        ('CANCELADO', 'Cancelado'),
+        ('recibido', 'Recibido'),
+        ('en_fabrica', 'En fábrica'),
+        ('en_produccion', 'En producción'),
+        ('terminado', 'Terminado'),
+        ('entregado', 'Entregado'),
+        ('cancelado', 'Cancelado'),
     ]
+    # Estados en los que el taller trabaja: las órdenes están congeladas y el
+    # estado del pedido se calcula a partir de sus etapas (REQ-063).
+    ESTADOS_LIBERADOS = ('en_fabrica', 'en_produccion', 'terminado')
+    ESTADOS_CERRADOS = ('entregado', 'cancelado')
+    TONOS_ESTADO = {
+        'recibido': 'amber', 'en_fabrica': 'violet', 'en_produccion': 'blue',
+        'terminado': 'green', 'entregado': 'gray', 'cancelado': 'red',
+    }
 
     numero = models.CharField(max_length=50, unique=True)
     cliente = models.CharField(max_length=200)
     fecha = models.DateField(auto_now_add=True)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='BORRADOR')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='recibido')
     observaciones = models.TextField(blank=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='pedidos_fabrica')
     presupuesto = models.ForeignKey(
@@ -25,6 +38,13 @@ class PedidoFabrica(models.Model):
         related_name='pedidos_fabrica',
         verbose_name='Presupuesto de origen',
     )
+    liberado_at = models.DateTimeField(null=True, blank=True, verbose_name='Liberado a fábrica el')
+    liberado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pedidos_fabrica_liberados', verbose_name='Liberado por',
+    )
+    entregado_at = models.DateTimeField(null=True, blank=True, verbose_name='Entregado el')
+    motivo_cancelacion = models.TextField(blank=True, verbose_name='Motivo de cancelación')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -35,6 +55,63 @@ class PedidoFabrica(models.Model):
 
     def __str__(self):
         return f"Pedido {self.numero} - {self.cliente}"
+
+    @classmethod
+    def generar_numero(cls):
+        """Próximo PF-NNNN: el mayor existente + 1 (los pedidos manuales pueden dejar huecos)."""
+        mayor = 0
+        for numero in cls.objects.filter(numero__startswith='PF-').values_list('numero', flat=True):
+            coincidencia = re.fullmatch(r'PF-(\d+)', numero)
+            if coincidencia:
+                mayor = max(mayor, int(coincidencia.group(1)))
+        return f'PF-{mayor + 1:04d}'
+
+    @property
+    def tono_estado(self):
+        return self.TONOS_ESTADO.get(self.estado, 'gray')
+
+    @property
+    def esta_liberado(self):
+        return self.estado in self.ESTADOS_LIBERADOS
+
+    @property
+    def esta_cerrado(self):
+        return self.estado in self.ESTADOS_CERRADOS
+
+    def ordenes_activas(self):
+        return self.ordenes.exclude(etapa='anulada')
+
+    @property
+    def fecha_comprometida(self):
+        fechas = [o.fecha_comprometida for o in self.ordenes.all() if o.fecha_comprometida]
+        return min(fechas) if fechas else None
+
+    @property
+    def esta_atrasado(self):
+        if self.esta_cerrado or self.estado == 'terminado':
+            return False
+        fecha = self.fecha_comprometida
+        return bool(fecha and fecha < timezone.localdate())
+
+    def faltantes_para_liberar(self):
+        """[(orden, ['Medida', 'Color', …])] de las órdenes que no se pueden fabricar todavía."""
+        resultado = []
+        for orden in self.ordenes_activas().prefetch_related('medidas'):
+            faltan = orden.faltantes()
+            if faltan:
+                resultado.append((orden, faltan))
+        return resultado
+
+    def estado_calculado(self):
+        """Estado que corresponde a las etapas de sus órdenes. Fuera de los estados liberados no cambia."""
+        if not self.esta_liberado:
+            return self.estado
+        etapas = list(self.ordenes_activas().values_list('etapa', flat=True))
+        if etapas and all(e == 'lista' for e in etapas):
+            return 'terminado'
+        if any(e != 'por_fabricar' for e in etapas):
+            return 'en_produccion'
+        return 'en_fabrica'
 
 
 class OrdenFabricacion(models.Model):
@@ -101,6 +178,21 @@ class OrdenFabricacion(models.Model):
 
     nota = models.TextField(blank=True, verbose_name='Nota / Observaciones')
 
+    # Circuito de fábrica (REQ-063)
+    ETAPA_CHOICES = [
+        ('por_fabricar', 'Por fabricar'),
+        ('corte', 'Corte'),
+        ('armado', 'Armado'),
+        ('vidriado', 'Vidriado'),
+        ('lista', 'Lista'),
+        ('anulada', 'Anulada'),
+    ]
+    FLUJO_ETAPAS = ['por_fabricar', 'corte', 'armado', 'vidriado', 'lista']
+    etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, default='por_fabricar', verbose_name='Etapa')
+    etapa_at = models.DateTimeField(null=True, blank=True, verbose_name='Etapa actualizada el')
+    revision = models.PositiveSmallIntegerField(default=0, verbose_name='Revisión')
+    reimpresion_pendiente = models.BooleanField(default=False, verbose_name='Reimpresión pendiente')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -119,6 +211,95 @@ class OrdenFabricacion(models.Model):
     @classmethod
     def generar_numero(cls):
         return (cls.objects.aggregate(m=Max('numero'))['m'] or 0) + 1
+
+    def faltantes(self):
+        """Datos sin los que el taller no puede fabricar la orden."""
+        faltan = []
+        if not any(m.medida.strip() for m in self.medidas.all()):
+            faltan.append('Medida')
+        for campo, etiqueta in (('linea', 'Línea'), ('color', 'Color'), ('tipo_vidrio', 'Vidrio')):
+            if not getattr(self, campo).strip():
+                faltan.append(etiqueta)
+        if self.modelo_hoja.strip() and not self.cantidad_hojas.strip():
+            faltan.append('Cantidad de hojas')
+        if not self.fecha_comprometida:
+            faltan.append('Fecha comprometida')
+        return faltan
+
+    def _indice_etapa(self):
+        return self.FLUJO_ETAPAS.index(self.etapa) if self.etapa in self.FLUJO_ETAPAS else None
+
+    @property
+    def etapa_siguiente(self):
+        i = self._indice_etapa()
+        return self.FLUJO_ETAPAS[i + 1] if i is not None and i + 1 < len(self.FLUJO_ETAPAS) else None
+
+    @property
+    def etapa_anterior(self):
+        i = self._indice_etapa()
+        return self.FLUJO_ETAPAS[i - 1] if i else None
+
+    @property
+    def tono_etapa(self):
+        if self.etapa in ('corte', 'armado', 'vidriado'):
+            return 'blue'
+        return {'lista': 'green', 'anulada': 'red'}.get(self.etapa, 'gray')
+
+    @property
+    def etiqueta_siguiente(self):
+        return dict(self.ETAPA_CHOICES).get(self.etapa_siguiente, '')
+
+    @property
+    def etiqueta_anterior(self):
+        return dict(self.ETAPA_CHOICES).get(self.etapa_anterior, '')
+
+    @property
+    def cantidad_total(self):
+        """Unidades a fabricar: suma de las filas de medidas (usa el prefetch si lo hay)."""
+        return sum(m.cantidad or 0 for m in self.medidas.all())
+
+
+class HistorialPedidoFabrica(models.Model):
+    """Registro de cada cambio de estado del pedido, de etapa o de revisión de una orden."""
+
+    TIPO_CHOICES = [
+        ('estado_pedido', 'Estado del pedido'),
+        ('etapa_orden', 'Etapa de orden'),
+        ('revision', 'Revisión de orden'),
+    ]
+
+    pedido = models.ForeignKey(PedidoFabrica, on_delete=models.CASCADE, related_name='historial', verbose_name='Pedido')
+    orden = models.ForeignKey(
+        OrdenFabricacion, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historial', verbose_name='Orden',
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name='Tipo')
+    desde = models.CharField(max_length=20, blank=True, verbose_name='Desde')
+    hasta = models.CharField(max_length=20, blank=True, verbose_name='Hasta')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Usuario')
+    nota = models.TextField(blank=True, verbose_name='Nota')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Historial de pedido de fábrica'
+        verbose_name_plural = 'Historial de pedidos de fábrica'
+        ordering = ['-created_at', '-id']
+
+    def __str__(self):
+        sujeto = f'orden {self.orden.numero_formateado}' if self.orden_id else f'pedido {self.pedido.numero}'
+        return f'{self.get_tipo_display()} {sujeto}: {self.desde or "—"} → {self.hasta}'
+
+    @property
+    def texto(self):
+        """Frase para la línea de tiempo del detalle del pedido."""
+        if self.tipo == 'estado_pedido':
+            estados = dict(PedidoFabrica.ESTADO_CHOICES)
+            return f'Pedido: {estados.get(self.hasta, self.hasta)}'
+        etapas = dict(OrdenFabricacion.ETAPA_CHOICES)
+        numero = self.orden.numero_formateado if self.orden_id else '—'
+        if self.tipo == 'revision':
+            return f'Orden {numero}: revisión {self.hasta}'
+        return f'Orden {numero}: {etapas.get(self.desde, self.desde)} → {etapas.get(self.hasta, self.hasta)}'
 
 
 class MedidaOrdenFabricacion(models.Model):

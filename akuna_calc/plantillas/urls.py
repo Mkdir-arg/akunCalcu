@@ -11,12 +11,18 @@ urlpatterns = [
     path('pedidos/', views.pedido_list, name='pedido_list'),
     path('pedidos/crear/', views.pedido_create, name='pedido_create'),
     path('pedidos/<int:pk>/', views.pedido_detail, name='pedido_detail'),
+    path('pedidos/<int:pk>/liberar/', views.pedido_liberar, name='pedido_liberar'),
+    path('pedidos/<int:pk>/cancelar/', views.pedido_cancelar, name='pedido_cancelar'),
+    path('pedidos/<int:pk>/entregar/', views.pedido_entregar, name='pedido_entregar'),
+    path('pedidos/<int:pk>/pdf/', views.pedido_pdf, name='pedido_pdf'),
 
     # Órdenes de Fabricación
     path('pedidos/<int:pedido_pk>/ordenes/crear/', views.orden_create, name='orden_create'),
     path('ordenes/<int:pk>/editar/', views.orden_edit, name='orden_edit'),
     path('ordenes/<int:pk>/eliminar/', views.orden_delete, name='orden_delete'),
     path('ordenes/<int:pk>/pdf/', views.orden_pdf, name='orden_pdf'),
+    path('ordenes/<int:pk>/etapa/', views.orden_cambiar_etapa, name='orden_etapa'),
+    path('ordenes/<int:pk>/reimpresa/', views.orden_marcar_reimpresa, name='orden_reimpresa'),
 
     # Opcionales de Fábrica
     path('opcionales/', opcional_list, name='opcional_list'),

@@ -82,6 +82,6 @@
 | [REQ-060](./REQ-060-gastos-por-moneda-en-reportes.md) | Gastos diferenciados por moneda en los reportes (RF-011) | Aprobado | 2026-10-20 | — |
 | [REQ-061](./REQ-061-alerta-ventas-sin-facturar.md) | Alerta de ventas en blanco sin facturar al cierre del mes, sistema + WhatsApp (RF-012) | Aprobado | 2026-10-20 | — |
 | [REQ-062](./REQ-062-estructuras.md) | Estructuras: varias aberturas ubicadas sobre una pared, cotizadas como un conjunto | Implementado (Etapa 1) | 2026-10-22 | [FEAT-045](../features/FEAT-045-estructuras.md) |
-| [REQ-063](./REQ-063-circuito-pedidos-fabrica.md) | Circuito de pedidos de fábrica: estados, trabajo del taller y Orden de Fabricación mejorada | En desarrollo | 2026-10-29 | — |
+| [REQ-063](./REQ-063-circuito-pedidos-fabrica.md) | Circuito de pedidos de fábrica: estados, trabajo del taller y Orden de Fabricación mejorada | Implementado (Etapa 1) | 2026-10-29 | — |
 | [REQ-064](./REQ-064-rediseno-taller.md) | Rediseño visual «Taller» de todo el sistema | Implementado | 2026-10-29 | [FEAT-046](../features/FEAT-046-rediseno-taller.md) |
 | [REQ-065](./REQ-065-tiempo-real-polling.md) | Actualización en vivo por polling (listados, avisos, dólar, KPIs, edición simultánea) | Implementado | 2026-10-29 | [FEAT-047](../features/FEAT-047-tiempo-real.md) |

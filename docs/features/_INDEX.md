@@ -53,6 +53,7 @@
 | [FEAT-045](./FEAT-045-estructuras.md) | Estructuras: varias aberturas sobre una pared cotizadas como un conjunto (Etapa 1) | Implementado | 2026-10-22 | Fuera de plan |
 | [FEAT-046](./FEAT-046-rediseno-taller.md) | Rediseño visual «Taller» de todo el sistema (REQ-064) | Implementado (en `development`) | 2026-10-29 | Fuera de plan |
 | [FEAT-047](./FEAT-047-tiempo-real.md) | Actualización en vivo por polling: listados, avisos, dólar, KPIs y edición simultánea (REQ-065) | Implementado (en `development`) | 2026-10-29 | Fuera de plan |
+| [FEAT-048](./FEAT-048-circuito-pedidos-fabrica.md) | Circuito de pedidos de fábrica: estados, etapas del taller, liberar, revisiones y PDF del pedido (REQ-063, Etapa 1) | Implementado (rama `feat/req-063-pedidos-fabrica`) | 2026-10-30 | Fuera de plan |
 
 ---
 

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pedido de fábrica {{ pedido.numero }}</title>
+    <style>
+{% include 'plantillas/_orden_pdf_estilos.html' %}
+        .resumen td { padding: 4px 6px; font-size: 9px; vertical-align: bottom; }
+        .resumen .lbl { width: 26%; }
+        .resumen .val { font-weight: bold; }
+        .o-num { width: 12%; } .o-abe { width: 34%; } .o-lin { width: 30%; } .o-cant { width: 12%; } .o-rev { width: 12%; }
+    </style>
+</head>
+<body>
+
+    <!-- CARÁTULA -->
+    <table class="head">
+        <tr>
+            <td style="width:30%;">
+                {% if logo_url %}<img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">{% endif %}
+            </td>
+            <td style="width:38%; text-align:center;">
+                <span class="title">PEDIDO A FÁBRICA</span>
+            </td>
+            <td style="width:32%;">
+                <table class="meta">
+                    <tr><td class="mk">N° PEDIDO</td><td class="num" style="text-align:center;">{{ pedido.numero }}</td></tr>
+                    <tr><td class="mkl">FECHA</td><td>{{ pedido.fecha|date:"d/m/Y" }}</td></tr>
+                    <tr><td class="mkl">FECHA COMPROMETIDA</td><td>{{ pedido.fecha_comprometida|date:"d/m/Y"|default:"___ / ___ / ___" }}</td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="gap"></div>
+
+    <table class="bar"><tr><td>RESUMEN DEL PEDIDO</td></tr></table>
+    <table class="resumen">
+        <tr><td class="lbl">CLIENTE:</td><td class="val">{{ pedido.cliente }}</td></tr>
+        {% if pedido.presupuesto %}<tr><td class="lbl">PRESUPUESTO:</td><td class="val">{{ pedido.presupuesto.numero }}</td></tr>{% endif %}
+        <tr><td class="lbl">ESTADO:</td><td class="val">{{ pedido.get_estado_display }}</td></tr>
+        <tr><td class="lbl">CANTIDAD DE ÓRDENES:</td><td class="val">{{ ordenes|length }}</td></tr>
+        {% if pedido.observaciones %}<tr><td class="lbl">OBSERVACIONES:</td><td class="val">{{ pedido.observaciones|linebreaksbr }}</td></tr>{% endif %}
+    </table>
+
+    <div class="gap"></div>
+
+    <table class="bar"><tr><td>ÓRDENES</td></tr></table>
+    <table class="medidas">
+        <tr>
+            <th class="o-num">N° ORDEN</th>
+            <th class="o-abe">ABERTURA</th>
+            <th class="o-lin">LÍNEA / COLOR</th>
+            <th class="o-cant">CANT.</th>
+            <th class="o-rev">REV.</th>
+        </tr>
+        {% for orden in ordenes %}
+        <tr>
+            <td class="o-num">{{ orden.numero_formateado }}</td>
+            <td class="o-abe">{{ orden.tipo_abertura }}</td>
+            <td class="o-lin">{{ orden.linea }}{% if orden.linea and orden.color %} / {% endif %}{{ orden.color }}</td>
+            <td class="o-cant">{{ orden.cantidad_total }}</td>
+            <td class="o-rev">{{ orden.revision|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td>—</td><td>Sin órdenes</td><td></td><td></td><td></td></tr>
+        {% endfor %}
+    </table>
+
+    {% for hoja in hojas %}
+    <pdf:nextpage />
+    {% include 'plantillas/_orden_hoja.html' %}
+    {% endfor %}
+
+</body>
+</html>

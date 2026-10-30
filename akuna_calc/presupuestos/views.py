@@ -12,7 +12,8 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Sum, Count, Max, Q
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
@@ -25,6 +26,8 @@ from core.navigation import append_return_to, resolve_return_url
 from usuarios.access_control import get_access_profile, user_has_any_access, user_has_full_access
 from comercial.models import Cliente, Venta
 from plantillas.models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
+from plantillas.services.circuito import cancelar_pedido, responsables_fabrica
+from plantillas.services.precarga import detalle_desde_snapshot
 from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
 from pricing.models import Producto
@@ -591,11 +594,6 @@ def actualizar_notas(request, pk):
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
 
 
-def _generar_numero_pedido_fabrica():
-    n = PedidoFabrica.objects.count() + 1
-    while PedidoFabrica.objects.filter(numero=f'PF-{n:04d}').exists():
-        n += 1
-    return f'PF-{n:04d}'
 
 
 def _crear_venta_desde_presupuesto(presupuesto):
@@ -666,12 +664,19 @@ def _crear_orden(pedido, item, numero, orden, presupuesto, snapshot, ancho, alto
         detalle_tirantes = f'Dividida por tirantes {sentido}: {vidrio_texto}.'
         nota = f'{nota}\n{detalle_tirantes}'.strip() if nota else detalle_tirantes
 
+    # REQ-063: el bloque «Detalle» llega precargado con lo que el cotizador ya sabe.
+    detalle = {campo: _cortar(campo, valor) for campo, valor in detalle_desde_snapshot(snapshot).items()}
+    vendedor = presupuesto.created_by
+    atendido_por = (vendedor.get_full_name() or vendedor.username) if vendedor else ''
+
     orden_fabricacion = OrdenFabricacion.objects.create(
         pedido=pedido,
         item_presupuesto=item,
         numero=numero,
         orden=orden,
         fecha_comprometida=fecha_comprometida,
+        atendido_por=_cortar('atendido_por', atendido_por),
+        **detalle,
         cliente_nombre=_cortar('cliente_nombre', cliente.get_nombre_completo()),
         cliente_domicilio=_cortar('cliente_domicilio', cliente.direccion),
         cliente_localidad=_cortar('cliente_localidad', cliente.localidad),
@@ -754,6 +759,29 @@ def _avisar_confirmacion(actor, presupuesto):
     )
 
 
+def _confirmar_con_venta_y_pedido(usuario, presupuesto):
+    venta = _crear_venta_desde_presupuesto(presupuesto)
+    pedido = PedidoFabrica.objects.create(
+        numero=PedidoFabrica.generar_numero(),
+        cliente=cortar_a_max_length(PedidoFabrica, 'cliente', presupuesto.cliente.get_nombre_completo()),
+        observaciones=f'Generado automáticamente desde el presupuesto {presupuesto.numero}.',
+        usuario=usuario,
+        presupuesto=presupuesto,
+    )
+    # Contador corrido: una estructura genera una orden por módulo, así que el
+    # número (único) y la posición ya no son "base + índice de ítem".
+    numero = OrdenFabricacion.generar_numero()
+    orden = 1
+    for posicion, item in enumerate(presupuesto.items.all(), start=1):
+        creadas = _crear_ordenes_desde_item(pedido, item, numero, orden, presupuesto, posicion)
+        numero += creadas
+        orden += creadas
+    presupuesto.venta = venta
+    presupuesto.estado = 'confirmado'
+    presupuesto.save(update_fields=['estado', 'venta', 'updated_at'])
+    return venta, pedido
+
+
 def _procesar_confirmacion(request, presupuesto):
     """Confirma el presupuesto generando la venta y el pedido de fábrica (todo o nada)."""
     if presupuesto.venta_id:
@@ -772,26 +800,17 @@ def _procesar_confirmacion(request, presupuesto):
         messages.error(request, 'El presupuesto PVC no tiene cotización USD cargada. Cargala antes de confirmar.')
         return redirect('presupuestos:presupuestos-detalle', pk=presupuesto.pk)
 
-    with transaction.atomic():
-        venta = _crear_venta_desde_presupuesto(presupuesto)
-        pedido = PedidoFabrica.objects.create(
-            numero=_generar_numero_pedido_fabrica(),
-            cliente=cortar_a_max_length(PedidoFabrica, 'cliente', presupuesto.cliente.get_nombre_completo()),
-            observaciones=f'Generado automáticamente desde el presupuesto {presupuesto.numero}.',
-            usuario=request.user,
-            presupuesto=presupuesto,
-        )
-        # Contador corrido: una estructura genera una orden por módulo, así que el
-        # número (único) y la posición ya no son "base + índice de ítem".
-        numero = OrdenFabricacion.generar_numero()
-        orden = 1
-        for posicion, item in enumerate(presupuesto.items.all(), start=1):
-            creadas = _crear_ordenes_desde_item(pedido, item, numero, orden, presupuesto, posicion)
-            numero += creadas
-            orden += creadas
-        presupuesto.venta = venta
-        presupuesto.estado = 'confirmado'
-        presupuesto.save(update_fields=['estado', 'venta', 'updated_at'])
+    # REQ-063 (H9): los números de pedido y de orden son únicos. Si otra confirmación
+    # tomó los mismos en paralelo, se rehace todo con números nuevos en vez de dar 500.
+    for intento in range(3):
+        try:
+            with transaction.atomic():
+                venta, pedido = _confirmar_con_venta_y_pedido(request.user, presupuesto)
+            break
+        except IntegrityError:
+            presupuesto.refresh_from_db()
+            if intento == 2:
+                raise
 
     _avisar_confirmacion(request.user, presupuesto)
 
@@ -830,10 +849,40 @@ def cambiar_estado(request, pk):
             return redirect('presupuestos:presupuestos-detalle', pk=pk)
         return _procesar_confirmacion(request, presupuesto)
 
-    presupuesto.estado = nuevo_estado
-    presupuesto.save(update_fields=['estado', 'updated_at'])
+    with transaction.atomic():
+        presupuesto.estado = nuevo_estado
+        presupuesto.save(update_fields=['estado', 'updated_at'])
+        # REQ-063: lo que el cliente canceló no se sigue fabricando.
+        cancelados = _cancelar_pedidos_fabrica(presupuesto, request.user) if nuevo_estado == 'cancelado' else []
     messages.success(request, f'Estado actualizado a "{presupuesto.get_estado_display()}".')
+    for pedido, estaba_en_taller in cancelados:
+        aviso = f'Se canceló también el pedido de fábrica {pedido.numero}.'
+        if estaba_en_taller:
+            aviso += ' Ya estaba en el taller: avisá a fábrica.'
+        messages.warning(request, aviso)
     return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+
+def _cancelar_pedidos_fabrica(presupuesto, usuario):
+    """Cancela los pedidos abiertos del presupuesto y avisa a los responsables de fábrica."""
+    cancelados = []
+    for pedido in presupuesto.pedidos_fabrica.exclude(estado__in=PedidoFabrica.ESTADOS_CERRADOS):
+        estaba_en_taller = pedido.esta_liberado
+        try:
+            cancelar_pedido(pedido, usuario, f'Presupuesto {presupuesto.numero} cancelado.')
+        except ValidationError:
+            continue  # otro usuario lo cerró entre la consulta y el bloqueo
+        cancelados.append((pedido, estaba_en_taller))
+    if cancelados:
+        responsables = responsables_fabrica(excluir=usuario)
+        for pedido, _ in cancelados:
+            crear_aviso(
+                responsables,
+                f'Pedido {pedido.numero} cancelado: se canceló el presupuesto {presupuesto.numero}.',
+                tipo='alerta',
+                url=reverse('plantillas:pedido_detail', args=[pedido.pk]),
+            )
+    return cancelados
 
 
 @login_required

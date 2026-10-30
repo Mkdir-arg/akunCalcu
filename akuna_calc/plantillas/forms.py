@@ -2,7 +2,7 @@ from django import forms
 
 from pricing.models import Linea
 
-from .models import OpcionalFabrica, OrdenFabricacion
+from .models import OpcionalFabrica, OrdenFabricacion, PedidoFabrica
 
 
 _INPUT = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -28,13 +28,43 @@ class OrdenFabricacionForm(forms.ModelForm):
             'nota': forms.Textarea(attrs={'rows': 6, 'class': _INPUT}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, requiere_motivo=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['fecha_comprometida'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         for name, field in self.fields.items():
             field.required = False
             if name not in self.Meta.widgets:
                 field.widget.attrs.setdefault('class', _INPUT)
+        # REQ-063: modificar una orden ya liberada sube su revisión y exige el motivo.
+        if requiere_motivo:
+            self.fields['motivo_revision'] = forms.CharField(
+                label='Motivo del cambio', max_length=500,
+                widget=forms.TextInput(attrs={'class': _INPUT}),
+                help_text='La orden pasa a una revisión nueva y el taller tiene que reimprimirla.',
+            )
+
+
+class PedidoFabricaForm(forms.ModelForm):
+    class Meta:
+        model = PedidoFabrica
+        fields = ['numero', 'cliente', 'observaciones']
+
+
+class LiberarPedidoForm(forms.Form):
+    motivo_sin_sena = forms.CharField(required=False, max_length=500, label='Motivo para liberar sin seña')
+
+
+class CancelarPedidoForm(forms.Form):
+    motivo = forms.CharField(max_length=500, label='Motivo de la cancelación')
+
+
+class EntregarPedidoForm(forms.Form):
+    tipo = forms.ChoiceField(choices=[('entregado', 'Entregado'), ('colocado', 'Colocado en obra')])
+
+
+class CambiarEtapaForm(forms.Form):
+    etapa = forms.ChoiceField(choices=OrdenFabricacion.ETAPA_CHOICES)
+    nota = forms.CharField(required=False, max_length=500)
 
 
 class OpcionalFabricaForm(forms.ModelForm):

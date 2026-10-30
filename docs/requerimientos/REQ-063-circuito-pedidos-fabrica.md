@@ -1,6 +1,6 @@
 # REQ-063 — Circuito de pedidos de fábrica: estados, trabajo del taller y Orden de Fabricación mejorada
 
-- **Estado:** En desarrollo (Paso 1 y Paso 2 aprobados 2026-10-29, con la condición de usar el diseño «Taller» — § 10.7; implementación esperando el merge de `development`)
+- **Estado:** Implementado (Etapa 1) — [FEAT-048](../features/FEAT-048-circuito-pedidos-fabrica.md), 2026-10-30. Etapas 2 y 3 pendientes
 - **Fecha:** 2026-10-29
 - **Complejidad:** Grande (se entrega en 3 etapas)
 - **Origen:** Pedido directo del usuario: "una vez que se confirme el presupuesto arranquemos con los pedidos a fábrica… planificá cómo llega un pedido, cómo pasa por los estados, qué hace el de fábrica, y mejorá el PDF manteniendo la estética".
@@ -166,20 +166,22 @@ Antes de decidir: prueba de render con un script de scratchpad (`render_to_strin
 ## 9. Criterios de aceptación
 
 **Etapa 1 — Circuito y PDF (Mediano-Grande)**
-- [ ] Al confirmar un presupuesto, el pedido nace en **Recibido** y sus órdenes en **Por fabricar**
-- [ ] El detalle del pedido muestra el checklist de faltantes y el botón **Liberar a fábrica**, que solo se habilita con el checklist completo
-- [ ] Si la venta no tiene seña, se advierte; "Liberar igual" pide confirmación y motivo, y queda en el historial
-- [ ] Solo quien tiene `fabrica.pedidos_gestion` ve y puede usar Liberar, Cancelar, Modificar orden liberada y Entregar (por URL directa → 403)
-- [ ] Al liberar, el pedido pasa a **En fábrica** y las órdenes quedan congeladas en Rev. 1
-- [ ] Modificar una orden liberada pide motivo y sube la revisión; el PDF muestra la revisión
-- [ ] Desde el detalle del pedido se cambia la etapa de cada orden; cada cambio queda en el historial con usuario y fecha
-- [ ] El estado del pedido pasa solo a **En producción** y a **Terminado** según sus órdenes
-- [ ] **Marcar entregado / colocado** actualiza el estado de la Venta
-- [ ] Si el presupuesto confirmado pasa a cancelado, el pedido pasa a **Cancelado** y sus órdenes a **Anulada**
-- [ ] El listado de pedidos filtra por estado y marca en rojo los atrasados
-- [ ] El PDF de la orden incluye M1, M2, M4, M5; mismo diseño y una sola hoja A4
-- [ ] Botón **Imprimir pedido** (M8)
-- [ ] Número de pedido sin `count()+1` (H9)
+- [x] Al confirmar un presupuesto, el pedido nace en **Recibido** y sus órdenes en **Por fabricar**
+- [x] El detalle del pedido muestra el checklist de faltantes y el botón **Liberar a fábrica**, que solo se habilita con el checklist completo
+- [x] Si la venta no tiene seña, se advierte; "Liberar igual" pide confirmación y motivo, y queda en el historial
+- [x] Solo quien tiene `fabrica.pedidos_gestion` ve y puede usar Liberar, Cancelar, Modificar orden liberada y Entregar (sin el permiso, el `RouteAccessMiddleware` redirige con 302 y mensaje, patrón del sistema; las vistas además lanzan `PermissionDenied` → 403 si se las llama sin pasar por el middleware)
+- [x] Al liberar, el pedido pasa a **En fábrica** y las órdenes quedan congeladas en Rev. 1
+- [x] Modificar una orden liberada pide motivo y sube la revisión; el PDF muestra la revisión
+- [x] Desde el detalle del pedido se cambia la etapa de cada orden; cada cambio queda en el historial con usuario y fecha
+- [x] El estado del pedido pasa solo a **En producción** y a **Terminado** según sus órdenes
+- [x] **Marcar entregado / colocado** actualiza el estado de la Venta
+- [x] Si el presupuesto confirmado pasa a cancelado, el pedido pasa a **Cancelado** y sus órdenes a **Anulada**
+- [x] El listado de pedidos filtra por estado y marca en rojo los atrasados
+- [x] El PDF de la orden incluye M1, M2, M4, M5; mismo diseño y una sola hoja A4
+- [x] Botón **Imprimir pedido** (M8)
+- [x] Número de pedido sin `count()+1` (H9)
+
+> Pendientes de la Etapa 1: verificación visual en navegador (Playwright) no hecha; si la orden no tiene datos del cliente, las columnas del PDF se achican (detalle previo); migración a aplicar en prod: `plantillas/0017` (el diseño decía 0016; ya existía una con ese número).
 
 **Etapa 2 — Taller en el sistema (Mediano)**
 - [ ] Tablero de fábrica: una columna por etapa (Por fabricar · Corte · Armado · Vidriado · Lista) con las órdenes de pedidos liberados, ordenadas por fecha comprometida
@@ -206,7 +208,7 @@ Antes de decidir: prueba de render con un script de scratchpad (`render_to_strin
 | Archivo | Cambio |
 |---|---|
 | `plantillas/models.py` | Estados nuevos del pedido, etapa / revisión de la orden, modelo nuevo `HistorialPedidoFabrica`, `PedidoFabrica.generar_numero()` |
-| `plantillas/migrations/0016_circuito_pedidos.py` | Schema + data migration (mapeo de estados viejos) |
+| `plantillas/migrations/0017_circuito_pedidos.py` | Schema + data migration (mapeo de estados viejos) |
 | `plantillas/services/circuito.py` **(nuevo)** | Toda la lógica de transiciones (una sola fuente, la usan las vistas y `presupuestos`) |
 | `plantillas/services/precarga.py` **(nuevo)** | `detalle_desde_snapshot(snapshot)` → campos del bloque Detalle (M1) |
 | `plantillas/forms.py` | `PedidoFabricaForm`, `LiberarPedidoForm`, `CancelarPedidoForm`, `CambiarEtapaForm`, `EntregarPedidoForm`; `OrdenFabricacionForm` suma `motivo_revision` cuando la orden está liberada |
@@ -220,9 +222,9 @@ Antes de decidir: prueba de render con un script de scratchpad (`render_to_strin
 | `usuarios/access_control.py` | 2 códigos nuevos (grupo `fabrica`) + `_register_route` de las rutas nuevas |
 | `plantillas/tests.py` | Tests (§ 10.6) |
 
-**Archivos nuevos:** `services/circuito.py`, `services/precarga.py`, `_orden_hoja.html`, `pedido_pdf.html`, migración 0016.
+**Archivos nuevos:** `services/circuito.py`, `services/precarga.py`, `_orden_hoja.html`, `pedido_pdf.html`, migración 0017.
 
-### 10.2 Base de datos (migración `plantillas/0016`)
+### 10.2 Base de datos (migración `plantillas/0017`)
 
 **`PedidoFabrica`**
 - `estado`: choices nuevos `recibido` · `en_fabrica` · `en_produccion` · `terminado` · `entregado` · `cancelado`; default `recibido`.

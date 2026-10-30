@@ -1,3 +1,10 @@
+<div class="toolbar">
+    <nav class="tabs" aria-label="Filtrar por estado">
+        {% for clave, etiqueta, cantidad in pestanas %}
+        <a class="tab{% if clave == estado_actual %} on{% endif %}" href="?{% if clave %}estado={{ clave }}{% endif %}">{{ etiqueta }} <span class="cnt">{{ cantidad }}</span></a>
+        {% endfor %}
+    </nav>
+</div>
 <div class="table-wrap">
     <table class="tbl">
         <thead>
@@ -6,6 +13,7 @@
                 <th>Cliente</th>
                 <th>Fecha</th>
                 <th>Presupuesto</th>
+                <th>Comprometido</th>
                 <th>Estado</th>
                 <th><span class="sr-only">Acciones</span></th>
             </tr>
@@ -23,19 +31,21 @@
                     <span class="muted">Manual</span>
                     {% endif %}
                 </td>
+                <td class="muted">{{ pedido.fecha_comprometida|date:"d/m/Y"|default:"—" }}</td>
                 <td>
-                    {% if pedido.estado == 'BORRADOR' %}{% include 'core/ui/badge.html' with tone="gray" label="Borrador" dot=True only %}
-                    {% elif pedido.estado == 'EN_PROCESO' %}{% include 'core/ui/badge.html' with tone="blue" label="En proceso" dot=True only %}
-                    {% elif pedido.estado == 'COMPLETADO' %}{% include 'core/ui/badge.html' with tone="green" label="Completado" dot=True only %}
-                    {% else %}{% include 'core/ui/badge.html' with tone="red" label="Cancelado" dot=True only %}{% endif %}
+                    <span class="inline-flex items-center gap-2 flex-wrap">
+                        {% include 'core/ui/badge.html' with tone=pedido.tono_estado label=pedido.get_estado_display dot=True only %}
+                        {% if pedido.esta_atrasado %}{% include 'core/ui/badge.html' with tone="red" label="Atrasado" icon="fas fa-clock" only %}{% endif %}
+                    </span>
                 </td>
                 <td class="num"><a class="btn btn-secondary btn-sm" href="{% url 'plantillas:pedido_detail' pedido.pk %}">Ver</a></td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6">{% url 'plantillas:pedido_create' as url_crear %}{% include 'core/ui/empty_state.html' with title="Todavía no hay pedidos" icon="fas fa-clipboard-list" action_url=url_crear action_label="Nuevo pedido" only %}</td>
+                <td colspan="7">{% url 'plantillas:pedido_create' as url_crear %}{% include 'core/ui/empty_state.html' with title="No hay pedidos en este estado" icon="fas fa-clipboard-list" action_url=url_crear action_label="Nuevo pedido" only %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% include 'core/ui/pagination.html' with page_obj=page_obj query=query_sin_page total_label="pedidos" only %}
