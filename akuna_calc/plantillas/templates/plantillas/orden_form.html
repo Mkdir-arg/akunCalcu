@@ -219,6 +219,16 @@
             <div class="card card-pad lg:sticky lg:top-6">
                 <h2 class="strong text-base mb-4">Nota</h2>
                 {{ form.nota }}
+                {% if liberada %}
+                <div class="rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-warn mt-5">
+                    <i class="fas fa-triangle-exclamation mr-2"></i>Esta orden ya está en el taller (Rev. {{ orden.revision }}). Al guardar pasa a la Rev. {{ orden.revision|add:1 }} y hay que reimprimirla.
+                </div>
+                <div class="field mt-4">
+                    <label for="{{ form.motivo_revision.id_for_label }}">{{ form.motivo_revision.label }} *</label>
+                    {{ form.motivo_revision }}
+                    {% for error in form.motivo_revision.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
                 <div class="flex flex-col gap-3 mt-6 pt-4 border-t border-line">
                     <button type="submit" class="btn btn-primary justify-center">
                         <i class="fas fa-save"></i>Guardar orden

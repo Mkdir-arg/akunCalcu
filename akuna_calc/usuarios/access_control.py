@@ -101,6 +101,9 @@ ACCESS_MODULES = [
         'dropdown': False,
         'items': [
             {'code': 'despiece.pedidos', 'label': 'Pedidos de Fábrica', 'route_name': 'plantillas:pedido_list'},
+            # REQ-063: permisos extra sobre el mismo listado (el sidebar no repite la ruta).
+            {'code': 'fabrica.pedidos_gestion', 'label': 'Gestionar pedidos (liberar, cancelar, entregar)', 'route_name': 'plantillas:pedido_list'},
+            {'code': 'fabrica.tablero', 'label': 'Avanzar etapas del taller', 'route_name': 'plantillas:pedido_list'},
         ],
     },
     {
@@ -261,6 +264,9 @@ _register_route('reportes.proveedores', 'comercial:reporte_proveedor_detalle', '
 _register_route('reportes.general', 'comercial:exportar_reporte_general_excel')
 
 _register_route('despiece.pedidos', 'plantillas:index', 'plantillas:pedido_create', 'plantillas:pedido_detail', 'plantillas:orden_create', 'plantillas:orden_edit', 'plantillas:orden_delete', 'plantillas:orden_pdf')
+_register_route(['despiece.pedidos', 'fabrica.pedidos_gestion', 'fabrica.tablero'], 'plantillas:pedido_detail', 'plantillas:orden_pdf', 'plantillas:pedido_pdf')
+_register_route('fabrica.pedidos_gestion', 'plantillas:pedido_liberar', 'plantillas:pedido_cancelar', 'plantillas:pedido_entregar')
+_register_route(['fabrica.pedidos_gestion', 'fabrica.tablero'], 'plantillas:orden_etapa', 'plantillas:orden_reimpresa')
 _register_route('fabrica.opcionales', 'plantillas:opcional_create', 'plantillas:opcional_edit', 'plantillas:opcional_delete', 'plantillas:opcional_formulas_guardar', 'plantillas:opcional_accesorios_guardar', 'plantillas:opcional_relaciones_guardar')
 
 _register_route('fabrica.extrusoras', 'config-extrusora-create', 'config-extrusora-edit', 'config-extrusora-delete', 'api-get-extrusoras')
@@ -413,6 +419,8 @@ def build_sidebar_modules(user, current_route_key=None):
         visible_items = []
         for item in module['items']:
             if not user_has_access(user, item['code']):
+                continue
+            if any(v['route_name'] == item['route_name'] for v in visible_items):
                 continue
             try:
                 item_url = reverse(item['route_name'])

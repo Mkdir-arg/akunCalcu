@@ -14,6 +14,21 @@
 
 ---
 
+## 2026-10-30 — Circuito de pedidos de fábrica, Etapa 1 (REQ-063 → FEAT-048)
+
+**Sprint**: Fuera de plan
+**Deploy**: todavía no; está en la rama `feat/req-063-pedidos-fabrica`. Migración `plantillas/0017` (reversible, no borra datos)
+
+El pedido de fábrica ahora tiene estados (Recibido, En fábrica, En producción, Terminado, Entregado, Cancelado) y cada
+orden pasa por Corte, Armado, Vidriado y Lista, con historial de quién y cuándo. «Liberar a fábrica» pide el checklist
+completo y avisa si falta la seña; entregar actualiza la venta; cancelar el presupuesto cancela el pedido. Editar una orden
+ya liberada sube la revisión y avisa a fábrica hasta que confirmen «Ya la reimprimí». PDF de orden con detalle precargado
+del cotizador, casillas SÍ / NO y control de etapas; PDF del pedido completo con carátula. Numeración PF sin `count()+1`.
+Permisos nuevos `fabrica.pedidos_gestion` y `fabrica.tablero`; tiempo real en pedidos y órdenes. ADR-025. Tests:
+plantillas + presupuestos 298 OK; suite completa igual a la línea base. Pendiente: Etapa 2 (tablero, QR), Playwright.
+
+---
+
 ## 2026-10-29 — Rediseño «Taller» y actualización en vivo (REQ-064/065 → FEAT-046/047)
 
 **Sprint**: Fuera de plan

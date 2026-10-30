@@ -190,6 +190,26 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-025: El pedido de fábrica tiene estado de cabecera con transiciones en un servicio; la orden tiene su propia etapa y revisiones
+**Fecha**: 2026-10-30
+**Estado**: Activo
+
+**Contexto**: `PedidoFabrica.estado` existía pero ninguna pantalla lo cambiaba y las órdenes no tenían estado: el taller no podía marcar avance, nadie «liberaba» el pedido y se podía editar una orden ya impresa sin rastro (REQ-063).
+
+**Decisión**:
+1. **Dos niveles.** El pedido tiene un estado de cabecera (`recibido · en_fabrica · en_produccion · terminado · entregado · cancelado`) y cada orden su etapa de taller (`por_fabricar · corte · armado · vidriado · lista · anulada`). «En producción» y «Terminado» se **calculan** desde las etapas (`recalcular_estado()`), nunca se eligen a mano; recibido, entregado y cancelado no se recalculan.
+2. **Las transiciones viven en `plantillas/services/circuito.py`** (liberar, cambiar etapa, revisar, entregar, cancelar), cada una en `transaction.atomic()` con `select_for_update()` y una fila en `HistorialPedidoFabrica` (un solo historial para pedido y órdenes). Las vistas y `presupuestos` llaman al servicio; no escriben estados directo.
+3. **Revisión de orden liberada:** al liberar, `revision = 1`. Modificar una orden liberada exige permiso `fabrica.pedidos_gestion` y motivo, incrementa `revision`, prende `reimpresion_pendiente` y avisa a los responsables. El aviso se apaga **solo con confirmación explícita**: POST «Ya la reimprimí» con la revisión que se vio, y solo si coincide con la vigente.
+4. `Venta.estado` se escribe desde el pedido al entregar, pero no hay sincronización de vuelta: cambiar la venta a mano no mueve el pedido.
+
+**Alternativas descartadas**:
+- *Estado único por pedido, sin etapas por orden*: el taller no puede registrar avance parcial y el estado del pedido quedaría a mano, pudiendo contradecir a las órdenes.
+- *Apagar el aviso al abrir el PDF*: abrir el PDF no garantiza que se imprimió ni que el taller retiró el papel viejo, y un GET no debería mutar estado. Además una revisión nueva mientras tanto quedaría tapada; por eso se confirma por POST con la revisión vigente.
+
+**Consecuencias**: Una sola fuente de verdad para el circuito y su historial; el taller puede avanzar sin tocar la cabecera. Las etapas son fijas en código (sumar una requiere migración, decisión P1 del REQ). Las escrituras con `QuerySet.update()` deben pasar `updated_at` a mano para que el tiempo real las detecte. Cancelar el presupuesto cancela también un pedido ya en producción (con advertencia y rastro en el historial). Los usuarios existentes necesitan que un admin les asigne `fabrica.pedidos_gestion` o `fabrica.tablero`.
+
+---
+
 ## ADR-024: Tiempo real por polling de 20 s en lugar de WebSockets o SSE
 **Fecha**: 2026-10-29
 **Estado**: Activo

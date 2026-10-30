@@ -1578,9 +1578,23 @@ class ConfirmarPresupuestoTest(TestCase):
         pedido = p.pedidos_fabrica.get()
         self.assertEqual(pedido.numero, 'PF-0001')
         self.assertEqual(pedido.cliente, p.cliente.get_nombre_completo())
-        self.assertEqual(pedido.estado, 'BORRADOR')
+        self.assertEqual(pedido.estado, 'recibido')
         self.assertEqual(pedido.usuario, self.user)
         self.assertIn(p.numero, pedido.observaciones)
+
+    def test_confirmar_reintenta_si_el_numero_de_pedido_ya_se_uso(self):
+        """REQ-063 (H9): dos confirmaciones a la vez sacaban el mismo PF-NNNN y la segunda daba 500."""
+        PedidoFabrica.objects.create(numero='PF-0001', cliente='Otro')
+        p = self._presupuesto_con_total()
+
+        with patch.object(PedidoFabrica, 'generar_numero', side_effect=['PF-0001', 'PF-0002']):
+            res = self._confirmar(p)
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, 'confirmado')
+        self.assertEqual(p.pedidos_fabrica.get().numero, 'PF-0002')
+        self.assertEqual(Venta.objects.filter(numero_pedido=p.numero).count(), 1)
 
     def test_confirmar_pvc_genera_venta_en_dolares_sin_sena(self):
         p = self._presupuesto_con_total(Decimal('500000'), pvc=True, cotizacion=Decimal('1000'))

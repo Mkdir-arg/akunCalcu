@@ -11,18 +11,20 @@
         {% csrf_token %}
 
         <div class="field">
-            <label>Número de pedido *</label>
-            <input type="text" name="numero" value="{{ numero_sugerido }}" required>
+            <label for="id_numero">Número de pedido *</label>
+            <input type="text" id="id_numero" name="numero" value="{{ form.numero.value|default:'' }}" required>
+            {% for error in form.numero.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
         </div>
 
         <div class="field">
-            <label>Cliente *</label>
-            <input type="text" name="cliente" required>
+            <label for="id_cliente">Cliente *</label>
+            <input type="text" id="id_cliente" name="cliente" value="{{ form.cliente.value|default:'' }}" required>
+            {% for error in form.cliente.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
         </div>
 
         <div class="field">
-            <label>Observaciones</label>
-            <textarea name="observaciones" rows="3"></textarea>
+            <label for="id_observaciones">Observaciones</label>
+            <textarea id="id_observaciones" name="observaciones" rows="3">{{ form.observaciones.value|default:'' }}</textarea>
         </div>
 
         <div class="flex gap-3 pt-2">

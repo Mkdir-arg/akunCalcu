@@ -22,6 +22,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-062 | Estructuras: varias aberturas sobre una pared, cotizadas como un conjunto (REQ-062) | ✅ Completado (Etapa 1) | Fuera de plan; FEAT-045 / ADR-022. Sin migración. Etapa 2 pendiente. Falta probar con el catálogo real |
 | US-064 | Rediseño visual «Taller» de todo el sistema (REQ-064) | ✅ Completado | Fuera de plan; FEAT-046 / ADR-023. Solo en `development`; PDF intactos |
 | US-065 | Actualización en vivo por polling (REQ-065) | ✅ Completado | Fuera de plan; FEAT-047 / ADR-024. Migraciones de `core` |
+| US-063 | Circuito de pedidos de fábrica: estados, etapas del taller, liberar, revisiones y PDF (REQ-063) | ✅ Completado (Etapa 1) | Fuera de plan; FEAT-048 / ADR-025. Migración `plantillas/0017`. Etapas 2 (tablero, QR) y 3 (planos) pendientes |
 
 ## Items completados (sprints anteriores)
 
