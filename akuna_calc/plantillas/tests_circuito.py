@@ -310,7 +310,8 @@ class CircuitoVistasTest(_CircuitoBase):
         response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
         self.assertNotContains(response, 'onclick="liberarPedido()"')
         self.assertNotContains(response, 'onclick="abrirCotizadorOrden()"')
-        self.assertContains(response, 'Corte')
+        self.assertContains(response, 'Pasar a Corte')
+        self.assertContains(response, 'Por fabricar')
         self.assertContains(response, 'Historial')
 
     def test_no_agrega_ni_borra_ordenes_despues_de_liberar(self):
@@ -430,6 +431,122 @@ class CircuitoVistasTest(_CircuitoBase):
         self.assertTrue(response.content.startswith(b'%PDF'))
 
 
+class HojaPdfContextoTest(_CircuitoBase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.admin)
+
+    def _hoja(self, orden):
+        orden = OrdenFabricacion.objects.prefetch_related('medidas', 'historial').get(pk=orden.pk)
+        return views._contexto_hoja(orden, 1, 2)
+
+    def test_medida_se_parte_en_ancho_y_alto(self):
+        for texto, esperado in (
+            ('1500 x 1100', ('1500', '1100')),
+            ('1500X1100', ('1500', '1100')),
+            ('1500 × 1100', ('1500', '1100')),
+            ('1.500,5x1100', ('1.500,5', '1100')),
+            ('1500x1100', ('1500', '1100')),
+            ('según plano', ('según plano', '')),
+            ('ver anexo', ('ver anexo', '')),
+            ('aprox 1500', ('aprox 1500', '')),
+            ('1500 x alto a definir', ('1500 x alto a definir', '')),
+            (None, ('', '')),
+            ('1 x 2 x 3', ('1 x 2 x 3', '')),
+            ('', ('', '')),
+        ):
+            self.assertEqual(views._ancho_alto(texto), esperado, texto)
+        MedidaOrdenFabricacion.objects.filter(orden=self.o1).update(medida='según plano')
+        fila = self._hoja(self.o1)['filas'][0]
+        self.assertEqual((fila['ancho'], fila['alto']), ('según plano', ''))
+
+    def test_caracteristicas_omite_vacios_y_agrupa_de_a_dos(self):
+        self.assertEqual(self._hoja(self.o1)['caracteristicas'], [])
+        OrdenFabricacion.objects.filter(pk=self.o1.pk).update(mosquitero='Sí', premarco='No', altura_trabajo='Planta baja')
+        pares = self._hoja(self.o1)['caracteristicas']
+        self.assertEqual(len(pares), 2)
+        etiquetas = [x[0] for par in pares for x in par if x]
+        self.assertIn('ALTURA DEL TRABAJO', etiquetas)
+        self.assertEqual(len(etiquetas), 3)
+        self.assertIsNone(pares[1][1])
+
+    def test_banda_de_revision_solo_con_revision_mayor_a_uno(self):
+        response = self.client.get(f'/plantillas/ordenes/{self.o1.pk}/pdf/')
+        self.assertEqual(response.status_code, 200)
+        html = self._html(self.o1)
+        self.assertNotIn('DESCARTAR LA HOJA ANTERIOR', html)
+
+        OrdenFabricacion.objects.filter(pk=self.o1.pk).update(revision=2)
+        HistorialPedidoFabrica.objects.create(
+            pedido=self.pedido, orden=self.o1, tipo='revision', nota='El cliente cambió el vidrio', hasta='2',
+        )
+        html = self._html(self.o1)
+        self.assertIn('DESCARTAR LA HOJA ANTERIOR', html)
+        self.assertIn('El cliente cambió el vidrio', html)
+        self.assertEqual(self._hoja(self.o1)['motivo_revision'], 'El cliente cambió el vidrio')
+
+    def test_hoja_de_ruta_muestra_total_de_unidades(self):
+        MedidaOrdenFabricacion.objects.create(orden=self.o2, cantidad=3, medida='800 x 600', orden_fila=2)
+        with patch.object(views, 'render_to_string', wraps=views.render_to_string) as espia:
+            response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/pdf/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(espia.call_args.args[1]['unidades_pedido'], 5)
+        self.assertEqual(len(espia.call_args.args[1]['hojas']), 2)
+
+    def _html(self, orden):
+        from django.template.loader import render_to_string
+        return render_to_string('plantillas/orden_pdf.html', {
+            **views._contexto_pdf_base(), 'hoja': self._hoja(orden),
+        })
+
+
+class PasosYDetalleTest(_CircuitoBase):
+    def _estados(self, orden):
+        return [(p['etiqueta'], p['estado']) for p in orden.pasos]
+
+    def test_pasos_segun_la_etapa(self):
+        self.assertEqual({e for _, e in self._estados(self.o1)}, {'pendiente'})
+        self._liberar()
+        circuito.cambiar_etapa(self.o1, self.admin, 'corte')
+        circuito.cambiar_etapa(self.o1, self.admin, 'armado')
+        self.o1.refresh_from_db()
+        self.assertEqual(self._estados(self.o1), [
+            ('Corte', 'hecho'), ('Armado', 'actual'), ('Vidriado', 'pendiente'), ('Lista', 'pendiente'),
+        ])
+        circuito.cambiar_etapa(self.o1, self.admin, 'vidriado')
+        circuito.cambiar_etapa(self.o1, self.admin, 'lista')
+        self.o1.refresh_from_db()
+        self.assertEqual({e for _, e in self._estados(self.o1)}, {'hecho'})
+        self.o2.etapa = 'anulada'
+        self.assertEqual(self.o2.pasos, [])
+
+    def test_detalle_muestra_pasar_a_siguiente_y_avance(self):
+        self.client.force_login(self.admin)
+        self._liberar()
+        response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
+        self.assertContains(response, 'Pasar a Corte')
+        self.assertContains(response, '0 de 2 órdenes listas')
+
+        for etapa in ('corte', 'armado', 'vidriado', 'lista'):
+            circuito.cambiar_etapa(self.o1, self.admin, etapa)
+        response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
+        self.assertContains(response, '1 de 2 órdenes listas')
+        self.assertContains(response, 'Pasar a Corte')
+        self.assertEqual(response.context['avance_pct'], 50)
+
+    def test_detalle_muestra_motivo_de_la_reimpresion(self):
+        self.client.force_login(self.admin)
+        self._liberar()
+        OrdenFabricacion.objects.filter(pk=self.o1.pk).update(revision=2, reimpresion_pendiente=True)
+        HistorialPedidoFabrica.objects.create(
+            pedido=self.pedido, orden=self.o1, tipo='revision', nota='Cambio de color', hasta='2',
+        )
+        response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
+        self.assertContains(response, 'Cambiada: reimprimir.')
+        self.assertContains(response, 'Cambio de color')
+        self.assertContains(response, 'Ya la reimprimí')
+
+
 class CircuitoPermisosTest(_CircuitoBase):
     def test_solo_consulta_no_libera_ni_mueve_etapas(self):
         lector = _usuario('lector-pedidos', permisos=['despiece.pedidos'])
@@ -440,6 +557,9 @@ class CircuitoPermisosTest(_CircuitoBase):
         self.assertEqual(self.pedido.estado, 'recibido')
 
         self._liberar()
+        response = self.client.get(f'/plantillas/pedidos/{self.pedido.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Pasar a')
         self.client.post(f'/plantillas/ordenes/{self.o1.pk}/etapa/', {'etapa': 'corte'})
         self.o1.refresh_from_db()
         self.assertEqual(self.o1.etapa, 'por_fabricar')

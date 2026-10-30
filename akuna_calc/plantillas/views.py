@@ -1,5 +1,6 @@
 import base64
 import io
+import re
 from pathlib import Path
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -20,7 +21,7 @@ from xhtml2pdf import pisa
 from configuracion.models import ConfiguracionGeneral
 from core.avisos import crear_aviso
 from usuarios.access_control import user_has_access
-from .models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion
+from .models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion, HistorialPedidoFabrica
 from .forms import (
     CambiarEtapaForm, CancelarPedidoForm, EntregarPedidoForm, LiberarPedidoForm,
     OrdenFabricacionForm, PedidoFabricaForm,
@@ -111,6 +112,17 @@ def pedido_create(request):
     return render(request, 'plantillas/pedido_form.html', {'form': form})
 
 
+def _motivos_revision(orden_ids):
+    """Nota de la última revisión de cada orden, en una sola consulta."""
+    ids = list(orden_ids)
+    if not ids:
+        return {}
+    motivos = {}
+    for h in HistorialPedidoFabrica.objects.filter(orden_id__in=ids, tipo='revision').order_by('-created_at', '-id'):
+        motivos.setdefault(h.orden_id, h.nota)
+    return motivos
+
+
 @login_required
 def pedido_detail(request, pk):
     """Detalle de pedido con sus órdenes, el checklist para liberar y el historial."""
@@ -118,11 +130,19 @@ def pedido_detail(request, pk):
         PedidoFabrica.objects.select_related('presupuesto', 'presupuesto__venta', 'usuario', 'liberado_por'),
         pk=pk,
     )
-    ordenes = pedido.ordenes.prefetch_related('medidas').all()
+    ordenes = list(pedido.ordenes.prefetch_related('medidas'))
     puede_gestionar = _puede_gestionar(request.user)
+    motivos = _motivos_revision(o.pk for o in ordenes if o.reimpresion_pendiente)
+    for o in ordenes:
+        o.motivo_revision = motivos.get(o.pk, '')
+    activas = [o for o in ordenes if o.etapa != 'anulada']
+    ordenes_listas = sum(1 for o in activas if o.etapa == 'lista')
     return render(request, 'plantillas/pedido_detail.html', {
         'pedido': pedido,
         'ordenes': ordenes,
+        'ordenes_total': len(activas),
+        'ordenes_listas': ordenes_listas,
+        'avance_pct': round(ordenes_listas * 100 / len(activas)) if activas else 0,
         'faltantes': pedido.faltantes_para_liberar() if pedido.estado == 'recibido' else [],
         'sin_sena': pedido.estado == 'recibido' and not circuito.venta_tiene_sena(pedido),
         'historial': pedido.historial.select_related('orden', 'usuario')[:30],
@@ -407,10 +427,46 @@ def _avisar_revision(orden, actor, motivo):
 
 # ============ PDF ============
 
+DETALLE_HOJA = [
+    'mosquitero', 'mosquitero_modelo', 'travesano', 'tipo_marco', 'marco_desarmado', 'umbral_transitable',
+    'premarco', 'guia_persiana', 'tipo_guia', 'tapacinta', 'modelo_hoja', 'travesano_divisor',
+    'altura_travesano', 'contramarco', 'modelo_contramarco', 'tipo_trabajo', 'altura_trabajo',
+]
+
+
+def _caracteristicas_hoja(orden):
+    """Características con valor, de a pares (dos columnas); lo vacío no se imprime."""
+    items = []
+    for campo in DETALLE_HOJA:
+        valor = (getattr(orden, campo) or '').strip()
+        if valor:
+            etiqueta = 'ALTURA DEL TRABAJO' if campo == 'altura_trabajo' else orden._meta.get_field(campo).verbose_name.upper()
+            items.append((etiqueta, valor))
+    return [(items[i], items[i + 1] if i + 1 < len(items) else None) for i in range(0, len(items), 2)]
+
+
+def _ancho_alto(medida):
+    """Parte 'ancho x alto' solo si ambos lados son números; si no, todo va en ancho."""
+    texto = (medida or '').strip()
+    m = re.fullmatch(r'\s*(\d[\d.,]*)\s*[xX×]\s*(\d[\d.,]*)\s*', texto)
+    return (m.group(1), m.group(2)) if m else (texto, '')
+
+
 def _contexto_hoja(orden, posicion, total_ordenes):
+    medidas = list(orden.medidas.all())
+    revisiones = [h for h in orden.historial.all() if h.tipo == 'revision']
+    if revisiones:
+        ultima = max(revisiones, key=lambda h: (h.created_at, h.id))
+        motivo = ultima.nota
+    else:
+        motivo = ''
     return {
         'orden': orden,
-        'medidas': orden.medidas.all(),
+        'medidas': medidas,
+        'filas': [{'m': m, 'ancho': ancho, 'alto': alto} for m in medidas for ancho, alto in [_ancho_alto(m.medida)]],
+        'unidades': sum(m.cantidad or 0 for m in medidas),
+        'caracteristicas': _caracteristicas_hoja(orden),
+        'motivo_revision': motivo,
         'posicion': posicion,
         'total_ordenes': total_ordenes,
     }
@@ -420,9 +476,8 @@ def _contexto_pdf_base():
     return {
         'empresa': ConfiguracionGeneral.get_datos_empresa(),
         'logo_url': _build_logo_data_url(),
-        'croquis_filas': range(12),
-        'croquis_cols': range(26),
-        'nota_lineas': range(23),
+        'croquis_filas': range(4),
+        'croquis_cols': range(30),
     }
 
 
@@ -440,7 +495,7 @@ def _respuesta_pdf(html, nombre):
 def orden_pdf(request, pk):
     """Genera el PDF A4 de la orden de fabricación (planilla de fábrica)."""
     orden = get_object_or_404(
-        OrdenFabricacion.objects.select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas'),
+        OrdenFabricacion.objects.select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas', 'historial'),
         pk=pk,
     )
     activas = list(orden.pedido.ordenes_activas().values_list('pk', flat=True))
@@ -456,11 +511,13 @@ def orden_pdf(request, pk):
 def pedido_pdf(request, pk):
     """Todas las órdenes activas del pedido en un PDF, con carátula."""
     pedido = get_object_or_404(PedidoFabrica.objects.select_related('presupuesto'), pk=pk)
-    ordenes = list(pedido.ordenes_activas().select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas'))
+    ordenes = list(pedido.ordenes_activas().select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas', 'historial'))
+    hojas = [_contexto_hoja(o, i, len(ordenes)) for i, o in enumerate(ordenes, start=1)]
     html = render_to_string('plantillas/pedido_pdf.html', {
         **_contexto_pdf_base(),
         'pedido': pedido,
         'ordenes': ordenes,
-        'hojas': [_contexto_hoja(o, i, len(ordenes)) for i, o in enumerate(ordenes, start=1)],
+        'hojas': hojas,
+        'unidades_pedido': sum(h['unidades'] for h in hojas),
     })
     return _respuesta_pdf(html, f'pedido_fabrica_{pedido.numero}.pdf')

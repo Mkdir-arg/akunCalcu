@@ -1,76 +1,63 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Pedido de fábrica {{ pedido.numero }}</title>
-    <style>
-{% include 'plantillas/_orden_pdf_estilos.html' %}
-        .resumen td { padding: 4px 6px; font-size: 9px; vertical-align: bottom; }
-        .resumen .lbl { width: 26%; }
-        .resumen .val { font-weight: bold; }
-        .o-num { width: 12%; } .o-abe { width: 34%; } .o-lin { width: 30%; } .o-cant { width: 12%; } .o-rev { width: 12%; }
-    </style>
-</head>
-<body>
+<html lang="es"><head><meta charset="utf-8"><title>Pedido de fábrica {{ pedido.numero }}</title><style>
+{% include "plantillas/_orden_pdf_estilos.html" %}
+</style></head><body>
+<table>
+    <tr>
+        <td style="width:30%;">{% if logo_url %}<img src="{{ logo_url }}" class="logo">{% endif %}</td>
+        <td style="width:42%; text-align:center;"><span class="title">HOJA DE RUTA</span><br><span style="font-size:10pt;"><b>{{ pedido.cliente }}</b></span></td>
+        <td style="width:28%;">
+            <table class="numbox">
+                <tr><td class="k">PEDIDO</td></tr>
+                <tr><td class="n" style="font-size:18pt;">{{ pedido.numero }}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<div class="gap"></div>
+<table class="entrega">
+    <tr>
+        <td class="k">FECHA COMPROMETIDA</td>
+        <td class="v">{{ pedido.fecha_comprometida|date:"d/m/Y"|default:"A definir" }}</td>
+        <td class="x"><b style="font-size:12pt;">{{ unidades_pedido }} unidades</b> en {{ ordenes|length }} órdenes<br> Liberado {{ pedido.liberado_at|date:"d/m/Y"|default:"—" }}</td>
+    </tr>
+</table>
+<div class="gap"></div>
+{% if pedido.observaciones %}
+<table class="nota"><tr><td><div class="k">OBSERVACIONES DEL PEDIDO</div>{{ pedido.observaciones|linebreaksbr }}</td></tr></table>
+<div class="gap"></div>
+{% endif %}
 
-    <!-- CARÁTULA -->
-    <table class="head">
-        <tr>
-            <td style="width:30%;">
-                {% if logo_url %}<img src="{{ logo_url }}" alt="AKUN ABERTURAS" class="logo">{% endif %}
-            </td>
-            <td style="width:38%; text-align:center;">
-                <span class="title">PEDIDO A FÁBRICA</span>
-            </td>
-            <td style="width:32%;">
-                <table class="meta">
-                    <tr><td class="mk">N° PEDIDO</td><td class="num" style="text-align:center;">{{ pedido.numero }}</td></tr>
-                    <tr><td class="mkl">FECHA</td><td>{{ pedido.fecha|date:"d/m/Y" }}</td></tr>
-                    <tr><td class="mkl">FECHA COMPROMETIDA</td><td>{{ pedido.fecha_comprometida|date:"d/m/Y"|default:"___ / ___ / ___" }}</td></tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <div class="gap"></div>
-
-    <table class="bar"><tr><td>RESUMEN DEL PEDIDO</td></tr></table>
-    <table class="resumen">
-        <tr><td class="lbl">CLIENTE:</td><td class="val">{{ pedido.cliente }}</td></tr>
-        {% if pedido.presupuesto %}<tr><td class="lbl">PRESUPUESTO:</td><td class="val">{{ pedido.presupuesto.numero }}</td></tr>{% endif %}
-        <tr><td class="lbl">ESTADO:</td><td class="val">{{ pedido.get_estado_display }}</td></tr>
-        <tr><td class="lbl">CANTIDAD DE ÓRDENES:</td><td class="val">{{ ordenes|length }}</td></tr>
-        {% if pedido.observaciones %}<tr><td class="lbl">OBSERVACIONES:</td><td class="val">{{ pedido.observaciones|linebreaksbr }}</td></tr>{% endif %}
-    </table>
-
-    <div class="gap"></div>
-
-    <table class="bar"><tr><td>ÓRDENES</td></tr></table>
-    <table class="medidas">
-        <tr>
-            <th class="o-num">N° ORDEN</th>
-            <th class="o-abe">ABERTURA</th>
-            <th class="o-lin">LÍNEA / COLOR</th>
-            <th class="o-cant">CANT.</th>
-            <th class="o-rev">REV.</th>
-        </tr>
-        {% for orden in ordenes %}
-        <tr>
-            <td class="o-num">{{ orden.numero_formateado }}</td>
-            <td class="o-abe">{{ orden.tipo_abertura }}</td>
-            <td class="o-lin">{{ orden.linea }}{% if orden.linea and orden.color %} / {% endif %}{{ orden.color }}</td>
-            <td class="o-cant">{{ orden.cantidad_total }}</td>
-            <td class="o-rev">{{ orden.revision|default:"—" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td>—</td><td>Sin órdenes</td><td></td><td></td><td></td></tr>
-        {% endfor %}
-    </table>
-
-    {% for hoja in hojas %}
-    <pdf:nextpage />
-    {% include 'plantillas/_orden_hoja.html' %}
+<table class="ruta">
+    <tr>
+        <th style="width:9%;">ORDEN</th>
+        <th style="width:31%; text-align:left;">ABERTURA</th>
+        <th style="width:28%; text-align:left;">MEDIDAS</th>
+        <th style="width:8%;">CORTE</th>
+        <th style="width:8%;">ARMADO</th>
+        <th style="width:8%;">VIDRIADO</th>
+        <th style="width:8%;">LISTA</th>
+    </tr>
+    {% for h in hojas %}
+    <tr>
+        <td class="on">{{ h.orden.numero_formateado }}{% if h.orden.revision > 1 %}<br><span class="rev">REV. {{ h.orden.revision }}</span>{% endif %}</td>
+        <td><div class="ab">{{ h.orden.tipo_abertura|default:"—" }}</div><div class="sub">{{ h.orden.linea }}{% if h.orden.linea and h.orden.color %} · {% endif %}{{ h.orden.color }}{% if h.orden.tipo_vidrio %}{% if h.orden.linea or h.orden.color %} · {% endif %}{{ h.orden.tipo_vidrio }}{% endif %}</div></td>
+        <td>{% for m in h.medidas %}<div class="md">{{ m.cantidad }} x {{ m.medida|default:"s/medida" }}</div>{% endfor %}</td>
+        <td style="width:8%;">&nbsp;</td><td style="width:8%;">&nbsp;</td><td style="width:8%;">&nbsp;</td><td style="width:8%;">&nbsp;</td>
+    </tr>
     {% endfor %}
+</table>
+<div class="gap"></div><div class="gap"></div>
 
-</body>
-</html>
+<table class="control">
+    <tr><td class="h" style="width:34%;">ENTREGA</td><td class="h" style="width:33%;">RECIBIÓ (cliente)</td><td class="h" style="width:33%;">CONTROL FINAL</td></tr>
+    <tr><td class="f">Fecha:</td><td class="f">Nombre:</td><td class="f">Fecha:</td></tr>
+    <tr><td class="f">Entregó:</td><td class="f">Firma:</td><td class="f">Firma:</td></tr>
+</table>
+<div class="pie">{{ empresa.empresa_nombre }} · {{ empresa.empresa_direccion }} · {{ empresa.empresa_telefonos }}</div>
+
+{% for hoja in hojas %}
+<pdf:nextpage />
+{% include 'plantillas/_orden_hoja.html' %}
+{% endfor %}
+</body></html>

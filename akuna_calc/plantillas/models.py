@@ -246,6 +246,24 @@ class OrdenFabricacion(models.Model):
         return {'lista': 'green', 'anulada': 'red'}.get(self.etapa, 'gray')
 
     @property
+    def pasos(self):
+        """Pasos del stepper (corte, armado, vidriado, lista). Una orden lista los muestra todos como hechos."""
+        if self.etapa == 'anulada':
+            return []
+        etiquetas = dict(self.ETAPA_CHOICES)
+        i = self._indice_etapa()
+        pasos = []
+        for n, clave in enumerate(self.FLUJO_ETAPAS[1:], start=1):
+            if i == n and clave != 'lista':
+                estado = 'actual'
+            elif i >= n:
+                estado = 'hecho'
+            else:
+                estado = 'pendiente'
+            pasos.append({'etiqueta': etiquetas[clave], 'estado': estado})
+        return pasos
+
+    @property
     def etiqueta_siguiente(self):
         return dict(self.ETAPA_CHOICES).get(self.etapa_siguiente, '')
 
