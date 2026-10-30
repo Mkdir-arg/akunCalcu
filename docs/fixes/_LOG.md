@@ -22,6 +22,24 @@
 
 ## Fixes registrados
 
+### FIX-027 — Detalle del pedido de fábrica cortado en pantallas de 1366 y PDF de la orden poco legible para el taller
+**Fecha**: 2026-10-30
+**Reportado por**: Usuario
+**Severidad**: Media
+**Feature afectada**: FEAT-048 (circuito de pedidos de fábrica) / FEAT-046 (rediseño Taller)
+
+**Síntoma**: En el detalle del pedido, la tabla de órdenes y el panel lateral se cortaban en pantallas de 1366 px y en el celular. El PDF de la orden era denso y difícil de leer en el taller.
+**Causa raíz**: La tabla de 5 columnas más el aside de 300 px no entraban en el ancho útil; el PDF mezclaba lo importante con datos secundarios y mostraba la medida como un solo texto.
+**Solución**: Detalle rediseñado en tarjetas por orden con stepper Corte → Armado → Vidriado → Lista, medidas en chips, botón primario «Pasar a X», aviso «Cambiada: reimprimir» con el motivo, avance «N de M órdenes listas» e historial plegado. PDF con hoja de ruta (total de unidades), hoja por orden con ancho y alto separados, banda de revisión con el motivo, características sin vacíos y pie con datos de la empresa. Ancho/alto se separan solo si ambos lados son números.
+**Archivos modificados**:
+- `akuna_calc/plantillas/models.py` (propiedad `pasos`), `views.py`
+- `akuna_calc/plantillas/templates/plantillas/pedido_detail.html`, `_orden_pdf_estilos.html`, `_orden_hoja.html`, `pedido_pdf.html`, `orden_pdf.html`
+- `akuna_calc/plantillas/templatetags/orden_pdf.py` (eliminado, ya sin uso)
+- `akuna_calc/plantillas/tests_circuito.py`
+**Tests**: plantillas + presupuestos + core + usuarios, 349 OK (1 skipped).
+
+---
+
 ### FIX-025 — El botón "Recalcular" del cotizador quedaba deshabilitado en silencio
 **Fecha**: 2026-08-18
 **Reportado por**: Usuario ("no está funcionando el botón de recalcular, tengo que cerrar y volver a abrir para ingresar los datos")

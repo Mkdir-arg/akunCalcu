@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-10-30 — FIX-027: detalle del pedido de fábrica y PDF de la orden
+
+Detalle en tarjetas por orden con stepper y botón «Pasar a X» (sin cortes en 1366 ni celular); PDF con hoja de ruta, ancho/alto separados y banda de revisión. Ver `docs/fixes/_LOG.md`.
+
+---
+
 ## 2026-10-30 — Circuito de pedidos de fábrica, Etapa 1 (REQ-063 → FEAT-048)
 
 **Sprint**: Fuera de plan
