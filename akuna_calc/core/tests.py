@@ -282,6 +282,15 @@ class LiveEndpointTests(TestCase):
         self.assertNotIn('solo_ventas', data['sources'])
         self.assertIn('avisos', data['sources'])
 
+    def test_fuente_con_pk_como_fecha(self):
+        live.register('por_pk', lambda user: Aviso.objects.all(), date_field='pk')
+        self.addCleanup(live.unregister, 'por_pk')
+        aviso = crear_aviso(self.admin, 'Uno')[0]
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url, {'keys': 'por_pk'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['sources']['por_pk'], {'stamp': str(aviso.pk), 'count': 1})
+
     def test_clave_desconocida_se_ignora(self):
         self.client.force_login(self.admin)
         data = self.client.get(self.url, {'keys': 'no_existe'}).json()

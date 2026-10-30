@@ -38,7 +38,10 @@ class LiveSource:
     def snapshot(self, user):
         data = self.queryset(user).aggregate(stamp=Max(self.date_field), count=Count('pk'))
         stamp = data['stamp']
-        return {'stamp': stamp.isoformat() if stamp else None, 'count': data['count']}
+        # date_field puede ser un pk (tablas legacy sin fecha de modificación).
+        if stamp is not None:
+            stamp = stamp.isoformat() if hasattr(stamp, 'isoformat') else str(stamp)
+        return {'stamp': stamp, 'count': data['count']}
 
 
 def register(key, queryset, date_field='updated_at', permission=None):
