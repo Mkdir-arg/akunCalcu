@@ -98,7 +98,9 @@ body.taller {
 .tbl tbody tr:last-child td { border-bottom: 0; }
 .tbl tbody tr:hover td { background: #FCFCFD; }
 .tbl th.num, .tbl td.num { text-align: right; }
-.table-wrap { overflow-x: auto; }
+.table-wrap { position: relative; max-width: 100%; overflow-x: auto; }
+.tbl td.code, .tbl td.num, .tbl td:first-child { white-space: nowrap; }
+.code, .tbl td.muted, .tbl td .muted.text-xs { white-space: nowrap; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--t-line); }
 .pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-top: 1px solid var(--t-line); font-size: 13px; color: var(--t-ink-3); }
 .pager-links { display: flex; gap: 8px; }
@@ -117,6 +119,22 @@ body.taller {
 }
 .field-hint { margin-top: 6px; font-size: 12px; color: var(--t-ink-3); }
 .field-error { margin-top: 6px; font-size: 12px; color: var(--t-danger); }
+
+/* Selects unificados: nativo (.no-select2 y similares) y Select2 comparten alto, tipografía, borde, radio y flecha */
+body.taller select:not(.badge):not([multiple]):not([size]) {
+    appearance: none; -webkit-appearance: none; box-sizing: border-box; min-height: 40px;
+    border: 1px solid var(--t-line-strong); border-radius: 10px; background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23667085'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 10px 6px;
+    padding: 0 32px 0 12px; font: 400 14px Inter, system-ui, sans-serif; color: var(--t-ink);
+}
+body.taller select.select2-hidden-accessible { background-image: none; }
+.select2-container .select2-selection--single .select2-selection__rendered,
+.select2-container .select2-selection--multiple .select2-selection__rendered,
+.select2-dropdown, .select2-results__option, .select2-search--dropdown .select2-search__field {
+    font: 400 14px Inter, system-ui, sans-serif;
+}
+.select2-container--classic .select2-selection--single, .select2-container--classic .select2-selection--multiple { box-sizing: border-box; }
 
 /* ---------- Menú de fila (kebab) ---------- */
 .kebab { position: relative; display: inline-block; }
