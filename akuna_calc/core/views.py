@@ -20,6 +20,19 @@ class AkunLoginView(LoginView):
     template_name = 'core/login.html'
     redirect_authenticated_user = True
 
+    def post(self, request, *args, **kwargs):
+        from security.middleware import get_client_ip, login_lockout_minutes
+
+        minutos = login_lockout_minutes(get_client_ip(request), request.POST.get('username', '').strip())
+        if minutos:
+            request._login_locked = True
+            messages.error(
+                request,
+                f'Demasiados intentos fallidos con este usuario. Probá de nuevo en {minutos} minuto{"s" if minutos != 1 else ""}.',
+            )
+            return self.render_to_response(self.get_context_data(form=self.get_form_class()(request=request)))
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         auth_login(self.request, form.get_user())
         target_url = self.get_redirect_url() or get_default_url_for_user(self.request.user)

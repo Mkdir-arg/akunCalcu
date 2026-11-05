@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-05 — FIX-028: los errores de clave de un usuario ya no bloquean a toda la oficina
+
+El freno por intentos fallidos pasa de «por IP» a «por usuario + IP»: el que se equivoca 5 veces espera 30 minutos y el resto entra normal. El bloqueo manual de IP cierra la sesión y ya no deja el navegador en bucle. Ver `docs/fixes/_LOG.md`.
+
 ## 2026-10-30 — FIX-027: detalle del pedido de fábrica y PDF de la orden
 
 Detalle en tarjetas por orden con stepper y botón «Pasar a X» (sin cortes en 1366 ni celular); PDF con hoja de ruta, ancho/alto separados y banda de revisión. Ver `docs/fixes/_LOG.md`.

@@ -41,6 +41,41 @@ def is_security_exempt_request(request):
     return path in SECURITY_EXEMPT_PATHS or any(path.startswith(prefix) for prefix in SECURITY_EXEMPT_PREFIXES)
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def login_lockout_minutes(ip_address, username):
+    """Minutos que le faltan a este usuario, desde esta IP, para volver a intentar (0 = libre).
+
+    El bloqueo es por usuario + IP y no por IP sola: la oficina comparte una IP pública y
+    un usuario que se equivoca la clave no puede dejar afuera a los demás.
+    """
+    if not username:
+        return 0
+    from datetime import timedelta
+    settings = SecuritySettings.get_settings()
+    if settings.max_login_attempts <= 0 or settings.lockout_duration <= 0:
+        return 0
+    window = timedelta(minutes=settings.lockout_duration)
+    now = timezone.now()
+    failed = list(
+        LoginAttempt.objects.filter(
+            ip_address=ip_address,
+            username__iexact=username,
+            success=False,
+            timestamp__gte=now - window,
+        ).order_by('-timestamp').values_list('timestamp', flat=True)[:settings.max_login_attempts]
+    )
+    if len(failed) < settings.max_login_attempts:
+        return 0
+    remaining = (failed[-1] + window) - now
+    return max(1, -(-int(remaining.total_seconds()) // 60))
+
+
 class AuditMiddleware(MiddlewareMixin):
     """Middleware para registrar todas las acciones del sistema"""
     
@@ -197,6 +232,9 @@ class SecurityMiddleware(MiddlewareMixin):
         ip_address = self._get_client_ip(request)
         
         if self._is_ip_blocked(ip_address):
+            if request.user.is_authenticated:
+                from django.contrib.auth import logout
+                logout(request)
             messages.error(request, 'Su IP ha sido bloqueada por razones de seguridad.')
             return redirect('login')
         
@@ -266,7 +304,7 @@ class LoginAttemptMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         # Solo procesar en la página de login
-        if request.path == '/login/' and request.method == 'POST':
+        if request.path == '/login/' and request.method == 'POST' and not getattr(request, '_login_locked', False):
             self._record_login_attempt(request, response)
         
         return response
@@ -275,7 +313,7 @@ class LoginAttemptMiddleware(MiddlewareMixin):
         """Registrar intento de login"""
         try:
             username = request.POST.get('username', '')
-            ip_address = self._get_client_ip(request)
+            ip_address = get_client_ip(request)
             success = response.status_code == 302  # Redirect = login exitoso
             
             # Registrar intento
@@ -285,42 +323,8 @@ class LoginAttemptMiddleware(MiddlewareMixin):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
                 success=success
             )
-            
-            # Si falló, verificar si debe bloquearse
-            if not success:
-                self._check_failed_attempts(ip_address, username)
         except Exception as e:
             print(f"Error registrando intento de login: {e}")
-    
-    def _check_failed_attempts(self, ip_address, username):
-        """Verificar intentos fallidos y bloquear si es necesario"""
-        try:
-            settings = SecuritySettings.get_settings()
-            
-            # Contar intentos fallidos recientes (última hora)
-            from datetime import timedelta
-            one_hour_ago = timezone.now() - timedelta(hours=1)
-            
-            failed_attempts = LoginAttempt.objects.filter(
-                ip_address=ip_address,
-                success=False,
-                timestamp__gte=one_hour_ago
-            ).count()
-            
-            # Bloquear si excede el límite
-            if failed_attempts >= settings.max_login_attempts:
-                expires_at = timezone.now() + timedelta(minutes=settings.lockout_duration)
-                
-                IPBlacklist.objects.get_or_create(
-                    ip_address=ip_address,
-                    defaults={
-                        'reason': f'Excedió {settings.max_login_attempts} intentos fallidos de login',
-                        'expires_at': expires_at,
-                        'is_active': True
-                    }
-                )
-        except Exception as e:
-            print(f"Error verificando intentos fallidos: {e}")
     
     def _get_client_ip(self, request):
         """Obtener IP real del cliente"""

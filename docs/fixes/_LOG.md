@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-028 — Un usuario que se equivoca la clave deja afuera a toda la oficina
+**Fecha**: 2026-11-05
+**Reportado por**: Usuario ("cuando intentan entrar desde una PC me dice que lo bloqueó por seguridad la IP")
+**Severidad**: Alta (nadie de la oficina podía entrar durante 30 minutos)
+**Feature afectada**: módulo `security` (control de intentos de login)
+
+**Síntoma**: desde las PC de la oficina aparecía «Su IP ha sido bloqueada por razones de seguridad» y el navegador quedaba rebotando entre `/home/` y `/login/` (en los logs de Railway del 2026-11-05, 13:11 a 13:26). Desde el celular con datos móviles se podía entrar.
+**Causa raíz**: `LoginAttemptMiddleware` contaba los logins fallidos **solo por IP** y, al llegar a `max_login_attempts` (5), creaba un `IPBlacklist` por `lockout_duration` (30 min). Toda la oficina sale por la misma IP pública, así que los errores de una persona bloqueaban a todas. Además, `SecurityMiddleware` mandaba al login sin cerrar la sesión; el login (`redirect_authenticated_user`) lo devolvía a `/home/` y se armaba el bucle.
+**Solución**: ya no se bloquea la IP de forma automática. El freno pasa a ser por **usuario + IP**: `login_lockout_minutes()` cuenta los `LoginAttempt` fallidos de ese usuario desde esa IP dentro de la ventana de `lockout_duration`; con `max_login_attempts` fallos, `AkunLoginView` rechaza el intento (aun con la clave correcta) con «Demasiados intentos fallidos con este usuario. Probá de nuevo en X minutos» y ese rechazo no se registra como intento nuevo. El bloqueo manual de IP desde el admin se conserva y ahora cierra la sesión antes de redirigir (sin bucle). Sin migración. Los `IPBlacklist` automáticos que ya existían vencen solos.
+**Archivos modificados**: `akuna_calc/security/middleware.py`, `akuna_calc/core/views.py`, `akuna_calc/security/test_login_lockout.py` (6 tests; 3 fallan con el código anterior)
+
 ### FIX-027 — Detalle del pedido de fábrica cortado en pantallas de 1366 y PDF de la orden poco legible para el taller
 **Fecha**: 2026-10-30
 **Reportado por**: Usuario
