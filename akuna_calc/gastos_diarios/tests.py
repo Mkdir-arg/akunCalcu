@@ -381,3 +381,58 @@ class NumeroAutorizadoViewsTests(TestCase):
         resp = self.client.post(reverse('gastos_diarios:numero_delete', args=[n.pk]))
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(NumeroAutorizado.objects.filter(pk=n.pk).exists())
+
+
+class GastoEliminarTests(TestCase):
+    """FIX-027: no había forma de borrar gastos ni de anular la compra de uno aprobado."""
+
+    def setUp(self):
+        self.staff = User.objects.create_user(username='admin', password='pass1234', is_staff=True)
+        self.vendedor = User.objects.create_user(username='vendedor', password='pass1234')
+        self.gasto = GastoDiario.objects.create(descripcion='Nafta', monto=Decimal('500'),
+                                                numero_origen='5491155555555', tipo_cuenta='fletes')
+        self.url = reverse('gastos_diarios:eliminar', args=[self.gasto.pk])
+
+    def test_sin_login_redirige(self):
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(GastoDiario.objects.filter(pk=self.gasto.pk).exists())
+
+    def test_no_staff_no_puede_eliminar(self):
+        self.client.login(username='vendedor', password='pass1234')
+        self.client.post(self.url)
+        self.assertTrue(GastoDiario.objects.filter(pk=self.gasto.pk).exists())
+
+    def test_get_no_elimina(self):
+        self.client.login(username='admin', password='pass1234')
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.assertTrue(GastoDiario.objects.filter(pk=self.gasto.pk).exists())
+
+    def test_staff_elimina_gasto_en_espera(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.post(self.url)
+        self.assertRedirects(resp, reverse('gastos_diarios:lista'), fetch_redirect_response=False)
+        self.assertFalse(GastoDiario.objects.filter(pk=self.gasto.pk).exists())
+
+    def test_eliminar_aprobado_da_de_baja_su_compra(self):
+        from comercial.models import Compra
+        self.client.login(username='admin', password='pass1234')
+        self.client.post(reverse('gastos_diarios:aprobar', args=[self.gasto.pk]))
+        compra = Compra.objects.get(numero_pedido=f'CAJA-{self.gasto.pk}')
+        self.assertIsNone(compra.deleted_at)
+
+        self.client.post(self.url)
+
+        compra.refresh_from_db()
+        self.assertIsNotNone(compra.deleted_at)
+        self.assertFalse(GastoDiario.objects.filter(pk=self.gasto.pk).exists())
+
+    def test_inexistente_404(self):
+        self.client.login(username='admin', password='pass1234')
+        self.assertEqual(self.client.post(reverse('gastos_diarios:eliminar', args=[999])).status_code, 404)
+
+    def test_lista_muestra_boton_eliminar_al_staff(self):
+        self.client.login(username='admin', password='pass1234')
+        resp = self.client.get(reverse('gastos_diarios:lista'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, self.url)

@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from security import health
-from security.models import Backup, HeartbeatIntegracion
+from security.models import Backup, FalloEnvioWhatsApp, HeartbeatIntegracion
 
 CLAVE_GMAIL = HeartbeatIntegracion.CLAVE_GMAIL_REPARTO
 
@@ -327,3 +327,66 @@ class AntiguedadTest(SaludBaseTest):
         self.assertEqual(health._texto_antiguedad(28), 'hace 28 h')
         self.assertEqual(health._texto_antiguedad(9 * 24), 'hace 9 días')
         self.assertEqual(health._texto_antiguedad(None), 'sin fecha')
+
+
+class FalloWhatsAppTest(SaludBaseTest):
+    """FIX-027: Meta avisaba los mensajes no entregados y el aviso moría en n8n."""
+
+    def post_fallo(self, payload, secret='healthsecret'):
+        headers = {'HTTP_X_BOT_SECRET': secret} if secret is not None else {}
+        return self.client.post(reverse('security:api_fallo_whatsapp'), data=json.dumps(payload),
+                                content_type='application/json', **headers)
+
+    def payload(self, message_id='wamid.1'):
+        return {
+            'message_id': message_id, 'numero_destino': '5491155555555',
+            'errores': [{'code': 131042, 'title': 'Business eligibility payment issue',
+                         'detalle': 'Falta medio de pago'}],
+        }
+
+    def test_str(self):
+        f = FalloEnvioWhatsApp.objects.create(message_id='x', numero_destino='549', codigo=131047,
+                                              titulo='Re-engagement message')
+        self.assertEqual(str(f), '549 — 131047 Re-engagement message')
+
+    def test_sin_secret_401(self):
+        self.assertEqual(self.post_fallo(self.payload(), secret=None).status_code, 401)
+
+    def test_sin_message_id_400(self):
+        self.assertEqual(self.post_fallo({'numero_destino': '549'}).status_code, 400)
+
+    def test_registra_el_fallo_y_avisa_al_staff(self):
+        from core.models import Aviso
+        resp = self.post_fallo(self.payload())
+        self.assertEqual(resp.status_code, 200)
+        f = FalloEnvioWhatsApp.objects.get(message_id='wamid.1')
+        self.assertEqual(f.codigo, 131042)
+        self.assertEqual(f.detalle, 'Falta medio de pago')
+        self.assertTrue(Aviso.objects.filter(usuario=self.admin).exists())
+        self.assertFalse(Aviso.objects.filter(usuario=self.comun).exists())
+
+    def test_reintento_de_meta_no_duplica_ni_reavisa(self):
+        from core.models import Aviso
+        self.post_fallo(self.payload())
+        resp = self.post_fallo(self.payload())
+        self.assertFalse(resp.json()['nuevo'])
+        self.assertEqual(FalloEnvioWhatsApp.objects.count(), 1)
+        self.assertEqual(Aviso.objects.filter(usuario=self.admin).count(), 1)
+
+    def test_chequeo_ok_sin_fallos(self):
+        self.assertEqual(health.chequear_fallos_whatsapp()['estado'], health.ESTADO_OK)
+
+    def test_chequeo_falla_con_fallo_reciente(self):
+        self.post_fallo(self.payload())
+        chequeo = health.chequear_fallos_whatsapp()
+        self.assertEqual(chequeo['estado'], health.ESTADO_FALLA)
+        self.assertIn('131042', chequeo['mensaje'])
+
+    def test_fallo_viejo_no_marca_falla(self):
+        f = FalloEnvioWhatsApp.objects.create(message_id='viejo')
+        FalloEnvioWhatsApp.objects.filter(pk=f.pk).update(created_at=timezone.now() - timedelta(hours=30))
+        self.assertEqual(health.chequear_fallos_whatsapp()['estado'], health.ESTADO_OK)
+
+    def test_aparece_en_el_recolector(self):
+        data = health.recolectar_salud(incluir_n8n=False)
+        self.assertIn('fallos_whatsapp', {c['clave'] for c in data['chequeos']})

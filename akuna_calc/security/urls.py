@@ -20,4 +20,5 @@ urlpatterns = [
     path('salud/', views.salud, name='salud'),
     path('salud/api/', views.api_salud, name='api_salud'),
     path('salud/api/heartbeat/', views.api_heartbeat, name='api_heartbeat'),
+    path('salud/api/fallo-whatsapp/', views.api_fallo_whatsapp, name='api_fallo_whatsapp'),
 ]

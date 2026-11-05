@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import AuditLog, LoginAttempt, SecuritySettings, IPBlacklist, Backup
+from .models import AuditLog, LoginAttempt, SecuritySettings, IPBlacklist, Backup, FalloEnvioWhatsApp
 
 
 @admin.register(AuditLog)
@@ -168,3 +168,11 @@ class BackupAdmin(admin.ModelAdmin):
     def size_display(self, obj):
         return obj.get_size_display()
     size_display.short_description = 'Tamaño'
+
+
+@admin.register(FalloEnvioWhatsApp)
+class FalloEnvioWhatsAppAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'numero_destino', 'codigo', 'titulo']
+    list_filter = ['codigo', 'created_at']
+    search_fields = ['numero_destino', 'message_id', 'titulo']
+    readonly_fields = ['message_id', 'numero_destino', 'codigo', 'titulo', 'detalle', 'created_at']

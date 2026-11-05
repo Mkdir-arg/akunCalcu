@@ -51,6 +51,17 @@
 
 ---
 
+### FIX-026 — El bot de gastos por voz (WhatsApp) no recibía nada desde la baja de Evolution API
+**Fecha**: 2026-10-30
+**Reportado por**: Usuario ("creo que no está funcionando" la comunicación de la agenda por WhatsApp y los gastos de Darío)
+**Severidad**: Alta (la función estaba muerta desde el 2026-08-28 sin ningún aviso)
+**Feature afectada**: REQ-024 gastos diarios por voz (workflow n8n `VfdJhVTZmKj7HoES`); de rebote, agenda y solicitudes
+
+**Síntoma**: Darío mandaba audios y el bot no respondía. En n8n el workflow figuraba activo con 0 ejecuciones.
+**Causa raíz**: el trigger era un webhook de Evolution API. Evolution se dio de baja el 2026-08-28 (su URL devuelve `404 Application not found`); los envíos salientes de la agenda se migraron ese día a la Cloud API de Meta, pero la **entrada** de WhatsApp (que Meta seguía mandando a Evolution) nunca se repuntó a n8n. Nada lo medía: el panel de salud mide que los workflows corran, y este no corría porque nadie lo llamaba.
+**Solución**: workflow reescrito contra la Cloud API de Meta directo (v2): verificación GET del webhook (`hub.challenge`), parseo del payload `entry/changes/value`, descarga del audio por Graph API (`/v21.0/{media_id}` → url), transcripción Whisper y respuestas por `/{phone_number_id}/messages`. Se agrega el nodo "Fallo de Envio": Meta reporta ahí los `statuses = failed` de **todos** los mensajes salientes (agenda, solicitudes, gastos), que antes se perdían en silencio. El webhook de Meta ya apunta a n8n y el workflow está publicado (verificado el 2026-11-05: activo y procesando mensajes). El nodo "Fallo de Envio" postea a `/security/salud/api/fallo-whatsapp/`: Django guarda el fallo en `FalloEnvioWhatsApp` (sin duplicar si Meta repite el aviso), avisa al staff en la campana y lo muestra en el panel de salud. Esa parte de Django se subió el 2026-11-05; hasta entonces los avisos de n8n daban 404 y se perdían.
+**Archivos modificados**: `docs/n8n/n8n-gastos-diarios-whatsapp-workflow.{md,json}`, `docs/n8n/n8n-pedidos-workflow.md` (se saca del repo el secreto del bot escrito a mano), `akuna_calc/security/{models,views,urls,admin,health}.py`, `akuna_calc/security/migrations/0005_falloenviowhatsapp.py`, `akuna_calc/security/test_salud.py`, `akuna_calc/usuarios/access_control.py`, `docker-compose.yml`
+
 ### FIX-025 — El botón "Recalcular" del cotizador quedaba deshabilitado en silencio
 **Fecha**: 2026-08-18
 **Reportado por**: Usuario ("no está funcionando el botón de recalcular, tengo que cerrar y volver a abrir para ingresar los datos")

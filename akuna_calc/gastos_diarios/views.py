@@ -229,7 +229,7 @@ def api_responder(request):
             'ok': True,
             'manejado': False,
             'finalizado': True,
-            'mensaje': 'No tenés gastos pendientes. Mandá una nota de voz con el gasto y el monto (ej: nafta 20000).',
+            'mensaje': 'No tenés gastos pendientes. Mandá un audio o un texto con el gasto y el monto (ej: nafta 20000).',
         })
 
     sin_clasificar = borradores.filter(tipo_cuenta='').order_by('pk')
@@ -399,6 +399,27 @@ def gasto_rechazar(request, pk):
         messages.success(request, f"Gasto #{gasto.pk} rechazado.")
     else:
         messages.info(request, f"El gasto #{gasto.pk} ya estaba {gasto.get_estado_display().lower()}.")
+    return redirect('gastos_diarios:lista')
+
+
+@login_required
+@user_passes_test(_staff_required)
+@require_POST
+def gasto_eliminar(request, pk):
+    """Borra el gasto. Si estaba aprobado, también da de baja (borrado lógico) la Compra
+    CAJA-<pk> que generó, para que deje de sumar en el reporte de comercial."""
+    from comercial.models import Compra
+
+    gasto = get_object_or_404(GastoDiario, pk=pk)
+    with transaction.atomic():
+        compras = list(Compra.objects.filter(numero_pedido=f'CAJA-{gasto.pk}', deleted_at__isnull=True))
+        for compra in compras:
+            compra.delete()
+        gasto.delete()
+    if compras:
+        messages.success(request, f"Gasto #{pk} eliminado y su compra CAJA-{pk} dada de baja.")
+    else:
+        messages.success(request, f"Gasto #{pk} eliminado.")
     return redirect('gastos_diarios:lista')
 
 

@@ -50,8 +50,9 @@
 
 {% block extra_js %}
 <script>
-function confirmarAccion(url, accion, descripcion, pk) {
+function confirmarAccion(url, accion, descripcion, pk, aprobado) {
     const esAprobar = accion === 'aprobar';
+    const esEliminar = accion === 'eliminar';
     let htmlContenido = `<p>${descripcion}</p>`;
     let tipoSeleccionado = '';
     if (esAprobar && pk !== undefined) {
@@ -62,14 +63,19 @@ function confirmarAccion(url, accion, descripcion, pk) {
             htmlContenido += `<p class="mt-2 text-sm text-slate-500">Se registrará en: <strong>${etiqueta}</strong></p>`;
         }
     }
+    if (esEliminar && aprobado) {
+        htmlContenido += `<p class="mt-2 text-sm text-slate-500">También se da de baja su compra <strong>CAJA-${pk}</strong> en comercial.</p>`;
+    }
+    const titulos = {aprobar: '¿Aprobar este gasto?', rechazar: '¿Rechazar este gasto?', eliminar: '¿Eliminar este gasto?'};
+    const botones = {aprobar: 'Sí, aprobar', rechazar: 'Sí, rechazar', eliminar: 'Sí, eliminar'};
     Swal.fire({
-        title: esAprobar ? '¿Aprobar este gasto?' : '¿Rechazar este gasto?',
+        title: titulos[accion],
         html: htmlContenido,
         icon: esAprobar ? 'question' : 'warning',
         showCancelButton: true,
-        confirmButtonColor: esAprobar ? '#16a34a' : '#6b7280',
+        confirmButtonColor: esAprobar ? '#16a34a' : (esEliminar ? '#dc2626' : '#6b7280'),
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: esAprobar ? 'Sí, aprobar' : 'Sí, rechazar',
+        confirmButtonText: botones[accion],
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {

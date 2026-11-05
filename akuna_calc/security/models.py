@@ -270,3 +270,28 @@ class HeartbeatIntegracion(models.Model):
         if not self.ultimo_ok:
             return None
         return (timezone.now() - self.ultimo_ok).total_seconds() / 60
+
+
+class FalloEnvioWhatsApp(models.Model):
+    """Mensaje saliente de WhatsApp que Meta reportó como no entregado.
+
+    Meta avisa por el webhook (`statuses[].status = failed`) y n8n lo reenvía acá. Antes
+    el aviso quedaba solo en el historial de ejecuciones de n8n y nadie se enteraba: así se
+    pierden recordatorios de agenda o de solicitudes sin que el sistema lo note.
+    """
+
+    message_id = models.CharField(max_length=200, unique=True, verbose_name="ID de mensaje (Meta)")
+    numero_destino = models.CharField(max_length=30, blank=True, verbose_name="Número destino")
+    codigo = models.IntegerField(null=True, blank=True, verbose_name="Código de error")
+    titulo = models.CharField(max_length=200, blank=True, verbose_name="Error")
+    detalle = models.TextField(blank=True, verbose_name="Detalle")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Recibido")
+
+    class Meta:
+        verbose_name = "Fallo de envío de WhatsApp"
+        verbose_name_plural = "Fallos de envío de WhatsApp"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        codigo = f"{self.codigo} " if self.codigo is not None else ''
+        return f"{self.numero_destino or 'sin número'} — {codigo}{self.titulo or 'sin detalle'}"

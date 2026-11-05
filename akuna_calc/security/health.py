@@ -12,14 +12,14 @@ import json
 import os
 import urllib.error
 import urllib.request
-from datetime import timezone as datetime_timezone
+from datetime import timedelta, timezone as datetime_timezone
 
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from .models import Backup, HeartbeatIntegracion
+from .models import Backup, FalloEnvioWhatsApp, HeartbeatIntegracion
 
 ESTADO_OK = 'ok'
 ESTADO_ATENCION = 'atencion'
@@ -214,6 +214,32 @@ def chequear_heartbeats():
     return chequeos
 
 
+HORAS_FALLOS_WHATSAPP = 24
+
+
+def chequear_fallos_whatsapp():
+    """Mensajes salientes que Meta no entregó en las últimas 24 h (agenda, solicitudes, bot).
+
+    Sin fallos no significa que WhatsApp ande: si el webhook de Meta deja de llegar a n8n,
+    tampoco llegan los avisos de fallo. Eso lo cubre el workflow de gastos en n8n."""
+    detalle = 'Meta avisa por webhook cada mensaje no entregado; n8n lo registra acá'
+    desde = timezone.now() - timedelta(hours=HORAS_FALLOS_WHATSAPP)
+    recientes = FalloEnvioWhatsApp.objects.filter(created_at__gte=desde)
+    cantidad = recientes.count()
+    if not cantidad:
+        return _chequeo('fallos_whatsapp', 'Envíos de WhatsApp', ESTADO_OK,
+                        f'sin fallos de entrega en {HORAS_FALLOS_WHATSAPP} h', detalle)
+
+    ultimo = recientes.first()
+    horas = (timezone.now() - ultimo.created_at).total_seconds() / 3600
+    return _chequeo(
+        'fallos_whatsapp', 'Envíos de WhatsApp', ESTADO_FALLA,
+        f'{cantidad} mensaje(s) no entregado(s) en {HORAS_FALLOS_WHATSAPP} h — '
+        f'último {_texto_antiguedad(horas)}: {ultimo}',
+        detalle,
+    )
+
+
 def chequear_backup_local():
     """Estado del .sql que genera Django.
 
@@ -275,6 +301,7 @@ def recolectar_salud(incluir_n8n=True):
     chequeos = _correr(chequear_heartbeats, 'heartbeats', 'Latidos de integraciones')
     if incluir_n8n:
         chequeos += _correr(chequear_workflows, 'workflows', 'Workflows de n8n')
+    chequeos += _correr(chequear_fallos_whatsapp, 'fallos_whatsapp', 'Envíos de WhatsApp')
     chequeos += _correr(chequear_backup_local, 'backup_local', 'Backup generado en Django')
     chequeos += _correr(chequear_migraciones, 'migraciones', 'Migraciones')
 

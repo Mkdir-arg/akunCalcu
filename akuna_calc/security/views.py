@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.urls import reverse
-from .models import AuditLog, Backup, HeartbeatIntegracion, SecuritySettings
+from .models import AuditLog, Backup, FalloEnvioWhatsApp, HeartbeatIntegracion, SecuritySettings
 from .merge import get_merge_entities, preview_merge, merge_records
 from core.avisos import crear_aviso
 from core.models import Aviso
@@ -272,6 +272,54 @@ def api_heartbeat(request):
         },
     )
     return JsonResponse({'ok': True, 'clave': clave})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_fallo_whatsapp(request):
+    """n8n reenvía acá cada mensaje saliente que Meta reportó como no entregado.
+
+    Meta puede mandar el mismo `failed` más de una vez: se registra y se avisa al staff
+    solo la primera."""
+    secret = os.environ.get('HEALTH_BOT_SECRET', '')
+    if not secret or request.headers.get('X-Bot-Secret', '') != secret:
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    message_id = (data.get('message_id') or '').strip()
+    if not message_id:
+        return JsonResponse({'error': 'Falta message_id'}, status=400)
+
+    errores = data.get('errores') or []
+    primero = errores[0] if errores and isinstance(errores[0], dict) else {}
+    try:
+        codigo = int(primero.get('code'))
+    except (TypeError, ValueError):
+        codigo = None
+
+    fallo, creado = FalloEnvioWhatsApp.objects.get_or_create(
+        message_id=message_id[:200],
+        defaults={
+            'numero_destino': str(data.get('numero_destino') or '')[:30],
+            'codigo': codigo,
+            'titulo': str(primero.get('title') or '')[:200],
+            'detalle': str(primero.get('detalle') or primero.get('message') or ''),
+        },
+    )
+    if creado:
+        from django.contrib.auth import get_user_model
+        staff = get_user_model().objects.filter(is_active=True).filter(Q(is_staff=True) | Q(is_superuser=True))
+        crear_aviso(
+            staff,
+            f'WhatsApp no entregó un mensaje a {fallo.numero_destino or "un número"}: {fallo}',
+            tipo=Aviso.TIPO_ERROR,
+            url=reverse('security:salud'),
+        )
+    return JsonResponse({'ok': True, 'nuevo': creado})
 
 
 @login_required

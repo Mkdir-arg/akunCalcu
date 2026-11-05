@@ -54,14 +54,21 @@
                     {% endif %}
                 </td>
                 <td class="num">
-                    {% if gasto.estado == 'en_espera' %}
+                    {% if gasto.estado == 'en_espera' or request.user.is_staff %}
                     <div class="inline-flex items-center gap-1">
+                        {% if gasto.estado == 'en_espera' %}
                         <button type="button" onclick="confirmarAccion('{% url 'gastos_diarios:aprobar' gasto.pk %}', 'aprobar', '{{ gasto.descripcion|escapejs }}', {{ gasto.pk }})" class="btn btn-secondary btn-sm btn-icon" title="Aprobar" aria-label="Aprobar">
                             <i class="fas fa-check"></i>
                         </button>
                         <button type="button" onclick="confirmarAccion('{% url 'gastos_diarios:rechazar' gasto.pk %}', 'rechazar', '{{ gasto.descripcion|escapejs }}')" class="btn btn-ghost btn-sm btn-icon" title="Rechazar" aria-label="Rechazar">
                             <i class="fas fa-times"></i>
                         </button>
+                        {% endif %}
+                        {% if request.user.is_staff %}
+                        <button type="button" onclick="confirmarAccion('{% url 'gastos_diarios:eliminar' gasto.pk %}', 'eliminar', '{{ gasto.descripcion|escapejs }}', {{ gasto.pk }}, {% if gasto.estado == 'aprobado' %}true{% else %}false{% endif %})" class="btn btn-ghost btn-sm btn-icon" title="Eliminar" aria-label="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
                     </div>
                     {% else %}
                     <span class="muted">—</span>

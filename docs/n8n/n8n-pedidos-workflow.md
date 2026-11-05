@@ -22,7 +22,7 @@
 
 1. **Telegram API** → ya la tenés configurada de v1.0
 2. **OpenAI API** → ya la tenés configurada de v1.0
-3. En el nodo **"Crear Borrador Django"** y **"Confirmar Pedido Django"**, reemplazá el header `X-Bot-Secret` con el valor `akuna-bot-secret-2024` (el mismo que está en docker-compose.yml)
+3. En el nodo **"Crear Borrador Django"** y **"Confirmar Pedido Django"**, reemplazá el header `X-Bot-Secret` con el valor de la variable de entorno `TELEGRAM_BOT_SECRET` (nunca escribir el valor de prod en el repo: es público)
 
 ---
 
@@ -214,7 +214,7 @@
             },
             {
               "name": "X-Bot-Secret",
-              "value": "akuna-bot-secret-2024"
+              "value": "={{ $env.TELEGRAM_BOT_SECRET }}"
             }
           ]
         },
@@ -300,7 +300,7 @@
             },
             {
               "name": "X-Bot-Secret",
-              "value": "akuna-bot-secret-2024"
+              "value": "={{ $env.TELEGRAM_BOT_SECRET }}"
             }
           ]
         },
@@ -567,7 +567,7 @@ Si en tu n8n las credenciales tienen otros IDs, tenés dos opciones:
 Todos los llamados de n8n a Django llevan el header:
 
 ```
-X-Bot-Secret: akuna-bot-secret-2024
+X-Bot-Secret: <TELEGRAM_BOT_SECRET>
 ```
 
 Este valor está configurado en `docker-compose.yml` como variable de entorno `TELEGRAM_BOT_SECRET` del servicio `web`.

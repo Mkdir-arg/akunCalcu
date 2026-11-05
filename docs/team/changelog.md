@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-05 — Gastos diarios: eliminar un gasto
+
+El staff puede eliminar un gasto desde `/gastos-diarios/` (botón de papelera, confirmación con SweetAlert2). Si el gasto ya estaba aprobado, también se da de baja (borrado lógico) la compra `CAJA-<id>` que generó, para que deje de sumar en comercial. Ruta `gastos_diarios:eliminar`, solo POST y solo staff.
+
 ## 2026-11-05 — FIX-028: los errores de clave de un usuario ya no bloquean a toda la oficina
 
 El freno por intentos fallidos pasa de «por IP» a «por usuario + IP»: el que se equivoca 5 veces espera 30 minutos y el resto entra normal. El bloqueo manual de IP cierra la sesión y ya no deja el navegador en bucle. Ver `docs/fixes/_LOG.md`.
@@ -23,6 +27,17 @@ El freno por intentos fallidos pasa de «por IP» a «por usuario + IP»: el que
 Detalle en tarjetas por orden con stepper y botón «Pasar a X» (sin cortes en 1366 ni celular); PDF con hoja de ruta, ancho/alto separados y banda de revisión. Ver `docs/fixes/_LOG.md`.
 
 ---
+
+## 2026-10-30 — Bot de gastos por WhatsApp migrado a Meta Cloud API (FIX-026)
+
+**Sprint**: Fuera de plan
+**Deploy**: n8n el 2026-10-30 (workflow `VfdJhVTZmKj7HoES` publicado y webhook de Meta apuntado a n8n). La parte de Django (registro de fallos, migración `security/0005`) se subió el 2026-11-05
+
+El bot de gastos por voz estaba muerto desde el 2026-08-28: su entrada dependía de Evolution API, que se dio de baja ese
+día, y nada lo detectaba. Se reescribió el workflow para hablar directo con la Cloud API de Meta (verificación del
+webhook, descarga del audio por Graph API, respuestas por `/messages`). De paso, el mismo webhook recibe los estados de
+entrega: cuando Meta rechaza un mensaje saliente (agenda, solicitudes o gastos) queda registrado en el nodo "Fallo de
+Envio" en vez de perderse. Detalle en `docs/n8n/n8n-gastos-diarios-whatsapp-workflow.md`.
 
 ## 2026-10-30 — Circuito de pedidos de fábrica, Etapa 1 (REQ-063 → FEAT-048)
 

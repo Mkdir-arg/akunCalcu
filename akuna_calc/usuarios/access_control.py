@@ -199,6 +199,7 @@ PUBLIC_ROUTE_KEYS = {
     'security:backup_api_create',
     'security:api_salud',
     'security:api_heartbeat',
+    'security:api_fallo_whatsapp',
     'solicitudes:api_crear',
     'solicitudes:api_recordatorios',
     'solicitudes:api_marcar_recordatorio',
@@ -291,7 +292,7 @@ _register_route('seguridad.auditoria', 'security:audit_list')
 _register_route('configuracion.usuarios', 'user_create', 'user_update', 'user_toggle')
 _register_route('configuracion.general', 'configuracion-hora-hombre')
 
-_register_route('gastos_diarios.view', 'gastos_diarios:aprobar', 'gastos_diarios:rechazar')
+_register_route('gastos_diarios.view', 'gastos_diarios:aprobar', 'gastos_diarios:rechazar', 'gastos_diarios:eliminar')
 _register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gastos_diarios:numero_edit', 'gastos_diarios:numero_delete')
 
 _register_route('agenda.view', 'agenda:calendario', 'agenda:crear', 'agenda:editar', 'agenda:eliminar', 'agenda:cliente_info')

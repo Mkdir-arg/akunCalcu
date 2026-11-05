@@ -1,182 +1,117 @@
-# Workflow n8n — Gastos Diarios por WhatsApp
+# Workflow n8n — Gastos Diarios por WhatsApp (v2, Meta Cloud API)
 
-> **Version**: 1.0
-> **Estado**: Listo para importar y ajustar
-> **Archivo JSON**: `docs/n8n-gastos-diarios-whatsapp-workflow.json`
+> **Versión**: 2.0 (2026-10-30, FIX-026)
+> **Workflow en n8n**: `VfdJhVTZmKj7HoES` — "WhatsApp Gastos Diarios AkunCalcu v2 (Meta Cloud API)"
+> **Archivo JSON**: `docs/n8n/n8n-gastos-diarios-whatsapp-workflow.json` (copia exacta de lo publicado)
+> **Reemplaza a**: v1 (Evolution API). Evolution se dio de baja el 2026-08-28 y el bot quedó sin entrada.
 
-## Que hace este workflow
+## Qué hace
 
-1. Recibe un webhook de Evolution API con un audio o un texto de WhatsApp.
-2. Si es audio, descarga el archivo y lo transcribe con Whisper.
-3. GPT-4o-mini extrae una lista de gastos en formato `descripcion + monto`.
-4. Django crea borradores en `gastos_diarios` usando el endpoint real del proyecto.
-5. El workflow responde por WhatsApp con el resumen y pide confirmacion.
-6. Si el usuario responde `SI`, los borradores pasan a estado `en_espera`.
-7. Si el usuario responde `NO`, los borradores se eliminan.
+1. Meta (WhatsApp Cloud API) llama al webhook `gastos-diarios-whatsapp` cada vez que
+   el número de Akun recibe un mensaje **o** cambia el estado de un mensaje enviado.
+2. Si es un **audio**: baja el `.ogg` por la Graph API, lo transcribe con Whisper y, si no había
+   un borrador pendiente, GPT-4o-mini extrae los gastos (`descripcion + monto + tipo`).
+3. Django crea los borradores (`/gastos-diarios/api/crear-borrador/`) y devuelve el próximo
+   mensaje conversacional (pregunta el tipo o pide confirmación).
+4. Si es **texto** (o un audio cuando ya hay borrador): va a `/gastos-diarios/api/responder/`,
+   que lo interpreta como tipo de cuenta o como SI/NO.
+5. La respuesta vuelve por WhatsApp como texto libre (válido: la persona nos acaba de escribir,
+   ventana de 24 h de Meta).
+6. Si Meta avisa que un mensaje saliente **falló** (`statuses[].status = failed`), el evento
+   termina en el nodo **"Fallo de Envio"**, que lo manda a Django
+   (`/security/salud/api/fallo-whatsapp/`). Django lo guarda en `FalloEnvioWhatsApp`, avisa al
+   staff en la campana y lo muestra en `/security/salud/` («Envíos de WhatsApp»). Esto cubre
+   también los recordatorios de agenda y de solicitudes, que antes fallaban en silencio.
 
-## Endpoints Django reales que usa
+## Variables de entorno (servicio n8n en Railway)
 
-Estos endpoints ya existen en el proyecto:
+| Variable | Uso |
+|---|---|
+| `META_WA_TOKEN` | Token permanente del System User `akunbot-admin` (ya existe, lo usa la agenda) |
+| `META_PHONE_NUMBER_ID` | `1119452454594540` = +54 9 11 3929-0550 (ya existe). Filtra los eventos del número de prueba |
+| `META_VERIFY_TOKEN` | Opcional. Si no está, el workflow usa `akuna-gastos-2026` |
+| `AKUNACALCU_WEB_URL` | URL pública de Django (ya existe) |
+| `TELEGRAM_BOT_SECRET` | Mismo valor que en Django; va en el header `X-Bot-Secret` (ya existe) |
 
-| Endpoint | Metodo | Uso |
+## Configuración en Meta (una sola vez)
+
+En <https://developers.facebook.com> → la app de WhatsApp → **WhatsApp → Configuración → Webhook**:
+
+1. **URL de devolución de llamada**: `https://n8n-production-9a1a.up.railway.app/webhook/gastos-diarios-whatsapp`
+2. **Token de verificación**: `akuna-gastos-2026` (o el valor de `META_VERIFY_TOKEN` si se definió)
+3. **Verificar y guardar** → Meta hace un GET y el workflow responde el `hub.challenge`.
+4. En **Campos del webhook**, suscribirse a `messages` (es el único campo necesario; los
+   estados de entrega llegan por el mismo campo).
+
+El workflow tiene que estar **publicado** en n8n antes del paso 3, si no el GET devuelve 404.
+
+## Payload que llega de Meta
+
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [{ "changes": [{ "field": "messages", "value": {
+    "metadata": { "phone_number_id": "1119452454594540" },
+    "contacts": [{ "wa_id": "5491155555555", "profile": { "name": "Dario" } }],
+    "messages": [{ "from": "5491155555555", "id": "wamid...", "type": "audio",
+                   "audio": { "id": "1234567890", "mime_type": "audio/ogg; codecs=opus" } }]
+  }}]}]
+}
+```
+
+Para texto viene `"type": "text", "text": { "body": "si" }`. Para estados viene
+`"statuses": [{ "id": "wamid...", "status": "failed", "recipient_id": "549...", "errors": [...] }]`.
+
+El nodo `Normalizar Evento` es el único que conoce esta forma; si Meta cambia el payload,
+se ajusta solo ese nodo.
+
+## Nodos
+
+| Nodo | Qué hace |
+|---|---|
+| Webhook Verificacion Meta (GET) | Responde el `hub.challenge` si el `hub.verify_token` coincide; 403 si no |
+| Webhook Meta (POST) | Recibe eventos; responde 200 al instante (Meta reintenta si tarda) |
+| Normalizar Evento | Aplana `entry/changes/value` a un item por mensaje o por envío fallido |
+| Es Mensaje | Mensajes → flujo normal; fallos de envío → "Fallo de Envio" |
+| IF Audio | Audio → transcripción; texto → respuesta conversacional |
+| Obtener URL Audio / Descargar Audio | `GET /v21.0/{media_id}` → `GET url` con Bearer (la url vence a los 5 min) |
+| Transcribe Audio | Whisper (credencial OpenAI de n8n), idioma `es` |
+| Responder Audio → IF Manejado | Si había borrador, el audio se trata como respuesta y no se extraen gastos |
+| Parsear Gastos GPT → Procesar JSON Gastos → IF Hay Gastos | Extrae gastos; si no hay, "WhatsApp Reintentar" |
+| Crear Borrador Django → Armar Resumen → WhatsApp Enviar Resumen | Crea borradores y manda el resumen |
+| Normalizar Respuesta → Responder Django → WhatsApp Responder | Rama de texto |
+
+Los envíos por WhatsApp usan `POST https://graph.facebook.com/v21.0/{META_PHONE_NUMBER_ID}/messages`
+con `type: 'text'`. Los nodos de descarga, transcripción y envío tienen `onError: continueRegularOutput`
+para que una falla termine en un "No pude transcribir el audio" y no en silencio.
+`Responder Django` y `Crear Borrador Django` **no** lo tienen a propósito: un número no autorizado
+(403) corta la ejecución sin responderle nada.
+
+## Endpoints Django
+
+| Endpoint | Método | Uso |
 |---|---|---|
-| `http://web:8000/gastos-diarios/api/crear-borrador/` | `POST` | Crea gastos en estado `borrador` |
-| `http://web:8000/gastos-diarios/api/confirmar/` | `POST` | Pasa borradores a `en_espera` o los elimina |
+| `/gastos-diarios/api/crear-borrador/` | `POST` | Crea gastos en estado `borrador`, devuelve `mensaje` |
+| `/gastos-diarios/api/responder/` | `POST` | Interpreta texto (tipo o SI/NO), devuelve `manejado` y `mensaje` |
+| `/gastos-diarios/api/confirmar/` | `POST` | Alternativa directa con `accion: si/no` (no la usa el workflow) |
+| `/security/salud/api/fallo-whatsapp/` | `POST` | Registra un mensaje no entregado (`message_id`, `numero_destino`, `errores`). Valida `X-Bot-Secret` contra `HEALTH_BOT_SECRET`, no contra el de Telegram |
 
-Si n8n no corre en la misma red interna que Django, reemplaza `http://web:8000` por la URL interna o publica correcta.
+Todos validan el header `X-Bot-Secret` contra `TELEGRAM_BOT_SECRET` y que `numero_origen`
+esté en `NumeroAutorizado` activo. `numero_origen` es el `wa_id` de Meta (ej. `5491155555555`,
+mismo formato que usaba Evolution).
 
-## Payload real esperado por Django
+## Cómo verificar que anda
 
-### Crear borrador
+1. Ejecuciones del workflow en n8n: tiene que aparecer una por cada mensaje recibido.
+2. Audio de prueba desde un número autorizado → llega el resumen con los gastos y la pregunta.
+3. Responder `SI` → "Listo. Tus gastos quedaron cargados..." y el gasto aparece en
+   `/gastos-diarios/` con estado *En espera*.
+4. Si un recordatorio de agenda no llega, mirar «Envíos de WhatsApp» en `/security/salud/` o el
+   admin de *Fallos de envío de WhatsApp*.
 
-```json
-{
-  "numero_origen": "5491155555555",
-  "audio_id": "ABCD-1234",
-  "transcripcion": "cargame nafta quince mil y cafe dos mil quinientos",
-  "gastos": [
-    {
-      "descripcion": "Nafta",
-      "monto": 15000
-    },
-    {
-      "descripcion": "Cafe",
-      "monto": 2500
-    }
-  ]
-}
-```
+## Historial
 
-### Confirmar o cancelar
-
-```json
-{
-  "numero_origen": "5491155555555",
-  "accion": "si"
-}
-```
-
-Valores validos para `accion`: `si` o `no`.
-
-## Antes de importar en n8n
-
-1. Crea o reutiliza la credencial `OpenAI API` en n8n.
-2. Reemplaza `REEMPLAZAR_EVOLUTION_API_KEY` por tu API key de Evolution.
-3. Reemplaza `MI_INSTANCIA` por el nombre real de la instancia en Evolution API.
-4. Reemplaza `X-Bot-Secret` si cambiaste el valor de `TELEGRAM_BOT_SECRET` en Django.
-5. Configura Evolution para que el webhook apunte al path del nodo `Webhook Evolution`.
-6. Asegurate de que el webhook de Evolution entregue una URL descargable del audio en alguno de estos campos: `data.mediaUrl`, `message.audioMessage.url` o equivalente.
-
-## Webhook esperado desde Evolution
-
-El nodo `Normalizar Evento` intenta adaptarse a estructuras comunes de Evolution y usa:
-
-- `remoteJid` para detectar el numero de origen.
-- `message.audioMessage` o `mediaUrl` para detectar audio.
-- `conversation` o `extendedTextMessage.text` para respuestas `SI/NO`.
-
-Si tu webhook llega con otro formato, ajusta solo el nodo `Normalizar Evento`.
-
-## Archivo para importar
-
-El JSON listo para importar esta en [docs/n8n-gastos-diarios-whatsapp-workflow.json](c:/Users/mkdir/Proyectos/akunCalcu/docs/n8n-gastos-diarios-whatsapp-workflow.json).
-
-## Nota practica
-
-No borre [docs/n8n-pedidos-workflow.md](c:/Users/mkdir/Proyectos/akunCalcu/docs/n8n-pedidos-workflow.md) porque documenta otra integracion ya implementada y referenciada por la feature de pedidos.# Workflow n8n — Gastos Diarios por WhatsApp
-
-> Version: 1.0
-> Estado: Listo para importar con ajustes de URLs y credenciales
-
-## Que hace este workflow
-
-1. Recibe un webhook desde Evolution API cuando entra un mensaje de WhatsApp.
-2. Si el mensaje tiene audio, descarga el archivo y lo transcribe con Whisper.
-3. GPT extrae una lista de gastos con `descripcion` y `monto`.
-4. Django crea un borrador en `gastos_diarios` con estado `borrador`.
-5. WhatsApp responde con un resumen y pide confirmacion: `SI` o `NO`.
-6. Si el usuario responde `SI`, Django pasa esos borradores a `en_espera`.
-7. Si responde `NO`, Django elimina los borradores.
-
-## Archivo para importar
-
-Importa este archivo en n8n:
-
-`docs/n8n-gastos-diarios-whatsapp-workflow.json`
-
-## Ajustes obligatorios antes de activarlo
-
-Reemplaza estos valores en el workflow importado:
-
-1. `https://TU_DJANGO_URL` por la URL real de Django.
-2. `https://TU_EVOLUTION_URL` por la URL real de Evolution API.
-3. `TU_INSTANCIA_EVOLUTION` por el nombre exacto de tu instancia en Evolution.
-4. `REEMPLAZAR_CON_EVOLUTION_API_KEY` por tu API key de Evolution.
-5. `REEMPLAZAR_CON_TELEGRAM_BOT_SECRET` por el mismo valor de `TELEGRAM_BOT_SECRET` usado por Django.
-6. La credencial `OpenAI API` en los nodos de Whisper y GPT.
-
-## Endpoints Django reales
-
-Estos endpoints ya existen en el proyecto:
-
-1. `POST /gastos-diarios/api/crear-borrador/`
-2. `POST /gastos-diarios/api/confirmar/`
-
-El token se valida con el header:
-
-```text
-X-Bot-Secret: <TELEGRAM_BOT_SECRET>
-```
-
-## Payload real para crear borrador
-
-```json
-{
-  "numero_origen": "5491155555555",
-  "audio_id": "ABCD1234",
-  "transcripcion": "nafta veinte mil y peaje mil quinientos",
-  "gastos": [
-    {
-      "descripcion": "Nafta",
-      "monto": 20000
-    },
-    {
-      "descripcion": "Peaje",
-      "monto": 1500
-    }
-  ]
-}
-```
-
-## Payload real para confirmar
-
-```json
-{
-  "numero_origen": "5491155555555",
-  "accion": "si"
-}
-```
-
-o
-
-```json
-{
-  "numero_origen": "5491155555555",
-  "accion": "no"
-}
-```
-
-## Suposiciones del workflow
-
-El webhook de Evolution tiene que traer un payload donde pueda resolverse al menos esto:
-
-1. Numero de origen.
-2. Texto del mensaje cuando es una respuesta `SI` o `NO`.
-3. URL del audio cuando el mensaje es de voz.
-4. Un identificador del mensaje o audio.
-
-El nodo `Normalizar Evento` ya intenta leer variantes comunes de Evolution, pero si tu payload viene con otra forma vas a tener que ajustar solo ese nodo.
-
-## Recomendacion operativa
-
-No borre el documento del workflow de pedidos por Telegram porque sigue siendo documentacion valida de una feature ya implementada. Este archivo nuevo queda separado para WhatsApp + gastos diarios.
+- **v1 (2026-05)**: entrada y salida por Evolution API (`/webhook/meta` de Evolution → n8n).
+- **2026-08-28**: Evolution dada de baja; los envíos de agenda pasaron a Meta directo, pero la
+  entrada de este bot quedó rota (0 ejecuciones).
+- **v2 (2026-10-30, FIX-026)**: entrada y salida por Meta Cloud API directo; registro de envíos fallidos.
