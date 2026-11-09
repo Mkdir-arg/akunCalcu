@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ingresar · AKUN</title>
+    <title>{% if bienvenida_url %}Entrando · AKUN{% else %}Ingresar · AKUN{% endif %}</title>
     {% load static %}
+    {% if bienvenida_url %}<meta http-equiv="refresh" content="7;url={{ bienvenida_url }}">{% endif %}
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }
@@ -24,14 +25,59 @@
         .lg-inp { width: 100%; height: 44px; border: 1px solid #D0D5DD; border-radius: 10px; padding: 0 14px; font: 400 15px Inter, sans-serif; color: #101828; background: #fff; }
         .lg-inp:focus { outline: none; border-color: #1F4FD8; box-shadow: 0 0 0 4px #DCE6FF; }
         .lg-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 44px; border: 0; border-radius: 10px; background: #1F4FD8; color: #fff; font: 600 15px Inter, sans-serif; cursor: pointer; }
-        .lg-btn:hover { background: #163BA6; }
+        .lg-btn:hover { background: #163BA6; color: #fff; }
+        .lg-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px #DCE6FF; }
         .lg-alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font: 500 14px/1.4 Inter, sans-serif; background: #FEF3F2; border: 1px solid #FECDCA; color: #B42318; }
         .lg-alert.info { background: #EEF3FF; border-color: #DCE6FF; color: #1F4FD8; }
-        .lg-side { flex: 1 1 480px; background: #0F1729; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 56px 40px; gap: 40px; }
-        .lg-win { width: 280px; height: 340px; max-width: 100%; border: 10px solid #2B3A55; border-radius: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; background: #16213A; }
-        .lg-pane { border: 6px solid #3D5078; border-radius: 3px; background: linear-gradient(160deg, #284069 0%, #1A2847 60%); position: relative; }
+        .lg-side { flex: 1 1 480px; background: #0F1729; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 56px 40px; gap: 40px; position: relative; overflow: hidden; }
+        .lg-side .lg-copy { max-width: 380px; text-align: center; transition: opacity .4s; }
+
+        /* REQ-066: escena de la ventana. Cerrada se ve igual que antes; con .play se abre y se asoma el personaje. */
+        .lg-scene { position: relative; width: 280px; height: 340px; max-width: 100%; }
+        .lg-win { position: absolute; inset: 0; border: 10px solid #2B3A55; border-radius: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; background: #16213A; perspective: 900px; }
+        .lg-sky { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 30%, #E9EDF2, #C9D1DB); opacity: 0; transition: opacity .5s .15s; }
+        .lg-pane { border: 6px solid #3D5078; border-radius: 3px; background: linear-gradient(160deg, #284069 0%, #1A2847 60%); position: relative; z-index: 1; transition: transform .75s cubic-bezier(.3,.7,.2,1); }
+        .lg-pane.l { transform-origin: left center; }
+        .lg-pane.r { transform-origin: right center; }
         .lg-pane i { position: absolute; top: 46%; width: 4px; height: 28px; border-radius: 2px; background: #8FA3C8; }
-        @media (max-width: 760px) { .lg-side { display: none; } }
+        .lg-sill { position: absolute; left: -22px; right: -22px; bottom: -14px; height: 18px; border-radius: 3px; background: #3A4C6E; z-index: 4; box-shadow: 0 6px 14px rgba(0,0,0,.35); }
+        .lg-who-clip { position: absolute; left: -60%; right: -60%; top: -45%; bottom: -4px; clip-path: inset(-50% -50% 0 -50%); z-index: 3; pointer-events: none; }
+        .lg-who { position: absolute; left: 50%; bottom: -9%; width: 44%; transform: translate(-50%, 110%); filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
+        .lg-who img { display: block; width: 100%; height: auto; transform-origin: 50% 90%; transition: transform .12s ease-out; }
+        .lg-who.talk img { transform: translateY(-6px) rotate(-2deg) scale(1.02); }
+        .lg-bubble { position: absolute; z-index: 6; left: 56%; top: -24%; min-width: 210px; padding: 12px 16px; border-radius: 16px; background: #fff; color: #101828; font: 800 19px/1.2 Inter, sans-serif; letter-spacing: -.01em; box-shadow: 0 10px 30px rgba(0,0,0,.35); opacity: 0; transform: scale(.6) rotate(-4deg); transform-origin: 15% 100%; }
+        .lg-bubble::after { content: ""; position: absolute; left: 22px; bottom: -12px; border: 12px solid transparent; border-top-color: #fff; border-bottom: 0; }
+        .lg-bubble .w { display: inline-block; }
+        .lg-bubble .w.plata { color: #2F6B3B; }
+        .lg-bill { position: absolute; z-index: 5; left: 50%; top: 40%; width: 46px; height: 24px; border-radius: 3px; background: #4E9A5B; border: 2px solid #2F6B3B; color: #E9F7EC; font: 800 13px/20px Inter, sans-serif; text-align: center; opacity: 0; }
+        .lg-skip { position: absolute; bottom: 18px; left: 0; right: 0; margin: 0; text-align: center; font: 500 12px Inter, sans-serif; color: #A9B6CF; opacity: 0; transition: opacity .4s; }
+
+        .play .lg-copy { opacity: 0; }
+        .play .lg-sky { opacity: 1; }
+        .play .lg-pane.l { transform: rotateY(-80deg); }
+        .play .lg-pane.r { transform: rotateY(80deg); }
+        .play .lg-who { animation: lg-rise .9s cubic-bezier(.25,1.45,.45,1) .55s forwards, lg-sway 1.6s ease-in-out 1.6s infinite; }
+        .play .lg-bubble { animation: lg-pop .35s cubic-bezier(.3,1.6,.5,1) 1.35s forwards; }
+        .play .lg-skip { opacity: 1; transition-delay: 1s; }
+        .play .lg-bill { animation: lg-fly 2.2s ease-out forwards; }
+        @keyframes lg-rise { from { transform: translate(-50%, 110%); } to { transform: translate(-50%, 0); } }
+        @keyframes lg-sway { 0%,100% { transform: translate(-50%, 0) rotate(0); } 50% { transform: translate(-50%, -3px) rotate(-1.5deg); } }
+        @keyframes lg-pop { to { opacity: 1; transform: scale(1) rotate(-2deg); } }
+        @keyframes lg-bump { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-6px) scale(1.15); } 100% { transform: translateY(0) scale(1); } }
+        @keyframes lg-fly { 0% { opacity: 0; transform: translate(-50%, 0) rotate(0); } 12% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)); } }
+
+        @media (max-width: 760px) {
+            .lg-side { display: none; }
+            .lg-side.play { display: flex; position: fixed; inset: 0; z-index: 50; }
+            .lg-scene { width: 230px; height: 280px; }
+            .lg-bubble { left: 8%; top: -40%; font-size: 17px; min-width: 190px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .lg-pane, .lg-sky, .lg-copy { transition: none !important; }
+            .play .lg-who { animation: none; transform: translate(-50%, 0); }
+            .play .lg-bubble { animation: none; opacity: 1; transform: none; }
+            .play .lg-bill { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -43,6 +89,15 @@
             <span style="font:500 13px Inter,sans-serif;color:#667085">Aberturas</span>
         </div>
 
+        {% if bienvenida_url %}
+        <div class="lg-narrow lg-form">
+            <div>
+                <h1 style="margin:0;font:600 30px/1.2 Inter,sans-serif;letter-spacing:-.02em">¡Hola, {{ user.first_name|default:user.username }}!</h1>
+                <p style="margin:8px 0 0;font:400 15px/1.5 Inter,sans-serif;color:#475467">Entrando al sistema…</p>
+            </div>
+            <a class="lg-btn" id="lg-entrar" href="{{ bienvenida_url }}">Entrar ya</a>
+        </div>
+        {% else %}
         <form method="post" class="lg-narrow lg-form">
             {% csrf_token %}
             <div>
@@ -81,20 +136,92 @@
             <button class="lg-btn" type="submit">Ingresar</button>
             <p style="margin:0;font:400 13px/1.5 Inter,sans-serif;color:#667085">¿No tenés usuario? Pedíselo a un administrador.</p>
         </form>
+        {% endif %}
 
         <p class="lg-narrow" style="margin-top:0;margin-bottom:0;font:400 12px Inter,sans-serif;color:#667085">© 2026 Akuna Aberturas</p>
     </main>
 
-    <aside class="lg-side" aria-label="Presentación">
-        <div class="lg-win" aria-hidden="true">
-            <div class="lg-pane"><i style="right:8px"></i></div>
-            <div class="lg-pane"><i style="left:8px"></i></div>
+    <aside class="lg-side" id="lg-side" aria-label="Presentación">
+        <div class="lg-scene">
+            <div class="lg-win" aria-hidden="true">
+                <div class="lg-sky"></div>
+                <div class="lg-pane l"><i style="right:8px"></i></div>
+                <div class="lg-pane r"><i style="left:8px"></i></div>
+            </div>
+            {% if bienvenida_url %}
+            <div class="lg-who-clip" aria-hidden="true"><div class="lg-who" id="lg-who"><img alt="" src="{% static 'imagenes/mascota-login.webp' %}" width="540" height="676"></div></div>
+            <div class="lg-bubble" id="lg-bubble" aria-live="polite"></div>
+            <div id="lg-bills" aria-hidden="true"></div>
+            {% endif %}
+            <div class="lg-sill" aria-hidden="true"></div>
         </div>
-        <div style="max-width:380px;text-align:center">
+        <div class="lg-copy">
             <p style="margin:0;font:600 22px/1.35 Inter,sans-serif;letter-spacing:-.01em">Del presupuesto a la orden de fábrica, en un solo lugar.</p>
             <p style="margin:12px 0 0;font:400 14px/1.6 Inter,sans-serif;color:#A9B6CF">Cotizá aberturas de PVC y aluminio, confirmá ventas y seguí cada pedido hasta el cobro.</p>
         </div>
+        {% if bienvenida_url %}<p class="lg-skip">Tocá en cualquier lado para entrar ya</p>{% endif %}
     </aside>
 </div>
+
+{% if bienvenida_url %}
+<script>
+(function () {
+    var destino = '{{ bienvenida_url|escapejs }}';
+    var side = document.getElementById('lg-side');
+    var bubble = document.getElementById('lg-bubble');
+    var bills = document.getElementById('lg-bills');
+    var who = document.getElementById('lg-who');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var palabras = ['¡Quiero', 'plata,', 'plata,', 'plata!'];
+    var yendo = false;
+
+    function entrar() {
+        if (yendo) return;
+        yendo = true;
+        window.location.replace(destino);
+    }
+
+    function palabra(texto, i) {
+        var s = document.createElement('span');
+        s.className = 'w' + (texto.indexOf('plata') === 0 ? ' plata' : '');
+        s.textContent = texto;
+        if (i) bubble.appendChild(document.createTextNode(' '));
+        bubble.appendChild(s);
+        if (reduce) return;
+        who.classList.add('talk');
+        setTimeout(function () { who.classList.remove('talk'); }, 220);
+        if (i) { s.style.animation = 'lg-bump .35s ease-out'; tirarBilletes(2); }
+    }
+
+    function tirarBilletes(n) {
+        for (var k = 0; k < n; k++) {
+            var b = document.createElement('div');
+            var dir = Math.random() < .5 ? -1 : 1;
+            b.className = 'lg-bill';
+            b.textContent = '$';
+            b.style.setProperty('--dx', dir * (90 + Math.random() * 120) + 'px');
+            b.style.setProperty('--dy', (-60 + Math.random() * 220) + 'px');
+            b.style.setProperty('--rot', dir * (90 + Math.random() * 270) + 'deg');
+            b.style.animationDelay = (k * 90) + 'ms';
+            bills.appendChild(b);
+        }
+    }
+
+    requestAnimationFrame(function () { side.classList.add('play'); });
+    if (reduce) {
+        palabras.forEach(palabra);
+    } else {
+        var t = 1500;
+        palabras.forEach(function (texto, i) {
+            setTimeout(function () { palabra(texto, i); }, t);
+            t += i ? 380 : 300;
+        });
+    }
+    setTimeout(entrar, reduce ? 1800 : 4300);
+    side.addEventListener('click', entrar);
+    document.addEventListener('keydown', function (e) { if (e.key !== 'Tab') entrar(); });
+})();
+</script>
+{% endif %}
 </body>
 </html>
