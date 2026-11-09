@@ -190,6 +190,26 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-026: PDF internos A4 sobre una base común y envío de documentos por WhatsApp directo a Meta desde Django
+**Fecha**: 2026-11-09
+**Estado**: Activo
+
+**Contexto**: RF-02 pide la planilla de Colocación y RF-03 la de Medición, las dos con la identidad de la Orden de Fabricación. El logo estaba copiado en tres lugares y cada PDF repetía el render con xhtml2pdf. Además, el usuario pidió mandar la planilla por WhatsApp a los números autorizados. Meta solo entrega texto libre dentro de las 24 h en que la persona escribió; fuera de esa ventana exige una plantilla aprobada.
+
+**Decisión**:
+1. **Base común en `core`:** `core/pdf.py` (logo, datos de empresa, `render_pdf_bytes`, `pdf_response`) y `core/templates/core/pdf/base_a4.html` con bloques `titulo`, `contenido` y `pie_derecha`. Los PDF internos nuevos extienden esa base.
+2. **Reglas de xhtml2pdf** para las plantillas nuevas: solo tablas con ancho en % por celda; altos en px/mm, nunca en %; nada de flex, grid ni colspan; las filas de una tabla con el mismo número de celdas (si cambia, otra tabla); `repeat="1"` en tablas largas. Se verifica el render pasando el PDF a PNG con pypdfium2.
+3. **WhatsApp: Django habla directo con la Graph API de Meta** (`core/whatsapp.py`, con `urllib`, sin dependencias nuevas): sube el PDF a `/media` una vez y manda la plantilla con encabezado DOCUMENT a cada número. Las credenciales son las mismas del servicio de n8n, cargadas en `web` como referencia de Railway.
+
+**Alternativas descartadas**:
+- *Mandar por un webhook de n8n*: suma un salto que ya se colgó sin avisar («Database is not ready»), y el resultado no vuelve en el momento a quien envía.
+- *Texto libre con link al PDF*: Meta no lo entrega fuera de la ventana de 24 h, y un link público expondría datos del cliente.
+- *Migrar la Orden de Fabricación a la base*: opcional; su plantilla quedó igual para no arriesgar un documento que el taller usa todos los días.
+
+**Consecuencias**: Medición, Recibo unificado y los PDF que vengan reutilizan la base. Cada documento que se mande por WhatsApp necesita su propia plantilla aprobada por Meta. Si faltan las variables `META_*`, el envío avisa que no está configurado y el PDF sale igual. El «aceptado» de Meta no garantiza la entrega: los rechazos posteriores llegan por el webhook de n8n a `FalloEnvioWhatsApp`.
+
+---
+
 ## ADR-025: El pedido de fábrica tiene estado de cabecera con transiciones en un servicio; la orden tiene su propia etapa y revisiones
 **Fecha**: 2026-10-30
 **Estado**: Activo

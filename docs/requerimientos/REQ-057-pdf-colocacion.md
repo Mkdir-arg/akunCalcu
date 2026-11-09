@@ -1,6 +1,7 @@
 # REQ-057 — Planilla de Colocación (PDF) desde el presupuesto confirmado
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
+- **Derivó en:** [FEAT-049](../features/FEAT-049-planilla-colocacion.md)
 - **Fecha:** 2026-10-20
 - **Complejidad:** Mediano
 - **Origen:** RF-02 (prioridad Alta)
@@ -29,15 +30,15 @@ al colocador sin cargar datos a mano**.
 
 ## Criterios de Aceptación
 
-- [ ] En un presupuesto confirmado con venta, el detalle muestra el botón "Colocación" (azul, ícono herramientas)
-- [ ] El botón abre un modal con: colocador (desplegable de cuentas de tipo colocadores activas, opción "A definir"), fecha (por defecto hoy) y observaciones (precargadas con el comentario del presupuesto)
-- [ ] "Generar" abre en una pestaña nueva un PDF A4 titulado **COLOCACIÓN** con la identidad Akun
-- [ ] El PDF contiene colocador, fecha, cliente con ID, domicilio, localidad, provincia, teléfono, nº de presupuesto
-- [ ] Tabla de aberturas con cantidad, tipología, medidas y color por ítem (puede ocupar varias hojas y repite el encabezado)
-- [ ] Importes: valor total, seña / a cuenta, saldo pendiente, forma de pago; en PVC además cotización y montos en US$
-- [ ] Recuadro de observaciones y firmas (colocador / cliente)
-- [ ] En un presupuesto sin venta (o con la venta dada de baja) el botón no aparece y la URL redirige al detalle con un mensaje
-- [ ] Un colocador que no sea de tipo colocadores (POST manipulado) sale en blanco
+- [x] En un presupuesto confirmado con venta, el detalle muestra el botón "Colocación" (azul, ícono herramientas)
+- [x] El botón abre un modal con: colocador (desplegable de cuentas de tipo colocadores activas, opción "A definir"), fecha (por defecto hoy) y observaciones (precargadas con el comentario del presupuesto)
+- [x] "Generar" abre en una pestaña nueva un PDF A4 titulado **COLOCACIÓN** con la identidad Akun
+- [x] El PDF contiene colocador, fecha, cliente con ID, domicilio, localidad, provincia, teléfono, nº de presupuesto
+- [x] Tabla de aberturas con cantidad, tipología, medidas y color por ítem (puede ocupar varias hojas y repite el encabezado)
+- [x] Importes: valor total, seña / a cuenta, saldo pendiente, forma de pago; en PVC además cotización y montos en US$
+- [x] Recuadro de observaciones y firmas (colocador / cliente)
+- [x] En un presupuesto sin venta (o con la venta dada de baja) el botón no aparece y la URL redirige al detalle con un mensaje
+- [x] Un colocador que no sea de tipo colocadores (POST manipulado) sale en blanco
 
 ## Diseño técnico
 
@@ -71,6 +72,44 @@ El total sale de la **venta** a propósito: así total = seña + saldo cierra au
 FK nuevas: ninguna. Datos existentes: solo lectura. URL name nuevo. Form nuevo sin modelo.
 
 **Nota (2026-10-22):** si [REQ-062](./REQ-062-estructuras.md) (estructuras) se implementa antes, `build_ficha_item` tiene que contemplar `resultado_json['tipo'] == 'estructura'`. Ese ítem no tiene `producto` en el snapshot: la tipología sale del título de la estructura, las medidas son las del conjunto y el color sale de `snapshot.tratamiento`.
+
+## Ampliación 2026-11-09 — Envío por WhatsApp
+
+Pedido del usuario: al generar la planilla, preguntar si se envía por WhatsApp, mostrar la lista de
+números habilitados y mandarla.
+
+| Pregunta | Decisión |
+|---|---|
+| ¿Qué lista? | **Números autorizados** (`gastos_diarios.NumeroAutorizado`, activos): la misma del bot y la agenda |
+| ¿Qué se manda? | El **PDF + un texto**, como plantilla de Meta `planilla_colocacion` (Utility, `es_AR`, encabezado DOCUMENT). Fuera de la ventana de 24 h Meta solo entrega plantillas aprobadas |
+| ¿Por dónde? | **Django → Meta Graph API directo** (no n8n): el resultado vuelve en el momento y no depende de que n8n esté vivo |
+| ¿Se guarda algo? | No. Sin migración |
+
+Texto de la plantilla: «Hola, te enviamos la planilla de colocación del presupuesto {{1}} del cliente
+{{2}}. Fecha prevista de colocación: {{3}}. Ante cualquier duda, respondé este mensaje.» Pie: «Akun
+Aberturas». Creada en la cuenta *akun* (empresa MKDIR) el 2026-11-09, id `2904528229919976`, en revisión.
+
+### Criterios de aceptación (ampliación)
+
+- [x] Al tocar «Generar PDF» se abre el PDF y aparece «¿Lo enviás por WhatsApp?» con los números autorizados activos (casillas)
+- [x] Sin números autorizados activos la pregunta no aparece
+- [x] «Enviar» exige al menos un número; manda el mismo PDF a cada uno y muestra cuáles salieron y cuáles fallaron con el motivo de Meta
+- [x] Si faltan `META_WA_TOKEN` / `META_PHONE_NUMBER_ID` en el entorno, avisa que el envío no está configurado (el PDF sale igual)
+- [x] Un número inactivo o inexistente posteado no se acepta
+
+### Diseño técnico (ampliación)
+
+- `core/whatsapp.py`: `subir_pdf()` (POST `/{phone_id}/media`, multipart con `urllib`, sin dependencias nuevas) y `enviar_plantilla_documento()` (POST `/{phone_id}/messages`). Los errores de Meta se traducen a `EnvioWhatsAppError` con código y mensaje
+- `presupuestos/forms.py`: `ColocacionWhatsAppForm` = `ColocacionPdfForm` + `numeros`
+- `presupuestos/views.py`: `colocacion_whatsapp` (POST, JSON), ruta `presupuestos-colocacion-whatsapp`, registrada con `presupuestos.view`
+- `detalle.html`: SweetAlert después del submit del modal; `fetch` con el mismo `FormData` + `numeros`
+- **Variables de entorno nuevas en el servicio web de Railway:** `META_WA_TOKEN`, `META_PHONE_NUMBER_ID` (`1119452454594540`), opcional `META_WA_API_VERSION` (default `v21.0`)
+
+### Pendientes externos
+
+- Aprobación de la plantilla por Meta
+- Confirmar en Billing Hub que la cuenta *akun* tiene medio de pago (si no, Meta acepta y no entrega: error 131042)
+- Cargar las variables de entorno en Railway
 
 ## Tests
 

@@ -4,7 +4,6 @@ from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
 from django.db.models import Max, Sum
 from decimal import Decimal
-from pathlib import Path
 import re
 
 
@@ -539,24 +538,17 @@ class Recibo(models.Model):
 
     def construir_pdf_bytes(self):
         """Renderiza el template y devuelve los bytes del PDF en memoria, sin tocar disco."""
-        import base64
         import io
 
-        from django.conf import settings
         from django.template.defaultfilters import date as date_filter
         from django.template.loader import render_to_string
         from xhtml2pdf import pisa
 
+        from core.pdf import build_logo_data_url
+
         cliente = self.venta.cliente.datos_documento()
         venta = self.venta
         retenciones = {ret.tipo: ret.importe_retenido for ret in self.pago.retenciones.all()}
-        logo_candidates = [
-            Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
-            Path(settings.BASE_DIR) / 'static' / 'AKUN-LOGO.png',
-            Path(settings.STATIC_ROOT) / 'imagenes' / 'AKUN-LOGO.png',
-            Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
-        ]
-        logo_path = next((path for path in logo_candidates if path.exists()), None)
         payment_rows = []
 
         if venta.sena > 0:
@@ -586,10 +578,7 @@ class Recibo(models.Model):
         payment_only_pages = payment_pages[:-1] if payment_pages else []
         closing_payment_rows = payment_pages[-1] if payment_pages else []
 
-        logo_url = ''
-        if logo_path:
-            logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
-            logo_url = f'data:image/png;base64,{logo_b64}'
+        logo_url = build_logo_data_url()
 
         context = {
             'recibo': self,

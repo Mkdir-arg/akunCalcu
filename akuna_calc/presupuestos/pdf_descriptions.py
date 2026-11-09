@@ -735,3 +735,36 @@ def build_pdf_item_context(item: Any) -> Dict[str, Any]:
         ),
         'dibujo': build_dibujo_params(snapshot),
     }
+
+
+def build_ficha_item(item: Any) -> Dict[str, Any]:
+    """Cantidad, tipología, medidas y color de un ítem para las planillas internas (REQ-057).
+
+    Mismo criterio que la Orden de Fabricación: la tipología es el producto del snapshot o la
+    descripción del vendedor. PVC y terciarizados guardan las medidas en 0 y sin color: quedan vacíos.
+    """
+    result = item.resultado_json if isinstance(item.resultado_json, dict) else {}
+    snapshot = result.get('snapshot_item')
+
+    if result.get('tipo') == 'estructura' and isinstance(result.get('estructura'), dict):
+        envolvente = result['estructura'].get('envolvente') or {}
+        ancho, alto = envolvente.get('ancho'), envolvente.get('alto')
+        tipologia = describir_estructura(result, item.cantidad)['titulo']
+    else:
+        if not isinstance(snapshot, dict):
+            snapshot = _build_legacy_snapshot(item)
+        ancho, alto = item.ancho_mm, item.alto_mm
+        tipologia = _clean_text((snapshot.get('producto') or {}).get('descripcion')) or _clean_text(item.descripcion)
+
+    snapshot = snapshot if isinstance(snapshot, dict) else {}
+    try:
+        medidas = f'{_format_mm(ancho)} x {_format_mm(alto)}' if float(ancho or 0) > 0 and float(alto or 0) > 0 else ''
+    except (TypeError, ValueError):
+        medidas = ''
+
+    return {
+        'cantidad': item.cantidad,
+        'tipologia': tipologia,
+        'medidas': medidas,
+        'color': _clean_text((snapshot.get('tratamiento') or {}).get('descripcion')),
+    }

@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-09 — FEAT-049: planilla de Colocación en PDF y envío por WhatsApp (RF-02)
+
+En el presupuesto confirmado con venta, el botón **Colocación** pide colocador, fecha y observaciones y abre la planilla A4 «COLOCACIÓN» con cliente, aberturas, importes y firmas, todo traído del presupuesto y de la venta. Después pregunta si se envía por WhatsApp a los números autorizados y la manda como plantilla de Meta con el PDF adjunto. Nace la base común de PDF internos en `core/pdf.py` (ADR-026). Sin migración.
+
 ## 2026-11-05 — Gastos diarios: eliminar un gasto
 
 El staff puede eliminar un gasto desde `/gastos-diarios/` (botón de papelera, confirmación con SweetAlert2). Si el gasto ya estaba aprobado, también se da de baja (borrado lógico) la compra `CAJA-<id>` que generó, para que deje de sumar en comercial. Ruta `gastos_diarios:eliminar`, solo POST y solo staff.

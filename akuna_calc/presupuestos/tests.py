@@ -3508,3 +3508,290 @@ class RediseñoTallerPresupuestosTest(TestCase):
         self.assertTrue(Aviso.objects.filter(usuario=self.otro, tipo='exito', texto__contains=self.p.numero).exists())
         self.assertFalse(Aviso.objects.filter(usuario=self.user).exists())
         self.assertFalse(Aviso.objects.filter(usuario=self.sin_acceso).exists())
+
+
+class _ColocacionDatosBase(TestCase):
+    """Presupuesto confirmado con venta, pago y colocadores, para los tests de REQ-057."""
+
+    def setUp(self):
+        from comercial.models import Cuenta, PagoVenta, TipoCuenta
+        self.user = User.objects.create_user('colocuser', password='testpass')
+        rol, _ = RolSistema.objects.get_or_create(
+            codigo='admin', defaults={'nombre': 'Admin', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=rol)
+        self.client = Client()
+        self.client.login(username='colocuser', password='testpass')
+
+        self.presupuesto = crear_presupuesto(self.user)
+        self.presupuesto.notas = 'Tocar timbre 2B'
+        self.presupuesto.save()
+        ItemPresupuesto.objects.create(
+            presupuesto=self.presupuesto, descripcion='Ventana corrediza', cantidad=2,
+            ancho_mm=1500, alto_mm=1100, precio_unitario=Decimal('1000'), margen_porcentaje=Decimal('30'),
+            resultado_json={'snapshot_item': {
+                'producto': {'descripcion': 'Corrediza 2 hojas'},
+                'tratamiento': {'descripcion': 'Negro microtexturado'},
+            }},
+        )
+        self.venta = Venta.objects.create(
+            numero_pedido='P-1', cliente=self.presupuesto.cliente, valor_total=Decimal('10000'),
+            sena=Decimal('3000'), forma_pago='transferencia',
+        )
+        PagoVenta.objects.create(
+            venta=self.venta, monto=Decimal('2000'), fecha_pago=date.today(),
+            forma_pago='efectivo', created_by=self.user,
+        )
+        self.venta.save()
+        self.presupuesto.estado = 'confirmado'
+        self.presupuesto.venta = self.venta
+        self.presupuesto.save()
+
+        tipo_colocadores, _ = TipoCuenta.objects.get_or_create(tipo='colocadores', defaults={'descripcion': 'Colocadores'})
+        tipo_proveedores, _ = TipoCuenta.objects.get_or_create(tipo='proveedores', defaults={'descripcion': 'Proveedores'})
+        self.colocador = Cuenta.objects.create(tipo_cuenta=tipo_colocadores, nombre='Pedro Colocador', telefono='11-4444')
+        self.proveedor = Cuenta.objects.create(tipo_cuenta=tipo_proveedores, nombre='Proveedor X')
+        self.url = reverse('presupuestos:presupuestos-colocacion', args=[self.presupuesto.pk])
+
+    def _contexto(self, **kwargs):
+        from .documentos_pdf import build_colocacion_context
+        return build_colocacion_context(self.presupuesto, self.venta, **kwargs)
+
+
+class PlanillaColocacionPdfTest(_ColocacionDatosBase):
+    """REQ-057: planilla de Colocación en PDF desde el presupuesto confirmado con venta."""
+
+    def test_get_devuelve_pdf(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertIn(f'colocacion_{self.presupuesto.numero}.pdf', response['Content-Disposition'])
+
+    def test_post_devuelve_pdf(self):
+        response = self.client.post(self.url, {
+            'colocador': self.colocador.pk, 'fecha': '2026-11-20', 'observaciones': 'Llevar escalera',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_sin_login_redirige(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_sin_venta_redirige_con_mensaje(self):
+        self.presupuesto.venta = None
+        self.presupuesto.save()
+        response = self.client.get(self.url, follow=True)
+        self.assertRedirects(response, reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk]))
+        self.assertContains(response, 'solo se genera desde un presupuesto confirmado con venta')
+
+    def test_venta_dada_de_baja_redirige(self):
+        self.venta.deleted_at = timezone.now()
+        self.venta.save()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_colocador_de_otro_tipo_sale_en_blanco(self):
+        from . import documentos_pdf
+        with patch('presupuestos.views.build_colocacion_context', wraps=documentos_pdf.build_colocacion_context) as build:
+            self.client.post(self.url, {'colocador': self.proveedor.pk, 'fecha': '2026-11-20', 'observaciones': 'Hola'})
+        kwargs = build.call_args.kwargs
+        self.assertIsNone(kwargs['colocador'])
+        self.assertEqual(kwargs['observaciones'], 'Hola')
+
+    def test_contexto_importes_y_forma_pago(self):
+        ctx = self._contexto(colocador=self.colocador, fecha=date(2026, 11, 20), observaciones='x')
+        importes = {etiqueta: pesos for etiqueta, pesos, _ in ctx['importes']}
+        self.assertEqual(importes['VALOR TOTAL'], Decimal('10000'))
+        self.assertEqual(importes['SEÑA / A CUENTA'], Decimal('5000'))
+        self.assertEqual(importes['SALDO PENDIENTE'], Decimal('5000'))
+        self.assertEqual(ctx['forma_pago'], 'Transferencia, Efectivo · Seña 50% adelanto / 50% saldo')
+        self.assertFalse(ctx['es_pvc'])
+        self.assertIsNone(ctx['cotizacion_usd'])
+        self.assertIn(('FECHA', '20/11/2026'), ctx['meta_filas'])
+
+    def test_contexto_ficha_aluminio(self):
+        ficha = self._contexto()['fichas'][0]
+        self.assertEqual(ficha, {
+            'cantidad': 2, 'tipologia': 'Corrediza 2 hojas', 'medidas': '1500 x 1100', 'color': 'Negro microtexturado',
+        })
+
+    def test_contexto_pvc_con_dolares(self):
+        self.presupuesto.tipo_material = 'pvc'
+        self.presupuesto.cotizacion_usd = Decimal('1000')
+        self.presupuesto.save()
+        ctx = self._contexto()
+        self.assertTrue(ctx['es_pvc'])
+        self.assertEqual(ctx['cotizacion_usd'], Decimal('1000'))
+        self.assertEqual(ctx['importes'][0][2], Decimal('10'))
+
+    def test_pdf_incluye_datos(self):
+        from django.template.loader import render_to_string
+        html = render_to_string('presupuestos/colocacion_pdf.html', self._contexto(colocador=self.colocador, observaciones='Llevar escalera'))
+        for texto in ('COLOCACIÓN', 'Pedro Colocador', 'Juan Pérez', 'Av. Test 123', self.presupuesto.numero,
+                      'Corrediza 2 hojas', 'Llevar escalera', 'SALDO PENDIENTE'):
+            self.assertIn(texto, html)
+
+    def test_detalle_muestra_boton_solo_con_venta(self):
+        detalle = reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk])
+        response = self.client.get(detalle)
+        self.assertContains(response, 'id="modal-colocacion"')
+        self.assertContains(response, 'Tocar timbre 2B')
+        self.presupuesto.venta = None
+        self.presupuesto.save()
+        self.assertNotContains(self.client.get(detalle), 'id="modal-colocacion"')
+
+    def test_ruta_registrada_con_permiso_de_presupuestos(self):
+        from usuarios.access_control import ROUTE_ACCESS_MAP
+        self.assertIn('presupuestos.view', ROUTE_ACCESS_MAP['presupuestos:presupuestos-colocacion'])
+
+
+class FichaItemTest(SimpleTestCase):
+    def _item(self, **kwargs):
+        datos = {'cantidad': 1, 'descripcion': 'Ventana PVC', 'ancho_mm': 0, 'alto_mm': 0, 'margen_porcentaje': 30, 'resultado_json': {'tipo': 'pvc_simple'}}
+        datos.update(kwargs)
+        return SimpleNamespace(**datos)
+
+    def test_pvc_sin_medidas_ni_color(self):
+        from .pdf_descriptions import build_ficha_item
+        self.assertEqual(build_ficha_item(self._item()), {
+            'cantidad': 1, 'tipologia': 'Ventana PVC', 'medidas': '', 'color': '',
+        })
+
+    def test_estructura_usa_titulo_y_envolvente(self):
+        from .pdf_descriptions import build_ficha_item
+        item = self._item(resultado_json={
+            'tipo': 'estructura',
+            'estructura': {'nombre': 'Frente living', 'envolvente': {'ancho': 3000, 'alto': 2200}, 'modulos': []},
+            'snapshot_item': {'tratamiento': {'descripcion': 'Blanco'}},
+        })
+        ficha = build_ficha_item(item)
+        self.assertEqual(ficha['medidas'], '3000 x 2200')
+        self.assertEqual(ficha['color'], 'Blanco')
+        self.assertIn('Frente living', ficha['tipologia'])
+
+
+class ColocacionWhatsAppTest(_ColocacionDatosBase):
+    """REQ-057: envío de la planilla por WhatsApp a números autorizados (Meta simulado)."""
+
+    def setUp(self):
+        super().setUp()
+        from gastos_diarios.models import NumeroAutorizado
+        self.numero = NumeroAutorizado.objects.create(numero='5491155555555', nombre='Darío')
+        self.inactivo = NumeroAutorizado.objects.create(numero='5491166666666', nombre='Viejo', activo=False)
+        self.url_wa = reverse('presupuestos:presupuestos-colocacion-whatsapp', args=[self.presupuesto.pk])
+
+    def _post(self, **extra):
+        datos = {'colocador': self.colocador.pk, 'fecha': '2026-11-20', 'observaciones': 'x', 'numeros': [self.numero.pk]}
+        datos.update(extra)
+        return self.client.post(self.url_wa, datos)
+
+    @patch('presupuestos.views.whatsapp.enviar_plantilla_documento', return_value='wamid.1')
+    @patch('presupuestos.views.whatsapp.subir_pdf', return_value='media-1')
+    def test_envia_pdf_y_plantilla(self, subir, enviar):
+        response = self._post()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['resultados'], [{'destino': 'Darío (5491155555555)', 'ok': True, 'error': ''}])
+        contenido, nombre = subir.call_args.args
+        self.assertTrue(contenido.startswith(b'%PDF'))
+        self.assertEqual(nombre, f'colocacion_{self.presupuesto.numero}.pdf')
+        numero, plantilla, idioma, media_id, _, parametros = enviar.call_args.args
+        self.assertEqual((numero, plantilla, idioma, media_id), ('5491155555555', 'planilla_colocacion', 'es_AR', 'media-1'))
+        self.assertEqual(parametros, [self.presupuesto.numero, 'Juan Pérez', '20/11/2026'])
+
+    @patch('presupuestos.views.whatsapp.enviar_plantilla_documento', return_value='wamid.1')
+    @patch('presupuestos.views.whatsapp.subir_pdf', return_value='media-1')
+    def test_sin_fecha_dice_a_definir(self, subir, enviar):
+        self._post(fecha='')
+        self.assertEqual(enviar.call_args.args[5][2], 'A definir')
+
+    def test_sin_numeros_400(self):
+        self.assertEqual(self._post(numeros=[]).status_code, 400)
+
+    def test_numero_inactivo_no_se_acepta(self):
+        self.assertEqual(self._post(numeros=[self.inactivo.pk]).status_code, 400)
+
+    def test_sin_configuracion_503(self):
+        with patch.dict('os.environ', {'META_WA_TOKEN': '', 'META_PHONE_NUMBER_ID': ''}):
+            response = self._post()
+        self.assertEqual(response.status_code, 503)
+        self.assertIn('no está configurado', response.json()['error'])
+
+    @patch('presupuestos.views.whatsapp.subir_pdf', return_value='media-1')
+    def test_un_envio_fallido_se_informa(self, subir):
+        from core.whatsapp import EnvioWhatsAppError
+        with patch('presupuestos.views.whatsapp.enviar_plantilla_documento', side_effect=EnvioWhatsAppError('Meta rechazó el envío (131042): pago')):
+            resultados = self._post().json()['resultados']
+        self.assertFalse(resultados[0]['ok'])
+        self.assertIn('131042', resultados[0]['error'])
+
+    def test_sin_venta_400(self):
+        self.presupuesto.venta = None
+        self.presupuesto.save()
+        self.assertEqual(self._post().status_code, 400)
+
+    def test_get_no_permitido(self):
+        self.assertEqual(self.client.get(self.url_wa).status_code, 405)
+
+    def test_detalle_lista_solo_numeros_activos(self):
+        response = self.client.get(reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk]))
+        self.assertContains(response, 'colocacion-numeros-whatsapp')
+        self.assertContains(response, '5491155555555')
+        self.assertNotContains(response, '5491166666666')
+
+    def test_ruta_whatsapp_registrada(self):
+        from usuarios.access_control import ROUTE_ACCESS_MAP
+        self.assertIn('presupuestos.view', ROUTE_ACCESS_MAP['presupuestos:presupuestos-colocacion-whatsapp'])
+
+
+class ClienteWhatsAppMetaTest(SimpleTestCase):
+    ENV = {'META_WA_TOKEN': 'tok', 'META_PHONE_NUMBER_ID': '123'}
+
+    def _respuesta(self, cuerpo):
+        respuesta = MagicMock()
+        respuesta.read.return_value = cuerpo.encode()
+        respuesta.__enter__.return_value = respuesta
+        return respuesta
+
+    def test_enviar_arma_plantilla_con_documento(self):
+        import json
+        from core import whatsapp
+        with patch.dict('os.environ', self.ENV), \
+                patch('core.whatsapp.request.urlopen', return_value=self._respuesta('{"messages":[{"id":"wamid.9"}]}')) as urlopen:
+            mensaje_id = whatsapp.enviar_plantilla_documento(
+                '+54 9 11 5555-5555', 'planilla_colocacion', 'es_AR', 'media-1', 'c.pdf', ['P-1', 'Ana\nLópez', ''],
+            )
+        self.assertEqual(mensaje_id, 'wamid.9')
+        req = urlopen.call_args.args[0]
+        self.assertEqual(req.full_url, 'https://graph.facebook.com/v21.0/123/messages')
+        self.assertEqual(req.get_header('Authorization'), 'Bearer tok')
+        cuerpo = json.loads(req.data)
+        self.assertEqual(cuerpo['to'], '5491155555555')
+        header, body = cuerpo['template']['components']
+        self.assertEqual(header['parameters'][0]['document'], {'id': 'media-1', 'filename': 'c.pdf'})
+        self.assertEqual([p['text'] for p in body['parameters']], ['P-1', 'Ana López', '-'])
+
+    def test_subir_pdf_devuelve_media_id(self):
+        from core import whatsapp
+        with patch.dict('os.environ', self.ENV), \
+                patch('core.whatsapp.request.urlopen', return_value=self._respuesta('{"id":"media-7"}')) as urlopen:
+            self.assertEqual(whatsapp.subir_pdf(b'%PDF-1.4', 'c.pdf'), 'media-7')
+        req = urlopen.call_args.args[0]
+        self.assertTrue(req.full_url.endswith('/123/media'))
+        self.assertIn(b'application/pdf', req.data)
+
+    def test_error_de_meta_se_traduce(self):
+        import io
+        from urllib.error import HTTPError
+        from core import whatsapp
+        error = HTTPError('u', 400, 'Bad', {}, io.BytesIO(b'{"error":{"message":"Template not found","code":132001}}'))
+        with patch.dict('os.environ', self.ENV), patch('core.whatsapp.request.urlopen', side_effect=error):
+            with self.assertRaisesRegex(whatsapp.EnvioWhatsAppError, '132001.*Template not found'):
+                whatsapp.enviar_plantilla_documento('549', 'x', 'es_AR', 'm', 'c.pdf', ['a'])
+
+    def test_sin_configuracion(self):
+        from core import whatsapp
+        with patch.dict('os.environ', {'META_WA_TOKEN': '', 'META_PHONE_NUMBER_ID': ''}):
+            self.assertFalse(whatsapp.esta_configurado())
+            with self.assertRaises(whatsapp.WhatsAppNoConfigurado):
+                whatsapp.subir_pdf(b'', 'c.pdf')

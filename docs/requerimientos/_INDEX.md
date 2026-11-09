@@ -76,7 +76,7 @@
 | [REQ-054](./REQ-054-id-cliente-y-provincia.md) | ID de cliente visible en todo el sistema + Provincia del cliente (RF-023) | Implementado | 2026-10-20 | FEAT-043 |
 | [REQ-055](./REQ-055-nuevo-cliente-desde-presupuesto.md) | Alta rápida de cliente desde el formulario de Presupuesto (RF-024) | Implementado | 2026-10-20 | FEAT-044 |
 | [REQ-056](./REQ-056-pdf-medicion-y-base-pdf-comun.md) | Planilla de Medición (PDF) + base común de PDFs internos A4 (RF-03) | Aprobado | 2026-10-20 | — |
-| [REQ-057](./REQ-057-pdf-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado (RF-02) | Aprobado | 2026-10-20 | — |
+| [REQ-057](./REQ-057-pdf-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado (RF-02), con envío por WhatsApp | Implementado | 2026-11-09 | [FEAT-049](../features/FEAT-049-planilla-colocacion.md) |
 | [REQ-058](./REQ-058-recibo-unificado.md) | Recibo unificado entre Presupuestos y Ventas (RF-01) | Aprobado | 2026-10-20 | — |
 | [REQ-059](./REQ-059-cuenta-corriente-proveedores-usd.md) | Cuenta corriente de proveedores en pesos y en dólares (RF-004 + RF-017) | Aprobado | 2026-10-20 | — |
 | [REQ-060](./REQ-060-gastos-por-moneda-en-reportes.md) | Gastos diferenciados por moneda en los reportes (RF-011) | Aprobado | 2026-10-20 | — |
@@ -85,3 +85,4 @@
 | [REQ-063](./REQ-063-circuito-pedidos-fabrica.md) | Circuito de pedidos de fábrica: estados, trabajo del taller y Orden de Fabricación mejorada | Implementado (Etapa 1) | 2026-10-29 | — |
 | [REQ-064](./REQ-064-rediseno-taller.md) | Rediseño visual «Taller» de todo el sistema | Implementado | 2026-10-29 | [FEAT-046](../features/FEAT-046-rediseno-taller.md) |
 | [REQ-065](./REQ-065-tiempo-real-polling.md) | Actualización en vivo por polling (listados, avisos, dólar, KPIs, edición simultánea) | Implementado | 2026-10-29 | [FEAT-047](../features/FEAT-047-tiempo-real.md) |
+| [REQ-066](./REQ-066-animacion-login-ventana.md) | Animación de bienvenida en el login: la ventana se abre y sale una persona | En desarrollo | 2026-11-09 | — |

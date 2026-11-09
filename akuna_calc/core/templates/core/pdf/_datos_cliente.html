@@ -1,0 +1,11 @@
+<table class="bar"><tr><td>DATOS DEL CLIENTE</td></tr></table>
+{% for fila in filas_cliente %}
+<table class="fields">
+    <tr>
+        {% for etiqueta, valor in fila %}
+        <td class="lbl" style="width:15%;">{{ etiqueta }}</td><td class="val" style="width:35%;">{{ valor|default:"—" }}</td>
+        {% endfor %}
+    </tr>
+</table>
+{% endfor %}
+<div class="gap"></div>

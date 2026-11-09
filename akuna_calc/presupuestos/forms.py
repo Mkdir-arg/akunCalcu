@@ -238,3 +238,36 @@ class EstructuraItemForm(forms.Form):
 
     def clean_cantidad(self):
         return self.cleaned_data.get('cantidad') or 1
+
+
+class ColocacionPdfForm(forms.Form):
+    """Datos que el PDF de Colocación no puede sacar del presupuesto (REQ-057). No se guardan."""
+
+    colocador = forms.ModelChoiceField(
+        queryset=None, required=False, empty_label='A definir', label='Colocador',
+        widget=forms.Select(attrs={'class': INPUT_CLASS}),
+    )
+    fecha = forms.DateField(
+        required=False, label='Fecha de colocación',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': INPUT_CLASS}, format='%Y-%m-%d'),
+    )
+    observaciones = forms.CharField(
+        required=False, max_length=1000, label='Observaciones',
+        widget=forms.Textarea(attrs={'rows': 4, 'class': INPUT_CLASS}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from comercial.models import Cuenta
+        self.fields['colocador'].queryset = Cuenta.objects.filter(
+            tipo_cuenta__tipo='colocadores', activo=True, deleted_at__isnull=True,
+        ).order_by('nombre')
+
+
+class ColocacionWhatsAppForm(ColocacionPdfForm):
+    numeros = forms.ModelMultipleChoiceField(queryset=None, required=True, label='Enviar a')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from gastos_diarios.models import NumeroAutorizado
+        self.fields['numeros'].queryset = NumeroAutorizado.objects.filter(activo=True)

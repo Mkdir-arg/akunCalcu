@@ -440,3 +440,35 @@ class SesionPasivaPollTests(TestCase):
     def test_pagina_normal_si_renueva_la_sesion(self):
         response = self.client.get(reverse('home'))
         self.assertIn('sessionid', response.cookies)
+
+
+class PdfBaseTest(SimpleTestCase):
+    """REQ-056: base común de PDF."""
+
+    def test_pdf_response_devuelve_pdf(self):
+        from core.pdf import pdf_response
+        response = pdf_response('core/pdf/base_a4.html', {'meta_filas': [('N°', '1')], 'empresa': {}}, 'x.pdf')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertEqual(response['Content-Disposition'], 'inline; filename="x.pdf"')
+
+    def test_pdf_response_error_devuelve_500(self):
+        from unittest.mock import patch, MagicMock
+        from core.pdf import pdf_response
+        with patch('core.pdf.pisa.CreatePDF', return_value=MagicMock(err=1)):
+            response = pdf_response('core/pdf/base_a4.html', {'empresa': {}}, 'x.pdf', error_message='Falló')
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content.decode(), 'Falló')
+
+    def test_filas_cliente_de_a_dos(self):
+        from unittest.mock import MagicMock
+        from core.pdf import filas_cliente
+        cliente = MagicMock()
+        cliente.datos_documento.return_value = {
+            'codigo': 'C-00001', 'nombre_completo': 'Ana', 'direccion': 'Calle 1', 'localidad': 'Rosario',
+            'provincia': 'Santa Fe', 'telefono': '123', 'email': '', 'cuit': '',
+        }
+        filas = filas_cliente(cliente)
+        self.assertEqual(filas[0], [('CLIENTE', 'Ana (C-00001)'), ('DOMICILIO', 'Calle 1')])
+        self.assertEqual(filas[2], [('TELÉFONO', '123'), ('', '')])

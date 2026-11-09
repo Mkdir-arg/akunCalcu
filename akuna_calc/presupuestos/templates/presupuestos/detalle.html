@@ -103,6 +103,9 @@
             {% endif %}
             {% endif %}
             <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank" class="btn btn-secondary"><i class="fas fa-file-pdf"></i>Presupuesto</a>
+            {% if colocacion_form %}
+            <button type="button" onclick="abrirModalColocacion()" class="btn btn-secondary" title="Planilla de Colocación en PDF para el colocador"><i class="fas fa-screwdriver-wrench"></i>Colocación</button>
+            {% endif %}
             <div class="kebab" data-kebab>
                 <button type="button" class="btn btn-secondary btn-icon" data-kebab-toggle aria-haspopup="true" aria-label="Más acciones"><i class="fas fa-ellipsis"></i></button>
                 <div class="kebab-menu" role="menu">
@@ -745,6 +748,57 @@
 </form>
 {% endif %}
 
+{% if colocacion_form %}
+<!-- ===== MODAL COLOCACIÓN (REQ-057) ===== -->
+<div id="modal-colocacion" data-select2-dropdown-parent class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalColocacion()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <form id="form-colocacion" method="post" action="{% url 'presupuestos:presupuestos-colocacion' presupuesto.pk %}" target="_blank"
+              data-whatsapp-url="{% url 'presupuestos:presupuestos-colocacion-whatsapp' presupuesto.pk %}"
+              onsubmit="setTimeout(colocacionGenerada, 0)"
+              class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+            {% csrf_token %}
+            <div class="flex justify-between items-center px-6 py-4 border-b shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 grid place-items-center shrink-0">
+                        <i class="fas fa-screwdriver-wrench"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 leading-tight">Planilla de Colocación</h2>
+                        <p class="text-xs text-slate-500">Cliente, aberturas e importes salen del presupuesto y de la venta.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalColocacion()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors shrink-0" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-6 space-y-3">
+                <div class="field">
+                    <label for="{{ colocacion_form.colocador.id_for_label }}">{{ colocacion_form.colocador.label }}</label>
+                    {{ colocacion_form.colocador }}
+                </div>
+                <div class="field">
+                    <label for="{{ colocacion_form.fecha.id_for_label }}">{{ colocacion_form.fecha.label }}</label>
+                    {{ colocacion_form.fecha }}
+                </div>
+                <div class="field">
+                    <label for="{{ colocacion_form.observaciones.id_for_label }}">{{ colocacion_form.observaciones.label }}</label>
+                    {{ colocacion_form.observaciones }}
+                    <p class="field-hint">Vienen precargadas con las observaciones del presupuesto. Lo que cambies acá no se guarda.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 px-6 py-3 border-t bg-slate-50 shrink-0">
+                <span class="flex-1"></span>
+                <button type="button" onclick="cerrarModalColocacion()"
+                    class="px-5 py-2.5 rounded-xl font-semibold text-sm border border-slate-300 text-slate-600 hover:bg-white transition-colors">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf"></i>Generar PDF</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{ numeros_whatsapp|json_script:"colocacion-numeros-whatsapp" }}
+{% endif %}
+
 <!-- ===== MODAL VER DESGLOSE ===== -->
 <div id="modal-desglose" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onclick="cerrarModalDesglose()"></div>
@@ -974,6 +1028,78 @@ if (window.jQuery) {
 function cerrarModalDesglose() {
     document.getElementById('modal-desglose').classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+function abrirModalColocacion() {
+    const modal = document.getElementById('modal-colocacion');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalColocacion() {
+    const modal = document.getElementById('modal-colocacion');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// REQ-057: después de abrir el PDF, ofrece mandarlo por WhatsApp a los números autorizados.
+function colocacionGenerada() {
+    cerrarModalColocacion();
+    let numeros = [];
+    try { numeros = JSON.parse(document.getElementById('colocacion-numeros-whatsapp').textContent) || []; } catch (e) {}
+    if (!numeros.length) return;
+
+    const escapar = (texto) => { const d = document.createElement('div'); d.textContent = texto; return d.innerHTML; };
+    const opciones = numeros.map((n) => `
+        <label class="flex items-center gap-3 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-left">
+            <input type="checkbox" class="colocacion-numero h-4 w-4" value="${n.id}">
+            <span class="text-sm text-slate-700">${escapar(n.texto)}</span>
+        </label>`).join('');
+
+    Swal.fire({
+        title: '¿Lo enviás por WhatsApp?',
+        html: `<p class="text-sm text-slate-500 mb-3">Se manda el PDF con un mensaje desde el WhatsApp de Akun.</p>
+               <div class="space-y-2 max-h-64 overflow-y-auto">${opciones}</div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fab fa-whatsapp mr-1"></i>Enviar',
+        cancelButtonText: 'No, gracias',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        preConfirm: async () => {
+            const elegidos = [...document.querySelectorAll('.colocacion-numero:checked')].map((c) => c.value);
+            if (!elegidos.length) {
+                Swal.showValidationMessage('Elegí al menos un número');
+                return false;
+            }
+            const form = document.getElementById('form-colocacion');
+            const datos = new FormData(form);
+            elegidos.forEach((id) => datos.append('numeros', id));
+            try {
+                const res = await fetch(form.dataset.whatsappUrl, { method: 'POST', body: datos });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'No se pudo enviar.');
+                return json.resultados;
+            } catch (e) {
+                Swal.showValidationMessage(e.message);
+                return false;
+            }
+        },
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        const resultados = result.value || [];
+        const fallidos = resultados.filter((r) => !r.ok);
+        const lista = resultados.map((r) => `<li class="text-sm text-left">${r.ok ? '✅' : '❌'} ${escapar(r.destino)}${r.ok ? '' : `<br><span class="text-xs text-slate-500">${escapar(r.error)}</span>`}</li>`).join('');
+        Swal.fire({
+            icon: fallidos.length ? (fallidos.length === resultados.length ? 'error' : 'warning') : 'success',
+            title: fallidos.length ? 'Algunos envíos fallaron' : 'Planilla enviada',
+            html: `<ul class="space-y-2">${lista}</ul>`,
+            confirmButtonColor: '#2563eb',
+        });
+    });
 }
 
 // -- Orden de los ítems: arrastrar (drag&drop nativo) o botones subir/bajar --

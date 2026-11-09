@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>{% block documento_titulo %}{% endblock %}</title>
+<style>
+    {% comment %}
+    Base de los PDF internos A4 (REQ-056, ADR-026). Reglas de xhtml2pdf: solo tablas con ancho en %
+    por celda; altos en px/mm; nada de flex, grid ni colspan; etiquetas que entren en su ancho.
+    {% endcomment %}
+    @page { size: A4; margin: 8mm 10mm 7mm 10mm; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 9pt; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { vertical-align: middle; }
+    .logo { width: 140px; }
+    .title { font-size: 20pt; font-weight: bold; color: #1560a8; }
+    .subtitle { font-size: 9pt; }
+    .meta td { border: 1px solid #1560a8; padding: 3px 6px; }
+    .meta .k { background: #1560a8; color: #fff; font-size: 7.5pt; font-weight: bold; }
+    .meta .v { font-size: 10pt; font-weight: bold; text-align: center; }
+    .bar td { background: #1560a8; color: #fff; font-weight: bold; font-size: 9pt; padding: 4px 8px; }
+    .gap { height: 4px; }
+    .fields td { border-bottom: 1px solid #dfe6ef; padding: 3px 6px; font-size: 10pt; }
+    .fields .lbl { color: #5b6b80; font-size: 7.5pt; font-weight: bold; }
+    .fields .val { font-weight: bold; }
+    .grid th { background: #e8eff8; color: #1560a8; font-size: 8pt; padding: 4px 6px; border: 1px solid #b9c7d8; text-align: left; }
+    .grid td { border: 1px solid #b9c7d8; padding: 4px 6px; font-size: 10pt; vertical-align: top; }
+    .grid .c { text-align: center; font-weight: bold; }
+    .box td { border: 1px solid #b9c7d8; padding: 6px 8px; font-size: 10pt; vertical-align: top; }
+    .renglon td { border-bottom: 1px solid #cfd8e3; height: 18px; }
+    .firmas td { padding: 3px 6px; font-size: 8.5pt; color: #5b6b80; text-align: center; }
+    .firmas .linea { border-top: 1px solid #1d1d1b; }
+    .pie { font-size: 7.5pt; color: #5b6b80; text-align: center; padding-top: 6px; }
+    {% block extra_css %}{% endblock %}
+</style>
+</head>
+<body>
+<table>
+    <tr>
+        <td style="width:30%;">{% if logo_url %}<img src="{{ logo_url }}" class="logo">{% endif %}</td>
+        <td style="width:42%; text-align:center;"><span class="title">{% block titulo %}{% endblock %}</span>{% block subtitulo %}{% endblock %}</td>
+        <td style="width:28%;">
+            <table class="meta">
+                {% for etiqueta, valor in meta_filas %}
+                <tr><td class="k" style="width:45%;">{{ etiqueta }}</td><td class="v" style="width:55%;">{{ valor|default:"—" }}</td></tr>
+                {% endfor %}
+            </table>
+        </td>
+    </tr>
+</table>
+<div class="gap"></div>
+
+{% block contenido %}{% endblock %}
+
+{% block pie_derecha %}{% endblock %}
+<div class="pie">{{ empresa.empresa_nombre }} · {{ empresa.empresa_direccion }} · {{ empresa.empresa_telefonos }}</div>
+</body>
+</html>

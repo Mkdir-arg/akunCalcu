@@ -1,12 +1,9 @@
 from decimal import Decimal, InvalidOperation
 from datetime import timedelta
 
-import base64
 import io
 import json
-from pathlib import Path
 
-from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
@@ -22,6 +19,8 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 
 from core.avisos import crear_aviso
+from core import whatsapp
+from core.pdf import PdfError, build_logo_data_url, pdf_response, render_pdf_bytes
 from core.navigation import append_return_to, resolve_return_url
 from usuarios.access_control import get_access_profile, user_has_any_access, user_has_full_access
 from comercial.models import Cliente, Venta
@@ -31,14 +30,19 @@ from plantillas.services.precarga import detalle_desde_snapshot
 from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
 from pricing.models import Producto
+from .documentos_pdf import build_colocacion_context, venta_activa
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context, texto_modulo_estructura
 from .estructuras import fields_item_estructura
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
 from .forms import (
     PresupuestoForm, PresupuestoConfiguracionObraForm, ItemPresupuestoForm, ComentarioForm,
     ImportarCotizacionForm, ItemImportadoFormSet, ConfirmarImportacionForm, EstructuraItemForm,
+    ColocacionPdfForm, ColocacionWhatsAppForm,
 )
 from .importar_rehau import ImportacionError, extraer_texto, parsear_cotizacion
+
+
+PLANTILLA_COLOCACION = 'planilla_colocacion'
 
 
 def _presupuestos_list_url():
@@ -47,21 +51,6 @@ def _presupuestos_list_url():
 
 def _presupuestos_return_url(request):
     return resolve_return_url(request, _presupuestos_list_url())
-
-
-def _build_logo_data_url():
-    logo_candidates = [
-        Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
-        Path(settings.BASE_DIR) / 'static' / 'AKUN-LOGO.png',
-        Path(settings.STATIC_ROOT) / 'imagenes' / 'AKUN-LOGO.png',
-        Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
-    ]
-    logo_path = next((path for path in logo_candidates if path.exists()), None)
-    if not logo_path:
-        return ''
-
-    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
-    return f'data:image/png;base64,{logo_b64}'
 
 
 def _get_detalle_queryset():
@@ -260,6 +249,15 @@ def detalle(request, pk):
     context = _build_detalle_context(presupuesto)
     context['return_url'] = _presupuestos_return_url(request)
     context['es_pvc'] = presupuesto.tipo_material == 'pvc'
+    if venta_activa(presupuesto):
+        context['colocacion_form'] = ColocacionPdfForm(initial={
+            'fecha': timezone.localdate(),
+            'observaciones': (presupuesto.notas or '')[:1000],
+        })
+        from gastos_diarios.models import NumeroAutorizado
+        context['numeros_whatsapp'] = [
+            {'id': n.pk, 'texto': str(n)} for n in NumeroAutorizado.objects.filter(activo=True)
+        ]
     return render(request, 'presupuestos/detalle.html', context)
 
 
@@ -901,7 +899,7 @@ def _build_blank_recibo_context(presupuesto):
     cliente = presupuesto.cliente.datos_documento()
     return {
         'copias': range(2),
-        'logo_url': _build_logo_data_url(),
+        'logo_url': build_logo_data_url(),
         'cliente_nombre': cliente['nombre_completo'],
         'cliente_direccion': cliente['direccion'],
         'cliente_localidad': cliente['localidad'],
@@ -940,6 +938,82 @@ def recibo(request, pk):
     return response
 
 
+def _colocacion_queryset():
+    return Presupuesto.objects.filter(deleted_at__isnull=True).select_related(
+        'cliente', 'cliente__provincia', 'venta',
+    ).prefetch_related('items', 'venta__pagos', 'venta__percepciones')
+
+
+def _datos_colocacion(form):
+    form.is_valid()
+    # Un campo inválido (p. ej. un colocador que no es de tipo colocadores) sale en blanco.
+    return {campo: form.cleaned_data.get(campo) for campo in ('colocador', 'fecha', 'observaciones')}
+
+
+@login_required
+def colocacion(request, pk):
+    """PDF de Colocación (REQ-057). POST desde el modal del detalle; GET sale con colocador en blanco."""
+    presupuesto = get_object_or_404(_colocacion_queryset(), pk=pk)
+    venta = venta_activa(presupuesto)
+    if venta is None:
+        messages.error(request, 'La planilla de Colocación solo se genera desde un presupuesto confirmado con venta.')
+        return redirect('presupuestos:presupuestos-detalle', pk=pk)
+
+    datos = {'colocador': None, 'fecha': timezone.localdate(), 'observaciones': presupuesto.notas or ''}
+    if request.method == 'POST':
+        datos = _datos_colocacion(ColocacionPdfForm(request.POST))
+
+    return pdf_response(
+        'presupuestos/colocacion_pdf.html',
+        build_colocacion_context(presupuesto, venta, **datos),
+        f'colocacion_{presupuesto.numero}.pdf',
+        error_message='No se pudo generar la planilla de Colocación.',
+    )
+
+
+@login_required
+@require_POST
+def colocacion_whatsapp(request, pk):
+    """Manda la planilla de Colocación por WhatsApp a los números autorizados elegidos (REQ-057)."""
+    presupuesto = get_object_or_404(_colocacion_queryset(), pk=pk)
+    venta = venta_activa(presupuesto)
+    if venta is None:
+        return JsonResponse({'error': 'La planilla de Colocación solo se genera desde un presupuesto confirmado con venta.'}, status=400)
+
+    form = ColocacionWhatsAppForm(request.POST)
+    datos = _datos_colocacion(form)
+    numeros = form.cleaned_data.get('numeros')
+    if not numeros:
+        return JsonResponse({'error': 'Elegí al menos un número.'}, status=400)
+
+    nombre_archivo = f'colocacion_{presupuesto.numero}.pdf'
+    try:
+        contenido = render_pdf_bytes(render_to_string(
+            'presupuestos/colocacion_pdf.html', build_colocacion_context(presupuesto, venta, **datos),
+        ))
+        media_id = whatsapp.subir_pdf(contenido, nombre_archivo)
+    except whatsapp.WhatsAppNoConfigurado as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+    except (PdfError, whatsapp.EnvioWhatsAppError) as exc:
+        return JsonResponse({'error': str(exc) or 'No se pudo generar la planilla de Colocación.'}, status=502)
+
+    parametros = [
+        presupuesto.numero,
+        presupuesto.cliente.get_nombre_completo(),
+        datos['fecha'].strftime('%d/%m/%Y') if datos['fecha'] else 'A definir',
+    ]
+    resultados = []
+    for numero in numeros:
+        try:
+            whatsapp.enviar_plantilla_documento(
+                numero.numero, PLANTILLA_COLOCACION, 'es_AR', media_id, nombre_archivo, parametros,
+            )
+            resultados.append({'destino': str(numero), 'ok': True, 'error': ''})
+        except whatsapp.EnvioWhatsAppError as exc:
+            resultados.append({'destino': str(numero), 'ok': False, 'error': str(exc)})
+    return JsonResponse({'resultados': resultados})
+
+
 @login_required
 def pdf(request, pk):
     presupuesto = get_object_or_404(
@@ -955,7 +1029,7 @@ def pdf(request, pk):
     # renglón esté o no incluido en el total (el label aclara "incluido/no incluido").
     pdf_iva = presupuesto.get_iva_desglosado()
     return render(request, 'presupuestos/pdf.html', {
-        'logo_url': _build_logo_data_url(),
+        'logo_url': build_logo_data_url(),
         'presupuesto': presupuesto,
         'items_pdf': items_pdf,
         # Numera los ítems y agrega la página de planos solo si algún ítem se dibuja.

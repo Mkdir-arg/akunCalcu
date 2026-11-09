@@ -1,10 +1,7 @@
-import base64
 import io
 import re
-from pathlib import Path
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -20,6 +17,7 @@ from xhtml2pdf import pisa
 
 from configuracion.models import ConfiguracionGeneral
 from core.avisos import crear_aviso
+from core.pdf import build_logo_data_url
 from usuarios.access_control import user_has_access
 from .models import PedidoFabrica, OrdenFabricacion, MedidaOrdenFabricacion, HistorialPedidoFabrica
 from .forms import (
@@ -28,20 +26,6 @@ from .forms import (
 )
 from .services import circuito
 from .utils import cortar_a_max_length
-
-
-def _build_logo_data_url():
-    logo_candidates = [
-        Path(settings.BASE_DIR) / 'static' / 'imagenes' / 'AKUN-LOGO.png',
-        Path(settings.BASE_DIR) / 'static' / 'AKUN-LOGO.png',
-        Path(settings.STATIC_ROOT) / 'imagenes' / 'AKUN-LOGO.png',
-        Path(settings.STATIC_ROOT) / 'AKUN-LOGO.png',
-    ]
-    logo_path = next((path for path in logo_candidates if path.exists()), None)
-    if not logo_path:
-        return ''
-    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode('ascii')
-    return f'data:image/png;base64,{logo_b64}'
 
 
 def _puede_gestionar(user):
@@ -475,7 +459,7 @@ def _contexto_hoja(orden, posicion, total_ordenes):
 def _contexto_pdf_base():
     return {
         'empresa': ConfiguracionGeneral.get_datos_empresa(),
-        'logo_url': _build_logo_data_url(),
+        'logo_url': build_logo_data_url(),
         'croquis_filas': range(4),
         'croquis_cols': range(30),
     }

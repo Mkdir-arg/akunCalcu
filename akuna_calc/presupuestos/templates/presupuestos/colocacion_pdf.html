@@ -1,0 +1,96 @@
+{% extends 'core/pdf/base_a4.html' %}
+{% load custom_filters %}
+
+{% block documento_titulo %}Colocación {{ presupuesto.numero }}{% endblock %}
+
+{% block extra_css %}
+    .colocador td { border: 1.5px solid #1560a8; padding: 5px 8px; }
+    .colocador .k { color: #1560a8; font-weight: bold; font-size: 9pt; }
+    .colocador .v { font-weight: bold; font-size: 13pt; }
+    .importes td { border: 1px solid #b9c7d8; padding: 4px 8px; font-size: 10pt; }
+    .importes .k { color: #5b6b80; font-size: 8pt; font-weight: bold; }
+    .importes .n { text-align: right; font-weight: bold; font-size: 11pt; }
+    .importes .saldo td { background: #e8eff8; }
+    .importes .saldo .n { color: #1560a8; font-size: 13pt; }
+{% endblock %}
+
+{% block titulo %}COLOCACIÓN{% endblock %}
+
+{% block contenido %}
+<table class="colocador">
+    <tr>
+        <td class="k" style="width:18%;">COLOCADOR</td>
+        <td class="v" style="width:52%;">{% if colocador %}{{ colocador.nombre }}{% else %}&nbsp;{% endif %}</td>
+        <td class="k" style="width:12%;">TELÉFONO</td>
+        <td style="width:18%;">{% if colocador %}{{ colocador.telefono|default:"—" }}{% else %}&nbsp;{% endif %}</td>
+    </tr>
+</table>
+<div class="gap"></div>
+
+{% include 'core/pdf/_datos_cliente.html' %}
+
+<table class="bar"><tr><td>ABERTURAS</td></tr></table>
+<table class="grid" repeat="1">
+    <tr>
+        <th style="width:9%; text-align:center;">CANT.</th>
+        <th style="width:49%;">TIPOLOGÍA</th>
+        <th style="width:20%;">MEDIDAS (mm)</th>
+        <th style="width:22%;">COLOR</th>
+    </tr>
+    {% for ficha in fichas %}
+    <tr>
+        <td class="c" style="width:9%;">{{ ficha.cantidad }}</td>
+        <td style="width:49%;">{{ ficha.tipologia|default:"—" }}</td>
+        <td style="width:20%;">{{ ficha.medidas|default:"—" }}</td>
+        <td style="width:22%;">{{ ficha.color|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td style="width:100%;">Sin ítems cargados.</td></tr>
+    {% endfor %}
+</table>
+<div class="gap"></div>
+
+<table class="bar"><tr><td>IMPORTES</td></tr></table>
+<table class="importes">
+    {% for etiqueta, pesos, dolares in importes %}
+    <tr{% if forloop.last %} class="saldo"{% endif %}>
+        <td class="k" style="width:40%;">{{ etiqueta }}</td>
+        <td class="n" style="width:{% if es_pvc %}30{% else %}60{% endif %}%;">$ {{ pesos|formato_numero }}</td>
+        {% if es_pvc %}<td class="n" style="width:30%;">US$ {{ dolares|formato_numero }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+</table>
+<table class="importes">
+    <tr>
+        <td class="k" style="width:40%;">FORMA DE PAGO</td>
+        <td style="width:60%;">{{ forma_pago|default:"—" }}</td>
+    </tr>
+    {% if es_pvc %}
+    <tr>
+        <td class="k" style="width:40%;">COTIZACIÓN DEL DÓLAR</td>
+        <td style="width:60%;">$ {{ cotizacion_usd|formato_numero }}</td>
+    </tr>
+    {% endif %}
+</table>
+<div class="gap"></div>
+
+<table class="bar"><tr><td>OBSERVACIONES</td></tr></table>
+{% if observaciones %}
+<table class="box"><tr><td>{{ observaciones|linebreaksbr }}</td></tr></table>
+{% endif %}
+<table class="renglon">
+    {% for _ in renglones_extra %}<tr><td>&nbsp;</td></tr>{% endfor %}
+</table>
+<div class="gap"></div>
+{% endblock %}
+
+{% block pie_derecha %}
+<table class="firmas">
+    <tr><td style="width:40%; height:36px;">&nbsp;</td><td style="width:20%;">&nbsp;</td><td style="width:40%;">&nbsp;</td></tr>
+    <tr>
+        <td style="width:40%;" class="linea">Firma del colocador</td>
+        <td style="width:20%;">&nbsp;</td>
+        <td style="width:40%;" class="linea">Firma y aclaración del cliente</td>
+    </tr>
+</table>
+{% endblock %}
