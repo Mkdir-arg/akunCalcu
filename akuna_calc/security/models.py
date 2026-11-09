@@ -1,7 +1,16 @@
+from django.conf import settings as django_settings
+from django.core.cache import cache
 from django.db import models
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
 import os
+import time
+
+
+def _security_cache_ttl():
+    return getattr(django_settings, 'SECURITY_CACHE_TTL', 60)
 
 
 class AuditLog(models.Model):
@@ -130,10 +139,25 @@ class SecuritySettings(models.Model):
         self.pk = 1
         super().save(*args, **kwargs)
     
+    CACHE_KEY = 'security:settings'
+
     @classmethod
-    def get_settings(cls):
-        """Obtener o crear configuración única"""
+    def get_settings(cls, fresh=False):
+        """Obtener o crear configuración única (cacheada; `fresh=True` lee de la base).
+
+        El cache se invalida al guardar/borrar (signals al final del módulo)."""
+        if not fresh:
+            try:
+                cached = cache.get(cls.CACHE_KEY)
+            except Exception:
+                cached = None
+            if cached is not None:
+                return cached
         obj, created = cls.objects.get_or_create(pk=1)
+        try:
+            cache.set(cls.CACHE_KEY, obj, _security_cache_ttl())
+        except Exception:
+            pass
         return obj
 
 
@@ -159,6 +183,43 @@ class IPBlacklist(models.Model):
         if not self.expires_at:
             return False
         return timezone.now() > self.expires_at
+
+    IP_VERSION_KEY = 'security:ipblock:version'
+
+    @classmethod
+    def _ip_cache_key(cls, ip_address):
+        return f'security:ipblock:{cache.get(cls.IP_VERSION_KEY, 0)}:{ip_address}'
+
+    @classmethod
+    def is_ip_blocked(cls, ip_address):
+        """¿La IP está bloqueada ahora? Cachea el resultado (True/False) unos segundos.
+
+        Cualquier alta/cambio/baja de IPBlacklist invalida todo (signals al final del módulo)."""
+        try:
+            key = cls._ip_cache_key(ip_address)
+            cached = cache.get(key)
+            if cached is not None:
+                return cached
+        except Exception:
+            key = None
+        blocked = cls._consultar_bloqueo(ip_address)
+        if key:
+            try:
+                cache.set(key, blocked, _security_cache_ttl())
+            except Exception:
+                pass
+        return blocked
+
+    @classmethod
+    def _consultar_bloqueo(cls, ip_address):
+        entry = cls.objects.filter(ip_address=ip_address, is_active=True).first()
+        if not entry:
+            return False
+        if entry.is_expired():
+            entry.is_active = False
+            entry.save()
+            return False
+        return True
 
 
 class Backup(models.Model):
@@ -295,3 +356,22 @@ class FalloEnvioWhatsApp(models.Model):
     def __str__(self):
         codigo = f"{self.codigo} " if self.codigo is not None else ''
         return f"{self.numero_destino or 'sin número'} — {codigo}{self.titulo or 'sin detalle'}"
+
+
+# --- Invalidacion del cache de seguridad (bloqueo de IP y configuracion) ---
+
+@receiver([post_save, post_delete], sender=SecuritySettings)
+def _invalidar_cache_settings(sender, **kwargs):
+    try:
+        cache.delete(SecuritySettings.CACHE_KEY)
+    except Exception:
+        pass
+
+
+@receiver([post_save, post_delete], sender=IPBlacklist)
+def _invalidar_cache_ips(sender, **kwargs):
+    # Version nueva: deja huerfanas las claves cacheadas de todas las IPs.
+    try:
+        cache.set(IPBlacklist.IP_VERSION_KEY, time.time_ns(), None)
+    except Exception:
+        pass

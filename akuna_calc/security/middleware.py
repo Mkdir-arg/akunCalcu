@@ -256,20 +256,8 @@ class SecurityMiddleware(MiddlewareMixin):
     def _is_ip_blocked(self, ip_address):
         """Verificar si la IP está bloqueada"""
         try:
-            blocked = IPBlacklist.objects.filter(
-                ip_address=ip_address,
-                is_active=True
-            ).first()
-            
-            if blocked:
-                # Verificar si expiró
-                if blocked.is_expired():
-                    blocked.is_active = False
-                    blocked.save()
-                    return False
-                return True
-            return False
-        except:
+            return IPBlacklist.is_ip_blocked(ip_address)
+        except Exception:
             return False
     
     def _check_session_timeout(self, request):

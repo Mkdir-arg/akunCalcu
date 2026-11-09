@@ -481,7 +481,7 @@ def backup_delete(request, pk):
 @backup_required
 def backup_settings(request):
     """Configuración de backups"""
-    settings = SecuritySettings.get_settings()
+    settings = SecuritySettings.get_settings(fresh=True)  # se edita y guarda: no usar el cache
     
     if request.method == 'POST':
         try:

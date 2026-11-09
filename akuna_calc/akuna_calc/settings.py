@@ -190,6 +190,23 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF
 SESSION_COOKIE_AGE = 28800  # 8 horas (jornada laboral)
 SESSION_SAVE_EVERY_REQUEST = True  # Renueva la sesión con cada request: expira solo tras 8h de inactividad
 
+# Cache. Con REDIS_URL (cache compartido entre los workers de gunicorn; requiere el paquete
+# `redis`) se usa Redis y las sesiones pasan a cached_db. Sin Redis se usa LocMemCache, que es
+# POR PROCESO: sirve para los datos de seguridad con TTL corto (security.cache), pero NO para
+# sesiones, porque un logout en un worker dejaria viva la sesion cacheada en los otros; ahi la
+# sesion se mantiene en base de datos. En tests se usa DummyCache (sin estado entre tests).
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+if 'test' in sys.argv:
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache'}}
+elif REDIS_URL:
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.redis.RedisCache', 'LOCATION': REDIS_URL}}
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+else:
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'akuna-default'}}
+# TTL (segundos) del cache de IPs bloqueadas y de la configuracion de seguridad. Corto sin
+# cache compartido: la invalidacion al guardar solo alcanza al worker que guarda.
+SECURITY_CACHE_TTL = 60 if REDIS_URL else 10
+
 # Seguridad de CSRF
 CSRF_COOKIE_SECURE = not DEBUG  # Solo HTTPS en producción
 CSRF_COOKIE_HTTPONLY = True
