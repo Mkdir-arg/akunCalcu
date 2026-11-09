@@ -320,7 +320,7 @@ function build() {
       const carril = hoja ? hoja.carril : (i % 2 === 0 ? 'int' : 'ext');
       const mov = hoja ? hoja.movimiento : (i % 2 === 0 ? 'der' : null);
       const lw = colW + overlap, lh = Hi, cx = -Wi / 2 + colW * (i + 0.5), z = carril === 'int' ? 0.017 : -0.017;
-      const leaf = buildLeaf(lw, lh, false, mov === 'izq' ? 'izq' : 'der', true);
+      const leaf = buildLeaf(lw, lh, false, mov === 'izq' ? 'izq' : 'der', true, tir3);
       leaf.position.set(cx, 0, z); g.add(leaf);
       if (mov) {
         const dir = mov === 'der' ? 1 : -1;
@@ -345,7 +345,7 @@ function build() {
       const colW = Wi / 2;
       for (let i = 0; i < 2; i++) {
         const cx = -Wi / 2 + colW * (i + 0.5), handleSide = i === 0 ? 'der' : 'izq';
-        const leaf = buildLeaf(colW, Hi, true, handleSide, false);
+        const leaf = buildLeaf(colW, Hi, true, handleSide, false, tir3);
         const hx = i === 0 ? -Wi / 2 : Wi / 2;
         const hinge = new THREE.Group(); hinge.position.set(hx, 0, 0.01); leaf.position.set(cx - hx, 0, 0); hinge.add(leaf); g.add(hinge);
         const sign = i === 0 ? -1 : 1; movers.push({ apply: t => { hinge.rotation.y = sign * (Math.PI * 0.42) * t; } });

@@ -62,15 +62,22 @@
         body {
             touch-action: manipulation;
         }
-        #sidebar.collapsed {
-            width: 80px !important;
-        }
-        #sidebar.collapsed .sidebar-text,
-        #sidebar.collapsed .sidebar-submenu {
-            display: none;
-        }
-        #sidebar.collapsed .sidebar-logo {
-            justify-content: center;
+        /* Colapsado solo en desktop: en mobile el menú es un drawer y siempre se ve completo */
+        @media (min-width: 1024px) {
+            #sidebar.collapsed {
+                width: 80px !important;
+            }
+            #sidebar.collapsed .sidebar-text,
+            #sidebar.collapsed .sidebar-submenu {
+                display: none;
+            }
+            /* El botón para reabrir queda debajo del logo, dentro de los 80px */
+            #sidebar.collapsed .sidebar-logo {
+                flex-direction: column;
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
         }
         /* Select2 con tokens Taller */
         .select2-container {
@@ -191,7 +198,7 @@
                     <span class="w-[30px] h-[30px] rounded-lg bg-brand text-white font-bold text-sm leading-[30px] text-center flex-none">A</span>
                     <span class="sidebar-text font-bold text-base tracking-wider">AKUN</span>
                 </div>
-                <button onclick="toggleSidebar()" class="hidden lg:block text-ink-3 hover:text-ink sidebar-toggle sidebar-text" aria-label="Contraer menú">
+                <button onclick="toggleSidebar()" class="hidden lg:block text-ink-3 hover:text-ink sidebar-toggle" aria-label="Contraer menú" aria-expanded="true">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
@@ -328,13 +335,23 @@
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         sidebar.classList.toggle('collapsed');
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        const collapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', collapsed);
+        syncSidebarToggle(collapsed);
+    }
+
+    function syncSidebarToggle(collapsed) {
+        const btn = document.querySelector('#sidebar .sidebar-toggle');
+        if (!btn) return;
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        btn.setAttribute('aria-label', collapsed ? 'Expandir menú' : 'Contraer menú');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         if (isCollapsed) {
             document.getElementById('sidebar').classList.add('collapsed');
+            syncSidebarToggle(true);
         }
     });
 
