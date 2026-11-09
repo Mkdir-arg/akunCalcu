@@ -22,6 +22,30 @@
 
 ## Fixes registrados
 
+### FIX-030 — El visor 3D no dibuja los tirantes en ventanas corredizas ni en batientes de 2 hojas
+**Fecha**: 2026-11-09
+**Reportado por**: usuario
+**Severidad**: Media
+**Feature afectada**: Cotizador (presupuestos) — visor 3D
+
+**Síntoma**: Al agregar tirantes (travesaños) en el cotizador, el visor 3D los mostraba en puertas y paños fijos pero no en ventanas corredizas ni en batientes de 2 hojas.
+**Causa raíz**: En `viewer3d.js`, `build()` pasaba las secciones de tirantes (`tir3`) a `buildLeaf` en los modos fijo, batiente de 1 hoja, oscilobatiente y proyectante, pero no en `slide` (corrediza) ni en batiente de 2 hojas.
+**Solución**: Se pasa `tir3` a `buildLeaf` en esos dos casos, así cada hoja dibuja sus secciones como en el resto de los modos. Pendiente aparte: el usuario reporta que en ventanas el tirante tampoco aparece en el precio ni en el PDF; el código de precio y PDF no filtra por tipo, se investiga con un caso real.
+**Archivos modificados**:
+- `akuna_calc/static/js/viewer3d.js`
+
+### FIX-029 — El menú lateral colapsado no se puede volver a abrir
+**Fecha**: 2026-11-09
+**Reportado por**: usuario
+**Severidad**: Alta
+**Feature afectada**: Layout general (`core/base.html`)
+
+**Síntoma**: En desktop, al colapsar el menú lateral no había forma de volver a abrirlo, ni recargando la página.
+**Causa raíz**: El botón de toggle tenía la clase `sidebar-text`, que se oculta con el sidebar colapsado; el estado queda en `localStorage` y se reaplica en cada carga. Introducido en el rediseño `ae8a00d`.
+**Solución**: Se quitó `sidebar-text` del botón; con el sidebar colapsado el logo y el botón se apilan dentro de los 80px. Las reglas de colapsado quedan solo para desktop (≥1024px) para no romper el drawer mobile. El botón actualiza `aria-expanded` y `aria-label`.
+**Archivos modificados**:
+- `akuna_calc/core/templates/core/base.html`
+
 ### FIX-028 — Un usuario que se equivoca la clave deja afuera a toda la oficina
 **Fecha**: 2026-11-05
 **Reportado por**: Usuario ("cuando intentan entrar desde una PC me dice que lo bloqueó por seguridad la IP")
