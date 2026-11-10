@@ -3646,6 +3646,59 @@ class PlanillaColocacionPdfTest(_ColocacionDatosBase):
         self.assertIn('presupuestos.view', ROUTE_ACCESS_MAP['presupuestos:presupuestos-colocacion'])
 
 
+class PlanillaMedicionPdfTest(TestCase):
+    """REQ-056: planilla de Medición en PDF, en cualquier estado del presupuesto."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('meduser', password='testpass', first_name='Lucía', last_name='Gómez')
+        rol, _ = RolSistema.objects.get_or_create(
+            codigo='admin', defaults={'nombre': 'Admin', 'acceso_total': True, 'activo': True},
+        )
+        PerfilAccesoUsuario.objects.create(usuario=self.user, rol=rol)
+        self.client = Client()
+        self.client.login(username='meduser', password='testpass')
+        self.presupuesto = crear_presupuesto(self.user)
+        self.url = reverse('presupuestos:presupuestos-medicion', args=[self.presupuesto.pk])
+
+    def test_get_devuelve_pdf_en_borrador(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertIn(f'inline; filename="medicion_{self.presupuesto.numero}.pdf"', response['Content-Disposition'])
+
+    def test_sin_login_redirige(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_presupuesto_dado_de_baja_404(self):
+        Presupuesto.objects.filter(pk=self.presupuesto.pk).update(deleted_at=timezone.now())
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_html_incluye_datos(self):
+        from django.template.loader import render_to_string
+        from .documentos_pdf import build_medicion_context
+        ctx = build_medicion_context(self.presupuesto, self.user, date(2026, 11, 20))
+        html = render_to_string('presupuestos/medicion_pdf.html', ctx)
+        for texto in ('MEDICIÓN', 'Lucía Gómez', 'Juan Pérez', self.presupuesto.cliente.codigo, 'Av. Test 123',
+                      'Buenos Aires', '11-5555-5555', self.presupuesto.numero, '20/11/2026'):
+            self.assertIn(texto, html)
+
+    def test_responsable_sin_nombre_usa_username(self):
+        from .documentos_pdf import build_medicion_context
+        self.user.first_name = self.user.last_name = ''
+        ctx = build_medicion_context(self.presupuesto, self.user, date(2026, 11, 20))
+        self.assertEqual(ctx['responsable'], 'meduser')
+
+    def test_detalle_muestra_boton(self):
+        response = self.client.get(reverse('presupuestos:presupuestos-detalle', args=[self.presupuesto.pk]))
+        self.assertContains(response, self.url)
+
+    def test_ruta_registrada_con_permiso_de_presupuestos(self):
+        from usuarios.access_control import ROUTE_ACCESS_MAP
+        self.assertIn('presupuestos.view', ROUTE_ACCESS_MAP['presupuestos:presupuestos-medicion'])
+
+
 class FichaItemTest(SimpleTestCase):
     def _item(self, **kwargs):
         datos = {'cantidad': 1, 'descripcion': 'Ventana PVC', 'ancho_mm': 0, 'alto_mm': 0, 'margen_porcentaje': 30, 'resultado_json': {'tipo': 'pvc_simple'}}

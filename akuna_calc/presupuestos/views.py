@@ -30,7 +30,7 @@ from plantillas.services.precarga import detalle_desde_snapshot
 from plantillas.utils import cortar_a_max_length
 from pricing.services.calculator import calcular_precio, medida_seccion, orientacion_tirantes, PricingError
 from pricing.models import Producto
-from .documentos_pdf import build_colocacion_context, venta_activa
+from .documentos_pdf import build_colocacion_context, build_medicion_context, venta_activa
 from .pdf_descriptions import build_item_snapshot, build_pdf_item_context, texto_modulo_estructura
 from .estructuras import fields_item_estructura
 from .models import Presupuesto, ItemPresupuesto, ComentarioPresupuesto
@@ -936,6 +936,21 @@ def recibo(request, pk):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
+
+
+@login_required
+def medicion(request, pk):
+    """PDF de Medición (REQ-056). Se genera en cualquier estado: la medición es previa a confirmar."""
+    presupuesto = get_object_or_404(
+        Presupuesto.objects.filter(deleted_at__isnull=True).select_related('cliente', 'cliente__provincia'),
+        pk=pk,
+    )
+    return pdf_response(
+        'presupuestos/medicion_pdf.html',
+        build_medicion_context(presupuesto, request.user, timezone.localdate()),
+        f'medicion_{presupuesto.numero}.pdf',
+        error_message='No se pudo generar la planilla de Medición.',
+    )
 
 
 def _colocacion_queryset():

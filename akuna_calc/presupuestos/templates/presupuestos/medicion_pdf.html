@@ -1,0 +1,39 @@
+{% extends 'core/pdf/base_a4.html' %}
+
+{% block documento_titulo %}Medición {{ presupuesto.numero }}{% endblock %}
+
+{% block extra_css %}
+    .responsable td { border: 1.5px solid #1560a8; padding: 5px 8px; }
+    .responsable .k { color: #1560a8; font-weight: bold; font-size: 9pt; }
+    .responsable .v { font-weight: bold; font-size: 13pt; }
+{% endblock %}
+
+{% block titulo %}MEDICIÓN{% endblock %}
+
+{% block contenido %}
+<table class="responsable">
+    <tr>
+        <td class="k" style="width:28%;">USUARIO RESPONSABLE</td>
+        <td class="v" style="width:72%;">{{ responsable }}</td>
+    </tr>
+</table>
+<div class="gap"></div>
+
+{% include 'core/pdf/_datos_cliente.html' %}
+
+<table class="bar"><tr><td>OBSERVACIONES</td></tr></table>
+<table class="renglon">
+    {% for _ in renglones %}<tr><td>&nbsp;</td></tr>{% endfor %}
+</table>
+<div class="gap"></div>
+{% endblock %}
+
+{% block pie_derecha %}
+<table class="firmas">
+    <tr>
+        <td style="width:40%;" class="linea">Firma del medidor</td>
+        <td style="width:20%;">&nbsp;</td>
+        <td style="width:40%;" class="linea">Firma y aclaración del cliente</td>
+    </tr>
+</table>
+{% endblock %}

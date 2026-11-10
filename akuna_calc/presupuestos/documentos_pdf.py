@@ -27,6 +27,20 @@ def _forma_pago(venta, presupuesto):
     return ' · '.join(partes)
 
 
+def build_medicion_context(presupuesto, user, fecha):
+    return {
+        **contexto_base_pdf(),
+        'presupuesto': presupuesto,
+        'meta_filas': [
+            ('PRESUPUESTO', presupuesto.numero),
+            ('FECHA', fecha.strftime('%d/%m/%Y')),
+        ],
+        'responsable': user.get_full_name() or user.get_username(),
+        'filas_cliente': filas_cliente(presupuesto.cliente, incluir=('cliente', 'domicilio', 'localidad', 'telefono')),
+        'renglones': range(10),
+    }
+
+
 def build_colocacion_context(presupuesto, venta, colocador=None, fecha=None, observaciones=''):
     pagado = venta.sena + sum((pago.monto for pago in venta.pagos.all()), Decimal('0'))
     total = venta.get_total_con_percepciones()

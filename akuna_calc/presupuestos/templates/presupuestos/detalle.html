@@ -103,6 +103,7 @@
             {% endif %}
             {% endif %}
             <a href="{% url 'presupuestos:presupuestos-pdf' presupuesto.pk %}" target="_blank" class="btn btn-secondary"><i class="fas fa-file-pdf"></i>Presupuesto</a>
+            <a href="{% url 'presupuestos:presupuestos-medicion' presupuesto.pk %}" target="_blank" class="btn btn-secondary" title="Planilla de Medición en PDF para coordinar la visita"><i class="fas fa-ruler-combined"></i>Medición</a>
             {% if colocacion_form %}
             <button type="button" onclick="abrirModalColocacion()" class="btn btn-secondary" title="Planilla de Colocación en PDF para el colocador"><i class="fas fa-screwdriver-wrench"></i>Colocación</button>
             {% endif %}

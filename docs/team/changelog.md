@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-10 — FEAT-050: planilla de Medición en PDF (RF-03)
+
+En el detalle de cualquier presupuesto, el botón **Medición** abre la planilla A4 «MEDICIÓN» con logo de Akun, nº de presupuesto, fecha, usuario responsable (quien la genera) y los datos del cliente (ID, domicilio, localidad, teléfono), más renglones de observaciones y firmas. Todo sale del presupuesto; no se guarda nada. Reutiliza la base común de PDF. Sin migración.
+
 ## 2026-11-09 — FEAT-049: planilla de Colocación en PDF y envío por WhatsApp (RF-02)
 
 En el presupuesto confirmado con venta, el botón **Colocación** pide colocador, fecha y observaciones y abre la planilla A4 «COLOCACIÓN» con cliente, aberturas, importes y firmas, todo traído del presupuesto y de la venta. Después pregunta si se envía por WhatsApp a los números autorizados y la manda como plantilla de Meta con el PDF adjunto. Nace la base común de PDF internos en `core/pdf.py` (ADR-026). Sin migración.

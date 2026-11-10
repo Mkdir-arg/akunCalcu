@@ -1,6 +1,7 @@
 # REQ-056 — Planilla de Medición (PDF) + base común de PDFs internos A4
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
+- **Derivó en:** [FEAT-050](../features/FEAT-050-planilla-medicion.md) (Medición) · la base común de PDF salió con [FEAT-049](../features/FEAT-049-planilla-colocacion.md)
 - **Fecha:** 2026-10-20
 - **Complejidad:** Mediano (incluye la base común que reutilizan REQ-057 y REQ-058)
 - **Origen:** RF-03 (prioridad Alta)
@@ -23,13 +24,13 @@ datos del cliente ya cargados, para **coordinar la visita del medidor sin copiar
 
 ## Criterios de Aceptación
 
-- [ ] El detalle del presupuesto tiene un botón "Medición" (azul, ícono regla) junto a "Recibo"
-- [ ] Abre en una pestaña nueva un PDF A4 vertical titulado **MEDICIÓN**, con logo Akun y el estilo de la Orden de Fabricación
-- [ ] Contiene: fecha de emisión, nº de presupuesto, cliente (con ID `C-00123`), domicilio, localidad, teléfono y usuario responsable
-- [ ] Recuadro de observaciones con renglones para completar a mano
-- [ ] El pie muestra los datos de la empresa desde la configuración general (no hardcodeados)
-- [ ] Solo accede quien tiene acceso a Presupuestos; presupuesto dado de baja → 404
-- [ ] La Orden de Fabricación sigue saliendo exactamente igual que antes
+- [x] El detalle del presupuesto tiene un botón "Medición" (azul, ícono regla) junto a "Recibo"
+- [x] Abre en una pestaña nueva un PDF A4 vertical titulado **MEDICIÓN**, con logo Akun y el estilo de la Orden de Fabricación
+- [x] Contiene: fecha de emisión, nº de presupuesto, cliente (con ID `C-00123`), domicilio, localidad, teléfono y usuario responsable
+- [x] Recuadro de observaciones con renglones para completar a mano
+- [x] El pie muestra los datos de la empresa desde la configuración general (no hardcodeados)
+- [x] Solo accede quien tiene acceso a Presupuestos; presupuesto dado de baja → 404
+- [x] La Orden de Fabricación sigue saliendo exactamente igual que antes
 
 ## Diseño técnico
 

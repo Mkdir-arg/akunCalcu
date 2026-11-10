@@ -75,7 +75,7 @@
 | [REQ-053](./REQ-053-filtros-ventas-siempre-visibles.md) | Panel de filtros siempre visible en Ventas (RF-025) | Implementado | 2026-10-20 | FEAT-042 |
 | [REQ-054](./REQ-054-id-cliente-y-provincia.md) | ID de cliente visible en todo el sistema + Provincia del cliente (RF-023) | Implementado | 2026-10-20 | FEAT-043 |
 | [REQ-055](./REQ-055-nuevo-cliente-desde-presupuesto.md) | Alta rápida de cliente desde el formulario de Presupuesto (RF-024) | Implementado | 2026-10-20 | FEAT-044 |
-| [REQ-056](./REQ-056-pdf-medicion-y-base-pdf-comun.md) | Planilla de Medición (PDF) + base común de PDFs internos A4 (RF-03) | Aprobado | 2026-10-20 | — |
+| [REQ-056](./REQ-056-pdf-medicion-y-base-pdf-comun.md) | Planilla de Medición (PDF) + base común de PDFs internos A4 (RF-03) | Implementado | 2026-10-20 | [FEAT-050](../features/FEAT-050-planilla-medicion.md) |
 | [REQ-057](./REQ-057-pdf-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado (RF-02), con envío por WhatsApp | Implementado | 2026-11-09 | [FEAT-049](../features/FEAT-049-planilla-colocacion.md) |
 | [REQ-058](./REQ-058-recibo-unificado.md) | Recibo unificado entre Presupuestos y Ventas (RF-01) | Aprobado | 2026-10-20 | — |
 | [REQ-059](./REQ-059-cuenta-corriente-proveedores-usd.md) | Cuenta corriente de proveedores en pesos y en dólares (RF-004 + RF-017) | Aprobado | 2026-10-20 | — |

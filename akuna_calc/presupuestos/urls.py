@@ -20,6 +20,7 @@ urlpatterns = [
     path('<int:pk>/estado/', views.cambiar_estado, name='presupuestos-estado'),
     path('<int:pk>/recibo/', views.recibo, name='presupuestos-recibo'),
     path('<int:pk>/pdf/', views.pdf, name='presupuestos-pdf'),
+    path('<int:pk>/medicion/', views.medicion, name='presupuestos-medicion'),
     path('<int:pk>/colocacion/', views.colocacion, name='presupuestos-colocacion'),
     path('<int:pk>/colocacion/whatsapp/', views.colocacion_whatsapp, name='presupuestos-colocacion-whatsapp'),
 ]
