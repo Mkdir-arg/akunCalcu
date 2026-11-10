@@ -86,3 +86,4 @@
 | [REQ-064](./REQ-064-rediseno-taller.md) | Rediseño visual «Taller» de todo el sistema | Implementado | 2026-10-29 | [FEAT-046](../features/FEAT-046-rediseno-taller.md) |
 | [REQ-065](./REQ-065-tiempo-real-polling.md) | Actualización en vivo por polling (listados, avisos, dólar, KPIs, edición simultánea) | Implementado | 2026-10-29 | [FEAT-047](../features/FEAT-047-tiempo-real.md) |
 | [REQ-066](./REQ-066-animacion-login-ventana.md) | Animación de bienvenida en el login: la ventana se abre y sale una persona | En desarrollo | 2026-11-09 | — |
+| [REQ-067](./REQ-067-orden-abertura-desde-catalogo.md) | Abertura de la Orden de Fabricación elegida del catálogo, con la lógica del cotizador | Implementado | 2026-11-10 | [FEAT-051](../features/FEAT-051-orden-abertura-desde-catalogo.md) |

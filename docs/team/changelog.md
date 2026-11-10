@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-10 — FEAT-051: abertura de la Orden de Fabricación elegida del catálogo
+
+En la edición de la orden, la abertura deja de ser texto libre: se elige con los desplegables en cascada del cotizador (Extrusora → Línea → Tipo de abertura → Marco → Hoja → Vidrio, más Color). La cantidad de hojas sale de la hoja elegida. El servidor valida la combinación y escribe los mismos textos de siempre, así el PDF no cambia. Lo escrito a mano se conserva con un aviso. Pedidos de Fábrica puede leer las listas del catálogo (no calcular precios). Migración `plantillas/0018` (campo `seleccion_catalogo`, ADR-027).
+
 ## 2026-11-10 — FEAT-050: planilla de Medición en PDF (RF-03)
 
 En el detalle de cualquier presupuesto, el botón **Medición** abre la planilla A4 «MEDICIÓN» con logo de Akun, nº de presupuesto, fecha, usuario responsable (quien la genera) y los datos del cliente (ID, domicilio, localidad, teléfono), más renglones de observaciones y firmas. Todo sale del presupuesto; no se guarda nada. Reutiliza la base común de PDF. Sin migración.

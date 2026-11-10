@@ -45,6 +45,7 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-050 | Como vendedor que arma un presupuesto en PVC, quiero cargar la colocación en dólares para no convertirla a pesos a mano | Pequeño ✅ |
 | US-051 | Como administrador del catálogo, quiero inactivar y reactivar productos para que el cotizador no los ofrezca sin perder su configuración | Pequeño ✅ |
 | US-052 | Como administrador del catálogo, quiero seleccionar varios productos e inactivarlos o activarlos de una vez | Pequeño ✅ |
+| US-067 | Como responsable de fábrica, quiero corregir la abertura de una orden eligiendo de los desplegables en cascada del cotizador para que la orden tenga siempre una combinación del catálogo y llegue completa al taller | Grande ✅ |
 
 ---
 

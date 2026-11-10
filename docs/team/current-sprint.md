@@ -25,6 +25,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-063 | Circuito de pedidos de fábrica: estados, etapas del taller, liberar, revisiones y PDF (REQ-063) | ✅ Completado (Etapa 1) | Fuera de plan; FEAT-048 / ADR-025. Migración `plantillas/0017`. Etapas 2 (tablero, QR) y 3 (planos) pendientes |
 | US-057 | Planilla de Colocación (PDF) + envío por WhatsApp a números autorizados (REQ-057, RF-02) | ✅ Completado | Adelantado del Sprint 2; FEAT-049 / ADR-026. Incluye la base común de PDF (parte de REQ-056). Sin migración. Falta aprobación de Meta de la plantilla `planilla_colocacion` y prueba real |
 | US-056 | Planilla de Medición en PDF desde el presupuesto (REQ-056, RF-03) | ✅ Completado | Adelantado del Sprint 2; FEAT-050. Usa la base común de FEAT-049. Sin migración |
+| US-067 | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | ✅ Completado | Fuera de plan; FEAT-051 / ADR-027. Migración `plantillas/0018`. Falta probar la cascada con el catálogo real en prod |
 
 ## Items completados (sprints anteriores)
 

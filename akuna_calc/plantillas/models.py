@@ -178,6 +178,9 @@ class OrdenFabricacion(models.Model):
 
     nota = models.TextField(blank=True, verbose_name='Nota / Observaciones')
 
+    # REQ-067: IDs del catálogo elegidos en la edición. Los textos de arriba siguen siendo lo que se imprime.
+    seleccion_catalogo = models.JSONField(default=dict, blank=True, verbose_name='Selección del catálogo')
+
     # Circuito de fábrica (REQ-063)
     ETAPA_CHOICES = [
         ('por_fabricar', 'Por fabricar'),

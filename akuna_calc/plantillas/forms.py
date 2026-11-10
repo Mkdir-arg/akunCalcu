@@ -1,8 +1,13 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from pricing.models import Linea
 
 from .models import OpcionalFabrica, OrdenFabricacion, PedidoFabrica
+from .services import abertura_catalogo
+from .utils import cortar_a_max_length
+
+CAMPOS_ABERTURA_CATALOGO = ('tipo_abertura', 'linea', 'tipo_marco', 'modelo_hoja', 'tipo_vidrio', 'color')
 
 
 _INPUT = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -42,6 +47,41 @@ class OrdenFabricacionForm(forms.ModelForm):
                 widget=forms.TextInput(attrs={'class': _INPUT}),
                 help_text='La orden pasa a una revisión nueva y el taller tiene que reimprimirla.',
             )
+        # REQ-067: la abertura se elige del catálogo. Los textos viajan ocultos y solo se
+        # reemplazan si el usuario tocó los desplegables (`cat_cambios`).
+        for campo in CAMPOS_ABERTURA_CATALOGO:
+            self.fields[campo].widget = forms.HiddenInput()
+        for clave in abertura_catalogo.CLAVES:
+            # 255 = largo del código de vidrio en el catálogo.
+            self.fields[f'cat_{clave}'] = forms.CharField(required=False, max_length=255, widget=forms.HiddenInput())
+        self.fields['cat_cambios'] = forms.CharField(required=False, max_length=50, widget=forms.HiddenInput())
+
+    def clean(self):
+        cleaned = super().clean()
+        cambios = set((cleaned.get('cat_cambios') or '').split(','))
+        if not cambios & {'cadena', 'color'}:
+            return cleaned
+        seleccion = dict(self.instance.seleccion_catalogo or {})
+        try:
+            if 'cadena' in cambios:
+                textos, elegidos = abertura_catalogo.resolver_cadena(
+                    {clave: cleaned.get(f'cat_{clave}') for clave in abertura_catalogo.CADENA}
+                )
+                cleaned.update(textos)
+                for clave in abertura_catalogo.CADENA:
+                    seleccion.pop(clave, None)
+                seleccion.update(elegidos)
+            if 'color' in cambios:
+                cleaned['color'], tratamiento = abertura_catalogo.resolver_color(cleaned.get('cat_tratamiento'))
+                seleccion.pop('tratamiento', None)
+                if tratamiento is not None:
+                    seleccion['tratamiento'] = tratamiento
+        except ValidationError as error:
+            raise forms.ValidationError(error.messages)
+        for campo in (*CAMPOS_ABERTURA_CATALOGO, 'cantidad_hojas'):
+            cleaned[campo] = cortar_a_max_length(OrdenFabricacion, campo, cleaned.get(campo))
+        self.instance.seleccion_catalogo = seleccion
+        return cleaned
 
 
 class PedidoFabricaForm(forms.ModelForm):

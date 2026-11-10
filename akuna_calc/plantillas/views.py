@@ -24,7 +24,7 @@ from .forms import (
     CambiarEtapaForm, CancelarPedidoForm, EntregarPedidoForm, LiberarPedidoForm,
     OrdenFabricacionForm, PedidoFabricaForm,
 )
-from .services import circuito
+from .services import abertura_catalogo, circuito
 from .utils import cortar_a_max_length
 
 
@@ -286,11 +286,14 @@ def orden_create(request, pedido_pk):
     return redirect('plantillas:orden_edit', pk=orden.pk)
 
 
+ABERTURA_GUARDADA = ('tipo_abertura', 'linea', 'color', 'tipo_marco', 'modelo_hoja', 'cantidad_hojas', 'tipo_vidrio')
+
+
 @login_required
 def orden_edit(request, pk):
     """Editar el detalle de una orden. Liberado el pedido, solo el responsable y con motivo (sube la revisión)."""
     orden = get_object_or_404(
-        OrdenFabricacion.objects.select_related('pedido').prefetch_related('medidas'),
+        OrdenFabricacion.objects.select_related('pedido', 'item_presupuesto').prefetch_related('medidas'),
         pk=pk,
     )
     pedido = orden.pedido
@@ -300,6 +303,8 @@ def orden_edit(request, pk):
     liberada = pedido.esta_liberado
     if liberada and not _puede_gestionar(request.user):
         raise PermissionDenied('Solo el responsable de fábrica modifica una orden liberada.')
+    # Antes del form: si el guardado falla, el form ya escribió los valores nuevos en la instancia.
+    guardado = {campo: (getattr(orden, campo) or '').strip() for campo in ABERTURA_GUARDADA}
 
     if request.method == 'POST':
         try:
@@ -312,7 +317,7 @@ def orden_edit(request, pk):
                     raise ValidationError('El pedido cambió de estado mientras editabas la orden. Revisala y volvé a intentar.')
                 form = OrdenFabricacionForm(request.POST, instance=orden, requiere_motivo=liberada)
                 if form.is_valid():
-                    form.save(commit=False).save(update_fields=[*form.Meta.fields, 'updated_at'])
+                    form.save(commit=False).save(update_fields=[*form.Meta.fields, 'seleccion_catalogo', 'updated_at'])
                     _guardar_medidas(orden, request)
                     if liberada:
                         orden = circuito.revisar_orden(orden, request.user, form.cleaned_data['motivo_revision'])
@@ -335,6 +340,12 @@ def orden_edit(request, pk):
         'pedido': pedido,
         'medidas': orden.medidas.all(),
         'liberada': liberada,
+        'seleccion_inicial': (
+            {clave: form.data.get(f'cat_{clave}') for clave in abertura_catalogo.CLAVES if form.data.get(f'cat_{clave}')}
+            if form.is_bound else abertura_catalogo.seleccion_inicial(orden)
+        ),
+        'guardado': guardado,
+        'orden_tiene_abertura': any(guardado[campo] for campo in ABERTURA_GUARDADA if campo not in ('color', 'cantidad_hojas')),
     })
 
 

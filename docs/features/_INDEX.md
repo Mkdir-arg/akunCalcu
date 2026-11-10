@@ -56,6 +56,7 @@
 | [FEAT-048](./FEAT-048-circuito-pedidos-fabrica.md) | Circuito de pedidos de fábrica: estados, etapas del taller, liberar, revisiones y PDF del pedido (REQ-063, Etapa 1) | Implementado (rama `feat/req-063-pedidos-fabrica`) | 2026-10-30 | Fuera de plan |
 | [FEAT-049](./FEAT-049-planilla-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado, con envío por WhatsApp a números autorizados (REQ-057, RF-02) + base común de PDF | Implementado (en `development`) | 2026-11-09 | Sprint 2 RF Akun |
 | [FEAT-050](./FEAT-050-planilla-medicion.md) | Planilla de Medición (PDF) desde el presupuesto, en cualquier estado (REQ-056, RF-03) | Implementado (en `development`) | 2026-11-10 | Sprint 2 RF Akun |
+| [FEAT-051](./FEAT-051-orden-abertura-desde-catalogo.md) | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 
 ---
 
@@ -67,7 +68,7 @@
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011, FEAT-030, FEAT-031, FEAT-032, FEAT-034 | 2026-08-01 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
 | `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019, FEAT-026, FEAT-027, FEAT-030, FEAT-031, FEAT-032, FEAT-033, FEAT-034, FEAT-049, FEAT-050 | 2026-11-10 |
-| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032 | 2026-07-27 |
+| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032, FEAT-051 | 2026-11-10 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
 | `pricing` | FEAT-036, FEAT-037, FEAT-041, FEAT-045 | 2026-10-22 |

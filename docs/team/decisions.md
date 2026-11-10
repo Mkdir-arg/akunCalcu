@@ -190,6 +190,25 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-027: La orden de fabricación guarda textos para imprimir e IDs del catálogo solo para editar
+**Fecha**: 2026-11-10
+**Estado**: Activo
+
+**Contexto**: REQ-067 pide elegir la abertura de la orden del catálogo de pricing, con la cascada del cotizador. La orden guarda textos (los imprime el PDF y los copia la precarga) y el catálogo legacy cambia o se bloquea con el tiempo.
+
+**Decisión**:
+1. Los textos siguen siendo la fuente de verdad de lo que se fabrica. Se agrega `OrdenFabricacion.seleccion_catalogo` (JSON sin FK) solo para volver a preseleccionar los desplegables.
+2. El navegador manda IDs y el servidor (`plantillas/services/abertura_catalogo.py`) valida la cadena con las mismas reglas que `pricing/catalog_views.py` y escribe los textos.
+3. Solo se reemplaza lo que el usuario tocó (`cat_cambios`): una orden escrita a mano no se pisa por abrirla y guardar.
+
+**Alternativas descartadas**:
+- *FKs al catálogo*: las tablas legacy son `managed=False`, sin integridad, y un ítem bloqueado o borrado dejaría la orden rota o la impresión cambiada.
+- *Solo los IDs del presupuesto de origen*: una corrección en la orden se perdería al volver a entrar, y en una estructura el ítem no es el módulo.
+
+**Consecuencias**: Si el catálogo cambia, la orden sigue imprimiendo lo que se eligió; los desplegables avisan que el valor ya no está. Las reglas de cascada están en dos lugares (API de pricing y servicio de la orden): si cambia una, hay que cambiar la otra.
+
+---
+
 ## ADR-026: PDF internos A4 sobre una base común y envío de documentos por WhatsApp directo a Meta desde Django
 **Fecha**: 2026-11-09
 **Estado**: Activo

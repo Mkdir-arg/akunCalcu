@@ -70,22 +70,37 @@
                 </div>
             </div>
 
-            <div class="card card-pad">
-                <h2 class="strong text-base mb-4">Detalle de la abertura</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="field">
-                        <label>Tipo de abertura</label>
-                        {{ form.tipo_abertura }}
-                    </div>
-                    <div class="field">
-                        <label>Línea</label>
-                        {{ form.linea }}
-                    </div>
-                    <div class="field">
-                        <label>Color</label>
-                        {{ form.color }}
-                    </div>
+            <div class="card card-pad" id="abertura-catalogo">
+                <h2 class="strong text-base mb-1">Abertura</h2>
+                <p class="muted text-sm mb-4">Se elige del catálogo, como en el cotizador. Cambiar un desplegable limpia los de abajo.</p>
+                {% for error in form.non_field_errors %}
+                <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4"><i class="fas fa-circle-exclamation mr-2"></i>{{ error }}</div>
+                {% endfor %}
+                <div class="rounded-xl border border-line px-4 py-3 text-sm mb-4">
+                    <div class="muted text-xs uppercase tracking-wide mb-1">Guardado en la orden</div>
+                    <div><strong>{{ guardado.tipo_abertura|default:"Sin tipo de abertura" }}</strong>{% if guardado.linea %} · {{ guardado.linea }}{% endif %}{% if guardado.color %} · {{ guardado.color }}{% endif %}</div>
+                    <div class="muted">Marco: {{ guardado.tipo_marco|default:"—" }} · Hoja: {{ guardado.modelo_hoja|default:"—" }}{% if guardado.cantidad_hojas %} ({{ guardado.cantidad_hojas }}){% endif %} · Vidrio: {{ guardado.tipo_vidrio|default:"—" }}</div>
                 </div>
+                <div id="cat-aviso" class="hidden rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-warn mb-4">
+                    <i class="fas fa-triangle-exclamation mr-2"></i><span id="cat-aviso-texto"></span>
+                </div>
+                <div id="cat-error" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="field"><label for="cat-sel-extrusora">Extrusora</label><select id="cat-sel-extrusora" data-clave="extrusora" class="no-select2 input"></select></div>
+                    <div class="field"><label for="cat-sel-linea">Línea</label><select id="cat-sel-linea" data-clave="linea" class="no-select2 input"></select></div>
+                    <div class="field"><label for="cat-sel-producto">Tipo de abertura</label><select id="cat-sel-producto" data-clave="producto" class="no-select2 input"></select></div>
+                    <div class="field"><label for="cat-sel-marco">Tipo de marco</label><select id="cat-sel-marco" data-clave="marco" class="no-select2 input"></select></div>
+                    <div class="field"><label for="cat-sel-hoja">Modelo de hoja</label><select id="cat-sel-hoja" data-clave="hoja" class="no-select2 input"></select></div>
+                    <div class="field">
+                        <label for="{{ form.cantidad_hojas.id_for_label }}">Cantidad de hojas</label>
+                        {{ form.cantidad_hojas }}
+                    </div>
+                    <div class="field"><label for="cat-sel-vidrio">Tipo de vidrio</label><select id="cat-sel-vidrio" data-clave="vidrio" class="no-select2 input"></select></div>
+                    <div class="field"><label for="cat-sel-tratamiento">Color</label><select id="cat-sel-tratamiento" data-clave="tratamiento" class="no-select2 input"></select></div>
+                </div>
+                {{ form.tipo_abertura }}{{ form.linea }}{{ form.color }}{{ form.tipo_marco }}{{ form.modelo_hoja }}{{ form.tipo_vidrio }}
+                {{ form.cat_extrusora }}{{ form.cat_linea }}{{ form.cat_producto }}{{ form.cat_marco }}{{ form.cat_hoja }}{{ form.cat_vidrio }}{{ form.cat_tratamiento }}{{ form.cat_cambios }}
+                {{ seleccion_inicial|json_script:"cat-inicial" }}
             </div>
 
             <div class="card card-pad">
@@ -102,10 +117,6 @@
                     <div class="field">
                         <label>Travesaño</label>
                         {{ form.travesano }}
-                    </div>
-                    <div class="field">
-                        <label>Tipo de marco</label>
-                        {{ form.tipo_marco }}
                     </div>
                     <div class="field">
                         <label>Marco desarmado</label>
@@ -136,24 +147,12 @@
                         {{ form.lado }}
                     </div>
                     <div class="field">
-                        <label>Modelo de hoja</label>
-                        {{ form.modelo_hoja }}
-                    </div>
-                    <div class="field">
                         <label>Travesaño divisor</label>
                         {{ form.travesano_divisor }}
                     </div>
                     <div class="field">
                         <label>Altura del travesaño</label>
                         {{ form.altura_travesano }}
-                    </div>
-                    <div class="field">
-                        <label>Cantidad de hojas</label>
-                        {{ form.cantidad_hojas }}
-                    </div>
-                    <div class="field">
-                        <label>Tipo de vidrio</label>
-                        {{ form.tipo_vidrio }}
                     </div>
                     <div class="field">
                         <label>Contramarco</label>
@@ -272,5 +271,144 @@ function agregarFilaMedida() {
 document.addEventListener('DOMContentLoaded', function () {
     if (!document.querySelectorAll('#medidas-body .fila-medida').length) agregarFilaMedida();
 });
+
+// REQ-067: abertura elegida del catálogo, con la misma cascada y las mismas APIs que el cotizador.
+(function () {
+    const API = '/pricing/api/pricing/';
+    const CADENA = [
+        { clave: 'extrusora', url: () => 'extrusoras/', valor: 'id', texto: 'nombre', antes: '' },
+        { clave: 'linea', url: p => 'lineas/?extrusora_id=' + p, valor: 'id', texto: 'nombre', antes: 'Primero extrusora' },
+        { clave: 'producto', url: p => 'productos/?linea_id=' + p, valor: 'id', texto: 'descripcion', antes: 'Primero línea' },
+        { clave: 'marco', url: p => 'marcos/?producto_id=' + p, valor: 'id', texto: 'descripcion', antes: 'Primero tipo de abertura' },
+        { clave: 'hoja', url: p => 'hojas/?marco_id=' + p, valor: 'id', texto: 'descripcion', antes: 'Primero marco' },
+        { clave: 'vidrio', url: p => 'vidrios/?hoja_id=' + encodeURIComponent(p), valor: 'codigo', texto: 'descripcion', antes: 'Primero hoja' },
+    ];
+    const inicial = JSON.parse(document.getElementById('cat-inicial').textContent || '{}');
+    const sel = clave => document.getElementById('cat-sel-' + clave);
+    const oculto = clave => document.getElementById('id_cat_' + clave);
+    // Si el guardado volvió con error, los cambios ya hechos siguen marcados.
+    const cambios = new Set((oculto('cambios').value || '').split(',').filter(Boolean));
+    const cantidadHojas = document.getElementById('id_cantidad_hojas');
+    const avisos = [];
+
+    function avisar(texto) {
+        avisos.push(texto);
+        document.getElementById('cat-aviso-texto').textContent = avisos.join(' ');
+        document.getElementById('cat-aviso').classList.remove('hidden');
+    }
+
+    function errorCatalogo() {
+        const caja = document.getElementById('cat-error');
+        caja.textContent = 'No se pudo cargar el catálogo. Lo guardado en la orden no cambia si guardás así.';
+        caja.classList.remove('hidden');
+    }
+
+    function marcarCambio(grupo) {
+        cambios.add(grupo);
+        oculto('cambios').value = Array.from(cambios).join(',');
+    }
+
+    function vaciar(select, placeholder) {
+        select.innerHTML = '';
+        const opcion = document.createElement('option');
+        opcion.value = '';
+        opcion.textContent = placeholder;
+        select.appendChild(opcion);
+    }
+
+    function llenar(select, lista, nivel, placeholder) {
+        vaciar(select, placeholder);
+        lista.forEach(item => {
+            const opcion = document.createElement('option');
+            opcion.value = item[nivel.valor];
+            opcion.textContent = item[nivel.texto] || '(sin nombre)';
+            if (item.cantidad != null) opcion.dataset.cantidad = item.cantidad;
+            select.appendChild(opcion);
+        });
+        select.disabled = false;
+    }
+
+    function limpiarDesde(indice) {
+        CADENA.slice(indice).forEach(nivel => {
+            vaciar(sel(nivel.clave), nivel.antes || 'Seleccionar...');
+            sel(nivel.clave).disabled = true;
+            oculto(nivel.clave).value = '';
+        });
+    }
+
+    function ajustarCantidadHojas() {
+        const opcion = sel('hoja').selectedOptions[0];
+        const cantidad = opcion && opcion.dataset.cantidad;
+        if (cantidad && cantidad !== '0') {
+            cantidadHojas.value = cantidad;
+            cantidadHojas.readOnly = true;
+        } else {
+            cantidadHojas.readOnly = false;
+        }
+    }
+
+    // Carga el nivel `indice` y, si hay un valor a preseleccionar, sigue con el próximo.
+    function cargar(indice, padre, preseleccion) {
+        if (indice >= CADENA.length) return;
+        const nivel = CADENA[indice];
+        const select = sel(nivel.clave);
+        fetch(API + nivel.url(padre), { headers: { 'Accept': 'application/json' } })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+            .then(lista => {
+                llenar(select, lista, nivel, 'Seleccionar...');
+                if (!preseleccion) return;
+                const valor = preseleccion[nivel.clave];
+                if (valor == null || valor === '') return;
+                if (!lista.some(item => String(item[nivel.valor]) === String(valor))) {
+                    avisar('Parte de la abertura guardada ya no está en el catálogo (desde «' + select.previousElementSibling.textContent + '»). Se mantiene si no cambiás los desplegables.');
+                    return;
+                }
+                select.value = String(valor);
+                oculto(nivel.clave).value = select.value;
+                if (nivel.clave === 'hoja') ajustarCantidadHojas();
+                cargar(indice + 1, select.value, preseleccion);
+            })
+            .catch(errorCatalogo);
+    }
+
+    CADENA.forEach((nivel, indice) => {
+        sel(nivel.clave).addEventListener('change', function () {
+            marcarCambio('cadena');
+            oculto(nivel.clave).value = this.value;
+            limpiarDesde(indice + 1);
+            if (nivel.clave === 'hoja') ajustarCantidadHojas();
+            if (indice < CADENA.findIndex(n => n.clave === 'hoja')) cantidadHojas.readOnly = false;
+            if (this.value) cargar(indice + 1, this.value, null);
+        });
+    });
+
+    sel('tratamiento').addEventListener('change', function () {
+        marcarCambio('color');
+        oculto('tratamiento').value = this.value;
+    });
+
+    limpiarDesde(0);
+    cargar(0, null, inicial);
+
+    vaciar(sel('tratamiento'), 'Sin terminación');
+    fetch(API + 'tratamientos/', { headers: { 'Accept': 'application/json' } })
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(lista => {
+            llenar(sel('tratamiento'), lista, { valor: 'id', texto: 'descripcion' }, 'Sin terminación');
+            if (inicial.tratamiento == null) return;
+            if (lista.some(t => String(t.id) === String(inicial.tratamiento))) {
+                sel('tratamiento').value = String(inicial.tratamiento);
+                oculto('tratamiento').value = sel('tratamiento').value;
+            } else {
+                avisar('El color guardado ya no está en el catálogo. Se mantiene si no lo cambiás.');
+            }
+        })
+        .catch(errorCatalogo);
+
+    const guardado = {{ orden_tiene_abertura|yesno:"true,false" }};
+    if (guardado && !inicial.extrusora) {
+        avisar('La abertura guardada se cargó a mano o no está en el catálogo. Se mantiene si no cambiás los desplegables.');
+    }
+})();
 </script>
 {% endblock %}

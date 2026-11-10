@@ -281,7 +281,9 @@ _register_route('fabrica.accesorios', 'config-accesorio-create', 'config-accesor
 _register_route('fabrica.vidrios', 'config-vidrio-create', 'config-vidrio-edit', 'config-vidrio-delete')
 _register_route('fabrica.tratamientos', 'config-tratamiento-create', 'config-tratamiento-edit', 'config-tratamiento-delete')
 
-_register_route(['cotizador.view', 'presupuestos.view'], 'pricing-calculate', 'pricing-estructura-calculate', 'extrusoras-list', 'lineas-list', 'productos-list', 'marcos-list', 'hojas-list', 'interiores-list', 'vidrios-list', 'tratamientos-list', 'mosquiteros-list', 'contravidrios-list', 'contravidrios-exterior-list', 'cruces-list', 'vidrios-repartidos-list', 'opcionales-list')
+_register_route(['cotizador.view', 'presupuestos.view'], 'pricing-calculate', 'pricing-estructura-calculate', 'interiores-list', 'mosquiteros-list', 'contravidrios-list', 'contravidrios-exterior-list', 'cruces-list', 'vidrios-repartidos-list', 'opcionales-list')
+# REQ-067: la edición de la orden de fabricación elige la abertura con estas listas (solo lectura).
+_register_route(['cotizador.view', 'presupuestos.view', 'despiece.pedidos'], 'extrusoras-list', 'lineas-list', 'productos-list', 'marcos-list', 'hojas-list', 'vidrios-list', 'tratamientos-list')
 
 _register_route('facturacion.facturas', 'facturacion:crear_factura', 'facturacion:detalle_factura', 'facturacion:crear_factura_desde_venta', 'facturacion:libro_iva_ventas')
 _register_route('facturacion.puntos_venta', 'facturacion:punto_venta_create', 'facturacion:punto_venta_edit')
