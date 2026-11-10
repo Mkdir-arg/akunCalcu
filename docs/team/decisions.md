@@ -16,6 +16,26 @@
 
 ---
 
+## ADR-030: Optimizador de corte: app propia, FFD determinístico y plan guardado como foto con firma
+**Fecha**: 2026-11-10
+**Estado**: Activo
+
+**Contexto**: El taller corta los marcos a mano, pedido por pedido, y sobra aluminio. Los datos (medidas, despiece del marco, largo de barra) ya están en `plantillas` y `pricing`. Se pidió una primera etapa solo de marco.
+
+**Decisión**:
+- App nueva `optimizador` (modelo `PlanCorte`, migración `0001` que depende de `plantillas/0018`, permiso `fabrica.optimizador`). `ancho_alto` se extrajo a `plantillas/services/medidas.py` para compartirla.
+- Algoritmo FFD (First Fit Decreasing): determinístico, rápido, mismo resultado cada vez.
+- Se agrupa por perfil + color: marcos de colores distintos no comparten barra.
+- El largo de un tramo a 45° es el de la fórmula, punta a punta, sin encastrar ingletes (conservador).
+- El último corte de la barra no gasta disco para decidir si entra. El sobrante informado sí lo descuenta: es conservador y puede mostrar hasta 4 mm menos que el físico.
+- El plan guarda un snapshot JSON del cálculo y una firma sha1 de las órdenes (medida y abertura). Si la firma actual difiere, el plan figura *Desactualizado*; si no, *Vigente*.
+- Guardar es atómico y reintenta el número correlativo ante colisión. Opcionalmente pasa las órdenes de `por_fabricar` a `corte` con `circuito.cambiar_etapa`, que deja el historial.
+- Disco y despunte son por plan y recuerdan el último guardado. Largo de barra y recorte mínimo son opcionales (vacío = catálogo).
+
+**Consecuencias**: Una orden con alguna medida no interpretable queda afuera entera, y los pedidos `terminado` se excluyen. No hay stock de recortes, hoja, contravidrio, mosquitero ni travesaños, y no hay envío por WhatsApp. Sin permiso se responde 302 y no 403, porque `RouteAccessMiddleware` redirige en todo el sistema. Si disco y despunte resultan fijos, se pasan a Configuración sin tocar el cálculo.
+
+---
+
 ## ADR-029: Novedades del sistema: la GitHub Action arma el borrador con el changelog y la publicación pasa siempre por revisión
 **Fecha**: 2026-11-10
 **Estado**: Activo

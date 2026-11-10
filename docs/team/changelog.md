@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-10 — FEAT-054: optimizador de corte de perfiles de marco
+
+Nuevo ítem **Optimizador** en Fábrica. Elegís pedidos liberados y el sistema acomoda los tramos de marco en barras, por perfil y color, descontando disco y despunte. Muestra barras usadas, metros, % de desperdicio y recortes a guardar, con cada barra dibujada a escala. Se guarda como plan numerado (con estado Vigente o Desactualizado si después cambió una orden) y se imprime una planilla A4 para el que corta. Al guardar, las órdenes pasan a la etapa Corte. Solo marco: hoja, contravidrio y travesaños quedan para después. Migración `optimizador/0001` (ADR-030).
+
 ## 2026-11-10 — FEAT-053: novedades del sistema
 
 Nuevo ítem **Novedades** en el menú, con un contador de las que no leíste. Al entrar después de una novedad aparece una ventana con lo nuevo, y «Entendido» la cierra. La página Novedades muestra todo agrupado por mes, y cada persona ve solo lo de sus módulos. Las noticias salen solas de cada cambio que se sube al sistema: llegan como borrador a la **Bandeja de novedades**, donde un administrador las revisa y las publica. Primera GitHub Action del repo (`.github/workflows/novedades.yml`). Migración `novedades/0001` (ADR-029).

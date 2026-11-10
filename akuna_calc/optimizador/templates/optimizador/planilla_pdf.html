@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Planilla de corte {{ plan.numero_formateado }}</title>
+<style>
+@page { size: A4; margin: 8mm 10mm 8mm 10mm; }
+body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 9pt; }
+table { width: 100%; border-collapse: collapse; }
+td, th { vertical-align: middle; }
+.logo { width: 140px; }
+.title { font-size: 17pt; font-weight: bold; color: #1560a8; }
+.sub { font-size: 8pt; color: #5b6b80; }
+.numbox td { border: 1px solid #1560a8; padding: 3px 6px; }
+.numbox .k { background: #1560a8; color: #fff; font-size: 7.5pt; font-weight: bold; }
+.numbox .n { font-size: 22pt; font-weight: bold; color: #1560a8; text-align: center; }
+.numbox .v { font-size: 10pt; font-weight: bold; text-align: center; }
+.bar td { background: #1560a8; color: #fff; font-weight: bold; font-size: 9pt; padding: 4px 8px; }
+.gap { height: 6px; }
+.clave td { border: 1px solid #b9c7d8; padding: 3px 8px; vertical-align: top; }
+.clave .k { font-size: 7pt; color: #5b6b80; font-weight: bold; }
+.clave .v { font-size: 13pt; font-weight: bold; color: #111; padding-top: 2px; }
+.med th { background: #e8eff8; color: #1560a8; font-size: 8pt; padding: 4px 6px; border: 1px solid #b9c7d8; text-align: left; }
+.med td { border: 1px solid #b9c7d8; padding: 4px 6px; font-size: 10pt; }
+.med .c { text-align: center; font-weight: bold; font-size: 12pt; color: #1560a8; }
+.med .ck { text-align: center; }
+.med .g { font-weight: bold; color: #1560a8; }
+.nota td { border: 1.5px solid #e0a100; background: #fff8e1; padding: 4px 8px; font-size: 10pt; }
+.nota .k { font-weight: bold; color: #9a6b00; font-size: 8pt; }
+.aviso td { border: 1.5px solid #c0392b; padding: 4px 8px; font-size: 10pt; color: #c0392b; font-weight: bold; }
+body { }
+.pie { font-size: 7.5pt; color: #5b6b80; text-align: center; }
+</style>
+</head>
+<body>
+<table>
+    <tr>
+        <td style="width: 150px;">{% if logo_url %}<img class="logo" src="{{ logo_url }}">{% endif %}</td>
+        <td>
+            <div class="title">PLANILLA DE CORTE · MARCO</div>
+            <div class="sub">Pedidos {% for p in resultado.pedidos %}{{ p.numero }}{% if not forloop.last %} · {% endif %}{% endfor %} — {{ resultado.n_ordenes }} órdenes</div>
+        </td>
+        <td style="width: 170px;">
+            <table class="numbox">
+                <tr><td class="k">PLAN N°</td><td class="k">FECHA</td></tr>
+                <tr><td class="n">{{ plan.numero_formateado }}</td><td class="v">{{ plan.created_at|date:"d/m/Y" }}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<div class="gap"></div>
+
+<table class="clave">
+    <tr>
+        <td><div class="k">BARRAS</div><div class="v">{{ resultado.totales.barras }}</div></td>
+        <td><div class="k">DISCO</div><div class="v">{{ resultado.params.disco_mm }} mm</div></td>
+        <td><div class="k">DESPUNTE</div><div class="v">{{ resultado.params.despunte_mm }} mm</div></td>
+        <td><div class="k">DESPERDICIO</div><div class="v">{{ resultado.totales.desperdicio_pct }} %</div></td>
+        <td><div class="k">CORTÓ</div><div class="v">&nbsp;</div></td>
+    </tr>
+</table>
+
+{% for g in resultado.grupos %}
+<div class="gap"></div>
+<table class="bar">
+    <tr>
+        <td>PERFIL {{ g.codigo }}{% if g.descripcion %} · {{ g.descripcion }}{% endif %} · {{ g.color }}</td>
+        <td style="text-align: right;">{{ g.n_barras }} barras de {{ g.largo_barra }} mm</td>
+    </tr>
+</table>
+{% for aviso in g.no_entran %}
+<table class="aviso"><tr><td>NO ENTRA EN LA BARRA: corte de {{ aviso.largo }} mm, orden {{ aviso.orden }} ({{ aviso.pedido }})</td></tr></table>
+{% endfor %}
+<table class="med">
+    <tr>
+        <th style="width: 44px; text-align: center;">BARRA</th>
+        <th>CORTES EN ORDEN — mm · orden</th>
+        <th style="width: 110px;">SOBRANTE</th>
+        <th style="width: 44px; text-align: center;">HECHO</th>
+    </tr>
+    {% for b in g.barras %}
+    <tr>
+        <td class="c">{{ b.n }}</td>
+        <td>{% for p in b.piezas %}{{ p.largo }} · {{ p.orden }}{% if not forloop.last %} &nbsp;|&nbsp; {% endif %}{% endfor %}</td>
+        <td{% if b.guarda %} class="g"{% endif %}>{% if b.guarda %}GUARDAR {{ b.sobrante }}{% else %}{{ b.sobrante }} chatarra{% endif %}</td>
+        <td class="ck">[&nbsp;&nbsp;&nbsp;]</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+{% if resultado.ordenes %}
+<div class="gap"></div>
+<table class="bar"><tr><td>DÓNDE VA CADA CORTE</td></tr></table>
+<table class="med">
+    <tr>
+        <th style="width: 50px;">ORDEN</th>
+        <th>PEDIDO · CLIENTE</th>
+        <th>MEDIDA</th>
+        <th style="width: 40px; text-align: center;">CANT.</th>
+        <th>CORTES (perfil: mm × cantidad)</th>
+    </tr>
+    {% for o in resultado.ordenes %}
+    <tr>
+        <td class="g">{{ o.numero }}</td>
+        <td>{{ o.pedido }} · {{ o.cliente }}</td>
+        <td style="font-weight: bold;">{{ o.medida }}</td>
+        <td style="text-align: center;">{{ o.cantidad }}</td>
+        <td>{% for c in o.cortes %}{{ c.codigo }}: {{ c.texto }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if resultado.totales.recortes %}
+<div class="gap"></div>
+<table class="nota">
+    <tr><td><div class="k">RECORTES A GUARDAR</div>
+    {% for g in resultado.grupos %}{% if g.recortes %}Perfil {{ g.codigo }} ({{ g.color }}): {% for r in g.recortes %}{{ r }} mm{% if not forloop.last %}, {% endif %}{% endfor %}. {% endif %}{% endfor %}
+    Marcarlos con el número de perfil y el color.</td></tr>
+</table>
+{% endif %}
+
+{% if resultado.excluidas %}
+<div class="gap"></div>
+<table class="nota">
+    <tr><td><div class="k">ÓRDENES QUE NO ENTRARON EN EL CÁLCULO</div>
+    {% for e in resultado.excluidas %}Orden {{ e.orden }} ({{ e.pedido }}): {{ e.motivo }}.{% if not forloop.last %}<br>{% endif %}{% endfor %}</td></tr>
+</table>
+{% endif %}
+
+<div class="gap"></div>
+<div class="pie">AKUNA ABERTURAS · {{ plan }}</div>
+</body>
+</html>

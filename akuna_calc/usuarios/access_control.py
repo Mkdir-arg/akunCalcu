@@ -107,6 +107,16 @@ ACCESS_MODULES = [
         ],
     },
     {
+        'key': 'optimizador',
+        'grupo': 'fabrica',
+        'label': 'Optimizador',
+        'icon': 'fas fa-ruler-horizontal',
+        'dropdown': False,
+        'items': [
+            {'code': 'fabrica.optimizador', 'label': 'Optimizador de corte', 'route_name': 'optimizador:nuevo'},
+        ],
+    },
+    {
         'key': 'cotizador',
         'grupo': 'operacion',
         'label': 'Cotizador',
@@ -179,7 +189,7 @@ ACCESS_MODULES = [
 SIDEBAR_GRUPOS = [
     ('operacion', 'Operación', ['dashboard', 'solicitudes', 'presupuestos', 'cotizador', 'agenda']),
     ('ventas', 'Ventas y cobros', ['comercial', 'facturacion', 'gastos_diarios']),
-    ('fabrica', 'Fábrica', ['despiece', 'fabrica', 'productos']),
+    ('fabrica', 'Fábrica', ['despiece', 'optimizador', 'fabrica', 'productos']),
     ('analisis', 'Análisis', ['reportes']),
     ('sistema', 'Sistema', ['seguridad', 'configuracion']),
 ]
@@ -269,6 +279,7 @@ _register_route('despiece.pedidos', 'plantillas:index', 'plantillas:pedido_creat
 _register_route(['despiece.pedidos', 'fabrica.pedidos_gestion', 'fabrica.tablero'], 'plantillas:pedido_detail', 'plantillas:orden_pdf', 'plantillas:pedido_pdf')
 _register_route('fabrica.pedidos_gestion', 'plantillas:pedido_liberar', 'plantillas:pedido_cancelar', 'plantillas:pedido_entregar')
 _register_route(['fabrica.pedidos_gestion', 'fabrica.tablero'], 'plantillas:orden_etapa', 'plantillas:orden_reimpresa')
+_register_route('fabrica.optimizador', 'optimizador:calcular', 'optimizador:guardar', 'optimizador:lista', 'optimizador:detalle', 'optimizador:pdf')
 _register_route('fabrica.opcionales', 'plantillas:opcional_create', 'plantillas:opcional_edit', 'plantillas:opcional_delete', 'plantillas:opcional_formulas_guardar', 'plantillas:opcional_accesorios_guardar', 'plantillas:opcional_relaciones_guardar')
 
 _register_route('fabrica.extrusoras', 'config-extrusora-create', 'config-extrusora-edit', 'config-extrusora-delete', 'api-get-extrusoras')

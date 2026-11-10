@@ -28,6 +28,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-067 | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | ✅ Completado | Fuera de plan; FEAT-051 / ADR-027. Migración `plantillas/0018`. Falta probar la cascada con el catálogo real en prod |
 | US-068 | Croquis dibujado en el PDF de la Orden de Fabricación (REQ-068) | ✅ Completado | Fuera de plan; FEAT-052 / ADR-028. Sin migración. Falta confirmar «vista desde el interior» con fábrica y probar con órdenes reales |
 | US-069 | Novedades del sistema generadas desde GitHub (REQ-069) | ✅ Completado | Fuera de plan; FEAT-053 / ADR-029. Migración `novedades/0001`. Faltan los secrets en GitHub y Railway y probarlo en el navegador |
+| US-070 | Optimizador de corte de perfiles de marco (REQ-070) | ✅ Completado | Fuera de plan; FEAT-054 / ADR-030. Migración `optimizador/0001`. Falta probar en el navegador y con el catálogo real |
 
 ## Items completados (sprints anteriores)
 

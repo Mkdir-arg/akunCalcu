@@ -89,3 +89,4 @@
 | [REQ-067](./REQ-067-orden-abertura-desde-catalogo.md) | Abertura de la Orden de Fabricación elegida del catálogo, con la lógica del cotizador | Implementado | 2026-11-10 | [FEAT-051](../features/FEAT-051-orden-abertura-desde-catalogo.md) |
 | [REQ-068](./REQ-068-croquis-orden-fabricacion.md) | Croquis dibujado en el PDF de la Orden de Fabricación (apertura, paños fijos, travesaños) | Implementado | 2026-11-10 | [FEAT-052](../features/FEAT-052-croquis-orden-fabricacion.md) |
 | [REQ-069](./REQ-069-novedades-del-sistema.md) | Novedades del sistema: borrador automático por cada cambio a main, revisión del admin y aviso al equipo | Implementado | 2026-11-10 | [FEAT-053](../features/FEAT-053-novedades-del-sistema.md) |
+| [REQ-070](./REQ-070-optimizador-corte-marco.md) | Optimizador de corte de aluminio: perfiles de marco de varios pedidos acomodados en barras + planilla PDF | Implementado | 2026-11-10 | FEAT-054 |

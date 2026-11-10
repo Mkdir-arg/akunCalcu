@@ -59,6 +59,7 @@
 | [FEAT-051](./FEAT-051-orden-abertura-desde-catalogo.md) | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 | [FEAT-052](./FEAT-052-croquis-orden-fabricacion.md) | Croquis dibujado en el PDF de la Orden de Fabricación (REQ-068) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 | [FEAT-053](./FEAT-053-novedades-del-sistema.md) | Novedades del sistema: borrador por cada cambio a main, bandeja del admin y aviso al equipo (REQ-069) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
+| [FEAT-054](./FEAT-054-optimizador-corte-marco.md) | Optimizador de corte de perfiles de marco: barras, planilla PDF y planes guardados (REQ-070) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 
 ---
 
@@ -70,7 +71,7 @@
 | `pricing` | FEAT-002, FEAT-003, FEAT-010, FEAT-011, FEAT-030, FEAT-031, FEAT-032, FEAT-034 | 2026-08-01 |
 | `comercial` | FEAT-004, FEAT-006, FEAT-011 | 2026-05-17 |
 | `presupuestos` | FEAT-005, FEAT-007, FEAT-008, FEAT-011, FEAT-013, FEAT-015, FEAT-017, FEAT-018, FEAT-019, FEAT-026, FEAT-027, FEAT-030, FEAT-031, FEAT-032, FEAT-033, FEAT-034, FEAT-049, FEAT-050 | 2026-11-10 |
-| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032, FEAT-051, FEAT-052 | 2026-11-10 |
+| `plantillas` | FEAT-019, FEAT-020, FEAT-021, FEAT-022, FEAT-023, FEAT-032, FEAT-051, FEAT-052, FEAT-054 | 2026-11-10 |
 | `configuracion` | FEAT-022 | 2026-07-07 |
 | `usuarios` | FEAT-009, FEAT-020, FEAT-025 | 2026-07-18 |
 | `pricing` | FEAT-036, FEAT-037, FEAT-041, FEAT-045 | 2026-10-22 |
@@ -83,3 +84,4 @@
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |
 | `novedades` | FEAT-053 | 2026-11-10 |
+| `optimizador` | FEAT-054 | 2026-11-10 |

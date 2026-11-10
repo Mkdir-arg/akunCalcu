@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+{% load l10n %}
+
+{% block title %}{{ plan }}{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+    <a class="btn btn-ghost btn-sm" href="{% url 'optimizador:lista' %}"><i class="fas fa-arrow-left"></i>Planes guardados</a>
+
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">{{ plan }}</h1>
+            <p class="page-sub">
+                {{ plan.created_at|date:"d/m/Y H:i" }}{% if plan.usuario %} · {{ plan.usuario.get_username }}{% endif %}
+                · {% for p in resultado.pedidos %}{{ p.numero }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                · disco {{ resultado.params.disco_mm|unlocalize }} mm · despunte {{ resultado.params.despunte_mm|unlocalize }} mm
+            </p>
+        </div>
+        <div class="page-actions">
+            {% if vigente %}
+            {% include 'core/ui/badge.html' with tone="green" label="Vigente" dot=True only %}
+            {% else %}
+            {% include 'core/ui/badge.html' with tone="amber" label="Desactualizado" icon="fas fa-triangle-exclamation" only %}
+            {% endif %}
+            <a class="btn btn-primary" href="{% url 'optimizador:pdf' plan.pk %}" target="_blank" rel="noopener"><i class="fas fa-file-pdf"></i>Planilla PDF</a>
+        </div>
+    </div>
+
+    {% if not vigente %}
+    <div class="card card-pad" style="border-color: #FEC84B; background: var(--t-warn-soft)" role="status">
+        Después de guardar este plan cambió la medida, el marco o el color de alguna orden (o se borró). Lo que se ve es el cálculo de aquel momento: conviene armar un plan nuevo.
+    </div>
+    {% endif %}
+
+    {% include 'optimizador/_resultado.html' with resultado=resultado only %}
+</div>
+{% endblock %}

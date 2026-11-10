@@ -27,6 +27,7 @@ urlpatterns = [
     path('agenda/', include('agenda.urls')),
     path('solicitudes/', include('solicitudes.urls')),
     path('novedades/', include('novedades.urls')),
+    path('optimizador/', include('optimizador.urls')),
 ]
 
 # Serve static files in development

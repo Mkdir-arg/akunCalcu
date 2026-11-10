@@ -1,0 +1,5 @@
+{% comment %}Pestañas del optimizador. Parámetros: pestana (nuevo|planes), total_planes. Usar con `only`.{% endcomment %}
+<nav class="tabs" aria-label="Optimizador">
+    <a class="tab{% if pestana == 'nuevo' %} on{% endif %}" href="{% url 'optimizador:nuevo' %}">Nuevo plan</a>
+    <a class="tab{% if pestana == 'planes' %} on{% endif %}" href="{% url 'optimizador:lista' %}">Planes guardados <span class="cnt">{{ total_planes }}</span></a>
+</nav>

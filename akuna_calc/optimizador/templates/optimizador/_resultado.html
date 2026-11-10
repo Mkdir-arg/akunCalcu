@@ -1,0 +1,132 @@
+{% comment %}Resultado de un plan de corte (lo comparten «calcular» y «detalle»). Parámetro: resultado (dict). Usar con `only`.{% endcomment %}
+{% load l10n %}
+<style>
+.opt-g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .opt-g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.opt-kpi { padding: 16px 20px; }
+.opt-kpi-k { font: 500 13px Inter, sans-serif; color: var(--t-ink-3); }
+.opt-kpi-v { font: 600 28px/1.2 Inter, sans-serif; letter-spacing: -.02em; margin-top: 6px; color: var(--t-ink); }
+.opt-kpi-s { font: 500 13px Inter, sans-serif; margin-top: 4px; color: var(--t-ink-3); }
+.opt-ok { color: var(--t-ok); }
+.opt-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font: 500 13px Inter, sans-serif; color: #344054; }
+.opt-legend span.it { display: inline-flex; align-items: center; gap: 6px; }
+.opt-sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; box-sizing: border-box; }
+.opt-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--t-line); }
+.opt-head h2 { margin: 0; font: 600 16px/1.3 Inter, sans-serif; color: var(--t-ink); }
+.opt-barras { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.opt-fila { display: grid; grid-template-columns: 64px minmax(0, 1fr) 140px; gap: 16px; align-items: center; }
+@media (max-width: 640px) { .opt-fila { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.opt-bar { display: flex; height: 44px; border: 1px solid var(--t-line-strong); border-radius: 8px; overflow: hidden; background: #fff; }
+.opt-pz { display: flex; align-items: center; justify-content: center; font: 600 12px/1 Inter, sans-serif; border-right: 2px solid #fff; box-sizing: border-box; overflow: hidden; white-space: nowrap; flex: 0 0 auto; }
+.opt-p1 { background: #1F4FD8; color: #fff; }
+.opt-p2 { background: #FEC84B; color: #101828; }
+.opt-p3 { background: #A6F4C5; color: #05603A; }
+.opt-dsp { background: #475467; flex: 0 0 auto; }
+.opt-keep { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; font: 600 12px Inter, sans-serif; border: 2px dashed #1F4FD8; border-radius: 0 6px 6px 0; background: #EEF3FF; color: #163BA6; box-sizing: border-box; }
+.opt-waste { flex: 1 1 auto; background: repeating-linear-gradient(135deg, #D0D5DD 0 3px, #F9FAFB 3px 7px); }
+.opt-sob { font: 500 13px Inter, sans-serif; color: var(--t-ink-3); }
+.opt-sob.keep { color: var(--t-accent); }
+.opt-aviso { margin: 0 20px 16px; padding: 10px 14px; border-radius: 10px; background: var(--t-danger-soft); color: var(--t-danger); font: 500 13px Inter, sans-serif; }
+</style>
+
+<div class="opt-g4">
+    <div class="card opt-kpi">
+        <div class="opt-kpi-k">Barras a usar</div>
+        <div class="opt-kpi-v">{{ resultado.totales.barras }}</div>
+        <div class="opt-kpi-s{% if resultado.totales.es_minimo %} opt-ok{% endif %}">{% if resultado.totales.es_minimo %}Es el mínimo posible{% else %}{{ resultado.n_ordenes }} órdenes{% endif %}</div>
+    </div>
+    <div class="card opt-kpi">
+        <div class="opt-kpi-k">Perfil cortado</div>
+        <div class="opt-kpi-v">{{ resultado.totales.cortado_m|unlocalize }} m</div>
+        <div class="opt-kpi-s">de {{ resultado.totales.en_barras_m|unlocalize }} m en barras · {{ resultado.totales.cortes }} cortes</div>
+    </div>
+    <div class="card opt-kpi">
+        <div class="opt-kpi-k">Desperdicio</div>
+        <div class="opt-kpi-v">{{ resultado.totales.desperdicio_pct|unlocalize }} %</div>
+        <div class="opt-kpi-s">{{ resultado.totales.desperdicio_m|unlocalize }} m a chatarra</div>
+    </div>
+    <div class="card opt-kpi">
+        <div class="opt-kpi-k">Recortes a guardar</div>
+        <div class="opt-kpi-v">{{ resultado.totales.recortes|length }}</div>
+        <div class="opt-kpi-s">{% for r in resultado.totales.recortes %}{{ r }} mm{% if not forloop.last %}, {% endif %}{% empty %}Ninguno{% endfor %}</div>
+    </div>
+</div>
+
+{% if resultado.totales.no_entran %}
+<div class="opt-aviso" style="margin:0" role="alert"><i class="fas fa-triangle-exclamation"></i> Hay {{ resultado.totales.no_entran }} corte{{ resultado.totales.no_entran|pluralize }} más largo{{ resultado.totales.no_entran|pluralize }} que la barra: no se acomodaron. Se detallan en el perfil correspondiente.</div>
+{% endif %}
+
+<div class="opt-legend">
+    <span class="muted">Referencias</span>
+    {% for p in resultado.pedidos %}<span class="it"><span class="opt-sw opt-{{ p.cls }}"></span>{{ p.numero }} {{ p.cliente }}</span>{% endfor %}
+    <span class="it"><span class="opt-sw" style="border: 2px dashed #1F4FD8; background: #EEF3FF"></span>Recorte que se guarda</span>
+    <span class="it"><span class="opt-sw opt-waste" style="border: 1px solid #D0D5DD; flex: none"></span>Desperdicio</span>
+</div>
+
+{% for g in resultado.grupos %}
+<section class="card overflow-hidden">
+    <div class="opt-head">
+        <div>
+            <h2>Perfil {{ g.codigo }}{% if g.descripcion %} · {{ g.descripcion }}{% endif %}</h2>
+            <div class="muted text-xs" style="margin-top: 2px">Color {{ g.color }} · barras de {{ g.largo_barra }} mm</div>
+        </div>
+        <span style="flex: 1"></span>
+        {% include 'core/ui/badge.html' with tone="gray" label=g.n_barras|stringformat:"d"|add:" barras" only %}
+        {% include 'core/ui/badge.html' with tone="green" label=g.desperdicio_pct|unlocalize|add:" % de desperdicio" dot=True only %}
+    </div>
+    {% for aviso in g.no_entran %}
+    <p class="opt-aviso" style="margin-top: 16px">No entra en la barra: corte de {{ aviso.largo }} mm de la orden {{ aviso.orden }} ({{ aviso.pedido }}).</p>
+    {% endfor %}
+    <div class="opt-barras">
+        {% for b in g.barras %}
+        <div class="opt-fila">
+            <span class="strong text-sm">Barra {{ b.n }}</span>
+            <div class="opt-bar">
+                <div class="opt-dsp" style="width: {{ b.despunte_pct|unlocalize }}%" title="Despunte"></div>
+                {% for p in b.piezas %}<div class="opt-pz opt-{{ p.cls }}" style="width: {{ p.ancho_pct|unlocalize }}%" title="Orden {{ p.orden }}, {{ p.largo }} mm">{% if not p.corta %}{{ p.largo }} · {{ p.orden }}{% endif %}</div>{% endfor %}
+                {% if b.guarda %}<div class="opt-keep" title="Recorte que se guarda">{{ b.sobrante }} mm</div>{% else %}<div class="opt-waste" title="Desperdicio {{ b.sobrante }} mm"></div>{% endif %}
+            </div>
+            <span class="opt-sob{% if b.guarda %} keep{% endif %}">{% if b.guarda %}Guardar {{ b.sobrante }} mm{% else %}Sobra {{ b.sobrante }} mm{% endif %}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="table-wrap" style="border-top: 1px solid var(--t-line)">
+        <table class="tbl">
+            <thead><tr><th>Largo de corte</th><th class="num">Cantidad</th><th>Ángulo</th><th>Órdenes</th></tr></thead>
+            <tbody>
+                {% for r in g.lista %}
+                <tr><td class="strong">{{ r.largo }} mm</td><td class="num">{{ r.cantidad }}</td><td class="muted">{% if r.angulo %}{{ r.angulo }}°{% else %}—{% endif %}</td><td>{{ r.ordenes }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% empty %}
+<section class="card card-pad">
+    <p class="muted" style="margin: 0">Ninguna de las órdenes elegidas se pudo calcular. Revisá los motivos de abajo.</p>
+</section>
+{% endfor %}
+
+{% if resultado.excluidas %}
+<section class="card overflow-hidden" aria-labelledby="t-fuera">
+    <div class="opt-head">
+        {% include 'core/ui/badge.html' with tone="amber" label=resultado.excluidas|length|stringformat:"d" only %}
+        <h2 id="t-fuera">Órdenes que quedaron afuera del cálculo</h2>
+    </div>
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead><tr><th>Orden</th><th>Pedido</th><th>Motivo</th><th><span class="sr-only">Acción</span></th></tr></thead>
+            <tbody>
+                {% for e in resultado.excluidas %}
+                <tr>
+                    <td class="strong">{{ e.orden }}</td>
+                    <td>{{ e.pedido }}</td>
+                    <td style="white-space: normal">{{ e.motivo }}</td>
+                    <td class="num"><a class="btn btn-secondary btn-sm" href="{{ e.url }}">{{ e.accion }}</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}

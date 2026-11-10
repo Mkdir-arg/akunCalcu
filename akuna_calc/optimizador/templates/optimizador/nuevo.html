@@ -1,0 +1,97 @@
+{% extends 'core/base.html' %}
+{% load l10n %}
+
+{% block title %}Optimizador de corte{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Optimizador de corte</h1>
+        <p class="page-sub">Junta los cortes de marco de varios pedidos y los acomoda en la menor cantidad de barras.</p>
+    </div>
+</div>
+
+<div class="mb-5">{% include 'optimizador/_tabs.html' with pestana=pestana total_planes=total_planes only %}</div>
+
+<form method="post" action="{% url 'optimizador:calcular' %}">
+    {% csrf_token %}
+    <div class="opt-grid">
+        <div class="opt-main">
+            <section class="card overflow-hidden" aria-labelledby="t-ped">
+                <div class="opt-card-head">
+                    <h2 id="t-ped" class="opt-sec">1. Elegí los pedidos</h2>
+                    <span class="muted text-xs">Pedidos liberados con órdenes por fabricar o en corte</span>
+                </div>
+                {% if form.pedidos.errors %}<p class="field-error" style="padding:0 20px">{{ form.pedidos.errors.0 }}</p>{% endif %}
+                <div class="table-wrap">
+                    <table class="tbl">
+                        <thead>
+                            <tr>
+                                <th><span class="sr-only">Elegir</span></th>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Órdenes que entran</th>
+                                <th class="num">Cortes</th>
+                                <th>Comprometido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in resumen %}
+                            <tr>
+                                <td><input type="checkbox" name="pedidos" value="{{ fila.pedido.pk }}" id="ped-{{ fila.pedido.pk }}"{% if fila.pedido.pk|stringformat:"s" in seleccion %} checked{% endif %}{% if not fila.entran %} disabled{% endif %}></td>
+                                <td><label for="ped-{{ fila.pedido.pk }}" class="strong">{{ fila.pedido.numero }}</label></td>
+                                <td><span class="strong">{{ fila.pedido.cliente }}</span></td>
+                                <td>
+                                    {% include 'core/ui/badge.html' with tone=fila.tono label=fila.etiqueta dot=True only %}
+                                </td>
+                                <td class="num">{{ fila.cortes }}</td>
+                                <td class="muted">{{ fila.fecha|date:"d/m/Y"|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay pedidos para optimizar" text="Aparecen los pedidos en fábrica o en producción con órdenes por fabricar o en corte." icon="fas fa-ruler-horizontal" only %}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="card card-pad opt-side" aria-labelledby="t-par">
+            <h2 id="t-par" class="opt-sec">2. Parámetros de la sierra</h2>
+            <div class="field">
+                <label for="id_disco_mm">Espesor del disco (mm)</label>
+                <input type="text" inputmode="decimal" id="id_disco_mm" name="disco_mm" value="{{ form.disco_mm.value|unlocalize|default:'' }}" required>
+                <p class="field-hint">Se descuenta en cada corte.</p>
+                {% for error in form.disco_mm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="id_despunte_mm">Despunte (mm)</label>
+                <input type="text" inputmode="decimal" id="id_despunte_mm" name="despunte_mm" value="{{ form.despunte_mm.value|unlocalize|default:'' }}" required>
+                <p class="field-hint">Lo que se recorta al inicio de cada barra.</p>
+                {% for error in form.despunte_mm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="id_largo_barra_mm">Largo de barra (mm)</label>
+                <input type="number" min="1" id="id_largo_barra_mm" name="largo_barra_mm" value="{{ form.largo_barra_mm.value|default:'' }}" placeholder="El de cada perfil">
+                <p class="field-hint">Vacío: el del catálogo de cada perfil.</p>
+                {% for error in form.largo_barra_mm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="id_recorte_min_mm">Guardar recortes desde (mm)</label>
+                <input type="number" min="1" id="id_recorte_min_mm" name="recorte_min_mm" value="{{ form.recorte_min_mm.value|default:'' }}" placeholder="El mínimo del perfil">
+                <p class="field-hint">Vacío: el mínimo reutilizable de cada perfil.</p>
+                {% for error in form.recorte_min_mm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary justify-center"><i class="fas fa-ruler-horizontal"></i>Calcular cortes</button>
+        </aside>
+    </div>
+</form>
+
+<style>
+.opt-grid { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.opt-main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.opt-side { flex: 1 1 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; }
+.opt-card-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--t-line); }
+.opt-sec { margin: 0; font: 600 16px/1.3 Inter, system-ui, sans-serif; color: var(--t-ink); }
+</style>
+{% endblock %}

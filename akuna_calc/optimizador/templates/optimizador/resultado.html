@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+{% load l10n %}
+
+{% block title %}Plan de corte · marco{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+    <a class="btn btn-ghost btn-sm" href="{% url 'optimizador:nuevo' %}"><i class="fas fa-arrow-left"></i>Volver a elegir pedidos</a>
+
+    <form method="post" action="{% url 'optimizador:guardar' %}" id="form-guardar">
+        {% csrf_token %}
+        {% for pk in pedidos_ids %}<input type="hidden" name="pedidos" value="{{ pk }}">{% endfor %}
+        <input type="hidden" name="disco_mm" value="{{ resultado.params.disco_mm|unlocalize }}">
+        <input type="hidden" name="despunte_mm" value="{{ resultado.params.despunte_mm|unlocalize }}">
+        <input type="hidden" name="largo_barra_mm" value="{{ resultado.params.largo_barra_mm|default_if_none:'' }}">
+        <input type="hidden" name="recorte_min_mm" value="{{ resultado.params.recorte_min_mm|default_if_none:'' }}">
+
+        <div class="page-head">
+            <div>
+                <h1 class="page-title">Plan de corte · marco</h1>
+                <p class="page-sub">{% for p in resultado.pedidos %}{{ p.numero }}{% if not forloop.last %}, {% endif %}{% endfor %} · {{ resultado.n_ordenes }} órdenes · disco {{ resultado.params.disco_mm|unlocalize }} mm · despunte {{ resultado.params.despunte_mm|unlocalize }} mm</p>
+            </div>
+            <div class="page-actions">
+                <button type="submit" class="btn btn-primary"{% if not resultado.grupos %} disabled{% endif %}><i class="fas fa-save"></i>Guardar plan</button>
+            </div>
+        </div>
+
+        <div class="space-y-5">
+            {% include 'optimizador/_resultado.html' with resultado=resultado only %}
+
+            {% if resultado.grupos %}
+            <section class="card card-pad flex flex-wrap items-center justify-between gap-4">
+                <label class="inline-flex items-center gap-3" style="font: 500 14px Inter, sans-serif; color: #344054">
+                    <input type="checkbox" name="pasar_a_corte" checked style="width: 18px; height: 18px; accent-color: var(--t-accent); margin: 0">
+                    Al guardar, pasar las {{ resultado.n_ordenes }} órdenes a la etapa <b>Corte</b>
+                </label>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>Guardar plan</button>
+            </section>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'agenda',
     'solicitudes',
     'novedades',
+    'optimizador',
 ]
 
 MIDDLEWARE = [

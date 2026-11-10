@@ -1,5 +1,4 @@
 import io
-import re
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -25,6 +24,7 @@ from .forms import (
     OrdenFabricacionForm, PedidoFabricaForm,
 )
 from .services import abertura_catalogo, circuito
+from .services.medidas import ancho_alto as _ancho_alto
 from .services.croquis import alto_disponible, croquis_de_orden
 from .utils import cortar_a_max_length
 
@@ -439,13 +439,6 @@ def _caracteristicas_hoja(orden):
             etiqueta = 'ALTURA DEL TRABAJO' if campo == 'altura_trabajo' else orden._meta.get_field(campo).verbose_name.upper()
             items.append((etiqueta, valor))
     return [(items[i], items[i + 1] if i + 1 < len(items) else None) for i in range(0, len(items), 2)]
-
-
-def _ancho_alto(medida):
-    """Parte 'ancho x alto' solo si ambos lados son números; si no, todo va en ancho."""
-    texto = (medida or '').strip()
-    m = re.fullmatch(r'\s*(\d[\d.,]*)\s*[xX×]\s*(\d[\d.,]*)\s*', texto)
-    return (m.group(1), m.group(2)) if m else (texto, '')
 
 
 def _contexto_hoja(orden, posicion, total_ordenes):

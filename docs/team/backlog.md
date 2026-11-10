@@ -48,6 +48,7 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-067 | Como responsable de fábrica, quiero corregir la abertura de una orden eligiendo de los desplegables en cascada del cotizador para que la orden tenga siempre una combinación del catálogo y llegue completa al taller | Grande ✅ |
 | US-068 | Como responsable de fábrica, quiero que la Orden de Fabricación traiga dibujada la abertura (sentido de apertura, paños fijos, travesaños) para que el taller fabrique sin interpretar el texto ni dibujarla a mano | Mediano ✅ |
 | US-069 | Como integrante del equipo de Akuna, quiero ver las novedades del sistema al entrar para usar las funciones nuevas desde el primer día sin depender de que alguien me avise | Mediano ✅ |
+| US-070 | Como responsable de fábrica, quiero elegir varios pedidos liberados y que el sistema calcule cómo cortar los perfiles de marco en barras para usar menos aluminio y darle al que corta una planilla clara (FEAT-054) | Grande ✅ |
 
 ---
 
@@ -91,3 +92,6 @@ _Detectados durante REQ-062 (2026-10-22); no se tocaron para no mezclar alcance.
 - **Rutas sin registrar en `usuarios/access_control.py`** (`presupuestos-item-editar`, `presupuestos-items-reordenar`, `presupuestos-observaciones`, `perfiles-list`): dejan pasar a cualquier usuario logueado. Candidato a `/fix`
 - **Ícono `fa-arrow-up-arrow-down`** del botón "Orden" en `presupuestos/detalle.html`: no existe en FontAwesome 6.4.0, el botón se ve sin ícono
 - **`pricing/services/formula_parser.py:32` usa `ast.Num`**, que no existe en Python 3.14. Prod usa 3.12 y hoy anda; rompe el día que se suba de versión
+- **Optimizador (FEAT-054):** con más de 3 pedidos se repiten los colores de las barras (`CLASES_PEDIDO=3` en `optimizador/services/plan.py`)
+- **Optimizador:** `_resultado.html` usa colores hex a mano en vez de las variables `--t-*` del rediseño Taller
+- **Optimizador:** N+1 en `optimizador/services/despiece.py` (consulta despiece y perfil por orden) al cargar «Nuevo plan»
