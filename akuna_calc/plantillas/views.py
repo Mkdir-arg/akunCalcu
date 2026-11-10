@@ -25,7 +25,7 @@ from .forms import (
     OrdenFabricacionForm, PedidoFabricaForm,
 )
 from .services import abertura_catalogo, circuito
-from .services.croquis import croquis_de_orden
+from .services.croquis import alto_disponible, croquis_de_orden
 from .utils import cortar_a_max_length
 
 
@@ -456,13 +456,14 @@ def _contexto_hoja(orden, posicion, total_ordenes):
         motivo = ultima.nota
     else:
         motivo = ''
+    caracteristicas = _caracteristicas_hoja(orden)
     return {
         'orden': orden,
         'medidas': medidas,
         'filas': [{'m': m, 'ancho': ancho, 'alto': alto} for m in medidas for ancho, alto in [_ancho_alto(m.medida)]],
         'unidades': sum(m.cantidad or 0 for m in medidas),
-        'caracteristicas': _caracteristicas_hoja(orden),
-        'croquis': croquis_de_orden(orden, medidas),
+        'caracteristicas': caracteristicas,
+        'croquis': croquis_de_orden(orden, medidas, alto_disponible(orden, len(medidas), len(caracteristicas))),
         'motivo_revision': motivo,
         'posicion': posicion,
         'total_ordenes': total_ordenes,

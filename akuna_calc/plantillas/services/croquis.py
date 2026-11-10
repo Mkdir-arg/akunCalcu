@@ -13,9 +13,43 @@ from plantillas.utils import cortar_a_max_length
 from pricing.aperturas import describir_apertura
 from pricing.elevacion import computar_layout, svg_elevacion
 
-# Caja máxima del dibujo en la hoja A4, en mm.
-CAJA_ANCHO_MM = 100
-CAJA_ALTO_MM = 30
+# Caja del dibujo en la hoja A4, en mm. El alto se adapta a lo que deja libre el resto de la
+# hoja (ver `alto_disponible`), entre el mínimo y el máximo.
+CAJA_ANCHO_MM = 110
+CAJA_ALTO_MIN_MM = 20
+CAJA_ALTO_MAX_MM = 70
+
+# Medido renderizando la hoja con xhtml2pdf (REQ-068): sin revisión, nota ni características
+# el dibujo puede llegar a 103 mm; cada bloque opcional resta lo suyo. Margen de 6 mm.
+_ALTO_LIBRE_MM = 103 - 6
+_REVISION_MM = 17
+_NOTA_MM, _NOTA_RENGLON_MM, _NOTA_CHARS = 12, 5.5, 95
+_CARACT_MM, _CARACT_FILA_MM = 10, 7
+_MEDIDA_EXTRA_MM = 11
+_TIPO_RENGLON_MM, _TIPO_CHARS = 7, 22
+
+
+def _renglones(texto, ancho):
+    lineas = (texto or '').strip().splitlines()
+    return sum(max(1, -(-len(linea) // ancho)) for linea in lineas)
+
+
+def alto_disponible(orden, n_medidas, n_caracteristicas):
+    """Alto en mm que puede ocupar el dibujo sin que la hoja pase a una segunda página."""
+    alto = _ALTO_LIBRE_MM
+    if (orden.revision or 0) > 1:
+        alto -= _REVISION_MM
+    texto_nota = '\n'.join(t for t in (orden.nota, orden.estructura) if (t or '').strip())
+    if texto_nota:
+        alto -= _NOTA_MM + _NOTA_RENGLON_MM * (_renglones(texto_nota, _NOTA_CHARS) - 1)
+    if n_caracteristicas:
+        alto -= _CARACT_MM + _CARACT_FILA_MM * n_caracteristicas
+    alto -= _MEDIDA_EXTRA_MM * max(n_medidas - 1, 0)
+    alto -= _TIPO_RENGLON_MM * max(_renglones(orden.tipo_abertura or '—', _TIPO_CHARS) - 1, 0)
+    if alto < 30:
+        # En hojas muy cargadas la estimación se queda corta por 1-2 mm: se resta más.
+        alto -= 2
+    return max(CAJA_ALTO_MIN_MM, min(CAJA_ALTO_MAX_MM, alto))
 
 
 def _snapshot(item):
@@ -79,7 +113,7 @@ def _texto_travesano(dibujo):
     return f'{cantidad} {sentido}{plural} · secciones {orden}: {medidas} mm{extra}'
 
 
-def croquis_de_orden(orden, medidas):
+def croquis_de_orden(orden, medidas, alto_mm=None):
     """Contexto del croquis para `_orden_hoja.html`, o None si queda la grilla vacía."""
     from presupuestos.pdf_descriptions import build_dibujo_params
 
@@ -97,7 +131,7 @@ def croquis_de_orden(orden, medidas):
         return None
 
     con_cotas = _medida_coincide(medidas, dibujo['ancho'], dibujo['alto'])
-    svg = svg_elevacion(dibujo, cotas=con_cotas, caja_mm=(CAJA_ANCHO_MM, CAJA_ALTO_MM))
+    svg = svg_elevacion(dibujo, cotas=con_cotas, caja_mm=(CAJA_ANCHO_MM, alto_mm or 30))
     tamano = re.search(r'width="([\d.]+)mm" height="([\d.]+)mm"', svg)
 
     return {

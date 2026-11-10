@@ -64,8 +64,10 @@ cotas nunca contradicen la tabla de MEDIDAS.
 - **El dibujo existe dos veces (JS y Python).** Cada archivo apunta al otro (ADR-028).
 - **Tamaño del `<img>` como texto con punto.** El template localizado escribía «36,3mm» y xhtml2pdf
   ignoraba ese CSS, por eso la imagen salía chiquita.
-- **La caja del dibujo mide 100 × 30 mm.** Es lo que deja libre la grilla anterior en una hoja cargada.
-  Las aberturas altas salen angostas.
+- **El alto del dibujo se adapta a cada hoja** (`alto_disponible`): entre 20 y 70 mm, según cuánto ocupan
+  la banda de revisión, la nota, las características, las medidas extra y un tipo de abertura largo. Los
+  costos se midieron renderizando con xhtml2pdf y se verificaron 192 combinaciones: ninguna hoja que entraba
+  en una A4 con la grilla pasa a dos páginas. Una orden típica queda en unos 60 mm (antes eran 30 fijos).
 - **Diferencias con el JS, impuestas por svglib:** el texto se centra a mano porque no hay
   `dominant-baseline`, y el mosquitero va con rayas sueltas en lugar de `<pattern>`. Además se agregan las
   cotas de las secciones de tirantes.

@@ -134,3 +134,26 @@ class CroquisOrdenTest(TestCase):
         orden = self._orden(self.item)
         self.client.logout()
         self.assertEqual(self.client.get(f'/plantillas/ordenes/{orden.pk}/pdf/').status_code, 302)
+
+
+class AltoDisponibleTest(SimpleTestCase):
+    def _orden(self, **kw):
+        from types import SimpleNamespace
+        datos = {'revision': 1, 'nota': '', 'estructura': '', 'tipo_abertura': 'Ventana corrediza'}
+        datos.update(kw)
+        return SimpleNamespace(**datos)
+
+    def test_hoja_liviana_usa_el_maximo(self):
+        from .services.croquis import CAJA_ALTO_MAX_MM, alto_disponible
+        self.assertEqual(alto_disponible(self._orden(), 1, 0), CAJA_ALTO_MAX_MM)
+
+    def test_revision_nota_y_caracteristicas_achican_el_dibujo(self):
+        from .services.croquis import alto_disponible
+        liviana = alto_disponible(self._orden(), 1, 0)
+        cargada = alto_disponible(self._orden(revision=2, nota='Colocar con premarco.'), 1, 3)
+        self.assertLess(cargada, liviana)
+
+    def test_hoja_muy_cargada_no_baja_del_minimo(self):
+        from .services.croquis import CAJA_ALTO_MIN_MM, alto_disponible
+        orden = self._orden(revision=2, nota='x' * 400, tipo_abertura='y' * 80)
+        self.assertEqual(alto_disponible(orden, 4, 5), CAJA_ALTO_MIN_MM)
