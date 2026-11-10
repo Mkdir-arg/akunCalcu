@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'gastos_diarios',
     'agenda',
     'solicitudes',
+    'novedades',
 ]
 
 MIDDLEWARE = [
@@ -91,6 +92,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'usuarios.context_processors.sidebar_access',
+                'novedades.context_processors.novedades',
             ],
         },
     },

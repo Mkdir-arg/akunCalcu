@@ -1,0 +1,29 @@
+name: Novedades del sistema
+
+# REQ-069: cada cambio que llega a main deja un borrador de noticia en AkunCalcu.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  borrador:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Enviar borrador de noticia
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          NOVEDADES_URL: ${{ secrets.NOVEDADES_URL }}
+          NOVEDADES_BOT_SECRET: ${{ secrets.NOVEDADES_BOT_SECRET }}
+        run: python .github/scripts/novedad_borrador.py

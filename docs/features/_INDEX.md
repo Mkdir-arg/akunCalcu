@@ -57,6 +57,7 @@
 | [FEAT-049](./FEAT-049-planilla-colocacion.md) | Planilla de Colocación (PDF) desde el presupuesto confirmado, con envío por WhatsApp a números autorizados (REQ-057, RF-02) + base común de PDF | Implementado (en `development`) | 2026-11-09 | Sprint 2 RF Akun |
 | [FEAT-050](./FEAT-050-planilla-medicion.md) | Planilla de Medición (PDF) desde el presupuesto, en cualquier estado (REQ-056, RF-03) | Implementado (en `development`) | 2026-11-10 | Sprint 2 RF Akun |
 | [FEAT-051](./FEAT-051-orden-abertura-desde-catalogo.md) | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
+| [FEAT-053](./FEAT-053-novedades-del-sistema.md) | Novedades del sistema: borrador por cada cambio a main, bandeja del admin y aviso al equipo (REQ-069) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 
 ---
 
@@ -80,3 +81,4 @@
 | `security` | FEAT-011, FEAT-012, FEAT-029, FEAT-035 | 2026-08-01 |
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |
+| `novedades` | FEAT-053 | 2026-11-10 |

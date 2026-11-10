@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{% if noticia %}Revisar noticia{% else %}Nueva noticia{% endif %}{% endblock %}
+
+{% block content %}
+{% url 'novedades:bandeja' as bandeja_url %}
+{% if noticia %}
+{% include 'core/ui/page_header.html' with title="Revisar noticia" subtitle="Corregí el texto para que lo entienda el equipo y publicala." back_url=bandeja_url back_label="Bandeja de novedades" only %}
+{% else %}
+{% include 'core/ui/page_header.html' with title="Nueva noticia" subtitle="Una novedad escrita a mano, sin pasar por GitHub." back_url=bandeja_url back_label="Bandeja de novedades" only %}
+{% endif %}
+
+<div class="grid gap-4 {% if noticia and noticia.texto_tecnico %}lg:grid-cols-2{% endif %}">
+    {% if noticia and noticia.texto_tecnico %}
+    <section class="card card-pad min-w-0">
+        <p class="sec-label">Lo que llegó de GitHub</p>
+        <pre class="text-xs text-ink-2 bg-ground rounded-lg p-3 mt-2 whitespace-pre-wrap break-words">{{ noticia.texto_tecnico }}</pre>
+        <p class="text-xs text-ink-3 mt-2">{{ noticia.origen_corto }}{% if noticia.sha %} · {{ noticia.sha_corto }}{% endif %} · {{ noticia.creada_en|date:"d/m/Y H:i" }}{% if noticia.autor_git %} · {{ noticia.autor_git }}{% endif %}</p>
+    </section>
+    {% endif %}
+
+    <form method="post" class="card card-pad min-w-0 flex flex-col gap-4" novalidate>
+        {% csrf_token %}
+        <p class="sec-label">Cómo lo va a leer el equipo</p>
+        {% for field in form %}
+        <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="field-hint">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="flex flex-wrap justify-end gap-2">
+            {% if noticia and noticia.estado != 'descartada' %}
+            <button type="submit" name="accion" value="descartar" class="btn btn-ghost">Descartar</button>
+            {% endif %}
+            <button type="submit" name="accion" value="guardar" class="btn btn-secondary">Guardar</button>
+            {% if not noticia or noticia.estado != 'publicada' %}
+            <button type="submit" name="accion" value="publicar" class="btn btn-primary">Publicar</button>
+            {% else %}
+            <button type="submit" name="accion" value="publicar" class="btn btn-primary">Guardar publicada</button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Novedades{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Novedades</h1>
+        <p class="page-sub">Lo nuevo y lo corregido en el sistema.</p>
+    </div>
+    <nav class="tabs" aria-label="Filtrar por tipo">
+        <a class="tab {% if not tipo_filter %}on{% endif %}" href="{% url 'novedades:lista' %}">Todo</a>
+        {% for clave, etiqueta in tipo_choices %}
+        <a class="tab {% if tipo_filter == clave %}on{% endif %}" href="?tipo={{ clave }}">{{ etiqueta }}</a>
+        {% endfor %}
+    </nav>
+</div>
+
+<section class="card overflow-hidden">
+    {% regroup page_obj.object_list by publicada_en|date:"F Y" as meses %}
+    {% for mes in meses %}
+    <p class="sec-label px-5 pt-5 pb-1">{{ mes.grouper|capfirst }}</p>
+    {% for n in mes.list %}
+    <article class="grid gap-4 px-5 py-4 border-b border-line-soft" style="grid-template-columns: 64px minmax(0,1fr)">
+        <div class="text-ink-3 text-sm leading-tight" style="font-variant-numeric: tabular-nums">
+            <span class="block text-xl font-bold text-ink">{{ n.publicada_en|date:"j" }}</span>{{ n.publicada_en|date:"b" }}
+        </div>
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                {% if n.es_nueva %}{% include 'core/ui/badge.html' with label="Sin leer" tone="blue" dot=True only %}{% endif %}
+                {% if n.tipo == 'nuevo' %}{% include 'core/ui/badge.html' with label="Nuevo" tone="blue" only %}
+                {% elif n.tipo == 'arreglo' %}{% include 'core/ui/badge.html' with label="Arreglo" tone="green" only %}
+                {% else %}{% include 'core/ui/badge.html' with label="Mejora" tone="violet" only %}{% endif %}
+                {% include 'core/ui/badge.html' with label=n.modulo_label tone="gray" only %}
+            </div>
+            <h2 class="text-base font-semibold text-ink mt-1">{{ n.titulo }}</h2>
+            {% if n.texto %}<p class="text-ink-2 mt-1" style="max-width:68ch">{{ n.texto|linebreaksbr }}</p>{% endif %}
+            {% if n.modulo_url %}<a href="{{ n.modulo_url }}" class="inline-block mt-2 text-sm font-medium text-accent hover:underline">Ir a {{ n.modulo_label }} →</a>{% endif %}
+        </div>
+    </article>
+    {% endfor %}
+    {% empty %}
+    {% include 'core/ui/empty_state.html' with title="Todavía no hay novedades" text="Cuando el sistema sume algo nuevo, lo vas a ver acá." icon="far fa-newspaper" only %}
+    {% endfor %}
+    {% include 'core/ui/pagination.html' with page_obj=page_obj query=query total_label="novedades" only %}
+</section>
+{% endblock %}

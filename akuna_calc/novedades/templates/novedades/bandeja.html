@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Bandeja de novedades{% endblock %}
+
+{% block content %}
+{% url 'novedades:crear' as crear_url %}
+{% include 'core/ui/page_header.html' with title="Bandeja de novedades" subtitle="Borradores que llegan solos desde GitHub. Nada se publica sin revisión." action_url=crear_url action_label="Nueva noticia" only %}
+
+<nav class="tabs mb-4" aria-label="Filtrar por estado">
+    {% for clave, etiqueta, cantidad in estados %}
+    <a class="tab {% if estado_filter == clave %}on{% endif %}" href="?estado={{ clave }}">{{ etiqueta }}<span class="cnt">{{ cantidad }}</span></a>
+    {% endfor %}
+    <a class="tab {% if not estado_filter %}on{% endif %}" href="?estado=todas">Todas</a>
+</nav>
+
+<section class="card overflow-hidden">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr><th>Origen</th><th>Título</th><th>Tipo</th><th>Módulo</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for n in page_obj %}
+                <tr>
+                    <td class="text-sm">{{ n.origen_corto }}{% if n.sha %}<br><code class="text-xs text-ink-3">{{ n.sha_corto }}</code>{% endif %}</td>
+                    <td class="strong">{{ n.titulo }}<br><span class="text-xs text-ink-3">{{ n.creada_en|date:"d/m/Y H:i" }}</span></td>
+                    <td>{{ n.get_tipo_display }}</td>
+                    <td>{{ n.modulo_label }}</td>
+                    <td>
+                        {% if n.estado == 'publicada' %}{% include 'core/ui/badge.html' with label="Publicada" tone="green" dot=True only %}
+                        {% elif n.estado == 'descartada' %}{% include 'core/ui/badge.html' with label="Descartada" tone="gray" dot=True only %}
+                        {% else %}{% include 'core/ui/badge.html' with label="Borrador" tone="amber" dot=True only %}{% endif %}
+                    </td>
+                    <td class="text-right"><a class="btn btn-secondary btn-sm" href="{% url 'novedades:editar' n.pk %}">{% if n.estado == 'borrador' %}Revisar{% else %}Editar{% endif %}</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">{% include 'core/ui/empty_state.html' with title="No hay noticias en este estado" text="Los borradores aparecen solos cuando llega un cambio a main." icon="far fa-newspaper" only %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'core/ui/pagination.html' with page_obj=page_obj query=query total_label="noticias" only %}
+</section>
+{% endblock %}

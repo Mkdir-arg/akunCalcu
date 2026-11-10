@@ -16,6 +16,18 @@
 
 ---
 
+## ADR-029: Novedades del sistema: la GitHub Action arma el borrador con el changelog y la publicación pasa siempre por revisión
+**Fecha**: 2026-11-10
+**Estado**: Activo
+
+**Contexto**: Se quería una noticia por cada funcionalidad nueva. El repo casi no usa PRs (8 en total, el último en julio de 2026): casi todo entra a `main` por push directo, así que un disparador «se abrió un PR» casi nunca correría. El texto de los commits es técnico, y el contenedor de producción no tiene `docs/` (el Dockerfile copia solo `akuna_calc/`), así que Django no puede leer el changelog, que es donde está el texto para usuarios.
+
+**Decisión**: Una GitHub Action en `push` a `main` corre `.github/scripts/novedad_borrador.py`. El script toma las entradas `## ` agregadas a `docs/team/changelog.md` en el diff del push (ignora un encabezado que reemplaza a otro, porque eso es una errata corregida) y las manda junto con los commits a `POST /novedades/api/borrador/`, con `X-Bot-Secret` = `NOVEDADES_BOT_SECRET`, que es el mismo patrón que backups y salud. Django crea la noticia en borrador, idempotente por SHA, y solo un usuario con acceso total la publica. Lo no leído se calcula con una fecha de última visita por usuario.
+
+**Consecuencias**: El changelog pasa a ser también la fuente de las noticias: escribir bien su entrada ahorra trabajo en la bandeja. Sin los secrets en GitHub la Action no envía nada y no falla. Ante un force-push, cuando el `before` ya no existe, toma solo el último commit. La bandeja no usa `is_staff`, porque en este sistema lo tienen usuarios comunes con permisos heredados.
+
+---
+
 ## ADR-001: Stack tecnológico inicial
 **Fecha**: 2026-03-04
 **Estado**: Activo

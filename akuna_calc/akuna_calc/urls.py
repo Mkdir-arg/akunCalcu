@@ -26,6 +26,7 @@ urlpatterns = [
     path('gastos-diarios/', include('gastos_diarios.urls')),
     path('agenda/', include('agenda.urls')),
     path('solicitudes/', include('solicitudes.urls')),
+    path('novedades/', include('novedades.urls')),
 ]
 
 # Serve static files in development

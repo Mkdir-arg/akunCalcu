@@ -204,6 +204,7 @@ PUBLIC_ROUTE_KEYS = {
     'solicitudes:api_recordatorios',
     'solicitudes:api_marcar_recordatorio',
     'solicitudes:api_marcar_contestada',
+    'novedades:api_borrador',
 }
 
 LEGACY_STAFF_ACCESS_CODES = {

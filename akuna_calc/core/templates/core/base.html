@@ -240,6 +240,24 @@
                         </div>
                     </div>
                     {% endfor %}
+                    {% if user.is_authenticated %}
+                    <div>
+                        <p class="sb-h">Sistema AKUN</p>
+                        <div class="flex flex-col gap-0.5">
+                            <a href="{% url 'novedades:lista' %}" class="nv {% if current_route_key == 'novedades:lista' %}on{% endif %}">
+                                <i class="far fa-newspaper nv-icon"></i>
+                                <span class="sidebar-text">Novedades</span>
+                                {% if novedades_no_leidas %}<span class="badge b-blue sidebar-text ml-auto" aria-label="{{ novedades_no_leidas }} sin leer">{{ novedades_no_leidas }}</span>{% endif %}
+                            </a>
+                            {% if novedades_puede_gestionar %}
+                            <a href="{% url 'novedades:bandeja' %}" class="nv {% if current_route_key == 'novedades:bandeja' or current_route_key == 'novedades:editar' or current_route_key == 'novedades:crear' %}on{% endif %}">
+                                <i class="fas fa-inbox nv-icon"></i>
+                                <span class="sidebar-text">Bandeja de novedades</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </nav>
 
@@ -304,6 +322,31 @@
             </main>
         </div>
     </div>
+
+    {% if novedades_aviso %}
+    <div id="novedades-aviso" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(16,24,40,.45)" role="dialog" aria-modal="true" aria-labelledby="novedades-aviso-titulo">
+        <div class="card w-full overflow-hidden" style="max-width:520px">
+            <div class="px-5 pt-5 pb-2">
+                <h2 id="novedades-aviso-titulo" class="text-lg font-bold text-ink">{% if novedades_no_leidas == 1 %}Hay 1 novedad desde tu última visita{% else %}Hay {{ novedades_no_leidas }} novedades desde tu última visita{% endif %}</h2>
+            </div>
+            <div class="px-5 max-h-96 overflow-y-auto">
+                {% for n in novedades_aviso %}
+                <div class="py-3 {% if not forloop.last %}border-b border-line-soft{% endif %}">
+                    <p class="text-xs text-ink-3">{{ n.get_tipo_display }} · {{ n.modulo_label }} · {{ n.publicada_en|date:"j b" }}</p>
+                    <p class="font-semibold text-ink">{{ n.titulo }}</p>
+                    {% if n.texto %}<p class="text-sm text-ink-2 mt-0.5">{{ n.texto|truncatewords:40 }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <form method="post" action="{% url 'novedades:marcar_leidas' %}" class="flex flex-wrap items-center justify-between gap-2 px-5 py-3 mt-2 bg-ground">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <a href="{% url 'novedades:lista' %}" class="btn btn-ghost">Ver todas las novedades</a>
+                <button type="submit" class="btn btn-primary" autofocus>Entendido</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
     <div id="live-config" hidden
          data-poll-url="{% url 'core_api_live' %}"

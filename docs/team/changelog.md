@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-10 — FEAT-053: novedades del sistema
+
+Nuevo ítem **Novedades** en el menú, con un contador de las que no leíste. Al entrar después de una novedad aparece una ventana con lo nuevo, y «Entendido» la cierra. La página Novedades muestra todo agrupado por mes, y cada persona ve solo lo de sus módulos. Las noticias salen solas de cada cambio que se sube al sistema: llegan como borrador a la **Bandeja de novedades**, donde un administrador las revisa y las publica. Primera GitHub Action del repo (`.github/workflows/novedades.yml`). Migración `novedades/0001` (ADR-029).
+
 ## 2026-11-10 — FEAT-051: abertura de la Orden de Fabricación elegida del catálogo
 
 En la edición de la orden, la abertura deja de ser texto libre: se elige con los desplegables en cascada del cotizador (Extrusora → Línea → Tipo de abertura → Marco → Hoja → Vidrio, más Color). La cantidad de hojas sale de la hoja elegida. El servidor valida la combinación y escribe los mismos textos de siempre, así el PDF no cambia. Lo escrito a mano se conserva con un aviso. Pedidos de Fábrica puede leer las listas del catálogo (no calcular precios). Migración `plantillas/0018` (campo `seleccion_catalogo`, ADR-027).
