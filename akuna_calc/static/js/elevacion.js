@@ -10,6 +10,9 @@
  *
  * Devuelve un string SVG: no toca el DOM ni depende de Three.js. Sirve para el
  * cotizador, la página del presupuesto y el PDF (que imprime por window.print()).
+ *
+ * Espejo en Python para el PDF de la Orden de Fabricación: `pricing/elevacion.py`
+ * (REQ-068, ADR-028). Un cambio de símbolos o layout acá va también allá.
  */
 import { computarLayout } from './abertura-layout.js?v=2';
 

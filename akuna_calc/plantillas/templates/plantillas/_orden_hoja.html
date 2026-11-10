@@ -70,6 +70,22 @@
 <div class="gap"></div>
 {% endif %}
 
+{% if hoja.croquis %}
+<table class="bar"><tr><td>CROQUIS <span style="font-weight:normal;">· vista desde el interior · {% if hoja.croquis.con_cotas %}medidas en mm{% else %}sin cotas: ver MEDIDAS{% endif %}</span></td></tr></table>
+<table class="croquis-dib">
+    <tr>
+        <td class="img" style="width:64%;"><img src="{{ hoja.croquis.imagen }}" style="width:{{ hoja.croquis.ancho_mm }}mm; height:{{ hoja.croquis.alto_mm }}mm;"></td>
+        <td style="width:36%; vertical-align:top;">
+            <table class="croquis-datos">
+                <tr><td><span class="k">APERTURA</span> {{ hoja.croquis.apertura }}</td></tr>
+                <tr><td><span class="k">PAÑOS</span> {{ hoja.croquis.panos }}{% if hoja.croquis.mosquitero %} + mosquitero{% endif %}</td></tr>
+                <tr><td><span class="k">TRAVESAÑO</span> {{ hoja.croquis.travesano|default:"No lleva" }}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<div class="gap"></div>
+{% else %}
 <table class="bar"><tr><td>CROQUIS <span style="font-weight:normal;">(sentidos de apertura, paños fijos, travesaños)</span></td></tr></table>
 <table>
     <tr>
@@ -82,6 +98,7 @@
     </tr>
 </table>
 <div class="gap"></div>
+{% endif %}
 
 <table class="bar"><tr><td>CLIENTE Y OBRA</td></tr></table>
 <table class="cli">

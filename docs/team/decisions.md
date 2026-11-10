@@ -202,6 +202,18 @@ existentes no se migran: sus pesos quedan iguales y se ven como el US$ equivalen
 
 ---
 
+## ADR-028: Croquis de la orden dibujado en el servidor, espejo en Python del dibujo del cotizador
+**Fecha**: 2026-11-10
+**Estado**: Activo
+
+**Contexto**: El PDF de la Orden de Fabricación lo arma xhtml2pdf en el servidor, que no ejecuta JavaScript. El dibujo de las aberturas (`static/js/abertura-layout.js` + `elevacion.js`) solo corre en el navegador. Las opciones eran generar el PDF en el navegador como el presupuesto (ADR-006), lo que rompe el PDF del pedido completo y el flujo actual; ejecutar el JS en el servidor con Node o un navegador headless, una dependencia pesada en Railway; o portar el dibujo a Python.
+
+**Decisión**: `pricing/elevacion.py` porta `computarLayout` y `svgElevacion` a Python con los mismos nombres y la misma lógica, y devuelve un SVG. El PDF lo embebe como `data:image/svg+xml;base64`, y xhtml2pdf lo rasteriza con svglib, que ya viene con xhtml2pdf 0.2.17. El tamaño del `<img>` se pasa como texto con punto decimal: Django localizado escribe «36,3mm» y xhtml2pdf ignora ese CSS.
+
+**Consecuencias**: El dibujo existe dos veces. Un cambio de símbolos, colores o layout en el JS hay que replicarlo en `pricing/elevacion.py`, y al revés; los docstrings de los dos lados lo avisan, como ya pasaba con el catálogo `APERTURAS` (`pricing/aperturas.py` ↔ JS). svglib no soporta `dominant-baseline` ni `<pattern>`: el texto se centra a mano y el mosquitero va con rayas sueltas.
+
+---
+
 ## ADR-027: La orden de fabricación guarda textos para imprimir e IDs del catálogo solo para editar
 **Fecha**: 2026-11-10
 **Estado**: Activo

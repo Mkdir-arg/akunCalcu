@@ -46,6 +46,7 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-051 | Como administrador del catálogo, quiero inactivar y reactivar productos para que el cotizador no los ofrezca sin perder su configuración | Pequeño ✅ |
 | US-052 | Como administrador del catálogo, quiero seleccionar varios productos e inactivarlos o activarlos de una vez | Pequeño ✅ |
 | US-067 | Como responsable de fábrica, quiero corregir la abertura de una orden eligiendo de los desplegables en cascada del cotizador para que la orden tenga siempre una combinación del catálogo y llegue completa al taller | Grande ✅ |
+| US-068 | Como responsable de fábrica, quiero que la Orden de Fabricación traiga dibujada la abertura (sentido de apertura, paños fijos, travesaños) para que el taller fabrique sin interpretar el texto ni dibujarla a mano | Mediano ✅ |
 | US-069 | Como integrante del equipo de Akuna, quiero ver las novedades del sistema al entrar para usar las funciones nuevas desde el primer día sin depender de que alguien me avise | Mediano ✅ |
 
 ---

@@ -25,6 +25,7 @@ from .forms import (
     OrdenFabricacionForm, PedidoFabricaForm,
 )
 from .services import abertura_catalogo, circuito
+from .services.croquis import croquis_de_orden
 from .utils import cortar_a_max_length
 
 
@@ -461,6 +462,7 @@ def _contexto_hoja(orden, posicion, total_ordenes):
         'filas': [{'m': m, 'ancho': ancho, 'alto': alto} for m in medidas for ancho, alto in [_ancho_alto(m.medida)]],
         'unidades': sum(m.cantidad or 0 for m in medidas),
         'caracteristicas': _caracteristicas_hoja(orden),
+        'croquis': croquis_de_orden(orden, medidas),
         'motivo_revision': motivo,
         'posicion': posicion,
         'total_ordenes': total_ordenes,
@@ -490,7 +492,8 @@ def _respuesta_pdf(html, nombre):
 def orden_pdf(request, pk):
     """Genera el PDF A4 de la orden de fabricación (planilla de fábrica)."""
     orden = get_object_or_404(
-        OrdenFabricacion.objects.select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas', 'historial'),
+        OrdenFabricacion.objects.select_related('pedido', 'pedido__presupuesto', 'item_presupuesto')
+        .prefetch_related('medidas', 'historial'),
         pk=pk,
     )
     activas = list(orden.pedido.ordenes_activas().values_list('pk', flat=True))
@@ -506,7 +509,11 @@ def orden_pdf(request, pk):
 def pedido_pdf(request, pk):
     """Todas las órdenes activas del pedido en un PDF, con carátula."""
     pedido = get_object_or_404(PedidoFabrica.objects.select_related('presupuesto'), pk=pk)
-    ordenes = list(pedido.ordenes_activas().select_related('pedido', 'pedido__presupuesto').prefetch_related('medidas', 'historial'))
+    ordenes = list(
+        pedido.ordenes_activas()
+        .select_related('pedido', 'pedido__presupuesto', 'item_presupuesto')
+        .prefetch_related('medidas', 'historial')
+    )
     hojas = [_contexto_hoja(o, i, len(ordenes)) for i, o in enumerate(ordenes, start=1)]
     html = render_to_string('plantillas/pedido_pdf.html', {
         **_contexto_pdf_base(),

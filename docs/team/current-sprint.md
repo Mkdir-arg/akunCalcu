@@ -26,6 +26,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-057 | Planilla de Colocación (PDF) + envío por WhatsApp a números autorizados (REQ-057, RF-02) | ✅ Completado | Adelantado del Sprint 2; FEAT-049 / ADR-026. Incluye la base común de PDF (parte de REQ-056). Sin migración. Falta aprobación de Meta de la plantilla `planilla_colocacion` y prueba real |
 | US-056 | Planilla de Medición en PDF desde el presupuesto (REQ-056, RF-03) | ✅ Completado | Adelantado del Sprint 2; FEAT-050. Usa la base común de FEAT-049. Sin migración |
 | US-067 | Abertura de la Orden de Fabricación elegida del catálogo, con la cascada del cotizador (REQ-067) | ✅ Completado | Fuera de plan; FEAT-051 / ADR-027. Migración `plantillas/0018`. Falta probar la cascada con el catálogo real en prod |
+| US-068 | Croquis dibujado en el PDF de la Orden de Fabricación (REQ-068) | ✅ Completado | Fuera de plan; FEAT-052 / ADR-028. Sin migración. Falta confirmar «vista desde el interior» con fábrica y probar con órdenes reales |
 | US-069 | Novedades del sistema generadas desde GitHub (REQ-069) | ✅ Completado | Fuera de plan; FEAT-053 / ADR-029. Migración `novedades/0001`. Faltan los secrets en GitHub y Railway y probarlo en el navegador |
 
 ## Items completados (sprints anteriores)
