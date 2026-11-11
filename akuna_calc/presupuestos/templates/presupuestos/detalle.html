@@ -244,6 +244,14 @@
                                     {% if item.cantidad > 1 %} · <span class="text-accent">x{{ item.cantidad }} unidades</span>{% endif %}
                                     {% endif %}
                                 </p>
+                                {% with adicionales=item.get_adicionales_detalle %}
+                                {% if adicionales %}
+                                <p class="text-xs muted mt-0.5">
+                                    <i class="fas fa-tag mr-1"></i>Adicionales (sin margen ni IVA):
+                                    {% for a in adicionales %}{{ a.etiqueta }} ${{ a.precio|formato_numero }}{% if a.por_unidad and item.cantidad > 1 %} × {{ item.cantidad }} = ${{ a.subtotal|formato_numero }}{% elif not a.por_unidad and item.cantidad > 1 %} (total){% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}
+                                </p>
+                                {% endif %}
+                                {% endwith %}
                             </div>
                             <div class="text-right shrink-0 num">
                                 {% if presupuesto.es_pvc %}
@@ -680,6 +688,7 @@
     <input type="hidden" name="cantidad" id="f-pvc-cantidad">
     <input type="hidden" name="valor_usd" id="f-pvc-valor-usd">
     <input type="hidden" name="margen_porcentaje" id="f-pvc-margen">
+    <input type="hidden" name="adicionales_json" id="f-pvc-adicionales_json">
 </form>
 {% else %}
 <form id="item-save-form" method="post" action="{% url 'presupuestos:presupuestos-item-agregar' presupuesto.pk %}" style="display:none">
@@ -699,6 +708,7 @@
     <input type="hidden" name="tirantes_json" id="f-tirantes_json">
     <input type="hidden" name="apertura_json" id="f-apertura_json">
     <input type="hidden" name="precio_terciarizado" id="f-precio_terciarizado">
+    <input type="hidden" name="adicionales_json" id="f-adicionales_json">
 </form>
 {% endif %}
 {% endif %}
@@ -1249,7 +1259,8 @@ function verDetalleItem(resultado, descripcion) {
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     if (!resultado || !resultado.desglose) {
-        cont.innerHTML = '<p class="text-slate-400 text-center py-8">No hay desglose disponible para este item</p>';
+        cont.innerHTML = buildAdicionalesDesglose(resultado)
+            || '<p class="text-slate-400 text-center py-8">No hay desglose disponible para este item</p>';
         document.getElementById('modal-desglose').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         return;
@@ -1335,9 +1346,32 @@ function verDetalleItem(resultado, descripcion) {
         }));
     }
 
+    html += buildAdicionalesDesglose(resultado);
+
     cont.innerHTML = html;
     document.getElementById('modal-desglose').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+}
+
+// REQ-074: adicionales libres del ítem (sin margen ni IVA). El precio se guarda en pesos.
+function buildAdicionalesDesglose(resultado) {
+    const adicionales = (resultado && resultado.adicionales) || [];
+    if (!adicionales.length) return '';
+    const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let total = 0;
+    const filas = adicionales.map(a => {
+        const porUnidad = a.modo !== 'total';
+        const cantidad = parseInt(a.cantidad) || 1;
+        const subtotal = porUnidad ? a.precio * cantidad : a.precio;
+        total += subtotal;
+        let detalle = porUnidad
+            ? (cantidad > 1 ? '$' + fmt(a.precio) + ' por unidad × ' + cantidad : 'Por unidad')
+            : 'Total del ítem';
+        if (a.precio_usd != null) detalle += ' · US$' + fmt(a.precio_usd) + (porUnidad ? ' c/u' : '');
+        return '<div class="flex justify-between font-medium"><span>' + escHtml(a.etiqueta) + '</span><span class="text-slate-700">$' + fmt(subtotal) + '</span></div>' +
+            '<div class="text-xs text-gray-500 mt-0.5">' + detalle + '</div>';
+    });
+    return buildSection('Adicionales (sin margen ni IVA)', 'fa-tag', 'slate', total, filas);
 }
 
 // -- Desglose de una estructura (REQ-062): módulos, juntas y colocación --
@@ -1444,6 +1478,137 @@ function buildSection(title, icon, color, total, items) {
 }
 </script>
 
+{% if not presupuesto.esta_bloqueado %}
+<script type="text/babel">
+// REQ-074 — «Agregar adicional»: conceptos libres (etiqueta + precio) del ítem,
+// sin margen ni IVA. Lo comparten el cotizador de aluminio y el de PVC.
+(function() {
+'use strict';
+const { useState, useEffect } = React;
+
+let etiquetasPromesa = null;
+const cargarEtiquetas = () => {
+    if (!etiquetasPromesa) {
+        etiquetasPromesa = fetch('{% url "presupuestos:presupuestos-adicionales-etiquetas" %}')
+            .then(r => r.ok ? r.json() : { etiquetas: [] })
+            .then(d => d.etiquetas || [])
+            .catch(() => []);
+    }
+    return etiquetasPromesa;
+};
+
+const totalAdicionales = (items, cantidad) => (items || []).reduce((acc, a) => {
+    const precio = parseFloat(a.precio) || 0;
+    const porUnidad = cantidad <= 1 || a.modo === 'unidad';
+    return acc + (porUnidad ? precio * cantidad : (a.modo === 'total' ? precio : 0));
+}, 0);
+
+// Valida y completa el modo antes de guardar. Devuelve la lista lista para el
+// POST, o null si el vendedor canceló o falta un dato.
+const prepararAdicionales = async (items, cantidad) => {
+    const lista = [];
+    for (const a of (items || [])) {
+        const etiqueta = (a.etiqueta || '').trim();
+        const precio = parseFloat(a.precio) || 0;
+        if (!etiqueta && !precio) continue;
+        if (!etiqueta || precio <= 0) {
+            await Swal.fire({ icon: 'warning', title: 'Adicional incompleto', text: 'Cada adicional necesita una etiqueta y un precio mayor a 0.' });
+            return null;
+        }
+        let modo = cantidad > 1 ? a.modo : 'unidad';
+        if (!modo) {
+            const r = await Swal.fire({
+                icon: 'question',
+                title: '«' + etiqueta + '»',
+                html: 'Este ítem tiene <strong>' + cantidad + ' unidades</strong>. ¿El adicional va por cada unidad o es un total?<br>' +
+                    '<span class="text-sm text-slate-500">Por cada unidad: $' + precio.toLocaleString('es-AR') + ' × ' + cantidad +
+                    ' = $' + (precio * cantidad).toLocaleString('es-AR') + '. Total: $' + precio.toLocaleString('es-AR') + ' una sola vez.</span>',
+                showDenyButton: true, showCancelButton: true,
+                confirmButtonText: 'Por cada unidad', denyButtonText: 'Es un total', cancelButtonText: 'Volver',
+            });
+            if (r.isConfirmed) modo = 'unidad';
+            else if (r.isDenied) modo = 'total';
+            else return null;
+        }
+        lista.push({ etiqueta, precio, modo });
+    }
+    return lista;
+};
+
+const AdicionalesEditor = ({ items, onChange, cantidad, moneda, junto }) => {
+    const [etiquetas, setEtiquetas] = useState([]);
+    useEffect(() => { cargarEtiquetas().then(setEtiquetas); }, []);
+    const signo = moneda === 'usd' ? 'US$' : '$';
+    const cambiar = (idx, cambios) => onChange(items.map((a, i) => i === idx ? { ...a, ...cambios } : a));
+    const agregar = () => onChange([...items, { etiqueta: '', precio: '', modo: null }]);
+
+    const boton = (
+        <button type="button" onClick={agregar}
+            className="w-full bg-slate-50 text-slate-700 py-2.5 rounded-lg border-2 border-dashed border-slate-300 hover:bg-slate-100 transition flex items-center justify-center text-sm font-semibold">
+            <i className="fas fa-tag mr-2"></i>Agregar adicional
+        </button>
+    );
+
+    return (
+        <>
+            {items.length > 0 && (
+                <div className="mb-2 space-y-1.5">
+                    {items.map((a, idx) => (
+                        <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-2">
+                                <input type="text" list="adicionales-etiquetas" value={a.etiqueta} maxLength={100}
+                                    onChange={e => cambiar(idx, { etiqueta: e.target.value })}
+                                    placeholder="Etiqueta (ej: Albañilería)" aria-label="Etiqueta del adicional"
+                                    className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500" />
+                                <span className="text-xs text-gray-500">{signo}</span>
+                                <input type="number" min="0" step="0.01" value={a.precio}
+                                    onChange={e => cambiar(idx, { precio: e.target.value })}
+                                    placeholder="Precio" aria-label="Precio del adicional"
+                                    className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500" />
+                                <button type="button" onClick={() => onChange(items.filter((_, i) => i !== idx))}
+                                    className="text-red-500 hover:text-red-700 p-1.5" title="Quitar" aria-label="Quitar adicional">
+                                    <i className="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                            {cantidad > 1 && (
+                                <div className="flex items-center gap-2 mt-1.5 text-xs">
+                                    <span className="text-gray-500">{cantidad} unidades:</span>
+                                    {[['unidad', 'Por cada unidad'], ['total', 'Total']].map(([valor, texto]) => (
+                                        <button key={valor} type="button" onClick={() => cambiar(idx, { modo: valor })}
+                                            className={a.modo === valor
+                                                ? 'px-2 py-0.5 rounded border border-blue-600 bg-blue-600 text-white font-semibold'
+                                                : 'px-2 py-0.5 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-100'}>
+                                            {texto}
+                                        </button>
+                                    ))}
+                                    {!a.modo && <span className="text-amber-600 font-semibold">Elegí una opción</span>}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    <p className="text-[11px] text-gray-500">Los adicionales se suman sin margen y sin IVA.</p>
+                </div>
+            )}
+            {junto ? <div className="grid grid-cols-2 gap-2">{junto}{boton}</div> : boton}
+            <datalist id="adicionales-etiquetas">
+                {etiquetas.map(t => <option key={t} value={t} />)}
+            </datalist>
+        </>
+    );
+};
+
+// Pasa los adicionales guardados (resultado_json) al formato del editor.
+const adicionalesDesdeResultado = (resultado, moneda) => ((resultado && resultado.adicionales) || []).map(a => ({
+    etiqueta: a.etiqueta || '',
+    precio: moneda === 'usd' && a.precio_usd != null ? a.precio_usd : a.precio,
+    modo: a.modo || 'unidad',
+}));
+
+window.Adicionales = { AdicionalesEditor, prepararAdicionales, totalAdicionales, adicionalesDesdeResultado };
+})();
+</script>
+{% endif %}
+
 {% if es_pvc %}
 <script type="text/babel">
 (function() {
@@ -1459,10 +1624,13 @@ const FormularioPVC = () => {
     const [valorUsd, setValorUsd] = useState(0);
     const [margen, setMargen] = useState(30);
     const [saving, setSaving] = useState(false);
+    const [adicionales, setAdicionales] = useState([]);
+    const Adic = window.Adicionales;
 
     const valorPesos = valorUsd * COTIZACION_USD;
     const precioConMargenUsd = valorUsd * (1 + margen / 100);
-    const precioTotalUsd = precioConMargenUsd * cantidad;
+    const adicionalesUsd = Adic.totalAdicionales(adicionales, cantidad);
+    const precioTotalUsd = precioConMargenUsd * cantidad + adicionalesUsd;
     const fmt = n => (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     useEffect(() => {
@@ -1475,6 +1643,7 @@ const FormularioPVC = () => {
             setCantidad(payload.cantidad || 1);
             setValorUsd(parseFloat(rj.valor_usd) || 0);
             setMargen(rj.margen != null ? rj.margen : 30);
+            setAdicionales(Adic.adicionalesDesdeResultado(rj, 'usd'));
             setSaving(false);
             document.getElementById('modal-item').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -1482,12 +1651,12 @@ const FormularioPVC = () => {
         window.__cotizadorReset = () => {
             const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
             setEditId(null);
-            setDescripcion(''); setCantidad(1); setValorUsd(0); setMargen(30); setSaving(false);
+            setDescripcion(''); setCantidad(1); setValorUsd(0); setMargen(30); setAdicionales([]); setSaving(false);
         };
         return () => { try { delete window.__cotizadorEditar; delete window.__cotizadorReset; } catch (e) {} };
     }, []);
 
-    const guardar = () => {
+    const guardar = async () => {
         if (!descripcion.trim()) {
             alert('Ingresa una descripción');
             return;
@@ -1496,7 +1665,10 @@ const FormularioPVC = () => {
             alert('Ingresa un valor en USD mayor a 0');
             return;
         }
+        const listaAdicionales = await Adic.prepararAdicionales(adicionales, cantidad);
+        if (listaAdicionales === null) return;
         setSaving(true);
+        document.getElementById('f-pvc-adicionales_json').value = JSON.stringify(listaAdicionales);
         document.getElementById('f-pvc-descripcion').value = descripcion;
         document.getElementById('f-pvc-cantidad').value = cantidad;
         document.getElementById('f-pvc-valor-usd').value = valorUsd.toFixed(2);
@@ -1549,15 +1721,26 @@ const FormularioPVC = () => {
                 </p>
             </div>
 
+            <div className="border-t pt-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Adicionales</label>
+                <Adic.AdicionalesEditor items={adicionales} onChange={setAdicionales} cantidad={cantidad} moneda="usd" />
+            </div>
+
             {valorUsd > 0 && (
                 <div className="bg-brand rounded-xl p-4 text-white">
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-sm opacity-80">Precio unitario con margen</span>
                         <span className="text-xl font-bold">US${fmt(precioConMargenUsd)}</span>
                     </div>
-                    {cantidad > 1 && (
+                    {adicionalesUsd > 0 && (
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm opacity-80">Adicionales (sin margen)</span>
+                            <span className="font-bold">US${fmt(adicionalesUsd)}</span>
+                        </div>
+                    )}
+                    {(cantidad > 1 || adicionalesUsd > 0) && (
                         <div className="flex justify-between items-center border-t border-white/20 pt-2">
-                            <span className="text-sm opacity-80">Total ({cantidad} unidades)</span>
+                            <span className="text-sm opacity-80">Total{cantidad > 1 ? ` (${cantidad} unidades)` : ''}</span>
                             <span className="text-2xl font-bold">US${fmt(precioTotalUsd)}</span>
                         </div>
                     )}
@@ -1902,6 +2085,7 @@ const CotizadorModal = () => {
     });
     const [descripcion, setDescripcion] = useState('');
     const [cantidad, setCantidad] = useState(1);
+    const [adicionales, setAdicionales] = useState([]);
     const [precioTerc, setPrecioTerc] = useState('');
     const [editId, setEditId] = useState(null);
     const [editTipo, setEditTipo] = useState(null);
@@ -2077,6 +2261,7 @@ const CotizadorModal = () => {
             const rj = payload.resultado || {};
             setEditId(payload.itemId);
             setEditTipo(rj.tipo === 'terciarizado' ? 'terciarizado' : null);
+            setAdicionales(window.Adicionales.adicionalesDesdeResultado(rj, 'ars'));
             setDescripcion(payload.descripcion || '');
             setCantidad(payload.cantidad || 1);
             setResult(null); setResultSig(null); setError(null); setModulo(null);
@@ -2097,6 +2282,7 @@ const CotizadorModal = () => {
         window.__cotizadorReset = () => {
             const _t = document.getElementById('modal-item-title'); if (_t) _t.textContent = 'Agregar ítem';
             setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null); setModulo(null);
+            setAdicionales([]);
             setDescripcion(''); setCantidad(1);
             setConfig({ extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null, interior_id: null, tratamiento_id: null, ancho_mm: 1200, alto_mm: 1500, margen_porcentaje: 30, opcionales: [], tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] } });
         };
@@ -2108,7 +2294,7 @@ const CotizadorModal = () => {
             const _t = document.getElementById('modal-item-title');
             if (_t) _t.textContent = 'Configurar abertura' + (o.etiqueta ? ' ' + o.etiqueta : '');
             setEditId(null); setEditTipo(null); setPrecioTerc(''); setResult(null); setResultSig(null); setError(null);
-            setDescripcion(''); setCantidad(1); setVista('3d');
+            setDescripcion(''); setCantidad(1); setVista('3d'); setAdicionales([]);
             setConfig({
                 extrusora_id: null, linea_id: null, producto_id: null, marco_id: null, hoja_id: null, vidrio_codigo: null,
                 interior_id: null, opcionales: [], tirantes: { activo: false, orientacion: 'horizontal', perfil_codigo: null, secciones: [] },
@@ -2177,11 +2363,14 @@ const CotizadorModal = () => {
         finally { setLoading(false); }
     };
 
-    const guardar = () => {
+    const guardar = async () => {
         if (!result) { setError('Calcula el precio primero'); return; }
         const tErr = tirantesInvalido();
         if (tErr) { setError(tErr); return; }
+        const listaAdicionales = await window.Adicionales.prepararAdicionales(adicionales, cantidad);
+        if (listaAdicionales === null) return;
         setSaving(true);
+        document.getElementById('f-adicionales_json').value = JSON.stringify(listaAdicionales);
         document.getElementById('f-producto_id').value = config.producto_id || '';
         document.getElementById('f-marco_id').value = config.marco_id || '';
         document.getElementById('f-hoja_id').value = config.hoja_id || '';
@@ -2207,6 +2396,7 @@ const CotizadorModal = () => {
         setSaving(true);
         document.getElementById('f-producto_id').value = config.producto_id;
         document.getElementById('f-precio_terciarizado').value = precio;
+        document.getElementById('f-adicionales_json').value = '[]';
         document.getElementById('f-descripcion').value = descripcion || 'Producto terciarizado';
         document.getElementById('f-cantidad').value = cantidad;
         enviarItemForm();
@@ -2225,6 +2415,16 @@ const CotizadorModal = () => {
     // OJO: este objeto NO puede ir inline en el JSX. Django parsea '{{' como
     // variable de template y falla con "may not begin with underscores".
     const htmlPlano = { __html: svgPlano };
+    const AdicEditor = window.Adicionales.AdicionalesEditor;
+    const cantAgregados = config.opcionales.length + (modulo ? 0 : adicionales.length);
+    const opcModal = opcionalesDisp.length > 0 ? (
+        <OpcionalesModal opcionales={opcionalesDisp}
+            onSelect={opcional => {
+                if (!config.opcionales.find(o => o.id === opcional.id)) {
+                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, { ...opcional, cantidad: opcional.cantidad || 1 }] }));
+                }
+            }} />
+    ) : null;
     const _prodSel = productos.find(p => p.id === config.producto_id);
     // En modo módulo no se ofrecen terciarizados ni complementos sin dibujo.
     const productosVisibles = modulo
@@ -2417,9 +2617,9 @@ const CotizadorModal = () => {
                     </Block>
                 )}
 
-                {/* Opcionales */}
-                {!esTerc && config.producto_id && opcionalesDisp.length > 0 && (
-                    <Block title="Opcionales" icon="fa-plus-circle" hint={config.opcionales.length > 0 ? `${config.opcionales.length} agregado(s)` : null}>
+                {/* Opcionales y adicionales libres (REQ-074; los adicionales no van en modo módulo) */}
+                {!esTerc && config.producto_id && (opcionalesDisp.length > 0 || !modulo) && (
+                    <Block title={modulo ? 'Opcionales' : 'Opcionales y adicionales'} icon="fa-plus-circle" hint={cantAgregados > 0 ? `${cantAgregados} agregado(s)` : null}>
                         {config.opcionales.length > 0 && (
                             <div className="mb-2 space-y-1.5">
                                 {config.opcionales.map((opc, idx) => (
@@ -2448,12 +2648,7 @@ const CotizadorModal = () => {
                                 ))}
                             </div>
                         )}
-                        <OpcionalesModal opcionales={opcionalesDisp}
-                            onSelect={opcional => {
-                                if (!config.opcionales.find(o => o.id === opcional.id)) {
-                                    setConfig(c => ({ ...c, opcionales: [...c.opcionales, { ...opcional, cantidad: opcional.cantidad || 1 }] }));
-                                }
-                            }} />
+                        {modulo ? opcModal : <AdicEditor items={adicionales} onChange={setAdicionales} cantidad={cantidad} moneda="ars" junto={opcModal} />}
                     </Block>
                 )}
 
@@ -2643,7 +2838,7 @@ const CotizadorModal = () => {
                 ) : (
                     modulo
                     ? <span className="text-xs text-slate-500">Precio de la abertura: <strong className="text-slate-800">${fmt(result.precio_total)}</strong></span>
-                    : <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad)}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}</span>
+                    : <span className="text-xs text-slate-500">Total del ítem: <strong className="text-slate-800">${fmt(result.precio_total * cantidad + window.Adicionales.totalAdicionales(adicionales, cantidad))}</strong>{cantidad > 1 ? ` · ${cantidad} u.` : ''}{adicionales.length > 0 ? ' · con adicionales' : ''}</span>
                 )
             )}
             <span className="flex-1"></span>

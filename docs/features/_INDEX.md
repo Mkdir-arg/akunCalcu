@@ -62,6 +62,7 @@
 | [FEAT-054](./FEAT-054-optimizador-corte-marco.md) | Optimizador de corte de perfiles de marco: barras, planilla PDF y planes guardados (REQ-070) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 | [FEAT-055](./FEAT-055-resumen-diario-whatsapp.md) | Resumen diario y semanal por WhatsApp para la dirección: Django calcula, GPT redacta (REQ-071) | Implementado (en `development`; n8n inactivo) | 2026-11-10 | Fuera de plan |
 | [FEAT-056](./FEAT-056-checks-flete-expreso-izaje.md) | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto y en Observaciones del PDF (REQ-073) | Implementado (en `development`) | 2026-11-11 | Fuera de plan |
+| [FEAT-057](./FEAT-057-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, sin margen ni IVA (REQ-074) | Implementado (en `development`) | 2026-11-11 | Fuera de plan |
 
 ---
 

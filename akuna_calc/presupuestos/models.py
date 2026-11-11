@@ -267,8 +267,12 @@ class Presupuesto(models.Model):
     def get_subtotal_sin_iva(self):
         return self.get_total_items() + self.get_recargo_obra_nueva_aplicado()
 
+    def get_total_adicionales(self):
+        return sum((item.get_total_adicionales() for item in self.items.all()), Decimal('0'))
+
     def get_iva_desglosado(self):
-        return self.get_subtotal_sin_iva() * Decimal('0.21')
+        # Los adicionales del ítem (REQ-074) quedan fuera del IVA.
+        return (self.get_subtotal_sin_iva() - self.get_total_adicionales()) * Decimal('0.21')
 
     def get_iva(self):
         if not self.aplicar_iva:
@@ -399,11 +403,52 @@ class ItemPresupuesto(models.Model):
         resultado['recargo_renovacion_unitario_aplicado'] = float(recargo_unitario)
         resultado['recargo_renovacion_total_aplicado'] = float(recargo_unitario * self.cantidad)
         self.resultado_json = resultado
-        self.precio_unitario = base + recargo_unitario
+        self.precio_unitario = base + recargo_unitario + self.get_adicional_unitario()
         self.save(update_fields=['precio_unitario', 'precio_total', 'resultado_json'])
 
+    def get_adicionales(self):
+        """Conceptos libres del ítem (REQ-074), sin margen ni IVA.
+
+        Cada uno: {etiqueta, precio (pesos), precio_usd, modo: 'unidad'|'total'}.
+        Los 'unidad' van dentro de precio_unitario; los 'total' se suman una
+        sola vez al precio_total.
+        """
+        adicionales = (self.resultado_json or {}).get('adicionales') or []
+        return [a for a in adicionales if isinstance(a, dict)]
+
+    def get_adicional_unitario(self):
+        return sum(
+            (_decimal_or_zero(a.get('precio')) for a in self.get_adicionales() if a.get('modo') != 'total'),
+            Decimal('0'),
+        )
+
+    def get_adicional_fijo(self):
+        return sum(
+            (_decimal_or_zero(a.get('precio')) for a in self.get_adicionales() if a.get('modo') == 'total'),
+            Decimal('0'),
+        )
+
+    def get_total_adicionales(self):
+        return self.get_adicional_unitario() * self.cantidad + self.get_adicional_fijo()
+
+    def get_adicionales_detalle(self):
+        filas = []
+        for a in self.get_adicionales():
+            precio = _decimal_or_zero(a.get('precio'))
+            por_unidad = a.get('modo') != 'total'
+            filas.append({
+                'etiqueta': a.get('etiqueta', ''),
+                'precio': precio,
+                'por_unidad': por_unidad,
+                'subtotal': precio * self.cantidad if por_unidad else precio,
+            })
+        return filas
+
+    def get_adicionales_etiquetas(self):
+        return [a.get('etiqueta', '') for a in self.get_adicionales() if a.get('etiqueta')]
+
     def save(self, *args, **kwargs):
-        self.precio_total = self.precio_unitario * self.cantidad
+        self.precio_total = _decimal_or_zero(self.precio_unitario) * self.cantidad + self.get_adicional_fijo()
         super().save(*args, **kwargs)
 
 

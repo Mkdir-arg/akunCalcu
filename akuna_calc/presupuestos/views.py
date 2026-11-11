@@ -310,7 +310,97 @@ def _fields_item_pvc(presupuesto, descripcion, cantidad, valor_usd, margen_porce
     }
 
 
+MAX_ADICIONALES = 20
+
+
+def _parsear_adicionales(data, presupuesto, cantidad):
+    """Adicionales libres del ítem (REQ-074): etiqueta + precio, sin margen ni IVA.
+
+    Devuelve (lista, error). En PVC el precio llega en dólares y se guarda en
+    pesos con la cotización del presupuesto. Con cantidad 1 el modo es siempre
+    'unidad'; con más unidades hay que elegir 'unidad' o 'total'.
+    """
+    crudo = data.get('adicionales_json', '') or '[]'
+    try:
+        filas = json.loads(crudo)
+    except (json.JSONDecodeError, TypeError):
+        return None, 'Los adicionales enviados no son válidos.'
+    if not isinstance(filas, list):
+        return None, 'Los adicionales enviados no son válidos.'
+    if len(filas) > MAX_ADICIONALES:
+        return None, f'Se pueden cargar hasta {MAX_ADICIONALES} adicionales por ítem.'
+
+    es_pvc = presupuesto.tipo_material == 'pvc'
+    adicionales = []
+    for fila in filas:
+        if not isinstance(fila, dict):
+            return None, 'Los adicionales enviados no son válidos.'
+        etiqueta = str(fila.get('etiqueta') or '').strip()[:100]
+        if not etiqueta:
+            return None, 'Cada adicional necesita una etiqueta.'
+        try:
+            precio = Decimal(str(fila.get('precio')))
+        except (InvalidOperation, TypeError, ValueError):
+            precio = Decimal('0')
+        if not precio.is_finite() or precio <= 0:
+            return None, f'El adicional "{etiqueta}" necesita un precio mayor a 0.'
+        modo = fila.get('modo')
+        if cantidad == 1:
+            modo = 'unidad'
+        elif modo not in ('unidad', 'total'):
+            return None, f'Elegí si el adicional "{etiqueta}" va por cada unidad o es un total.'
+        precio_usd = None
+        if es_pvc:
+            precio_usd = precio
+            precio = precio * presupuesto.cotizacion_usd
+        adicionales.append({
+            'etiqueta': etiqueta,
+            'precio': float(round(precio, 2)),
+            'precio_usd': float(round(precio_usd, 2)) if precio_usd is not None else None,
+            'modo': modo,
+        })
+    return adicionales, None
+
+
+def _aplicar_adicionales(fields, adicionales):
+    if not adicionales:
+        return fields
+    for adicional in adicionales:
+        adicional['cantidad'] = fields['cantidad']
+    fields['resultado_json']['adicionales'] = adicionales
+    unitario = sum(a['precio'] for a in adicionales if a['modo'] == 'unidad')
+    fields['precio_unitario'] = fields['precio_unitario'] + unitario
+    return fields
+
+
 def _fields_item_desde_post(request, presupuesto):
+    fields, error = _fields_item_base_desde_post(request, presupuesto)
+    if error or not fields:
+        return fields, error
+    tipo = fields['resultado_json'].get('tipo')
+    if tipo in ('estructura', 'terciarizado'):
+        return fields, None
+    adicionales, error = _parsear_adicionales(request.POST, presupuesto, fields['cantidad'])
+    if error:
+        return None, error
+    return _aplicar_adicionales(fields, adicionales), None
+
+
+@login_required
+def adicionales_etiquetas(request):
+    """Etiquetas de adicionales ya usadas en cualquier presupuesto (REQ-074)."""
+    vistas = {}
+    filas = ItemPresupuesto.objects.filter(resultado_json__has_key='adicionales').values_list('resultado_json', flat=True)
+    for resultado in filas.iterator():
+        for adicional in (resultado or {}).get('adicionales') or []:
+            etiqueta = str((adicional or {}).get('etiqueta') or '').strip()
+            if etiqueta:
+                vistas.setdefault(etiqueta.lower(), etiqueta)
+    etiquetas = sorted(vistas.values(), key=str.lower)
+    return JsonResponse({'etiquetas': etiquetas})
+
+
+def _fields_item_base_desde_post(request, presupuesto):
     """Construye los campos de un ItemPresupuesto desde el POST del cotizador.
 
     Devuelve (fields, error). Si error != None, la validación falló y no se debe

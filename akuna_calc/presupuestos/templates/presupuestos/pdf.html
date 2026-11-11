@@ -594,6 +594,11 @@
                             {% if entry.resumen_tecnico %}
                             <p class="concept-text">{{ entry.resumen_tecnico }}.</p>
                             {% endif %}
+                            {% with etiquetas=entry.item.get_adicionales_etiquetas %}
+                            {% if etiquetas %}
+                            <p class="concept-text">Incluye: {{ etiquetas|join:", " }}.</p>
+                            {% endif %}
+                            {% endwith %}
                         </td>
                         <td class="col-qty">{{ entry.item.cantidad }}</td>
                         {% if presupuesto.es_pvc %}

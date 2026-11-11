@@ -93,3 +93,4 @@
 | [REQ-071](./REQ-071-resumen-diario-whatsapp.md) | Resumen diario y semanal por WhatsApp para la dirección (n8n + GPT redacta, Django calcula) | Implementado | 2026-11-10 | [FEAT-055](../features/FEAT-055-resumen-diario-whatsapp.md) |
 | [REQ-072](./REQ-072-modulo-tareas.md) | Módulo de tareas para empleados (responsable, fecha límite, estado) que se suma al resumen | Aprobado | 2026-11-10 | — |
 | [REQ-073](./REQ-073-checks-flete-expreso-izaje.md) | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto y en Observaciones del PDF | Implementado | 2026-11-11 | [FEAT-056](../features/FEAT-056-checks-flete-expreso-izaje.md) |
+| [REQ-074](./REQ-074-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, fuera del margen y del IVA | Implementado | 2026-11-11 | [FEAT-057](../features/FEAT-057-adicionales-libres-item.md) |

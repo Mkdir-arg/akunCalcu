@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-11 — FEAT-057: «Agregar adicional» en el ítem del presupuesto
+
+Botón «Agregar adicional» al lado de «Agregar Opcional» (aluminio) y en el cotizador de PVC (en US$). Cada adicional tiene etiqueta (con sugerencias de todos los presupuestos) y precio; con más de una unidad se elige «Por cada unidad» o «Total». No lleva margen y queda fuera del IVA. Se ve en la fila del ítem, en «Ver detalle» y en el PDF («Incluye: Albañilería»). Sin migración: se guarda en `resultado_json` del ítem. API nueva `/presupuestos/api/adicionales/etiquetas/` (REQ-074).
+
+---
+
 ## 2026-11-11 — FEAT-056: checks «Flete expreso CABA» y «No incluye izaje»
 
 En la configuración del presupuesto, debajo de «Incluye colocación», hay dos checks nuevos e independientes: «Flete expreso CABA» y «No incluye izaje». Se suman a la frase de Observaciones del PDF (ej.: «El presente presupuesto incluye flete y colocación, flete expreso CABA. No incluye izaje.»). Sin tildarlos, el PDF queda igual. Migración `presupuestos/0013` (REQ-073).

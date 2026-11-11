@@ -31,6 +31,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-070 | Optimizador de corte de perfiles de marco (REQ-070) | ✅ Completado | Fuera de plan; FEAT-054 / ADR-030. Migración `optimizador/0001`. Falta probar en el navegador y con el catálogo real |
 | US-071 | Resumen diario y semanal por WhatsApp para la dirección (REQ-071) | ✅ Completado | Fuera de plan; FEAT-055 / ADR-031. Migración `resumenes/0001`. n8n `iEON0QIYoc8O9Bbk` inactivo: faltan plantilla de Meta, webhook (FIX-026), rama en gastos y variables |
 | US-073 | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto (REQ-073) | ✅ Completado | Fuera de plan; FEAT-056. Migración `presupuestos/0013`. Falta probar en el navegador |
+| US-074 | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem (REQ-074) | ✅ Completado | Fuera de plan; FEAT-057. Sin migración. Falta probar en el navegador |
 
 ## Items completados (sprints anteriores)
 

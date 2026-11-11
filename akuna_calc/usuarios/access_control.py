@@ -263,7 +263,7 @@ for module in ACCESS_MODULES:
         _register_route(item['code'], item['route_name'])
 
 
-_register_route('presupuestos.view', 'presupuestos:presupuestos-crear', 'presupuestos:presupuestos-detalle', 'presupuestos:presupuestos-editar', 'presupuestos:presupuestos-configuracion-obra', 'presupuestos:presupuestos-item-agregar', 'presupuestos:presupuestos-importar', 'presupuestos:presupuestos-item-eliminar', 'presupuestos:presupuestos-comentar', 'presupuestos:presupuestos-estado', 'presupuestos:presupuestos-recibo', 'presupuestos:presupuestos-pdf', 'presupuestos:presupuestos-colocacion', 'presupuestos:presupuestos-colocacion-whatsapp', 'presupuestos:presupuestos-medicion')
+_register_route('presupuestos.view', 'presupuestos:presupuestos-crear', 'presupuestos:presupuestos-detalle', 'presupuestos:presupuestos-editar', 'presupuestos:presupuestos-configuracion-obra', 'presupuestos:presupuestos-item-agregar', 'presupuestos:presupuestos-importar', 'presupuestos:presupuestos-item-eliminar', 'presupuestos:presupuestos-comentar', 'presupuestos:presupuestos-estado', 'presupuestos:presupuestos-recibo', 'presupuestos:presupuestos-pdf', 'presupuestos:presupuestos-colocacion', 'presupuestos:presupuestos-colocacion-whatsapp', 'presupuestos:presupuestos-medicion', 'presupuestos:presupuestos-adicionales-etiquetas')
 
 _register_route(['comercial.clientes', 'comercial.ventas', 'presupuestos.view'], 'comercial:cliente_create_rapido')
 _register_route('comercial.clientes', 'comercial:cliente_create', 'comercial:cliente_detail', 'comercial:cliente_edit', 'comercial:cliente_delete', 'comercial:clientes_list_api')
