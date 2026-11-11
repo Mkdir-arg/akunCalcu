@@ -1,5 +1,5 @@
 # REQ-075 — Atención autónoma de clientes por WhatsApp, email e Instagram
-**Estado**: En análisis
+**Estado**: Aprobado
 **Fecha**: 2026-11-11
 **Solicitante**: Dirección
 
@@ -35,6 +35,12 @@ Se usa un LLM (GPT o Claude) para la conversación. Los precios los calcula siem
 | Horario | Fuera de horario no responde: **espera a las 8 de la mañana** |
 | WhatsApp | El número **oficial de Akun registrado en Meta** (el mismo de la Cloud API) |
 | Email | El email de Akun |
+| Horario de atención | Configurable desde un **módulo nuevo en AkunCalcu** |
+| Visita técnica (días, franjas, zonas, costo) | Configurable en el mismo módulo |
+| Plazo de PVC | **24 horas hábiles** (según el horario configurado) |
+| Base de conocimiento | Se escribe en el mismo módulo |
+| Email | El mismo Gmail que ya lee el workflow de reparto |
+| Volumen | **15 a 20 consultas por día** que se convierten en conversación |
 | Instagram | La cuenta **no es profesional**: hay que convertirla y vincularla a una página de Facebook antes de integrarla |
 
 ## Problema que resuelve
@@ -170,7 +176,7 @@ barato que ya funciona.
 ## Complejidad estimada
 **Grande**. Etapas propuestas, cada una con su `/feature`:
 
-1. **Base + WhatsApp**: `conversaciones`, router de Meta, Agent con tono humano, relevamiento,
+1. **Base + WhatsApp**: módulo «Configuración del asistente», `conversaciones`, router de Meta, Agent con tono humano, relevamiento,
    consultas generales, derivación y panel de supervisión.
 2. **Cotización aluminio**: catálogo de tipologías, cotización con el cotizador y envío del PDF.
 3. **PVC + visita técnica**: asignación con plazo de 24 h, envío del PDF cuando está listo y
@@ -209,36 +215,44 @@ barato que ya funciona.
   transparencia de IA y por el daño de confianza si se descubre. Meta permite bots de atención
   propios del negocio, siempre que se mantengan en los temas de la empresa.
 
+## Módulo «Configuración del asistente» (nuevo)
+Pantalla en AkunCalcu, con permiso propio (REQ-019), donde dirección define cómo trabaja el bot
+sin tocar n8n ni código. El bot lee esta configuración en cada conversación.
+
+| Sección | Qué se configura |
+|---|---|
+| **Horario de atención** | Días y franjas por día (por ejemplo, lun-vie 8-18, sáb 9-13) y feriados. Fuera de horario el bot espera a la apertura siguiente. Con este horario se calculan las 24 h hábiles de PVC |
+| **Técnico y visitas** | Técnico o técnicos que hacen la visita (usuarios), días y franjas disponibles, duración de cada visita, zonas o localidades que cubre, costo de la visita (o sin costo) y cuántas visitas por franja |
+| **Base de conocimiento** | Entradas de tema + texto: zonas de cobertura, plazos de fabricación, garantía, formas de pago, qué incluye la colocación, etc. El bot solo afirma lo que está acá o lo que devuelve el sistema |
+| **Identidad y tono** | Nombre con el que firma (Matías Fariña), saludo y cierre habituales, indicaciones de tono |
+| **Cotización** | Productos de aluminio que el bot puede ofrecer y valores por defecto fijados a mano (si no hay, se usa el más cotizado del historial) |
+| **Derivaciones** | Quién recibe lo que se deriva a dirección y qué temas siempre se derivan (reclamos, obras especiales) |
+| **Encendido** | Activar o pausar el bot por canal, para cortar rápido si algo sale mal |
+
 ## Consecuencias de las decisiones
 - **Mismo número para personal y clientes**: el router de Meta es obligatorio en la Etapa 1.
   Los números habilitados (`NumeroWhatsApp` activos) siguen a Gastos, Resumen y Agenda.
   Cualquier otro número va al bot de clientes. Hoy esos mensajes reciben un 403 y quedan sin
   respuesta.
-- **«Espera a las 8» y la ventana de 24 h**: un mensaje del viernes a la noche contestado el
-  lunes a las 8 queda fuera de la ventana de WhatsApp, y ahí solo se puede escribir con
-  plantilla aprobada por Meta. Hace falta una plantilla de «retomo tu consulta» o responder
-  también los sábados.
+- **Horario y ventana de 24 h**: si entre el último mensaje del cliente y la apertura siguiente
+  pasan más de 24 h (por ejemplo, de sábado a la tarde a lunes), WhatsApp solo deja escribir
+  con plantilla aprobada por Meta. Hace falta una plantilla de «retomo tu consulta».
 - **Firma con nombre real**: el cliente puede llamar o escribir preguntando por Matías. Las
   vendedoras y el técnico tienen que saber que las conversaciones salen con ese nombre y
   tener acceso al historial.
 - **Instagram pasa a la última etapa** hasta que la cuenta sea profesional y esté vinculada a
-  una página de Facebook (es gratis y se hace desde la app de Instagram). Después, Meta tiene
-  que aprobar el permiso de mensajes.
-- **Configuración inferida del historial**: si el historial es chico o muy variado para un
-  tipo de abertura, el valor más usado puede no ser representativo. El panel de dirección
-  tiene que mostrar qué valor por defecto está usando el bot.
+  una página de Facebook. Después, Meta tiene que aprobar el permiso de mensajes.
+- **Configuración inferida del historial**: si el historial de un tipo de abertura es chico o
+  muy variado, el valor más usado puede no ser representativo. El módulo muestra qué valor
+  usa el bot y permite fijarlo.
+- **Volumen bajo (15-20 conversaciones por día)**: el costo del LLM es acotado incluso con un
+  modelo de primera línea. Se puede usar el modelo más capaz para la conversación sin que el
+  costo pese.
 
 ## Preguntas abiertas
-1. **Horario de atención**: ¿días y horas? (lunes a viernes de 8 a 18, ¿sábados?) Define cuándo
-   responde y cuándo espera a las 8.
-2. **Visita técnica**: ¿qué días y franjas tiene el técnico, qué zonas cubre y tiene costo para
-   el cliente? ¿Hay un solo técnico o varios?
-3. **PVC**: el plazo de 24 h, ¿cuenta en horas hábiles? (por ejemplo, una consulta del viernes
-   a la tarde, ¿se entrega el lunes?)
-4. **Base de conocimiento**: zonas de cobertura, plazos de fabricación, garantía, formas de
-   pago. ¿Hay algo cargado en el sistema o hay que redactarlo?
-5. **Email**: ¿es el mismo Gmail que ya lee el workflow de reparto de solicitudes?
-6. Volumen aproximado de mensajes por día en cada canal.
+_Ninguna que bloquee el inicio. Se definen durante el desarrollo: los textos de la base de
+conocimiento, la plantilla de Meta de «retomo tu consulta» y la elección final del modelo de
+IA (prueba comparativa en la Etapa 1)._
 
 ## Derivó en
-_Pendiente — resolver las preguntas abiertas y usar /feature REQ-075 (Etapa 1)_
+_Pendiente — usar /feature REQ-075 para iniciar la Etapa 1_
