@@ -133,3 +133,193 @@
 </div>
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const perfilesRows = Array.from(document.querySelectorAll('[data-filter-row="perfiles-table"]'));
+    const perfilesEmptyStateRow = document.querySelector('[data-filter-empty="perfiles-table"]');
+    const filtersSearchInput = document.querySelector('[data-filter-search]');
+    const filtersStatusSelect = document.querySelector('[data-filter-status]');
+    const filtersResetButton = document.querySelector('[data-filter-reset]');
+    const externalResultsLabel = document.querySelector('[data-filter-results-external]');
+
+    function normalizeFilterText(value) {
+        return (value || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function applyPerfilesTableFilters() {
+        const searchTerm = normalizeFilterText(filtersSearchInput ? filtersSearchInput.value : '');
+        const selectedStatus = filtersStatusSelect ? filtersStatusSelect.value : '';
+        let visibleCount = 0;
+
+        perfilesRows.forEach(function (row) {
+            const rowText = normalizeFilterText(row.textContent);
+            const rowStatus = row.dataset.status || '';
+            const matchesSearch = !searchTerm || rowText.includes(searchTerm);
+            const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+            const isVisible = matchesSearch && matchesStatus;
+
+            row.classList.toggle('hidden', !isVisible);
+            if (isVisible) {
+                visibleCount += 1;
+            }
+        });
+
+        if (perfilesEmptyStateRow) {
+            perfilesEmptyStateRow.classList.toggle('hidden', perfilesRows.length === 0 || visibleCount > 0);
+        }
+
+        if (externalResultsLabel) {
+            if (perfilesRows.length === 0) {
+                externalResultsLabel.textContent = 'Sin registros cargados';
+            } else {
+                externalResultsLabel.textContent = `Mostrando ${visibleCount} de ${perfilesRows.length} registros`;
+            }
+        }
+    }
+
+    if (filtersSearchInput) {
+        filtersSearchInput.addEventListener('input', applyPerfilesTableFilters);
+    }
+
+    if (filtersStatusSelect) {
+        filtersStatusSelect.addEventListener('change', applyPerfilesTableFilters);
+    }
+
+    if (filtersResetButton) {
+        filtersResetButton.addEventListener('click', function () {
+            if (filtersSearchInput) {
+                filtersSearchInput.value = '';
+            }
+            if (filtersStatusSelect) {
+                filtersStatusSelect.value = '';
+            }
+            applyPerfilesTableFilters();
+        });
+    }
+
+    const bulkForm = document.getElementById('bulk-perfiles-form');
+    if (!bulkForm) {
+        applyPerfilesTableFilters();
+        return;
+    }
+
+    const selectAllCheckbox = document.getElementById('seleccionar-todos-perfiles');
+    const selectedCount = document.getElementById('perfiles-seleccionados-cantidad');
+    const submitButton = document.getElementById('aplicar-precio-masivo');
+    const priceInput = document.getElementById('id_precio_kg');
+
+    function getAllSelectors() {
+        return Array.from(document.querySelectorAll('.perfil-selector'));
+    }
+
+    function getVisibleSelectors() {
+        return getAllSelectors().filter(function (checkbox) {
+            const row = checkbox.closest('tr');
+            return row && !row.classList.contains('hidden');
+        });
+    }
+
+    function updateBulkSelectionState() {
+        const allSelectors = getAllSelectors();
+        const visibleSelectors = getVisibleSelectors();
+        const checkedSelectors = allSelectors.filter(function (checkbox) {
+            return checkbox.checked;
+        });
+        const checkedVisibleSelectors = visibleSelectors.filter(function (checkbox) {
+            return checkbox.checked;
+        });
+
+        if (selectedCount) {
+            selectedCount.textContent = checkedSelectors.length;
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = visibleSelectors.length > 0 && checkedVisibleSelectors.length === visibleSelectors.length;
+            selectAllCheckbox.indeterminate = checkedVisibleSelectors.length > 0 && checkedVisibleSelectors.length < visibleSelectors.length;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = checkedSelectors.length === 0;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function () {
+            getVisibleSelectors().forEach(function (checkbox) {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateBulkSelectionState();
+        });
+    }
+
+    getAllSelectors().forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateBulkSelectionState);
+    });
+
+    const scheduleUpdate = function () {
+        window.setTimeout(updateBulkSelectionState, 0);
+    };
+
+    if (filtersSearchInput) {
+        filtersSearchInput.addEventListener('input', scheduleUpdate);
+    }
+    if (filtersStatusSelect) {
+        filtersStatusSelect.addEventListener('change', scheduleUpdate);
+    }
+    if (filtersResetButton) {
+        filtersResetButton.addEventListener('click', scheduleUpdate);
+    }
+
+    bulkForm.addEventListener('submit', function (event) {
+        if (bulkForm.dataset.confirmed === 'true') {
+            return;
+        }
+
+        const checkedSelectors = getAllSelectors().filter(function (checkbox) {
+            return checkbox.checked;
+        });
+
+        if (!checkedSelectors.length) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Sin selección',
+                text: 'Selecciona al menos un perfil para aplicar la edición masiva.',
+                icon: 'warning',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        if (!priceInput || !priceInput.value) {
+            return;
+        }
+
+        event.preventDefault();
+        Swal.fire({
+            title: '¿Actualizar precios?',
+            html: `<p>Se actualizará el <strong>Precio/kg</strong> de <strong>${checkedSelectors.length}</strong> perfiles.</p><p class="text-sm text-gray-600 mt-2">Nuevo valor: <strong>${priceInput.value}</strong></p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, actualizar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                bulkForm.dataset.confirmed = 'true';
+                bulkForm.submit();
+            }
+        });
+    });
+
+    applyPerfilesTableFilters();
+    updateBulkSelectionState();
+});
+</script>
+{% endblock %}

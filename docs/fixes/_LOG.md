@@ -22,6 +22,19 @@
 
 ## Fixes registrados
 
+### FIX-031 — En Configuración › Perfiles no andaba la selección masiva ni los filtros
+**Fecha**: 2026-11-11
+**Reportado por**: Usuario
+**Severidad**: Media
+**Feature afectada**: pricing — Configuración de perfiles (edición masiva de Precio/kg)
+
+**Síntoma**: Al tocar el check «todos», el contador seguía en «0 perfiles seleccionados» y el botón «Aplicar precio masivo» no se habilitaba. Tampoco filtraban el buscador ni el filtro Activo/Inactivo.
+**Causa raíz**: El rediseño «Taller» (commit `23c7cd3`) borró todo el bloque `<script>` de `perfiles.html`. Los checks y el botón quedaron sin código que los maneje. Las otras 9 pantallas de configuración también perdieron su script, pero solo tenían `confirmarDesactivar`, que hoy reemplaza el menú de acciones; no quedaron rotas.
+**Solución**: Se restauró el script original en `{% block extra_js %}`: filtros, «seleccionar todos», contador, botón habilitado y confirmación con SweetAlert. Se quitó `confirmarDesactivar`, que ya no se usa. Se agregó un test que falla si el script vuelve a faltar.
+**Archivos modificados**:
+- `akuna_calc/pricing/templates/pricing/config/perfiles.html`
+- `akuna_calc/pricing/tests.py` (`PerfilesConfigScriptTest`)
+
 ### FIX-030 — El visor 3D no dibuja los tirantes en ventanas corredizas ni en batientes de 2 hojas
 **Fecha**: 2026-11-09
 **Reportado por**: usuario

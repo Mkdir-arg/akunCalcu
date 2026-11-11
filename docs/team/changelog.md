@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-11 — FIX-031: selección masiva de perfiles
+
+En Configuración › Perfiles vuelven a andar el check «todos», el contador, «Aplicar precio masivo» y los filtros. El rediseño «Taller» había borrado el script de la pantalla.
+
+---
+
 ## 2026-11-11 — FEAT-059: simulador de conversación del agente
 
 Nueva opción **Agente → Simulador**: se le escribe al asistente como si fuera un cliente y responde con la configuración real (firma, tono, modelo, horario y base de conocimiento). Chat con burbujas e indicador «escribiendo…», canal y fecha/hora simulada (para probar fuera de horario), y «Detrás de escena» en cada respuesta (conocimiento usado, acción que habría tomado, modelo y tokens). No envía nada a nadie. Primer uso del motor de conversación en Django (`agente/motor.py`), que después van a usar los canales reales; llama a OpenAI con `OPENAI_API_KEY`. Migración `agente/0002` (REQ-076, ADR-033).

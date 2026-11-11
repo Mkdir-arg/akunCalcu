@@ -2111,3 +2111,17 @@ class EstructuraCalculateViewTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertIn('/login/', res['Location'])
         mock_calc.assert_not_called()
+
+
+class PerfilesConfigScriptTest(SimpleTestCase):
+    """FIX-031: el rediseño borró el script de la pantalla de perfiles y la
+    selección masiva dejó de andar. Si el script vuelve a faltar, falla acá."""
+
+    def test_plantilla_trae_el_script_de_seleccion_masiva(self):
+        from django.template.loader import get_template
+        fuente = get_template('pricing/config/perfiles.html').template.source
+        self.assertIn('{% block extra_js %}', fuente)
+        self.assertIn("getElementById('seleccionar-todos-perfiles')", fuente)
+        self.assertIn("getElementById('perfiles-seleccionados-cantidad')", fuente)
+        self.assertIn("getElementById('aplicar-precio-masivo')", fuente)
+        self.assertIn("querySelectorAll('.perfil-selector')", fuente)
