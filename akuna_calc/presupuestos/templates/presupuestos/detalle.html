@@ -477,7 +477,15 @@
                                 {{ configuracion_form.incluye_colocacion }}
                                 <span class="ml-2 text-sm strong">{{ configuracion_form.incluye_colocacion.label }}</span>
                             </label>
-                            <p class="field-hint ml-6">Definen el texto de Observaciones en el PDF (flete y/o colocación).</p>
+                            <label class="flex items-center cursor-pointer">
+                                {{ configuracion_form.flete_expreso_caba }}
+                                <span class="ml-2 text-sm strong">{{ configuracion_form.flete_expreso_caba.label }}</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                {{ configuracion_form.no_incluye_izaje }}
+                                <span class="ml-2 text-sm strong">{{ configuracion_form.no_incluye_izaje.label }}</span>
+                            </label>
+                            <p class="field-hint ml-6">Definen el texto de Observaciones en el PDF.</p>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-secondary w-full mt-4" style="justify-content:center">Guardar configuración</button>
@@ -514,6 +522,16 @@
                         <span class="muted">Colocación</span>
                         <span class="strong text-right">{% if presupuesto.incluye_colocacion %}Incluida{% else %}No incluida{% endif %}</span>
                     </div>
+                    <div class="flex justify-between gap-3">
+                        <span class="muted">Flete expreso CABA</span>
+                        <span class="strong text-right">{% if presupuesto.flete_expreso_caba %}Sí{% else %}No{% endif %}</span>
+                    </div>
+                    {% if presupuesto.no_incluye_izaje %}
+                    <div class="flex justify-between gap-3">
+                        <span class="muted">Izaje</span>
+                        <span class="strong text-right">No incluido</span>
+                    </div>
+                    {% endif %}
                     <div class="flex justify-between gap-3">
                         <span class="muted">Plazo de entrega</span>
                         <span class="strong text-right">{% if presupuesto.plazo_entrega_dias %}{{ presupuesto.plazo_entrega_dias }} día{{ presupuesto.plazo_entrega_dias|pluralize:"s" }}{% else %}No especificado{% endif %}</span>

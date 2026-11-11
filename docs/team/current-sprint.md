@@ -30,6 +30,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-069 | Novedades del sistema generadas desde GitHub (REQ-069) | ✅ Completado | Fuera de plan; FEAT-053 / ADR-029. Migración `novedades/0001`. Faltan los secrets en GitHub y Railway y probarlo en el navegador |
 | US-070 | Optimizador de corte de perfiles de marco (REQ-070) | ✅ Completado | Fuera de plan; FEAT-054 / ADR-030. Migración `optimizador/0001`. Falta probar en el navegador y con el catálogo real |
 | US-071 | Resumen diario y semanal por WhatsApp para la dirección (REQ-071) | ✅ Completado | Fuera de plan; FEAT-055 / ADR-031. Migración `resumenes/0001`. n8n `iEON0QIYoc8O9Bbk` inactivo: faltan plantilla de Meta, webhook (FIX-026), rama en gastos y variables |
+| US-073 | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto (REQ-073) | ✅ Completado | Fuera de plan; FEAT-056. Migración `presupuestos/0013`. Falta probar en el navegador |
 
 ## Items completados (sprints anteriores)
 

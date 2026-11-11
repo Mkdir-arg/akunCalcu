@@ -49,7 +49,7 @@ class PresupuestoForm(forms.ModelForm):
 class PresupuestoConfiguracionObraForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'plazo_entrega_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion']
+        fields = ['tipo_obra', 'modalidad_sena', 'validez_dias', 'plazo_entrega_dias', 'recargo_obra_nueva', 'recargo_renovacion_unitario', 'aplicar_iva', 'incluye_flete', 'incluye_colocacion', 'flete_expreso_caba', 'no_incluye_izaje']
         labels = {
             # En obra nueva este valor es la colocación (lo cargan las chicas).
             'recargo_obra_nueva': 'Colocación',
@@ -64,6 +64,8 @@ class PresupuestoConfiguracionObraForm(forms.ModelForm):
             'aplicar_iva': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
             'incluye_flete': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
             'incluye_colocacion': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'flete_expreso_caba': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'no_incluye_izaje': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
         }
 
     def __init__(self, *args, **kwargs):

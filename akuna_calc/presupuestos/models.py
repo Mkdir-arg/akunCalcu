@@ -107,6 +107,14 @@ class Presupuesto(models.Model):
         default=False,
         verbose_name='Incluye colocación',
     )
+    flete_expreso_caba = models.BooleanField(
+        default=False,
+        verbose_name='Flete expreso CABA',
+    )
+    no_incluye_izaje = models.BooleanField(
+        default=False,
+        verbose_name='No incluye izaje',
+    )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total')
     cotizacion_usd = models.DecimalField(
         max_digits=10,
@@ -187,7 +195,12 @@ class Presupuesto(models.Model):
             inclusiones = 'incluye colocación'
         else:
             inclusiones = 'no incluye flete ni colocación'
-        return f'El presente presupuesto {inclusiones}.'
+        if self.flete_expreso_caba:
+            inclusiones += ', flete expreso CABA'
+        texto = f'El presente presupuesto {inclusiones}.'
+        if self.no_incluye_izaje:
+            texto += ' No incluye izaje.'
+        return texto
 
     def get_resumen_flete_colocacion(self):
         if self.incluye_flete and self.incluye_colocacion:

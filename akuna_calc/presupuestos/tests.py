@@ -220,6 +220,47 @@ class PresupuestoModelTest(TestCase):
             'El presente presupuesto no incluye flete ni colocación.',
         )
 
+    def test_flete_expreso_y_izaje_default_false(self):
+        p = crear_presupuesto(self.user)
+        self.assertFalse(p.flete_expreso_caba)
+        self.assertFalse(p.no_incluye_izaje)
+
+    def test_observaciones_pdf_todo_tildado(self):
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.incluye_colocacion = True
+        p.flete_expreso_caba = True
+        p.no_incluye_izaje = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye flete y colocación, flete expreso CABA. No incluye izaje.',
+        )
+
+    def test_observaciones_pdf_flete_y_expreso(self):
+        p = crear_presupuesto(self.user)
+        p.incluye_flete = True
+        p.flete_expreso_caba = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto incluye flete, flete expreso CABA.',
+        )
+
+    def test_observaciones_pdf_solo_no_izaje(self):
+        p = crear_presupuesto(self.user)
+        p.no_incluye_izaje = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto no incluye flete ni colocación. No incluye izaje.',
+        )
+
+    def test_observaciones_pdf_solo_expreso(self):
+        p = crear_presupuesto(self.user)
+        p.flete_expreso_caba = True
+        self.assertEqual(
+            p.get_observaciones_pdf(),
+            'El presente presupuesto no incluye flete ni colocación, flete expreso CABA.',
+        )
+
     def test_resumen_flete_colocacion(self):
         p = crear_presupuesto(self.user)
         self.assertEqual(p.get_resumen_flete_colocacion(), 'Sin flete ni colocación')
@@ -1151,6 +1192,34 @@ class PresupuestosViewsTest(TestCase):
             p.get_observaciones_pdf(),
             'El presente presupuesto incluye flete y colocación.',
         )
+
+    def test_actualizar_configuracion_obra_guarda_expreso_e_izaje(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+
+        res = self.client.post(
+            f'/presupuestos/{p.pk}/configuracion-obra/',
+            {
+                'tipo_obra': 'obra_nueva',
+                'modalidad_sena': '50_50',
+                'recargo_obra_nueva': '0',
+                'flete_expreso_caba': 'on',
+                'no_incluye_izaje': 'on',
+            },
+        )
+
+        self.assertEqual(res.status_code, 302)
+        p.refresh_from_db()
+        self.assertTrue(p.flete_expreso_caba)
+        self.assertTrue(p.no_incluye_izaje)
+        self.assertFalse(p.incluye_flete)
+
+    def test_detalle_muestra_checks_expreso_e_izaje(self):
+        self.client.login(username='viewuser', password='testpass')
+        p = crear_presupuesto(self.user)
+        res = self.client.get(f'/presupuestos/{p.pk}/')
+        self.assertContains(res, 'name="flete_expreso_caba"')
+        self.assertContains(res, 'name="no_incluye_izaje"')
 
     def test_actualizar_configuracion_obra_destilda_flete_y_colocacion(self):
         self.client.login(username='viewuser', password='testpass')

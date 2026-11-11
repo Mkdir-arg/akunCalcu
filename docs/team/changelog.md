@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-11 — FEAT-056: checks «Flete expreso CABA» y «No incluye izaje»
+
+En la configuración del presupuesto, debajo de «Incluye colocación», hay dos checks nuevos e independientes: «Flete expreso CABA» y «No incluye izaje». Se suman a la frase de Observaciones del PDF (ej.: «El presente presupuesto incluye flete y colocación, flete expreso CABA. No incluye izaje.»). Sin tildarlos, el PDF queda igual. Migración `presupuestos/0013` (REQ-073).
+
+---
+
 ## 2026-11-10 — FEAT-055: resumen diario y semanal por WhatsApp
 
 App nueva `resumenes`. De lunes a viernes a las 19:00 y los sábados a las 13:00, n8n le pide a Django los números del período (presupuestos creados, confirmados y sin respuesta hace 7+ días, ventas contra la semana anterior, fábrica, agenda, solicitudes y actividad por usuario). GPT-4o-mini solo los redacta y Django guarda el texto. A los números autorizados con la casilla nueva «Recibe el resumen» (se marcan desde la web, migración `gastos_diarios/0004`) les llega la plantilla «Tu resumen está listo» con el botón «Ver resumen», y al tocarlo reciben el resumen completo. Tres APIs con `RESUMEN_BOT_SECRET`. Migración `resumenes/0001` (ADR-031). El workflow `iEON0QIYoc8O9Bbk` queda inactivo hasta tener la plantilla aprobada y el webhook de Meta.
