@@ -1,0 +1,8 @@
+{% comment %}Checkbox Taller. Parámetros: campo (BoundField). Usar con `only`.{% endcomment %}
+<div>
+    <div class="flex items-center gap-3">
+        {{ campo }}
+        <label for="{{ campo.id_for_label }}" class="strong">{{ campo.label }}</label>
+    </div>
+    {% if campo.help_text %}<p class="field-hint ml-8">{{ campo.help_text }}</p>{% endif %}
+</div>

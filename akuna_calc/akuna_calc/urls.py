@@ -29,6 +29,7 @@ urlpatterns = [
     path('novedades/', include('novedades.urls')),
     path('optimizador/', include('optimizador.urls')),
     path('resumenes/', include('resumenes.urls')),
+    path('agente/', include('agente.urls')),
 ]
 
 # Serve static files in development

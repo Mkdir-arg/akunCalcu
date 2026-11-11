@@ -1,0 +1,97 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Horario de atención{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+{% include 'core/ui/page_header.html' with title="Horario de atención" subtitle="Fuera de estas franjas el asistente espera a la próxima apertura para responder." only %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <section class="card overflow-hidden lg:col-span-2">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr><th>Día</th><th>Franjas</th></tr>
+                </thead>
+                <tbody>
+                    {% for dia in semana %}
+                    <tr>
+                        <td class="strong">{{ dia.nombre }}</td>
+                        <td>
+                            {% for franja in dia.franjas %}
+                                <span class="inline-flex items-center gap-1 mr-3">
+                                    {{ franja.hora_desde|time:"H:i" }} – {{ franja.hora_hasta|time:"H:i" }}
+                                    {% url 'agente:franja_editar' franja.pk as url_editar %}
+                                    {% url 'agente:franja_eliminar' franja.pk as url_borrar %}
+                                    {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones de la franja" edit_url=url_editar delete_url=url_borrar delete_name="la franja" only %}
+                                </span>
+                            {% empty %}
+                                {% include 'core/ui/badge.html' with tone="gray" label="Cerrado" only %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card card-pad">
+        <p class="sec-label mb-4">Agregar franja</p>
+        <form method="post" action="{% url 'agente:franja_crear' %}">
+            {% csrf_token %}
+            {% if franja_form.non_field_errors %}<p class="field-error mb-3">{{ franja_form.non_field_errors.0 }}</p>{% endif %}
+            <div class="grid grid-cols-1 gap-4">
+                {% include 'agente/_campo.html' with campo=franja_form.dia_semana requerido=True only %}
+                <div class="grid grid-cols-2 gap-3">
+                    {% include 'agente/_campo.html' with campo=franja_form.hora_desde requerido=True only %}
+                    {% include 'agente/_campo.html' with campo=franja_form.hora_hasta requerido=True only %}
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i>Agregar</button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+    <section class="card overflow-hidden lg:col-span-2">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr><th>Día cerrado</th><th>Motivo</th><th class="num"></th></tr>
+                </thead>
+                <tbody>
+                    {% for dia in dias_cerrados %}
+                    <tr>
+                        <td class="strong">{{ dia.fecha|date:"D d/m/Y" }}</td>
+                        <td>{{ dia.motivo|default:"—" }}</td>
+                        <td class="num">
+                            {% url 'agente:dia_cerrado_eliminar' dia.pk as url_borrar %}
+                            {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del día" delete_url=url_borrar delete_name=dia.fecha|date:"d/m/Y" only %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3">{% include 'core/ui/empty_state.html' with title="Sin días cerrados" text="Cargá feriados o vacaciones para que el asistente no prometa respuestas esos días." icon="fas fa-calendar-xmark" only %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card card-pad">
+        <p class="sec-label mb-4">Agregar día cerrado</p>
+        <form method="post" action="{% url 'agente:dia_cerrado_crear' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-4">
+                {% include 'agente/_campo.html' with campo=dia_form.fecha requerido=True only %}
+                {% include 'agente/_campo.html' with campo=dia_form.motivo only %}
+            </div>
+            <div class="flex justify-end mt-4">
+                <button type="submit" class="btn btn-secondary"><i class="fas fa-plus"></i>Agregar</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

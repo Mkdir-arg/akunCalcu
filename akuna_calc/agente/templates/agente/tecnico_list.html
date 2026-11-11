@@ -1,0 +1,58 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Visitas técnicas{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+{% url 'agente:tecnico_crear' as url_nuevo %}
+{% include 'core/ui/page_header.html' with title="Visitas técnicas" subtitle="Técnicos que hacen la medición, cuándo pueden ir y qué zonas cubren." action_url=url_nuevo action_label="Nuevo técnico" only %}
+
+<section class="card overflow-hidden">
+    <div class="table-wrap">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Técnico</th>
+                    <th>Franjas</th>
+                    <th>Zonas</th>
+                    <th class="num">Duración</th>
+                    <th class="num">Costo</th>
+                    <th>Estado</th>
+                    <th class="num"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tecnico in tecnicos %}
+                <tr>
+                    <td class="strong">{{ tecnico }}</td>
+                    <td>
+                        {% for franja in tecnico.franjas.all %}<div>{{ franja }}</div>{% empty %}<span class="muted">Sin franjas</span>{% endfor %}
+                    </td>
+                    <td>
+                        {% for zona in tecnico.zonas.all %}{{ zona.localidad }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">Sin zonas</span>{% endfor %}
+                    </td>
+                    <td class="num">{{ tecnico.duracion_minutos }} min · {{ tecnico.cupo_por_franja }} por franja</td>
+                    <td class="num">{% if tecnico.costo_visita %}$ {{ tecnico.costo_visita }}{% else %}Sin costo{% endif %}</td>
+                    <td>
+                        {% if tecnico.activo %}
+                            {% include 'core/ui/badge.html' with tone="green" label="Activo" dot=True only %}
+                        {% else %}
+                            {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
+                        {% endif %}
+                    </td>
+                    <td class="num">
+                        {% url 'agente:tecnico_editar' tecnico.pk as url_editar %}
+                        {% url 'agente:tecnico_eliminar' tecnico.pk as url_borrar %}
+                        {% include 'core/ui/kebab_menu.html' with kebab_label="Acciones del técnico" edit_url=url_editar delete_url=url_borrar delete_name=tecnico only %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">{% include 'core/ui/empty_state.html' with title="Todavía no hay técnicos" text="Cargá al técnico que hace las visitas para que el asistente pueda ofrecer turnos." icon="fas fa-user-gear" action_url=url_nuevo action_label="Nuevo técnico" only %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

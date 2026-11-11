@@ -70,6 +70,19 @@ ACCESS_MODULES = [
         ],
     },
     {
+        'key': 'agente',
+        'grupo': 'operacion',
+        'label': 'Agente',
+        'icon': 'fas fa-robot',
+        'dropdown': True,
+        'items': [
+            {'code': 'agente.configuracion', 'label': 'Configuración general', 'route_name': 'agente:configuracion'},
+            {'code': 'agente.horario', 'label': 'Horario de atención', 'route_name': 'agente:horario'},
+            {'code': 'agente.visitas', 'label': 'Visitas técnicas', 'route_name': 'agente:tecnicos'},
+            {'code': 'agente.conocimiento', 'label': 'Base de conocimiento', 'route_name': 'agente:conocimiento'},
+        ],
+    },
+    {
         'key': 'reportes',
         'grupo': 'analisis',
         'label': 'Reportes',
@@ -187,7 +200,7 @@ ACCESS_MODULES = [
 ]
 
 SIDEBAR_GRUPOS = [
-    ('operacion', 'Operación', ['dashboard', 'solicitudes', 'presupuestos', 'cotizador', 'agenda']),
+    ('operacion', 'Operación', ['dashboard', 'solicitudes', 'agente', 'presupuestos', 'cotizador', 'agenda']),
     ('ventas', 'Ventas y cobros', ['comercial', 'facturacion', 'gastos_diarios']),
     ('fabrica', 'Fábrica', ['despiece', 'optimizador', 'fabrica', 'productos']),
     ('analisis', 'Análisis', ['reportes']),
@@ -315,6 +328,10 @@ _register_route('gastos_diarios.numeros', 'gastos_diarios:numero_create', 'gasto
 _register_route('agenda.view', 'agenda:calendario', 'agenda:crear', 'agenda:editar', 'agenda:eliminar', 'agenda:cliente_info')
 
 _register_route('solicitudes.view', 'solicitudes:lista', 'solicitudes:marcar_contestada', 'solicitudes:reasignar')
+_register_route('agente.horario', 'agente:franja_crear', 'agente:franja_editar', 'agente:franja_eliminar', 'agente:dia_cerrado_crear', 'agente:dia_cerrado_eliminar')
+_register_route('agente.visitas', 'agente:tecnico_crear', 'agente:tecnico_editar', 'agente:tecnico_eliminar')
+_register_route('agente.conocimiento', 'agente:conocimiento_crear', 'agente:conocimiento_editar', 'agente:conocimiento_eliminar')
+
 # El vendedor marca "contestada" desde su bandeja del home (dashboard); la view valida
 # que solo pueda actuar sobre sus propias solicitudes.
 _register_route('dashboard.view', 'solicitudes:marcar_contestada')
