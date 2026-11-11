@@ -1,5 +1,5 @@
 # REQ-076 — Simulador de conversación del agente
-**Estado**: En desarrollo
+**Estado**: Implementado
 **Fecha**: 2026-11-11
 **Solicitante**: Dirección
 **Relacionado con**: [REQ-075](./REQ-075-atencion-automatica-clientes-omnicanal.md)
@@ -17,27 +17,27 @@ reciba nada.
 > ajustarla antes de que atienda a clientes reales.
 
 ## Criterios de aceptación
-- [ ] En el menú **Agente** aparece **Simulador**, con su propio permiso (`agente.simulador`).
-- [ ] Pantalla de chat: los mensajes del «cliente» y los del asistente se ven en burbujas
+- [x] En el menú **Agente** aparece **Simulador**, con su propio permiso (`agente.simulador`).
+- [x] Pantalla de chat: los mensajes del «cliente» y los del asistente se ven en burbujas
       distintas, con hora; hay una caja para escribir, botón Enviar (y Enter) y un indicador
       «escribiendo…» mientras el asistente responde.
-- [ ] El asistente responde con la **configuración real** del menú Agente: firma, indicaciones
+- [x] El asistente responde con la **configuración real** del menú Agente: firma, indicaciones
       de tono, modelo de IA y base de conocimiento (solo entradas activas).
-- [ ] Al empezar se elige el **canal simulado** (WhatsApp, email o Instagram) y, opcionalmente,
+- [x] Al empezar se elige el **canal simulado** (WhatsApp, email o Instagram) y, opcionalmente,
       un **nombre de cliente** de prueba.
-- [ ] Se puede simular **fecha y hora** para probar qué responde fuera del horario de atención o
+- [x] Se puede simular **fecha y hora** para probar qué responde fuera del horario de atención o
       en un día cerrado.
-- [ ] El simulador funciona **aunque los canales estén apagados y con modo prueba activo**: nunca
+- [x] El simulador funciona **aunque los canales estén apagados y con modo prueba activo**: nunca
       envía nada por WhatsApp, email ni Instagram, y no crea clientes, solicitudes, presupuestos
       ni visitas reales.
-- [ ] Botón **Nueva conversación** para empezar de cero. Las conversaciones simuladas se guardan y
+- [x] Botón **Nueva conversación** para empezar de cero. Las conversaciones simuladas se guardan y
       se pueden volver a abrir desde un listado (quién la hizo, cuándo, canal, cantidad de mensajes).
-- [ ] Panel **«Detrás de escena»** en cada respuesta: qué entradas de la base de conocimiento usó y
+- [x] Panel **«Detrás de escena»** en cada respuesta: qué entradas de la base de conocimiento usó y
       qué acciones habría hecho (por ejemplo, «derivar a dirección»), para entender por qué
       respondió eso.
-- [ ] Si falta la API key de OpenAI o el servicio falla, se muestra un mensaje claro en el chat y
+- [x] Si falta la API key de OpenAI o el servicio falla, se muestra un mensaje claro en el chat y
       la conversación no se pierde.
-- [ ] Tests: modelos, vistas (status, login, permiso) y el armado del pedido al modelo **sin
+- [x] Tests: modelos, vistas (status, login, permiso) y el armado del pedido al modelo **sin
       llamar a OpenAI de verdad** (respuesta simulada en los tests).
 
 ## Fuera de este requerimiento
@@ -60,4 +60,4 @@ historial), más la pantalla de chat y el listado.
   Arquitecto en el Paso 2.
 
 ## Derivó en
-_Pendiente_
+[FEAT-059](../features/FEAT-059-simulador-conversacion-agente.md) — implementado 2026-11-11 (falta probar contra OpenAI con la key cargada).

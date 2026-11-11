@@ -33,6 +33,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-073 | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto (REQ-073) | ✅ Completado | Fuera de plan; FEAT-056. Migración `presupuestos/0013`. Falta probar en el navegador |
 | US-074 | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem (REQ-074) | ✅ Completado | Fuera de plan; FEAT-057. Sin migración. Falta probar en el navegador |
 | US-075 | Sección «Agente»: configuración del asistente de clientes (REQ-075, Etapa 1a) | ✅ Completado | Fuera de plan; FEAT-058 / ADR-032. Migración `agente/0001`. Falta probar en el navegador. Sigue la Etapa 1b |
+| US-076 | Simulador de conversación del agente (REQ-076) | ✅ Completado | Fuera de plan; FEAT-059 / ADR-033. Migración `agente/0002`. Falta cargar `OPENAI_API_KEY` en Railway y probar contra OpenAI |
 
 ## Items completados (sprints anteriores)
 

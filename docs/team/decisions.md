@@ -16,6 +16,31 @@
 
 ---
 
+## ADR-033: El motor de conversación del agente vive en Django; n8n solo transporta mensajes
+**Fecha**: 2026-11-11
+**Estado**: Activo (modifica el diseño original de REQ-075, que lo ubicaba en un Agent de n8n)
+
+**Contexto**: El simulador de conversación (REQ-076) necesita llamar al asistente desde AkunCalcu, y los
+canales reales (REQ-075) van a necesitar herramientas que operan sobre datos de Django (cotizar, agendar,
+derivar). Con el motor en n8n, el simulador tendría que ir y volver por un webhook, cada herramienta sería
+una API, los workflows no tienen tests y sería difícil garantizar que una simulación no dispare acciones reales.
+
+**Decisión**:
+- El motor (`agente/motor.py`) arma el contexto con la configuración de la base (ADR-032), llama a OpenAI y
+  guarda los mensajes. Simulación y canales reales usan el mismo código.
+- Llamada a OpenAI con `urllib` (`agente/openai_cliente.py`), sin SDK; la key se lee de `OPENAI_API_KEY`.
+- Respuesta en JSON con schema estricto: `mensajes` (1 a 3), `entradas_usadas` y `accion`.
+- En simulación las acciones solo se registran en el `detalle` del mensaje; nunca se ejecutan.
+- `Conversacion`/`Mensaje` son genéricos (`es_simulacion`); la Etapa 1b les agrega los datos del contacto real.
+- n8n recibe el mensaje del canal, lo pasa a Django y envía lo que Django devuelve.
+
+**Consecuencias**: Todo el comportamiento se testea con tests de Django simulando a OpenAI. La llamada es
+síncrona y ocupa un worker de gunicorn hasta 25 s: aceptable para el simulador; para los canales reales hay
+que evaluar procesamiento en segundo plano. El cambio de modelo se hace desde la configuración, pero el
+proveedor (OpenAI) queda fijado en `openai_cliente.py`.
+
+---
+
 ## ADR-032: Asistente de clientes: app `agente` y comportamiento configurado en la base
 **Fecha**: 2026-11-11
 **Estado**: Activo

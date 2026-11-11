@@ -256,4 +256,5 @@ IA (prueba comparativa en la Etapa 1)._
 
 ## Derivó en
 - Etapa 1a: [FEAT-058](../features/FEAT-058-seccion-agente-configuracion.md) — sección «Agente» (configuración, horario, visitas técnicas y base de conocimiento). Implementado 2026-11-11.
+- Motor de conversación y simulador: [FEAT-059](../features/FEAT-059-simulador-conversacion-agente.md) (REQ-076). **ADR-033: el motor vive en Django; n8n solo transporta mensajes** (reemplaza el Agent de n8n del diseño original).
 - Etapa 1b (conversaciones, APIs para n8n, router de Meta, asistente en modo prueba): pendiente.
