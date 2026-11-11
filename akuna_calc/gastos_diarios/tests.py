@@ -42,6 +42,15 @@ class NumeroAutorizadoModelTests(TestCase):
     def test_str_sin_nombre(self):
         self.assertEqual(str(NumeroAutorizado.objects.create(numero='5491166666666')), '5491166666666')
 
+    def test_recibe_resumen_por_defecto_es_falso(self):
+        self.assertFalse(NumeroAutorizado.objects.create(numero='5491177777777').recibe_resumen)
+
+    def test_form_guarda_recibe_resumen(self):
+        from .forms import NumeroAutorizadoForm
+        form = NumeroAutorizadoForm({'numero': '5491188888888', 'nombre': 'Dir', 'activo': True, 'recibe_resumen': True})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertTrue(form.save().recibe_resumen)
+
 
 @patch.dict('os.environ', {'TELEGRAM_BOT_SECRET': 'test-secret'})
 class ApiCrearBorradorTests(TestCase):

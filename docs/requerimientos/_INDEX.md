@@ -90,3 +90,5 @@
 | [REQ-068](./REQ-068-croquis-orden-fabricacion.md) | Croquis dibujado en el PDF de la Orden de Fabricación (apertura, paños fijos, travesaños) | Implementado | 2026-11-10 | [FEAT-052](../features/FEAT-052-croquis-orden-fabricacion.md) |
 | [REQ-069](./REQ-069-novedades-del-sistema.md) | Novedades del sistema: borrador automático por cada cambio a main, revisión del admin y aviso al equipo | Implementado | 2026-11-10 | [FEAT-053](../features/FEAT-053-novedades-del-sistema.md) |
 | [REQ-070](./REQ-070-optimizador-corte-marco.md) | Optimizador de corte de aluminio: perfiles de marco de varios pedidos acomodados en barras + planilla PDF | Implementado | 2026-11-10 | FEAT-054 |
+| [REQ-071](./REQ-071-resumen-diario-whatsapp.md) | Resumen diario y semanal por WhatsApp para la dirección (n8n + GPT redacta, Django calcula) | Implementado | 2026-11-10 | [FEAT-055](../features/FEAT-055-resumen-diario-whatsapp.md) |
+| [REQ-072](./REQ-072-modulo-tareas.md) | Módulo de tareas para empleados (responsable, fecha límite, estado) que se suma al resumen | Aprobado | 2026-11-10 | — |

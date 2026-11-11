@@ -30,6 +30,7 @@ SECURITY_EXEMPT_PREFIXES = (
     '/agenda/api/',
     '/solicitudes/api/',
     '/novedades/api/',
+    '/resumenes/api/',
 )
 
 
@@ -91,6 +92,7 @@ class AuditMiddleware(MiddlewareMixin):
         '/agenda/api/',
         '/solicitudes/api/',
         '/novedades/api/',
+    '/resumenes/api/',
         '/core/api/',
     ]
     

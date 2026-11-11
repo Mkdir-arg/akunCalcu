@@ -29,6 +29,11 @@
                 {{ form.activo }}
                 <label for="{{ form.activo.id_for_label }}" class="strong">Activo (puede cargar gastos)</label>
             </div>
+
+            <div class="flex items-center gap-3">
+                {{ form.recibe_resumen }}
+                <label for="{{ form.recibe_resumen.id_for_label }}" class="strong">Recibe el resumen diario y semanal por WhatsApp</label>
+            </div>
         </div>
 
         <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-line">

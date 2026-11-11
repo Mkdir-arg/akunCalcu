@@ -31,6 +31,9 @@
                         {% else %}
                             {% include 'core/ui/badge.html' with tone="gray" label="Inactivo" dot=True only %}
                         {% endif %}
+                        {% if numero.recibe_resumen %}
+                            {% include 'core/ui/badge.html' with tone="blue" label="Recibe resumen" only %}
+                        {% endif %}
                     </td>
                     <td class="num">
                         {% url 'gastos_diarios:numero_edit' numero.pk as url_editar %}

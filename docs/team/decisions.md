@@ -16,6 +16,25 @@
 
 ---
 
+## ADR-031: Resumen de la dirección: Django calcula, GPT solo redacta, y el envío es plantilla + botón
+**Fecha**: 2026-11-10
+**Estado**: Activo
+
+**Contexto**: La dirección quiere un resumen diario y semanal por WhatsApp (REQ-071). La Cloud API de Meta solo deja mandar mensajes proactivos con plantillas aprobadas, y las plantillas no aceptan saltos de línea. El webhook de Meta es único y ya lo usa el bot de gastos por voz.
+
+**Decisión**:
+- App nueva `resumenes`: Django calcula todos los números (`services.calcular_datos`) y los entrega por API con `X-Bot-Secret` (`RESUMEN_BOT_SECRET`).
+- GPT-4o-mini, en n8n, recibe solo ese JSON, con la regla de no inventar ni calcular cifras. Nunca recibe datos crudos.
+- Envío en dos tiempos: plantilla `resumen_listo` con un botón de respuesta rápida. Al tocarlo se abre la ventana de 24 h y n8n manda el texto completo, que pide a `api_ultimo`.
+- El botón se filtra en el workflow de gastos **antes** del parseo de gastos (`type: button`, texto «Ver resumen»), para no mezclarlo con un mensaje de gastos.
+- Los destinatarios se eligen desde la web, en la lista que ya existe de números autorizados (`NumeroAutorizado.recibe_resumen`). n8n los lee de la API y `api_ultimo` responde 404 a cualquier otro número.
+
+**Alternativas descartadas**: plantilla con números en una línea más un link (el resumen no llega completo al WhatsApp); Telegram (el usuario prefiere WhatsApp); pasarle a GPT los datos crudos (inventa cifras).
+
+**Consecuencias**: depende de que la plantilla esté aprobada, de la facturación de Meta y de que el webhook entrante esté apuntado a n8n. Los nombres de clientes y los montos pasan por OpenAI.
+
+---
+
 ## ADR-030: Optimizador de corte: app propia, FFD determinístico y plan guardado como foto con firma
 **Fecha**: 2026-11-10
 **Estado**: Activo

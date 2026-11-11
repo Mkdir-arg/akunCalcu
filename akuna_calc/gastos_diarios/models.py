@@ -14,6 +14,11 @@ class NumeroAutorizado(models.Model):
         verbose_name="Nombre / Referencia",
     )
     activo = models.BooleanField(default=True, verbose_name="Activo")
+    recibe_resumen = models.BooleanField(
+        default=False,
+        verbose_name="Recibe el resumen",
+        help_text="Le llega por WhatsApp el resumen diario y semanal de la dirección.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

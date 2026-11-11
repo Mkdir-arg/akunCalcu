@@ -60,6 +60,7 @@
 | [FEAT-052](./FEAT-052-croquis-orden-fabricacion.md) | Croquis dibujado en el PDF de la Orden de Fabricación (REQ-068) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 | [FEAT-053](./FEAT-053-novedades-del-sistema.md) | Novedades del sistema: borrador por cada cambio a main, bandeja del admin y aviso al equipo (REQ-069) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
 | [FEAT-054](./FEAT-054-optimizador-corte-marco.md) | Optimizador de corte de perfiles de marco: barras, planilla PDF y planes guardados (REQ-070) | Implementado (en `development`) | 2026-11-10 | Fuera de plan |
+| [FEAT-055](./FEAT-055-resumen-diario-whatsapp.md) | Resumen diario y semanal por WhatsApp para la dirección: Django calcula, GPT redacta (REQ-071) | Implementado (en `development`; n8n inactivo) | 2026-11-10 | Fuera de plan |
 
 ---
 
@@ -85,3 +86,4 @@
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |
 | `novedades` | FEAT-053 | 2026-11-10 |
 | `optimizador` | FEAT-054 | 2026-11-10 |
+| `resumenes` | FEAT-055 | 2026-11-10 |

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'solicitudes',
     'novedades',
     'optimizador',
+    'resumenes',
 ]
 
 MIDDLEWARE = [

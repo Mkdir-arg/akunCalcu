@@ -14,6 +14,10 @@
 
 ---
 
+## 2026-11-10 — FEAT-055: resumen diario y semanal por WhatsApp
+
+App nueva `resumenes`. De lunes a viernes a las 19:00 y los sábados a las 13:00, n8n le pide a Django los números del período (presupuestos creados, confirmados y sin respuesta hace 7+ días, ventas contra la semana anterior, fábrica, agenda, solicitudes y actividad por usuario). GPT-4o-mini solo los redacta y Django guarda el texto. A los números autorizados con la casilla nueva «Recibe el resumen» (se marcan desde la web, migración `gastos_diarios/0004`) les llega la plantilla «Tu resumen está listo» con el botón «Ver resumen», y al tocarlo reciben el resumen completo. Tres APIs con `RESUMEN_BOT_SECRET`. Migración `resumenes/0001` (ADR-031). El workflow `iEON0QIYoc8O9Bbk` queda inactivo hasta tener la plantilla aprobada y el webhook de Meta.
+
 ## 2026-11-10 — FEAT-054: optimizador de corte de perfiles de marco
 
 Nuevo ítem **Optimizador** en Fábrica. Elegís pedidos liberados y el sistema acomoda los tramos de marco en barras, por perfil y color, descontando disco y despunte. Muestra barras usadas, metros, % de desperdicio y recortes a guardar, con cada barra dibujada a escala. Se guarda como plan numerado (con estado Vigente o Desactualizado si después cambió una orden) y se imprime una planilla A4 para el que corta. Al guardar, las órdenes pasan a la etapa Corte. Solo marco: hoja, contravidrio y travesaños quedan para después. Migración `optimizador/0001` (ADR-030).

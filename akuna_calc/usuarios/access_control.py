@@ -215,6 +215,9 @@ PUBLIC_ROUTE_KEYS = {
     'solicitudes:api_marcar_recordatorio',
     'solicitudes:api_marcar_contestada',
     'novedades:api_borrador',
+    'resumenes:api_datos',
+    'resumenes:api_guardar',
+    'resumenes:api_ultimo',
 }
 
 LEGACY_STAFF_ACCESS_CODES = {
