@@ -16,6 +16,30 @@
 
 ---
 
+## ADR-032: Asistente de clientes: app `agente` y comportamiento configurado en la base
+**Fecha**: 2026-11-11
+**Estado**: Activo
+
+**Contexto**: REQ-075 pide un asistente autónomo que atienda a clientes por WhatsApp, email e Instagram.
+Su comportamiento (firma, tono, modelo de IA, canales, horario, técnicos, zonas y lo que puede afirmar)
+lo decide dirección y va a cambiar con el uso. Si eso vive en variables de entorno o en los nodos de n8n,
+cada ajuste requiere un deploy o editar un workflow.
+
+**Decisión**:
+- App propia `agente`, separada de `solicitudes`, para todo lo del asistente.
+- La configuración vive en la base y se edita desde el menú «Agente»: `ConfiguracionAgente` es un registro
+  único (pk=1, `obtener()`); horario, técnicos y base de conocimiento son tablas propias.
+- El modelo de IA es un campo de texto (por defecto `gpt-5-mini`), no una constante.
+- Todo arranca apagado: canales desactivados y modo prueba activo con lista de números permitidos.
+- n8n va a leer esta configuración desde Django (Etapa 1b); no guarda reglas propias.
+
+**Consecuencias**: Dirección ajusta el asistente sin deploys. El asistente solo puede afirmar lo que está en la
+base de conocimiento o lo que devuelve el sistema. Las APIs que lea n8n tienen que exponer esta configuración
+(Etapa 1b). Un cambio mal cargado (por ejemplo, prender un canal sin probar) impacta de inmediato: por eso el
+default es apagado y en modo prueba.
+
+---
+
 ## ADR-031: Resumen de la dirección: Django calcula, GPT solo redacta, y el envío es plantilla + botón
 **Fecha**: 2026-11-10
 **Estado**: Activo

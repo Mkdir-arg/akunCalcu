@@ -255,4 +255,5 @@ conocimiento, la plantilla de Meta de «retomo tu consulta» y la elección fina
 IA (prueba comparativa en la Etapa 1)._
 
 ## Derivó en
-_Pendiente — usar /feature REQ-075 para iniciar la Etapa 1_
+- Etapa 1a: [FEAT-058](../features/FEAT-058-seccion-agente-configuracion.md) — sección «Agente» (configuración, horario, visitas técnicas y base de conocimiento). Implementado 2026-11-11.
+- Etapa 1b (conversaciones, APIs para n8n, router de Meta, asistente en modo prueba): pendiente.

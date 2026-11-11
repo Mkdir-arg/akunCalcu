@@ -63,6 +63,7 @@
 | [FEAT-055](./FEAT-055-resumen-diario-whatsapp.md) | Resumen diario y semanal por WhatsApp para la dirección: Django calcula, GPT redacta (REQ-071) | Implementado (en `development`; n8n inactivo) | 2026-11-10 | Fuera de plan |
 | [FEAT-056](./FEAT-056-checks-flete-expreso-izaje.md) | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto y en Observaciones del PDF (REQ-073) | Implementado (en `development`) | 2026-11-11 | Fuera de plan |
 | [FEAT-057](./FEAT-057-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, sin margen ni IVA (REQ-074) | Implementado (en `development`) | 2026-11-11 | Fuera de plan |
+| [FEAT-058](./FEAT-058-seccion-agente-configuracion.md) | Sección «Agente»: configuración, horario, visitas técnicas y base de conocimiento del asistente de clientes (REQ-075, Etapa 1a) | Implementado | 2026-11-11 | Fuera de plan |
 
 ---
 
@@ -87,5 +88,6 @@
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |
 | `novedades` | FEAT-053 | 2026-11-10 |
+| `agente` | FEAT-058 | 2026-11-11 |
 | `optimizador` | FEAT-054 | 2026-11-10 |
 | `resumenes` | FEAT-055 | 2026-11-10 |

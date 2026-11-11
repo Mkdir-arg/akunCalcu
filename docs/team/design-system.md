@@ -66,6 +66,10 @@ Tipografía: Inter (Google Fonts). No se inventan colores ni se usa degradé.
 | `kebab_menu.html` | `kebab_label`, `view_url`, `edit_url`, `extra_url` + `extra_label` + `extra_icon`, `delete_url` + `delete_name`, y `delete_label` / `delete_verb` / `delete_icon` (default «Eliminar» / «eliminar» / `fa-trash`; p. ej. «Desactivar» cuando no se borra) |
 | `pagination.html` | `page_obj` (obligatorio), `query` (querystring SIN `page`), `page_param`, `total_label` |
 
+**Filas dinámicas de formsets** (ej. franjas y zonas en `agente/tecnico_form.html`): la fila vacía va en un
+`<template>` con `empty_form`, se clona reemplazando `__prefix__`, se incrementa `TOTAL_FORMS` y se llama
+`window.AkunSelect2.init(filaNueva)` para que sus `<select>` tengan el mismo Select2 que el resto.
+
 Los filtros de listado usan `core/includes/table_filters.html` (`table_filter_id`, `show_status_filter`, `compact_filters`, …).
 
 ### Ejemplo de listado
