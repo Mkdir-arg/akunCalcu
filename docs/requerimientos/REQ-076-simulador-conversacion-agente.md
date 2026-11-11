@@ -56,8 +56,7 @@ reciba nada.
 historial), más la pantalla de chat y el listado.
 
 ## Preguntas abiertas
-- ¿Dónde vive el motor de conversación: en Django (llamando a OpenAI) o en n8n? Lo define el
-  Arquitecto en el Paso 2.
+_Resuelta: el motor vive en Django (ADR-033)._
 
 ## Derivó en
 [FEAT-059](../features/FEAT-059-simulador-conversacion-agente.md) — implementado 2026-11-11 (falta probar contra OpenAI con la key cargada).
