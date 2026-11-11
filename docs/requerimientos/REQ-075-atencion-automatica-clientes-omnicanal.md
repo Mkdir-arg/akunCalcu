@@ -1,163 +1,215 @@
-# REQ-075 — Atención automática de clientes por WhatsApp, email e Instagram
+# REQ-075 — Atención autónoma de clientes por WhatsApp, email e Instagram
 **Estado**: En análisis
 **Fecha**: 2026-11-11
 **Solicitante**: Dirección
 
 ## Descripción de la idea
-Un asistente que atiende los mensajes de clientes que llegan por WhatsApp, email e Instagram.
-Contesta en el tono de Akuna, junta los datos para cotizar (tipo de abertura, medidas,
-material, localidad, obra nueva o renovación), arma el presupuesto con el cotizador de
-AkunCalcu y lo manda por el mismo canal. También responde consultas de pedidos en curso.
-Cuando hace falta, pasa la conversación a un vendedor sin que el cliente note el cambio.
+Un asistente **autónomo** que atiende a los clientes que escriben por WhatsApp, email o
+Instagram. Debe sonar y sentirse como una persona del equipo de Akuna, y no hace falta un
+vendedor para cerrar el circuito de cotización:
+
+1. Responde la consulta y releva lo que necesita para cotizar.
+2. **Aluminio**: arma el presupuesto con el cotizador de AkunCalcu y lo envía en PDF por el
+   mismo canal.
+3. **PVC**: le avisa al cliente que el presupuesto va a estar listo en 24 horas y asigna la
+   gestión a una persona de Akuna. Cuando esa persona lo termina, el bot lo envía en la misma
+   conversación.
+4. Si el cliente avanza, **confirma la visita técnica** (medición) en la agenda.
+5. Lo que no puede resolver lo deriva a **visita técnica** o a **dirección**.
+
+Se usa un LLM (GPT o Claude) para la conversación. Los precios los calcula siempre el cotizador.
+
+## Decisiones tomadas (2026-11-11)
+| Tema | Decisión |
+|---|---|
+| Materiales | Aluminio: cotiza el bot solo. PVC: «en 24 horas» + asignación a una persona de Akuna |
+| Alcance del bot | Envía el presupuesto y confirma la visita técnica. **El cobro queda para una etapa posterior** |
+| Descuentos | **No** por ahora |
+| Lo que el bot no resuelve | Visita técnica o dirección |
+| Límite de monto | **Sin límite**: el bot envía presupuestos de cualquier monto |
+| Tono | Humano y natural, que no se perciba como un robot |
 
 ## Problema que resuelve
 - Hoy cada mensaje lo lee y lo contesta una persona. La primera respuesta tarda horas y
   fuera de horario no hay respuesta.
-- Los datos para cotizar llegan incompletos y el vendedor tiene que pedirlos uno por uno
-  («¿qué medida?», «¿aluminio o PVC?», «¿con vidrio DVH?»).
-- Solo el email está integrado (REQ-037): se clasifica con IA y se reparte entre vendedores,
-  pero nadie le contesta al cliente automáticamente. WhatsApp e Instagram no pasan por el sistema.
-- No queda registro de las conversaciones en AkunCalcu. La consulta no está vinculada a la
-  solicitud, al cliente ni al presupuesto.
+- Los datos para cotizar llegan incompletos y hay ida y vuelta para conseguirlos.
+- Solo el email está integrado (REQ-037), y solo para repartir: nadie le contesta al cliente.
+  WhatsApp e Instagram no pasan por el sistema.
+- Las conversaciones no quedan registradas ni vinculadas al cliente, la solicitud o el presupuesto.
 
 ## Usuarios beneficiados
-- **Clientes**: reciben respuesta en minutos, a cualquier hora, por el canal que eligieron.
-- **Vendedores**: reciben la solicitud con los datos completos y un presupuesto borrador ya
-  calculado. Solo intervienen para aprobar o en los casos que no son estándar.
-- **Dirección**: ve en un solo lugar todas las consultas, los tiempos de respuesta y la
-  conversión por canal.
-- Frecuencia: todos los días, en cada consulta que entra.
+- **Clientes**: respuesta y presupuesto en minutos, a cualquier hora, en su canal.
+- **Equipo de Akuna**: deja de cotizar aluminio estándar a mano y solo interviene en PVC,
+  visitas técnicas y casos derivados.
+- **Dirección**: supervisa conversaciones y métricas (consultas, presupuestos enviados,
+  visitas agendadas y conversión por canal).
 
 ## Valor para el negocio
-- **Si se implementa**: se responde rápido (el que contesta primero suele quedarse con la
-  obra), los vendedores pasan menos tiempo en tareas repetitivas y quedan registradas todas
-  las conversaciones.
-- **Si no se implementa**: se siguen perdiendo consultas que llegan fuera de horario o en
-  momentos de mucha demanda, y no se puede medir cuánto entra por cada canal.
+- **Si se implementa**: respuesta inmediata (quien responde primero suele quedarse con la
+  obra), cotización de aluminio sin intervención humana y registro completo por canal.
+- **Si no se implementa**: se siguen perdiendo consultas fuera de horario o en picos de demanda,
+  y el tiempo del equipo se va en tareas repetitivas.
+
+## Diseño funcional de la conversación
+
+### Flujo principal
+```
+Cliente escribe
+  └─ Bot: saludo + entiende qué necesita (texto, audio, foto o plano)
+       ├─ Consulta general (horarios, zona, plazos, formas de pago) → responde con datos de Akuna
+       ├─ Estado de una obra/pedido → consulta el pedido y responde
+       ├─ Cotización
+       │    ├─ Releva: tipo de abertura, medidas, cantidad, color, vidrio, mosquitero,
+       │    │          obra nueva o renovación, localidad, nombre (y teléfono/email si falta)
+       │    ├─ Aluminio → cotizador → Presupuesto → PDF por el canal
+       │    └─ PVC      → «te lo paso en 24 h» → asignación a persona de Akuna
+       │                   → la persona lo carga → el bot lo envía en la misma charla
+       ├─ Cliente avanza → confirma visita técnica (fecha y franja) en la agenda
+       └─ Fuera de alcance (reclamo, estructura especial, obra grande, enojo, pedido explícito
+          de hablar con alguien) → visita técnica o dirección, sin cortar la conversación
+```
+
+### Cómo «suena humano»
+- **Ritmo**: espera de 20 a 40 s antes de contestar, para juntar los mensajes que el cliente
+  manda seguidos. Muestra «escribiendo…» y parte las respuestas largas en 2 o 3 mensajes cortos.
+- **Registro**: rioplatense, con voseo, sin listas largas ni exceso de emojis. Se adapta al
+  tono del cliente (formal o informal).
+- **Memoria**: reconoce a los clientes que vuelven («¡Hola de nuevo, Juan! ¿Seguimos con lo de
+  la ventana del living?») y recuerda lo que ya se habló, por cualquier canal.
+- **Multimedia**: entiende audios (transcripción) y fotos o croquis con medidas (visión).
+- **Continuidad**: cuando interviene una persona (PVC, dirección), lo hace en el mismo hilo y
+  con el historial completo, así que para el cliente es la misma conversación.
+- **Firma**: «el equipo de Akuna» o un nombre de pila del equipo (por definir). Si el cliente
+  pregunta directamente si es un bot, no lo niega (ver Riesgos).
+
+### Mensajes clave (por definir con Akuna)
+- Presupuesto aluminio: PDF + resumen corto + invitación a coordinar la medición.
+- PVC: «Perfecto, el de PVC lo armamos a medida con el proveedor. Mañana a esta hora lo tenés».
+- Visita: propuesta de 2 o 3 franjas disponibles y confirmación.
+- Seguimiento: a los 3 y 7 días sin respuesta (plantilla de Meta si pasaron 24 h).
 
 ## Viabilidad técnica
-Es viable con lo que ya tenemos (Django, n8n en Railway, OpenAI, Meta Cloud API y Gmail).
-Hay varias piezas que se pueden reutilizar:
+Es viable con el stack actual: Django, n8n en Railway, Meta Cloud API, Gmail y un LLM.
 
-| Pieza existente | Qué aporta |
+**Piezas que ya existen y se reutilizan:**
+
+| Pieza | Qué aporta |
 |---|---|
-| `solicitudes` + workflow n8n «Solicitudes Presupuesto - Reparto» | Clasificación de mails con IA, reparto por turnos, detección de spam, API `/solicitudes/api/crear/` con `X-Bot-Secret` |
-| Workflow «WhatsApp Gastos Diarios v2 (Meta Cloud API)» | Webhook de Meta ya verificado, normalización de eventos, transcripción de audios con Whisper, envío de texto libre dentro de la ventana de 24 h, detección de envíos fallidos |
-| `pricing.services.calculator.calcular_precio()` | Precio a partir de `marco_id` + `ancho_mm` + `alto_mm` (más hoja, vidrio, color, tratamiento y opcionales) |
-| `presupuestos.Presupuesto` (FK opcional a `SolicitudPresupuesto`) + PDF | El presupuesto ya puede quedar vinculado a la solicitud y generar su PDF |
-| `core/whatsapp.py` (`subir_pdf`, `enviar_plantilla_documento`) | Envío de PDF por WhatsApp (ya se usa en FEAT-049) |
+| `solicitudes` + workflow n8n «Solicitudes Presupuesto - Reparto» | Clasificación de mails con IA, reparto por turnos (sirve para asignar PVC), anti-spam, API con `X-Bot-Secret` |
+| Workflow n8n «Solicitudes Presupuesto - Recordatorios» | Base para controlar que el PVC salga dentro de las 24 h |
+| Workflow «WhatsApp Gastos Diarios v2 (Meta Cloud API)» | Webhook de Meta verificado, normalización de eventos, transcripción de audios, envío dentro de la ventana de 24 h, detección de envíos fallidos |
+| `pricing.services.calculator.calcular_precio()` | Precio con `marco_id` + `ancho_mm` + `alto_mm` (+ hoja, vidrio, color, tratamiento, opcionales) |
+| `presupuestos.Presupuesto` (FK a `SolicitudPresupuesto`) + PDF | Presupuesto vinculado a la solicitud, con PDF |
+| `presupuestos.importar_rehau` (FEAT-039) | Carga del PVC por la persona asignada |
+| `core/whatsapp.py` (`subir_pdf`, `enviar_plantilla_documento`) | Envío del PDF por WhatsApp, también fuera de las 24 h con plantilla |
+| `agenda` (REQ-031) | Base para agendar la visita técnica |
+| `pedidos` | Estado de la obra para responder «¿cómo va lo mío?» |
 
-**Arquitectura propuesta**: Django guarda el estado y n8n conecta los canales.
+**Arquitectura propuesta**: Django guarda el estado y la lógica de negocio. n8n conecta canales
+y LLM.
 
 ```
-WhatsApp (Meta) ─┐                                ┌─ buscar_cliente / estado_pedido
-Instagram (Meta) ┼─► n8n: normaliza ─► Django ────┼─ catálogo de tipologías
-Gmail ───────────┘     (1 webhook     /conversaciones/api/entrante/
-                        por canal)         │      └─ cotizar → Presupuesto borrador
-                                           ▼
-                              ¿responde el bot o un humano?
-                                           │ bot
-                                           ▼
-                         n8n Agent (LLM + tools que llaman a Django)
-                                           │
-                                           ▼
-                        respuesta por el mismo canal y el mismo hilo
+WhatsApp (Meta) ─┐                               ┌─ buscar_cliente / historial
+Instagram (Meta) ┼─► n8n: normaliza + espera ────┼─ catalogo_tipologias
+Gmail ───────────┘   (junta mensajes seguidos)   ├─ cotizar_aluminio → Presupuesto + PDF
+                              │                  ├─ derivar_pvc → asignación + plazo 24 h
+                              ▼                  ├─ franjas_visita / confirmar_visita
+                   Agent n8n (LLM) ── tools ─────┼─ estado_pedido
+                              │                  └─ derivar (visita técnica | dirección)
+                              ▼                        (todas son APIs de Django)
+              respuesta por el mismo canal y el mismo hilo
 ```
 
-- **App nueva `conversaciones`**: `Conversacion` (canal, id externo del contacto, FK opcional
-  a `Cliente` y a `SolicitudPresupuesto`, modo `bot`/`humano`/`cerrada`, vendedor asignado) y
-  `Mensaje` (dirección, autor bot/humano/cliente, texto, adjuntos, id externo para idempotencia).
-- **Bandeja en AkunCalcu**: el vendedor ve la conversación, toma el control con un botón
-  («Atiendo yo») y contesta desde el sistema por el mismo canal.
-- **Cotización en dos niveles**: el bot nunca inventa precios. Llama a Django, que calcula con
-  el cotizador usando una *tipología estándar* (línea, vidrio y color por defecto para cada
-  tipo de abertura) y crea un `Presupuesto` en `borrador`. Según lo que se decida, sale
-  automáticamente o espera la aprobación del vendedor con un clic.
-- **Comportamiento natural**: espera de 20 a 40 s antes de responder, para juntar los mensajes
-  que el cliente manda seguidos. Respuestas cortas, en el registro rioplatense de los
-  vendedores. Lee audios (Whisper) y fotos o planos (visión).
+- **App nueva `conversaciones`**: `Conversacion` (canal, id externo del contacto, FK opcional a
+  `Cliente`, `SolicitudPresupuesto` y `Presupuesto`, estado `bot` / `esperando_pvc` /
+  `derivada` / `cerrada`) y `Mensaje` (dirección, autor bot/persona/cliente, texto, adjuntos,
+  id externo para no duplicar).
+- **Catálogo de tipologías del bot** (pieza central): para cada tipo de abertura de aluminio,
+  la configuración por defecto del cotizador (producto, marco, hoja, vidrio, color, margen) y
+  qué preguntas se le hacen al cliente. Lo administra Akuna desde AkunCalcu.
+- **Usuario de sistema «bot»**: `Presupuesto.created_by` es obligatorio, así que los
+  presupuestos del bot quedan a nombre de ese usuario.
+- **Supervisión**: panel para dirección con las conversaciones en vivo, la posibilidad de
+  intervenir en cualquier momento y métricas. Es para supervisar, no para operar.
+
+**Modelo de IA**: hoy n8n usa OpenAI `gpt-4o-mini` para clasificar mails y extraer gastos.
+Para la conversación conviene un modelo más capaz, porque el tono humano y el uso correcto de
+las herramientas son lo crítico. Opciones: Claude (`claude-opus-5-5`, o `claude-sonnet-5-5` si
+se prioriza el costo) o un modelo actual de OpenAI. El Agent de n8n permite cambiar de modelo
+sin rehacer el flujo, así que la recomendación es probar ambos con conversaciones reales
+anonimizadas y elegir por calidad y costo. La clasificación simple puede quedar en el modelo
+barato que ya funciona.
 
 ## Apps / módulos afectados
-- **Nueva**: `conversaciones` (models, APIs para n8n, bandeja, tests).
-- `solicitudes`: valores nuevos en `origen` (`whatsapp`, `instagram`); vincular la conversación.
-- `presupuestos`: crear el borrador desde la API; envío del PDF por el canal de origen.
-- `pricing`: servicio de «tipología estándar» → `configuracion` del cotizador.
-- `comercial.Cliente`: búsqueda por teléfono, email o usuario de Instagram (posible campo nuevo).
-- `pedidos`: consulta de solo lectura del estado del pedido para el cliente.
-- **n8n**: router común para el webhook de Meta (hoy lo usa únicamente Gastos Diarios),
-  workflow de Instagram, extensión del workflow de Gmail para contestar en el hilo, y un
-  Agent de n8n con tools.
-- `security` / panel de salud (FEAT-035): sumar el latido de los canales nuevos.
+- **Nueva**: `conversaciones` (models, APIs para n8n, panel de supervisión, tests).
+- `pricing`: modelo y ABM del catálogo de tipologías del bot, y servicio tipología → configuración.
+- `presupuestos`: creación desde la API, envío del PDF por el canal de origen, aviso al bot
+  cuando un PVC queda listo.
+- `solicitudes`: valores nuevos en `origen` (`whatsapp`, `instagram`) y asignación del PVC con
+  plazo de 24 h.
+- `agenda`: franjas disponibles para visita técnica y confirmación desde el bot.
+- `comercial.Cliente`: búsqueda y alta por teléfono, email o usuario de Instagram.
+- `pedidos`: consulta de estado (solo lectura).
+- **n8n**: router común para el webhook de Meta (separa personal interno de clientes),
+  workflow de Instagram, respuesta en el hilo de Gmail y Agent conversacional.
+- Panel de salud (FEAT-035): latido de los canales nuevos.
 
 ## Complejidad estimada
-**Grande**. Se propone dividirlo en etapas, cada una con su propio `/feature`:
+**Grande**. Etapas propuestas, cada una con su `/feature`:
 
-1. **Etapa 1 — Bandeja omnicanal + primera respuesta**: WhatsApp e Instagram entran como
-   `Solicitud`. El bot saluda, pide los datos que faltan y responde preguntas frecuentes
-   (horarios, zona, formas de pago, plazos). Sin precios. Derivación a un humano.
-2. **Etapa 2 — Cotización asistida**: el bot arma el presupuesto borrador con el cotizador, el
-   vendedor lo aprueba con un clic y el bot manda el PDF por el canal de origen.
-3. **Etapa 3 — Cotización automática y seguimiento**: las tipologías estándar dentro de ciertos
-   límites salen sin aprobación. Seguimiento a los 3 y 7 días (plantilla de Meta) y consulta
-   del estado del pedido.
+1. **Base + WhatsApp**: `conversaciones`, router de Meta, Agent con tono humano, relevamiento,
+   consultas generales, derivación y panel de supervisión.
+2. **Cotización aluminio**: catálogo de tipologías, cotización con el cotizador y envío del PDF.
+3. **PVC + visita técnica**: asignación con plazo de 24 h, envío del PDF cuando está listo y
+   agenda de visitas.
+4. **Email e Instagram**: suma de los otros dos canales sobre la misma base.
+5. **Posterior (fuera de este REQ)**: cobro de la seña, descuentos y seguimientos automáticos.
 
 ## Dependencias o riesgos
-- **Número de WhatsApp**: el número de la Cloud API ya se usa para tareas internas (gastos,
-  agenda, resumen). Hoy un número no habilitado que escribe recibe un 403 de
-  `/gastos-diarios/api/responder/` y nadie le contesta. Hace falta un router previo que separe
-  personal interno de clientes. Si los clientes escriben a otro número que hoy se atiende con
-  la app WhatsApp Business del celular, hay que migrarlo a la Cloud API. Con el modo
-  *coexistencia* de Meta se puede seguir usando la app, y los mensajes que mande el vendedor
-  llegan como *echo*, lo que permite pausar al bot.
-- **Evolution API**: el aviso «WhatsApp al Vendedor» todavía sale por Evolution
-  (`evolution-api-production-874e`). Para clientes conviene usar solo la API oficial de Meta,
-  porque las APIs no oficiales tienen riesgo de bloqueo del número.
-- **Instagram**: requiere una cuenta profesional vinculada a una página de Facebook y el permiso
-  `instagram_manage_messages` aprobado en la app de Meta (App Review). Rige la misma ventana de
-  24 h que en WhatsApp.
-- **Políticas de Meta**: está permitido un bot de atención propio del negocio. No se permite un
-  asistente de propósito general. El bot tiene que mantenerse en temas de Akuna.
-- **«Que no se note que es un robot»**: se puede lograr con buen tono, tiempos y continuidad, y
-  haciendo que el traspaso a un humano sea invisible (mismo canal, mismo hilo, mismo historial).
-  Recomendación: firmar como «el equipo de Akuna» en vez de inventar el nombre de una persona, y
-  **no negar ser automático si el cliente lo pregunta directamente**. Hay regulaciones de
-  transparencia de IA que van en esa dirección, y si un cliente descubre que le mintieron
-  después de confirmar una obra, el daño comercial es grande.
-- **Precios equivocados**: el riesgo principal. Para mitigarlo, el precio siempre lo calcula el
-  cotizador (nunca el LLM), el presupuesto tiene vencimiento y queda la aprobación humana
-  hasta tener confianza (etapas 2 y 3).
-- **Alucinaciones** en plazos, stock o condiciones: el bot responde solo con datos que devuelve
-  Django o una base de conocimiento cargada por Akuna. Si no sabe, deriva.
-- **Hallazgos al revisar n8n**:
-  - La versión publicada de «WhatsApp Gastos Diarios v2» todavía tiene un valor por
-    defecto hardcodeado para `X-Bot-Secret`. El borrador ya no lo tiene, pero no se
-    publicó.
-  - Ese workflow tuvo 3 ejecuciones fallidas recientes y el backup diario falló en su última
-    corrida.
-  - Los webhooks apuntan a `n8n-production-9a1a.up.railway.app`, no a la URL de `n8n-2el`.
-
-## Alternativas técnicas
-- **A) n8n Agent + tools en Django (recomendada)**: se reutiliza lo que ya funciona. La lógica de
-  negocio y los precios quedan en Django, con tests. n8n queda como integración y prompt.
-- **B) Todo en Django** (webhooks de Meta y Gmail directos + SDK de LLM): más control y tests,
-  pero se reescribe lo que ya está andando en n8n.
-- **C) Plataforma omnicanal de terceros** (por ejemplo, un CRM con bandeja unificada): rápido
-  de arrancar, pero tiene costo mensual por agente y queda desconectado del cotizador y de los
-  presupuestos de AkunCalcu.
+- **Número de WhatsApp**: el número de la Cloud API ya se usa para gastos, agenda y resumen, y
+  hoy un número no habilitado recibe un 403 y no se le responde. Hace falta un router que separe
+  personal de clientes. Si los clientes escriben a otro número que se atiende desde la app
+  WhatsApp Business, hay que sumarlo a la Cloud API (el modo coexistencia permite seguir usando
+  la app).
+- **Evolution API**: el aviso al vendedor sale por Evolution, que no es oficial. Con clientes
+  hay que usar solo la API oficial de Meta, por riesgo de bloqueo del número.
+- **Ventana de 24 h**: el PVC se entrega cerca del límite de las 24 h. En WhatsApp, fuera de la
+  ventana solo se puede escribir con plantilla aprobada (ya existe `enviar_plantilla_documento`).
+  Instagram es más restrictivo, así que conviene que el bot pida un WhatsApp o un email al
+  cotizar PVC.
+- **Instagram**: cuenta profesional vinculada a una página de Facebook y permiso
+  `instagram_manage_messages` aprobado por Meta.
+- **Precios**: sin aprobación humana ni tope de monto, un error en el catálogo o en una
+  tipología sale directo al cliente. Para mitigarlo:
+  - el precio lo calcula siempre el cotizador;
+  - el presupuesto aclara «sujeto a medición» y tiene vencimiento;
+  - la etapa 2 arranca con un período de prueba en el que el bot cotiza y dirección revisa
+    antes de habilitar el envío automático;
+  - los precios del catálogo se mantienen al día.
+- **Promesa de 24 h en PVC**: si nadie la cumple, el cliente lo nota. Alerta a la persona
+  asignada y a dirección antes del vencimiento.
+- **Alucinaciones**: el bot solo afirma lo que devuelve Django o la base de conocimiento de
+  Akuna (horarios, zonas, plazos, garantías). Si no sabe, deriva.
+- **Transparencia**: sonar humano es posible y está bien. El límite recomendado es **no negar
+  ser automático si el cliente lo pregunta directamente**, por las regulaciones de
+  transparencia de IA y por el daño de confianza si se descubre. Meta permite bots de atención
+  propios del negocio, siempre que se mantengan en los temas de la empresa.
 
 ## Preguntas abiertas
-1. ¿Los clientes escriben al **mismo número** de WhatsApp que usa la Cloud API (gastos, agenda) o
-   a otro? Si es otro, ¿hoy se usa con la app WhatsApp Business en un celular?
+1. ¿Los clientes escriben al **mismo número** de WhatsApp que usa la Cloud API o a otro? ¿Ese
+   otro se usa hoy con la app WhatsApp Business en un celular?
 2. ¿El email de clientes es el mismo Gmail que ya lee el workflow de reparto?
 3. ¿La cuenta de Instagram es profesional y está vinculada a una página de Facebook?
-4. ¿El bot puede **dar precios sin aprobación** de un vendedor? ¿Para qué tipologías y hasta qué
-   monto? ¿Cuál es la tipología estándar por defecto de cada tipo de abertura (línea, vidrio, color)?
-5. Si el cliente pregunta «¿sos un bot?», ¿qué responde? (Recomendación: no negarlo.)
-6. ¿El bot responde 24/7 o en horario comercial? ¿Y fuera de horario?
-7. Cuando dicen «pedidos», ¿se refieren a consultas de estado de una obra ya vendida o a pedidos
-   nuevos? ¿Qué puede ver el cliente de su pedido?
-8. Volumen aproximado de mensajes por día en cada canal, para dimensionar el costo de OpenAI y
-   la prioridad de cada canal.
+4. **Catálogo de tipologías**: ¿qué aberturas de aluminio ofrece el bot, y cuál es la
+   configuración por defecto de cada una (línea, vidrio, color)?
+5. **PVC**: ¿a quién se asigna? ¿A una persona fija o por turnos? ¿Qué pasa con las consultas
+   que entran viernes a la tarde o fin de semana?
+6. **Visita técnica**: ¿quién la hace, qué días y franjas, qué zonas cubre y tiene costo?
+7. ¿Con qué nombre firma el bot? ¿Qué responde si le preguntan si es un bot?
+8. ¿Responde las 24 h o imita el horario comercial (por ejemplo, de noche responde a la mañana)?
+9. Base de conocimiento: horarios, zonas de cobertura, plazos de fabricación, garantía, formas
+   de pago. ¿Quién la redacta?
+10. Volumen aproximado de mensajes por día en cada canal.
 
 ## Derivó en
-_Pendiente — responder las preguntas abiertas y usar /feature REQ-075 (Etapa 1) para iniciar el desarrollo_
+_Pendiente — resolver las preguntas abiertas y usar /feature REQ-075 (Etapa 1)_
