@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.forms import inlineformset_factory
 
 from .models import (
@@ -19,8 +20,13 @@ _INPUT = 'input'
 _CHECK = 'h-5 w-5 rounded border-line'
 
 
-def _usuarios_activos():
-    return User.objects.filter(is_active=True).order_by('first_name', 'username')
+def _usuarios_activos(incluir_pk=None):
+    """Usuarios activos; incluye además al ya elegido aunque se haya dado de baja,
+    para que el formulario se pueda volver a guardar sin cambiarlo."""
+    filtro = Q(is_active=True)
+    if incluir_pk:
+        filtro |= Q(pk=incluir_pk)
+    return User.objects.filter(filtro).order_by('first_name', 'username')
 
 
 class ConfiguracionAgenteForm(forms.ModelForm):
@@ -45,7 +51,7 @@ class ConfiguracionAgenteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['derivar_a'].queryset = _usuarios_activos()
+        self.fields['derivar_a'].queryset = _usuarios_activos(self.instance.derivar_a_id)
 
     def clean_numeros_prueba(self):
         return normalizar_numeros(self.cleaned_data.get('numeros_prueba'))
@@ -90,10 +96,7 @@ class TecnicoVisitaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        usuarios = _usuarios_activos()
-        if self.instance.pk:
-            usuarios = (usuarios | User.objects.filter(pk=self.instance.usuario_id)).distinct()
-        self.fields['usuario'].queryset = usuarios
+        self.fields['usuario'].queryset = _usuarios_activos(self.instance.usuario_id if self.instance.pk else None)
 
 
 class FranjaTecnicoForm(forms.ModelForm):

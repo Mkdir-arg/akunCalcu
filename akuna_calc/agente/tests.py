@@ -254,6 +254,35 @@ class VistasTests(TestCase):
         self.assertRedirects(response, reverse('agente:tecnicos'))
         self.assertEqual(list(tecnico.franjas.values_list('hora_desde', flat=True)), [time(10)])
 
+    def test_configuracion_conserva_derivacion_a_usuario_dado_de_baja(self):
+        baja = User.objects.create_user(username='ex-direccion')
+        config = ConfiguracionAgente.obtener()
+        config.derivar_a = baja
+        config.save()
+        baja.is_active = False
+        baja.save()
+        response = self.client.post(reverse('agente:configuracion'), {
+            'nombre_firma': 'Matías Fariña', 'modelo_ia': 'gpt-5-mini', 'modo_prueba': 'on',
+            'derivar_a': baja.pk,
+        })
+        self.assertRedirects(response, reverse('agente:configuracion'))
+
+    def test_quitar_y_volver_a_cargar_la_misma_zona(self):
+        tecnico_user = User.objects.create_user(username='juan')
+        tecnico = TecnicoVisita.objects.create(usuario=tecnico_user)
+        zona = ZonaTecnico.objects.create(tecnico=tecnico, localidad='Palermo')
+        datos = self._datos_tecnico(
+            tecnico_user, franjas=[],
+            zonas=[
+                {'id': zona.pk, 'localidad': 'Palermo', 'provincia': '', 'DELETE': 'on'},
+                {'localidad': 'Palermo', 'provincia': ''},
+            ],
+            zonas_iniciales=1,
+        )
+        response = self.client.post(reverse('agente:tecnico_editar', args=[tecnico.pk]), datos)
+        self.assertRedirects(response, reverse('agente:tecnicos'))
+        self.assertEqual(list(tecnico.zonas.values_list('localidad', flat=True)), ['Palermo'])
+
     def test_tecnico_solo_usuarios_activos(self):
         inactivo = User.objects.create_user(username='baja', is_active=False)
         datos = self._datos_tecnico(inactivo, franjas=[], zonas=[])
@@ -284,6 +313,8 @@ class VistasTests(TestCase):
         self.assertTrue(response.context['is_paginated'])
         response = self.client.get(reverse('agente:conocimiento'), {'q': 'Diez'})
         self.assertEqual([e.tema for e in response.context['entradas']], ['Garantía'])
+        response = self.client.get(reverse('agente:conocimiento'), {'q': 'a & b'})
+        self.assertEqual(response.context['query_sin_page'], 'q=a+%26+b')
 
         self.client.post(reverse('agente:conocimiento_eliminar', args=[entrada.pk]))
         self.assertFalse(EntradaConocimiento.objects.filter(pk=entrada.pk).exists())

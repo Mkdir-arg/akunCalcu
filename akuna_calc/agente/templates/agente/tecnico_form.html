@@ -94,10 +94,11 @@ document.querySelectorAll('[data-agregar-fila]').forEach(function (boton) {
         var total = document.getElementById('id_' + prefijo + '-TOTAL_FORMS');
         var indice = parseInt(total.value, 10);
         var html = document.getElementById(prefijo + '-vacia').innerHTML.replace(/__prefix__/g, indice);
-        document.getElementById(prefijo + '-filas').insertAdjacentHTML('beforeend', html);
+        var filas = document.getElementById(prefijo + '-filas');
+        filas.insertAdjacentHTML('beforeend', html);
         total.value = indice + 1;
-        if (window.jQuery && jQuery.fn.select2) {
-            jQuery('#' + prefijo + '-filas [data-fila]:last-child select').select2({ width: '100%' });
+        if (window.AkunSelect2) {
+            window.AkunSelect2.init(filas.lastElementChild);
         }
     });
 });

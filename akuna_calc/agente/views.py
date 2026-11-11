@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -210,7 +212,7 @@ class ConocimientoListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         q = self.request.GET.get('q', '').strip()
         context['q'] = q
-        context['query_sin_page'] = f'q={q}' if q else ''
+        context['query_sin_page'] = urlencode({'q': q}) if q else ''
         return context
 
 
