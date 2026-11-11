@@ -28,6 +28,14 @@ Se usa un LLM (GPT o Claude) para la conversación. Los precios los calcula siem
 | Lo que el bot no resuelve | Visita técnica o dirección |
 | Límite de monto | **Sin límite**: el bot envía presupuestos de cualquier monto |
 | Tono | Humano y natural, que no se perciba como un robot |
+| Configuración por defecto de cada abertura | Sale de la **base de datos** (catálogo `pricing` + historial de presupuestos), no de una carga manual |
+| Asignación de PVC | A las **vendedoras** (rotación por turnos existente de `solicitudes`) |
+| Visita técnica | Se asigna al **técnico** (`EventoAgenda.tecnico`) |
+| Firma | **Matías Fariña** |
+| Horario | Fuera de horario no responde: **espera a las 8 de la mañana** |
+| WhatsApp | El número **oficial de Akun registrado en Meta** (el mismo de la Cloud API) |
+| Email | El email de Akun |
+| Instagram | La cuenta **no es profesional**: hay que convertirla y vincularla a una página de Facebook antes de integrarla |
 
 ## Problema que resuelve
 - Hoy cada mensaje lo lee y lo contesta una persona. La primera respuesta tarda horas y
@@ -79,8 +87,10 @@ Cliente escribe
 - **Multimedia**: entiende audios (transcripción) y fotos o croquis con medidas (visión).
 - **Continuidad**: cuando interviene una persona (PVC, dirección), lo hace en el mismo hilo y
   con el historial completo, así que para el cliente es la misma conversación.
-- **Firma**: «el equipo de Akuna» o un nombre de pila del equipo (por definir). Si el cliente
-  pregunta directamente si es un bot, no lo niega (ver Riesgos).
+- **Firma**: Matías Fariña. Si el cliente pregunta directamente si es un bot, no lo niega
+  (ver Riesgos).
+- **Horario**: los mensajes que llegan fuera de horario se contestan a las 8 de la mañana,
+  como lo haría una persona.
 
 ### Mensajes clave (por definir con Akuna)
 - Presupuesto aluminio: PDF + resumen corto + invitación a coordinar la medición.
@@ -124,9 +134,12 @@ Gmail ───────────┘   (junta mensajes seguidos)   ├─ 
   `Cliente`, `SolicitudPresupuesto` y `Presupuesto`, estado `bot` / `esperando_pvc` /
   `derivada` / `cerrada`) y `Mensaje` (dirección, autor bot/persona/cliente, texto, adjuntos,
   id externo para no duplicar).
-- **Catálogo de tipologías del bot** (pieza central): para cada tipo de abertura de aluminio,
-  la configuración por defecto del cotizador (producto, marco, hoja, vidrio, color, margen) y
-  qué preguntas se le hacen al cliente. Lo administra Akuna desde AkunCalcu.
+- **Configuración por defecto desde la base** (pieza central): el bot ofrece los productos
+  activos del catálogo `pricing` (los inactivos ya quedan fuera, FEAT-041). Para cada tipo de
+  abertura toma como configuración por defecto (marco, hoja, vidrio, color, margen) **la más
+  usada en los presupuestos de aluminio del último período**, que sale de
+  `ItemPresupuesto.resultado_json`. Lo que el cliente especifica (color, DVH, mosquitero)
+  reemplaza al valor por defecto. Dirección puede fijar a mano un valor para pisar el inferido.
 - **Usuario de sistema «bot»**: `Presupuesto.created_by` es obligatorio, así que los
   presupuestos del bot quedan a nombre de ese usuario.
 - **Supervisión**: panel para dirección con las conversaciones en vivo, la posibilidad de
@@ -162,8 +175,9 @@ barato que ya funciona.
 2. **Cotización aluminio**: catálogo de tipologías, cotización con el cotizador y envío del PDF.
 3. **PVC + visita técnica**: asignación con plazo de 24 h, envío del PDF cuando está listo y
    agenda de visitas.
-4. **Email e Instagram**: suma de los otros dos canales sobre la misma base.
-5. **Posterior (fuera de este REQ)**: cobro de la seña, descuentos y seguimientos automáticos.
+4. **Email**: respuesta en el hilo de Gmail sobre la misma base.
+5. **Instagram**: cuando la cuenta sea profesional y Meta apruebe el permiso de mensajes.
+6. **Posterior (fuera de este REQ)**: cobro de la seña, descuentos y seguimientos automáticos.
 
 ## Dependencias o riesgos
 - **Número de WhatsApp**: el número de la Cloud API ya se usa para gastos, agenda y resumen, y
@@ -195,21 +209,36 @@ barato que ya funciona.
   transparencia de IA y por el daño de confianza si se descubre. Meta permite bots de atención
   propios del negocio, siempre que se mantengan en los temas de la empresa.
 
+## Consecuencias de las decisiones
+- **Mismo número para personal y clientes**: el router de Meta es obligatorio en la Etapa 1.
+  Los números habilitados (`NumeroWhatsApp` activos) siguen a Gastos, Resumen y Agenda.
+  Cualquier otro número va al bot de clientes. Hoy esos mensajes reciben un 403 y quedan sin
+  respuesta.
+- **«Espera a las 8» y la ventana de 24 h**: un mensaje del viernes a la noche contestado el
+  lunes a las 8 queda fuera de la ventana de WhatsApp, y ahí solo se puede escribir con
+  plantilla aprobada por Meta. Hace falta una plantilla de «retomo tu consulta» o responder
+  también los sábados.
+- **Firma con nombre real**: el cliente puede llamar o escribir preguntando por Matías. Las
+  vendedoras y el técnico tienen que saber que las conversaciones salen con ese nombre y
+  tener acceso al historial.
+- **Instagram pasa a la última etapa** hasta que la cuenta sea profesional y esté vinculada a
+  una página de Facebook (es gratis y se hace desde la app de Instagram). Después, Meta tiene
+  que aprobar el permiso de mensajes.
+- **Configuración inferida del historial**: si el historial es chico o muy variado para un
+  tipo de abertura, el valor más usado puede no ser representativo. El panel de dirección
+  tiene que mostrar qué valor por defecto está usando el bot.
+
 ## Preguntas abiertas
-1. ¿Los clientes escriben al **mismo número** de WhatsApp que usa la Cloud API o a otro? ¿Ese
-   otro se usa hoy con la app WhatsApp Business en un celular?
-2. ¿El email de clientes es el mismo Gmail que ya lee el workflow de reparto?
-3. ¿La cuenta de Instagram es profesional y está vinculada a una página de Facebook?
-4. **Catálogo de tipologías**: ¿qué aberturas de aluminio ofrece el bot, y cuál es la
-   configuración por defecto de cada una (línea, vidrio, color)?
-5. **PVC**: ¿a quién se asigna? ¿A una persona fija o por turnos? ¿Qué pasa con las consultas
-   que entran viernes a la tarde o fin de semana?
-6. **Visita técnica**: ¿quién la hace, qué días y franjas, qué zonas cubre y tiene costo?
-7. ¿Con qué nombre firma el bot? ¿Qué responde si le preguntan si es un bot?
-8. ¿Responde las 24 h o imita el horario comercial (por ejemplo, de noche responde a la mañana)?
-9. Base de conocimiento: horarios, zonas de cobertura, plazos de fabricación, garantía, formas
-   de pago. ¿Quién la redacta?
-10. Volumen aproximado de mensajes por día en cada canal.
+1. **Horario de atención**: ¿días y horas? (lunes a viernes de 8 a 18, ¿sábados?) Define cuándo
+   responde y cuándo espera a las 8.
+2. **Visita técnica**: ¿qué días y franjas tiene el técnico, qué zonas cubre y tiene costo para
+   el cliente? ¿Hay un solo técnico o varios?
+3. **PVC**: el plazo de 24 h, ¿cuenta en horas hábiles? (por ejemplo, una consulta del viernes
+   a la tarde, ¿se entrega el lunes?)
+4. **Base de conocimiento**: zonas de cobertura, plazos de fabricación, garantía, formas de
+   pago. ¿Hay algo cargado en el sistema o hay que redactarlo?
+5. **Email**: ¿es el mismo Gmail que ya lee el workflow de reparto de solicitudes?
+6. Volumen aproximado de mensajes por día en cada canal.
 
 ## Derivó en
 _Pendiente — resolver las preguntas abiertas y usar /feature REQ-075 (Etapa 1)_
