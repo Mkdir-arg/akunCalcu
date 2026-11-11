@@ -14,6 +14,18 @@
 
 ---
 
+## 2026-11-11 — FEAT-059: simulador de conversación del agente
+
+Nueva opción **Agente → Simulador**: se le escribe al asistente como si fuera un cliente y responde con la configuración real (firma, tono, modelo, horario y base de conocimiento). Chat con burbujas e indicador «escribiendo…», canal y fecha/hora simulada (para probar fuera de horario), y «Detrás de escena» en cada respuesta (conocimiento usado, acción que habría tomado, modelo y tokens). No envía nada a nadie. Primer uso del motor de conversación en Django (`agente/motor.py`), que después van a usar los canales reales; llama a OpenAI con `OPENAI_API_KEY`. Migración `agente/0002` (REQ-076, ADR-033).
+
+---
+
+## 2026-11-11 — FEAT-058: sección «Agente» (configuración del asistente de clientes)
+
+Nuevo menú **Agente** en Operación, con cuatro opciones y permisos propios: **Configuración general** (firma, tono, modelo de IA, canales, modo prueba con números permitidos y derivación a dirección), **Horario de atención** (franjas por día y días cerrados), **Visitas técnicas** (técnicos, franjas, zonas, duración, cupo y costo) y **Base de conocimiento** (temas con buscador y paginación). Arranca con firma Matías Fariña, modelo `gpt-5-mini`, todos los canales apagados y modo prueba activo. App nueva `agente`, migración `agente/0001`. Es la Etapa 1a de REQ-075: el asistente todavía no conversa.
+
+---
+
 ## 2026-11-11 — FEAT-057: «Agregar adicional» en el ítem del presupuesto
 
 Botón «Agregar adicional» al lado de «Agregar Opcional» (aluminio) y en el cotizador de PVC (en US$). Cada adicional tiene etiqueta (con sugerencias de todos los presupuestos) y precio; con más de una unidad se elige «Por cada unidad» o «Total». No lleva margen y queda fuera del IVA. Se ve en la fila del ítem, en «Ver detalle» y en el PDF («Incluye: Albañilería»). Sin migración: se guarda en `resultado_json` del ítem. API nueva `/presupuestos/api/adicionales/etiquetas/` (REQ-074).

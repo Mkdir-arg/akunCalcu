@@ -94,3 +94,5 @@
 | [REQ-072](./REQ-072-modulo-tareas.md) | Módulo de tareas para empleados (responsable, fecha límite, estado) que se suma al resumen | Aprobado | 2026-11-10 | — |
 | [REQ-073](./REQ-073-checks-flete-expreso-izaje.md) | Checks «Flete expreso CABA» y «No incluye izaje» en el presupuesto y en Observaciones del PDF | Implementado | 2026-11-11 | [FEAT-056](../features/FEAT-056-checks-flete-expreso-izaje.md) |
 | [REQ-074](./REQ-074-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, fuera del margen y del IVA | Implementado | 2026-11-11 | [FEAT-057](../features/FEAT-057-adicionales-libres-item.md) |
+| [REQ-075](./REQ-075-atencion-automatica-clientes-omnicanal.md) | Atención autónoma de clientes por WhatsApp, email e Instagram (cotiza aluminio, deriva PVC, agenda visita) | En desarrollo | 2026-11-11 | [FEAT-058](../features/FEAT-058-seccion-agente-configuracion.md) (Etapa 1a) |
+| [REQ-076](./REQ-076-simulador-conversacion-agente.md) | Simulador de conversación del agente (chat de prueba con la configuración real) | Implementado | 2026-11-11 | [FEAT-059](../features/FEAT-059-simulador-conversacion-agente.md) |

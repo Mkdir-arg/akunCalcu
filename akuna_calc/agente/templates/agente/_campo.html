@@ -1,0 +1,7 @@
+{% comment %}Campo de formulario Taller. Parámetros: campo (BoundField), requerido (bool). Usar con `only`.{% endcomment %}
+<div class="field">
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if requerido %} <span class="text-danger">*</span>{% endif %}</label>
+    {{ campo }}
+    {% if campo.help_text %}<p class="field-hint">{{ campo.help_text }}</p>{% endif %}
+    {% if campo.errors %}<p class="field-error">{{ campo.errors.0 }}</p>{% endif %}
+</div>

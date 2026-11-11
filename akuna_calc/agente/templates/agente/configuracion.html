@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Configuración general{% endblock %}
+
+{% block content %}
+{% include 'core/ui/page_header.html' with title="Configuración general" subtitle="Cómo se presenta y en qué canales atiende el asistente de clientes." only %}
+
+<form method="post" class="max-w-3xl">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<p class="field-error mb-4">{{ form.non_field_errors.0 }}</p>{% endif %}
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Identidad</p>
+        <div class="grid grid-cols-1 gap-5">
+            {% include 'agente/_campo.html' with campo=form.nombre_firma requerido=True only %}
+            {% include 'agente/_campo.html' with campo=form.instrucciones_tono only %}
+            {% include 'agente/_campo.html' with campo=form.modelo_ia requerido=True only %}
+        </div>
+    </section>
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Canales</p>
+        <div class="grid grid-cols-1 gap-4">
+            {% include 'agente/_check.html' with campo=form.whatsapp_activo only %}
+            {% include 'agente/_check.html' with campo=form.email_activo only %}
+            {% include 'agente/_check.html' with campo=form.instagram_activo only %}
+        </div>
+    </section>
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Modo prueba</p>
+        <div class="grid grid-cols-1 gap-5">
+            {% include 'agente/_check.html' with campo=form.modo_prueba only %}
+            {% include 'agente/_campo.html' with campo=form.numeros_prueba only %}
+        </div>
+    </section>
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Derivaciones</p>
+        {% include 'agente/_campo.html' with campo=form.derivar_a only %}
+    </section>
+
+    <div class="flex justify-end gap-3">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>Guardar</button>
+    </div>
+</form>
+{% endblock %}

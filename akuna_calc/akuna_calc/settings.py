@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'novedades',
     'optimizador',
     'resumenes',
+    'agente',
 ]
 
 MIDDLEWARE = [

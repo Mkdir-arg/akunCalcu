@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Editar franja{% endblock %}
+
+{% block content %}
+{% url 'agente:horario' as url_horario %}
+{% include 'core/ui/page_header.html' with title="Editar franja de atención" back_url=url_horario back_label="Horario de atención" only %}
+
+<section class="card card-pad max-w-xl">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<p class="field-error mb-3">{{ form.non_field_errors.0 }}</p>{% endif %}
+        <div class="grid grid-cols-1 gap-5">
+            {% include 'agente/_campo.html' with campo=form.dia_semana requerido=True only %}
+            <div class="grid grid-cols-2 gap-3">
+                {% include 'agente/_campo.html' with campo=form.hora_desde requerido=True only %}
+                {% include 'agente/_campo.html' with campo=form.hora_hasta requerido=True only %}
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-line">
+            <a href="{{ url_horario }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>Guardar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

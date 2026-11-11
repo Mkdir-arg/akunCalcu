@@ -1,0 +1,136 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Simulación #{{ conversacion.pk }}{% endblock %}
+
+{% block content %}
+{% url 'agente:simulador' as url_lista %}
+{% include 'core/ui/page_header.html' with title="Simulación de conversación" subtitle="Vos escribís como cliente; responde el asistente con la configuración actual." back_url=url_lista back_label="Simulador" only %}
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+    <section class="card overflow-hidden lg:col-span-3 flex flex-col min-h-[70vh]">
+        <div id="chat-mensajes" class="flex-1 overflow-y-auto p-5 bg-ground flex flex-col gap-3" aria-live="polite"></div>
+        <div id="chat-escribiendo" class="hidden px-5 py-2 muted text-sm"><i class="fas fa-ellipsis fa-fade"></i> {{ config.nombre_firma }} está escribiendo…</div>
+        <form id="chat-form" class="border-t border-line p-4 flex gap-3 items-end" method="post" action="{% url 'agente:simulacion_enviar' conversacion.pk %}">
+            {% csrf_token %}
+            <textarea id="chat-texto" name="texto" rows="2" maxlength="2000" class="input flex-1" placeholder="Escribí como si fueras el cliente… (Enter envía, Shift+Enter salto de línea)" required></textarea>
+            <button type="submit" id="chat-enviar" class="btn btn-primary"><i class="fas fa-paper-plane"></i>Enviar</button>
+        </form>
+    </section>
+
+    <aside class="card card-pad h-fit">
+        <p class="sec-label mb-3">Esta simulación</p>
+        <dl class="grid grid-cols-1 gap-3 text-sm">
+            <div><dt class="muted">Canal</dt><dd class="strong">{{ conversacion.get_canal_display }}</dd></div>
+            <div><dt class="muted">Cliente</dt><dd class="strong">{{ conversacion.nombre_contacto|default:"Sin nombre" }}</dd></div>
+            <div><dt class="muted">Momento</dt><dd class="strong">{{ momento|date:"l d/m/Y H:i" }}{% if not conversacion.fecha_hora_simulada %} <span class="muted">(ahora)</span>{% endif %}</dd></div>
+            <div><dt class="muted">Firma</dt><dd class="strong">{{ config.nombre_firma }}</dd></div>
+            <div><dt class="muted">Modelo</dt><dd class="strong">{{ config.modelo_ia }}</dd></div>
+        </dl>
+        <p class="field-hint mt-4">Las acciones (derivar, visita técnica) solo se muestran en «Detrás de escena»: no se ejecutan.</p>
+        <form method="post" action="{% url 'agente:simulacion_nueva' %}" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="canal" value="{{ conversacion.canal }}">
+            <input type="hidden" name="nombre_contacto" value="{{ conversacion.nombre_contacto }}">
+            {% if conversacion.fecha_hora_simulada %}<input type="hidden" name="fecha_hora_simulada" value="{{ conversacion.fecha_hora_simulada|date:'Y-m-d\TH:i' }}">{% endif %}
+            <button type="submit" class="btn btn-secondary w-full"><i class="fas fa-rotate-right"></i>Nueva conversación</button>
+        </form>
+    </aside>
+</div>
+
+{{ mensajes_json|json_script:"chat-inicial" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var contenedor = document.getElementById('chat-mensajes');
+    var form = document.getElementById('chat-form');
+    var texto = document.getElementById('chat-texto');
+    var boton = document.getElementById('chat-enviar');
+    var escribiendo = document.getElementById('chat-escribiendo');
+    var csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function elemento(tag, clase, contenido) {
+        var el = document.createElement(tag);
+        if (clase) { el.className = clase; }
+        if (contenido !== undefined) { el.textContent = contenido; }
+        return el;
+    }
+
+    function detrasDeEscena(detalle) {
+        var claves = Object.keys(detalle || {});
+        if (!claves.length || detalle.error) { return null; }
+        var caja = elemento('details', 'mt-2 text-xs');
+        caja.appendChild(elemento('summary', 'muted cursor-pointer', 'Detrás de escena'));
+        var lista = elemento('ul', 'mt-1 grid gap-1 muted');
+        var entradas = (detalle.entradas_usadas || []).map(function (e) { return e.tema; });
+        lista.appendChild(elemento('li', '', 'Conocimiento usado: ' + (entradas.length ? entradas.join(', ') : 'ninguno')));
+        var accion = 'Acción: ' + (detalle.accion_texto || 'Ninguna');
+        if (detalle.motivo) { accion += ' — ' + detalle.motivo; }
+        lista.appendChild(elemento('li', '', accion));
+        if (detalle.formato_invalido) { lista.appendChild(elemento('li', 'text-warn', 'El modelo no respondió en el formato esperado.')); }
+        if (detalle.modelo) {
+            var consumo = 'Modelo: ' + detalle.modelo;
+            if (detalle.tokens_entrada != null) { consumo += ' · tokens ' + detalle.tokens_entrada + ' + ' + detalle.tokens_salida; }
+            lista.appendChild(elemento('li', '', consumo));
+        }
+        caja.appendChild(lista);
+        return caja;
+    }
+
+    function agregar(mensaje) {
+        var fila, burbuja;
+        if (mensaje.rol === 'sistema') {
+            fila = elemento('div', 'flex justify-center');
+            burbuja = elemento('div', 'text-xs px-3 py-2 rounded-lg ' + (mensaje.detalle && mensaje.detalle.error ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn'), mensaje.texto);
+            fila.appendChild(burbuja);
+        } else {
+            var esCliente = mensaje.rol === 'cliente';
+            fila = elemento('div', 'flex ' + (esCliente ? 'justify-end' : 'justify-start'));
+            burbuja = elemento('div', 'max-w-[75%] px-4 py-2 rounded-2xl border ' + (esCliente ? 'bg-accent-soft border-line' : 'bg-white border-line'));
+            burbuja.appendChild(elemento('div', 'whitespace-pre-line text-ink', mensaje.texto));
+            burbuja.appendChild(elemento('div', 'text-xs muted mt-1 text-right', mensaje.hora));
+            var extra = esCliente ? null : detrasDeEscena(mensaje.detalle);
+            if (extra) { burbuja.appendChild(extra); }
+            fila.appendChild(burbuja);
+        }
+        contenedor.appendChild(fila);
+        contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    JSON.parse(document.getElementById('chat-inicial').textContent).forEach(agregar);
+
+    function enviar(evento) {
+        evento.preventDefault();
+        var valor = texto.value.trim();
+        if (!valor || boton.disabled) { return; }
+        boton.disabled = true;
+        texto.value = '';
+        escribiendo.classList.remove('hidden');
+        var datos = new FormData();
+        datos.append('texto', valor);
+        fetch(form.action, { method: 'POST', body: datos, headers: { 'X-CSRFToken': csrf }, credentials: 'same-origin' })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+            .then(function (res) {
+                if (!res.ok) { throw new Error(res.json.error || 'No se pudo enviar el mensaje.'); }
+                res.json.mensajes.forEach(agregar);
+            })
+            .catch(function (err) {
+                texto.value = valor;
+                agregar({ rol: 'sistema', texto: err.message || 'No se pudo enviar el mensaje.', detalle: { error: true } });
+            })
+            .finally(function () {
+                boton.disabled = false;
+                escribiendo.classList.add('hidden');
+                texto.focus();
+            });
+    }
+
+    form.addEventListener('submit', enviar);
+    texto.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { enviar(e); }
+    });
+    texto.focus();
+})();
+</script>
+{% endblock %}

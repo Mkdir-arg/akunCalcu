@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · {% if object %}Editar técnico{% else %}Nuevo técnico{% endif %}{% endblock %}
+
+{% block content %}
+{% url 'agente:tecnicos' as url_lista %}
+{% if object %}
+    {% include 'core/ui/page_header.html' with title="Editar técnico" back_url=url_lista back_label="Visitas técnicas" only %}
+{% else %}
+    {% include 'core/ui/page_header.html' with title="Nuevo técnico" back_url=url_lista back_label="Visitas técnicas" only %}
+{% endif %}
+
+<form method="post" class="max-w-4xl">
+    {% csrf_token %}
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Datos de la visita</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {% include 'agente/_campo.html' with campo=form.usuario requerido=True only %}
+            {% include 'agente/_campo.html' with campo=form.costo_visita requerido=True only %}
+            {% include 'agente/_campo.html' with campo=form.duracion_minutos requerido=True only %}
+            {% include 'agente/_campo.html' with campo=form.cupo_por_franja requerido=True only %}
+            <div class="md:col-span-2">{% include 'agente/_campo.html' with campo=form.notas only %}</div>
+            {% include 'agente/_check.html' with campo=form.activo only %}
+        </div>
+    </section>
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Días y franjas disponibles</p>
+        {{ franjas.management_form }}
+        {% if franjas.non_form_errors %}<p class="field-error mb-3">{{ franjas.non_form_errors.0 }}</p>{% endif %}
+        <div id="franjas-filas" class="grid grid-cols-1 gap-3">
+            {% for f in franjas %}
+            <div class="grid grid-cols-12 gap-3 items-end" data-fila>
+                {{ f.id }}
+                <div class="col-span-4">{% include 'agente/_campo.html' with campo=f.dia_semana only %}</div>
+                <div class="col-span-3">{% include 'agente/_campo.html' with campo=f.hora_desde only %}</div>
+                <div class="col-span-3">{% include 'agente/_campo.html' with campo=f.hora_hasta only %}</div>
+                <div class="col-span-2 pb-2">{% if f.instance.pk %}<label class="flex items-center gap-2 muted">{{ f.DELETE }} Quitar</label>{% endif %}</div>
+                {% if f.non_field_errors %}<p class="field-error col-span-12">{{ f.non_field_errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <template id="franjas-vacia">
+            <div class="grid grid-cols-12 gap-3 items-end" data-fila>
+                {{ franjas.empty_form.id }}
+                <div class="col-span-4">{% include 'agente/_campo.html' with campo=franjas.empty_form.dia_semana only %}</div>
+                <div class="col-span-3">{% include 'agente/_campo.html' with campo=franjas.empty_form.hora_desde only %}</div>
+                <div class="col-span-3">{% include 'agente/_campo.html' with campo=franjas.empty_form.hora_hasta only %}</div>
+                <div class="col-span-2"></div>
+            </div>
+        </template>
+        <button type="button" class="btn btn-ghost btn-sm mt-3" data-agregar-fila="franjas"><i class="fas fa-plus"></i>Agregar franja</button>
+    </section>
+
+    <section class="card card-pad mb-5">
+        <p class="sec-label mb-4">Zonas que cubre</p>
+        {{ zonas.management_form }}
+        {% if zonas.non_form_errors %}<p class="field-error mb-3">{{ zonas.non_form_errors.0 }}</p>{% endif %}
+        <div id="zonas-filas" class="grid grid-cols-1 gap-3">
+            {% for z in zonas %}
+            <div class="grid grid-cols-12 gap-3 items-end" data-fila>
+                {{ z.id }}
+                <div class="col-span-5">{% include 'agente/_campo.html' with campo=z.localidad only %}</div>
+                <div class="col-span-5">{% include 'agente/_campo.html' with campo=z.provincia only %}</div>
+                <div class="col-span-2 pb-2">{% if z.instance.pk %}<label class="flex items-center gap-2 muted">{{ z.DELETE }} Quitar</label>{% endif %}</div>
+                {% if z.non_field_errors %}<p class="field-error col-span-12">{{ z.non_field_errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <template id="zonas-vacia">
+            <div class="grid grid-cols-12 gap-3 items-end" data-fila>
+                {{ zonas.empty_form.id }}
+                <div class="col-span-5">{% include 'agente/_campo.html' with campo=zonas.empty_form.localidad only %}</div>
+                <div class="col-span-5">{% include 'agente/_campo.html' with campo=zonas.empty_form.provincia only %}</div>
+                <div class="col-span-2"></div>
+            </div>
+        </template>
+        <button type="button" class="btn btn-ghost btn-sm mt-3" data-agregar-fila="zonas"><i class="fas fa-plus"></i>Agregar zona</button>
+    </section>
+
+    <div class="flex justify-end gap-3">
+        <a href="{{ url_lista }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>Guardar</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('[data-agregar-fila]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        var prefijo = boton.dataset.agregarFila;
+        var total = document.getElementById('id_' + prefijo + '-TOTAL_FORMS');
+        var indice = parseInt(total.value, 10);
+        var html = document.getElementById(prefijo + '-vacia').innerHTML.replace(/__prefix__/g, indice);
+        var filas = document.getElementById(prefijo + '-filas');
+        filas.insertAdjacentHTML('beforeend', html);
+        total.value = indice + 1;
+        if (window.AkunSelect2) {
+            window.AkunSelect2.init(filas.lastElementChild);
+        }
+    });
+});
+</script>
+{% endblock %}

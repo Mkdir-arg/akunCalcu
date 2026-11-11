@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Agente · Simulador{% endblock %}
+
+{% block content %}
+{% include 'core/ui/page_header.html' with title="Simulador" subtitle="Escribile al asistente como si fueras un cliente. No se envía nada a nadie." only %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <section class="card overflow-hidden lg:col-span-2">
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Simulación</th>
+                        <th>Canal</th>
+                        <th>Hecha por</th>
+                        <th class="num">Mensajes</th>
+                        <th>Último movimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in simulaciones %}
+                    <tr>
+                        <td><a class="strong" href="{% url 'agente:simulacion' s.pk %}">#{{ s.pk }} · {{ s.nombre_contacto|default:"Cliente sin nombre" }}</a></td>
+                        <td>{% include 'core/ui/badge.html' with tone="blue" label=s.get_canal_display only %}</td>
+                        <td>{{ s.iniciada_por.get_full_name|default:s.iniciada_por.username|default:"—" }}</td>
+                        <td class="num">{{ s.cantidad_mensajes }}</td>
+                        <td class="muted">{{ s.updated_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">{% include 'core/ui/empty_state.html' with title="Todavía no hay simulaciones" text="Empezá una conversación de prueba con el formulario de la derecha." icon="fas fa-comments" only %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'core/ui/pagination.html' with page_obj=page_obj total_label="simulaciones" only %}
+    </section>
+
+    <section class="card card-pad">
+        <p class="sec-label mb-4">Nueva conversación</p>
+        <form method="post" action="{% url 'agente:simulacion_nueva' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-4">
+                {% include 'agente/_campo.html' with campo=form.canal requerido=True only %}
+                {% include 'agente/_campo.html' with campo=form.nombre_contacto only %}
+                {% include 'agente/_campo.html' with campo=form.fecha_hora_simulada only %}
+            </div>
+            <div class="flex justify-end mt-4">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-comments"></i>Empezar</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
