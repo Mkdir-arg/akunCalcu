@@ -1,5 +1,5 @@
 # REQ-075 — Atención autónoma de clientes por WhatsApp, email e Instagram
-**Estado**: Aprobado
+**Estado**: En desarrollo
 **Fecha**: 2026-11-11
 **Solicitante**: Dirección
 
