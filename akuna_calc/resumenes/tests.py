@@ -71,6 +71,7 @@ class CalcularDatosTests(BaseDatos):
         self.presupuesto('P-2', '500', self.hoy - timedelta(days=3), estado='confirmado', venta=venta)
         self.presupuesto('P-3', '800', self.hoy - timedelta(days=9), estado='enviado')
         self.presupuesto('P-4', '800', self.hoy - timedelta(days=2), estado='enviado')
+        self.presupuesto('P-5', '800', self.hoy - timedelta(days=31), estado='enviado')
 
         d = calcular_datos('dia', self.hoy)['presupuestos']
 
@@ -125,6 +126,25 @@ class CalcularDatosTests(BaseDatos):
             {'persona': 'Colocador Uno', 'colocaciones': 1, 'mediciones': 0},
         ])
         self.assertFalse(d['sin_actividad'])
+
+    def test_atrasados_solo_dentro_de_la_ventana_de_30_dias(self):
+        from types import SimpleNamespace
+        hoy = timezone.localdate()
+
+        def pedido(numero, dias_atraso):
+            return SimpleNamespace(
+                numero=numero, cliente='Cli', esta_atrasado=True,
+                fecha_comprometida=hoy - timedelta(days=dias_atraso), get_estado_display=lambda: 'En fábrica',
+            )
+
+        pedidos = [pedido('PF-1', 5), pedido('PF-2', 30), pedido('PF-3', 31)]
+        with mock.patch('resumenes.services.PedidoFabrica') as modelo:
+            modelo.ESTADOS_CERRADOS = ('entregado', 'cancelado')
+            modelo.objects.exclude.return_value.prefetch_related.return_value = pedidos
+            atrasados = calcular_datos('dia', hoy)['fabrica']['atrasados']
+
+        self.assertEqual(atrasados['cantidad'], 2)
+        self.assertEqual([p['pedido'] for p in atrasados['detalle']], ['PF-2', 'PF-1'])
 
     def test_dia_vacio_marca_sin_actividad(self):
         d = calcular_datos('dia', self.hoy)

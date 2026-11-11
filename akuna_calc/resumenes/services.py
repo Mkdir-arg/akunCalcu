@@ -22,6 +22,8 @@ PERIODO_SEMANA = 'semana'
 PERIODOS = (PERIODO_DIA, PERIODO_SEMANA)
 
 DIAS_SIN_RESPUESTA = 7
+# Lo más viejo que esto son datos que nadie cerró: no sirve para el seguimiento diario.
+DIAS_VENTANA = 30
 LIMITE_LISTADO = 10
 TIPOS_AGENDA = ('colocaciones', 'mediciones')
 
@@ -83,11 +85,11 @@ def _presupuestos(inicio, fin, hoy):
             venta__created_at__gte=inicio, venta__created_at__lt=fin, venta__deleted_at__isnull=True,
         ).select_related('created_by', 'cliente')
     )
-    limite = timezone.make_aware(
-        datetime.combine(hoy - timedelta(days=DIAS_SIN_RESPUESTA), time.max), timezone.get_current_timezone()
-    )
+    tz = timezone.get_current_timezone()
+    limite = timezone.make_aware(datetime.combine(hoy - timedelta(days=DIAS_SIN_RESPUESTA), time.max), tz)
+    desde_ventana = timezone.make_aware(datetime.combine(hoy - timedelta(days=DIAS_VENTANA), time.min), tz)
     sin_respuesta_qs = (
-        Presupuesto.objects.filter(estado='enviado', created_at__lte=limite)
+        Presupuesto.objects.filter(estado='enviado', created_at__lte=limite, created_at__gte=desde_ventana)
         .select_related('cliente', 'created_by')
         .order_by('created_at')
     )
@@ -105,6 +107,7 @@ def _presupuestos(inicio, fin, hoy):
         },
         'sin_respuesta': {
             'dias': DIAS_SIN_RESPUESTA,
+            'ventana_dias': DIAS_VENTANA,
             'cantidad': sin_respuesta_qs.count(),
             'detalle': [
                 {
@@ -145,7 +148,8 @@ def _fabrica(inicio, fin):
         PedidoFabrica.objects.exclude(estado__in=PedidoFabrica.ESTADOS_CERRADOS)
         .prefetch_related('ordenes')
     )
-    atrasados = [p for p in abiertos if p.esta_atrasado]
+    desde_ventana = timezone.localdate() - timedelta(days=DIAS_VENTANA)
+    atrasados = [p for p in abiertos if p.esta_atrasado and p.fecha_comprometida >= desde_ventana]
     atrasados.sort(key=lambda p: p.fecha_comprometida)
     hoy = timezone.localdate()
     return {
@@ -158,6 +162,7 @@ def _fabrica(inicio, fin):
             ],
         },
         'atrasados': {
+            'ventana_dias': DIAS_VENTANA,
             'cantidad': len(atrasados),
             'detalle': [
                 {'pedido': p.numero, 'cliente': p.cliente, 'estado': p.get_estado_display(),

@@ -56,7 +56,7 @@ guardado en el admin (**Resúmenes de la dirección**), con los datos, el texto 
   de los presupuestos cuya venta se creó en el período.
 - **Confirmados**: se cuentan por la fecha de creación de la venta asociada. El presupuesto no guarda
   la fecha en que se confirmó.
-- **Sin respuesta**: `estado='enviado'` y creado hace 7 días o más. No hay fecha de envío.
+- **Ventana de 30 días** (`DIAS_VENTANA`): «sin respuesta» = `estado='enviado'` creado hace entre 7 y 30 días (no hay fecha de envío); «atrasados» = fecha comprometida vencida dentro de los últimos 30 días. En prod había 2125 presupuestos «enviado» y 130 pedidos atrasados viejos que nadie cerró: sin ventana, el resumen repetía esas cifras todos los días.
 - **Agenda**: solo lo programado, porque `EventoAgenda` no tiene un estado «realizado». Se excluyen los cancelados.
 - **Comparación de ventas**: el mismo período de la semana anterior (día contra día, semana contra semana).
 - **Botón en lugar de pedir «OK» por escrito**: el webhook de Meta es único y lo comparte con el bot de
