@@ -144,6 +144,12 @@ class MotorTests(TestCase):
             with self.assertRaises(openai_cliente.OpenAINoConfigurado):
                 openai_cliente.pedir_json('gpt-5-mini', [], 'x', {})
 
+    def test_cliente_openai_corte_de_conexion_es_error_controlado(self):
+        with mock.patch.dict(os.environ, {'OPENAI_API_KEY': 'clave-de-prueba'}), \
+                mock.patch('agente.openai_cliente.request.urlopen', side_effect=ConnectionResetError()):
+            with self.assertRaises(openai_cliente.OpenAIError):
+                openai_cliente.pedir_json('gpt-5-mini', [], 'x', {})
+
     def test_cliente_openai_arma_el_pedido(self):
         respuesta = mock.MagicMock()
         respuesta.__enter__.return_value.read.return_value = json.dumps({

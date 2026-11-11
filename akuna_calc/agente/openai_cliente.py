@@ -55,7 +55,8 @@ def pedir_json(modelo, mensajes, nombre_schema, schema):
         except (ValueError, AttributeError):
             pass
         raise OpenAIError(f'OpenAI respondió con error {exc.code}. {detalle}'.strip()) from exc
-    except (error.URLError, TimeoutError) as exc:
+    except OSError as exc:
+        # URLError, timeouts y cortes de conexión (ConnectionResetError, RemoteDisconnected).
         raise OpenAIError('No se pudo conectar con OpenAI o tardó demasiado en responder.') from exc
     except ValueError as exc:
         raise OpenAIError('OpenAI devolvió una respuesta ilegible.') from exc
