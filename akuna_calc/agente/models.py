@@ -223,3 +223,73 @@ def normalizar_numeros(texto):
         if digitos and digitos not in numeros:
             numeros.append(digitos)
     return '\n'.join(numeros)
+
+
+class Conversacion(models.Model):
+    CANAL_WHATSAPP = 'whatsapp'
+    CANAL_EMAIL = 'email'
+    CANAL_INSTAGRAM = 'instagram'
+    CANAL_CHOICES = [
+        (CANAL_WHATSAPP, 'WhatsApp'),
+        (CANAL_EMAIL, 'Email'),
+        (CANAL_INSTAGRAM, 'Instagram'),
+    ]
+
+    canal = models.CharField(max_length=20, choices=CANAL_CHOICES, default=CANAL_WHATSAPP, verbose_name='Canal')
+    nombre_contacto = models.CharField(max_length=150, blank=True, verbose_name='Nombre del contacto')
+    es_simulacion = models.BooleanField(default=False, verbose_name='Es simulación')
+    iniciada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='conversaciones_agente',
+        verbose_name='Iniciada por',
+    )
+    fecha_hora_simulada = models.DateTimeField(
+        null=True, blank=True, verbose_name='Fecha y hora simulada',
+        help_text='Vacío = usar la hora actual.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Creada')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Último movimiento')
+
+    class Meta:
+        verbose_name = 'Conversación del agente'
+        verbose_name_plural = 'Conversaciones del agente'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        tipo = 'Simulación' if self.es_simulacion else 'Conversación'
+        contacto = self.nombre_contacto or 'sin nombre'
+        return f'{tipo} #{self.pk} · {self.get_canal_display()} · {contacto}'
+
+
+class Mensaje(models.Model):
+    ROL_CLIENTE = 'cliente'
+    ROL_ASISTENTE = 'asistente'
+    ROL_SISTEMA = 'sistema'
+    ROL_CHOICES = [
+        (ROL_CLIENTE, 'Cliente'),
+        (ROL_ASISTENTE, 'Asistente'),
+        (ROL_SISTEMA, 'Sistema'),
+    ]
+
+    conversacion = models.ForeignKey(
+        Conversacion, on_delete=models.CASCADE, related_name='mensajes', verbose_name='Conversación',
+    )
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, verbose_name='Rol')
+    texto = models.TextField(verbose_name='Texto')
+    detalle = models.JSONField(
+        default=dict, blank=True, verbose_name='Detalle',
+        help_text='Detrás de escena: entradas usadas, acción, modelo, consumo, errores.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha')
+
+    class Meta:
+        verbose_name = 'Mensaje del agente'
+        verbose_name_plural = 'Mensajes del agente'
+        ordering = ['created_at', 'pk']
+
+    def __str__(self):
+        texto = self.texto if len(self.texto) <= 40 else self.texto[:37] + '...'
+        return f'{self.get_rol_display()}: {texto}'

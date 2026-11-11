@@ -23,4 +23,9 @@ urlpatterns = [
     path('conocimiento/nueva/', views.ConocimientoCreateView.as_view(), name='conocimiento_crear'),
     path('conocimiento/<int:pk>/editar/', views.ConocimientoUpdateView.as_view(), name='conocimiento_editar'),
     path('conocimiento/<int:pk>/eliminar/', views.ConocimientoDeleteView.as_view(), name='conocimiento_eliminar'),
+
+    path('simulador/', views.SimuladorListView.as_view(), name='simulador'),
+    path('simulador/nueva/', views.simulacion_nueva, name='simulacion_nueva'),
+    path('simulador/<int:pk>/', views.simulacion, name='simulacion'),
+    path('simulador/<int:pk>/enviar/', views.simulacion_enviar, name='simulacion_enviar'),
 ]

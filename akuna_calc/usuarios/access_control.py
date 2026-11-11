@@ -80,6 +80,7 @@ ACCESS_MODULES = [
             {'code': 'agente.horario', 'label': 'Horario de atención', 'route_name': 'agente:horario'},
             {'code': 'agente.visitas', 'label': 'Visitas técnicas', 'route_name': 'agente:tecnicos'},
             {'code': 'agente.conocimiento', 'label': 'Base de conocimiento', 'route_name': 'agente:conocimiento'},
+            {'code': 'agente.simulador', 'label': 'Simulador', 'route_name': 'agente:simulador'},
         ],
     },
     {
@@ -331,6 +332,7 @@ _register_route('solicitudes.view', 'solicitudes:lista', 'solicitudes:marcar_con
 _register_route('agente.horario', 'agente:franja_crear', 'agente:franja_editar', 'agente:franja_eliminar', 'agente:dia_cerrado_crear', 'agente:dia_cerrado_eliminar')
 _register_route('agente.visitas', 'agente:tecnico_crear', 'agente:tecnico_editar', 'agente:tecnico_eliminar')
 _register_route('agente.conocimiento', 'agente:conocimiento_crear', 'agente:conocimiento_editar', 'agente:conocimiento_eliminar')
+_register_route('agente.simulador', 'agente:simulacion_nueva', 'agente:simulacion', 'agente:simulacion_enviar')
 
 # El vendedor marca "contestada" desde su bandeja del home (dashboard); la view valida
 # que solo pueda actuar sobre sus propias solicitudes.

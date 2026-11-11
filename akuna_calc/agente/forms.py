@@ -5,6 +5,7 @@ from django.forms import inlineformset_factory
 
 from .models import (
     ConfiguracionAgente,
+    Conversacion,
     DiaCerrado,
     EntradaConocimiento,
     FranjaAtencion,
@@ -185,3 +186,26 @@ class EntradaConocimientoForm(forms.ModelForm):
             'orden': forms.NumberInput(attrs={'class': _INPUT, 'min': 0}),
             'activo': forms.CheckboxInput(attrs={'class': _CHECK}),
         }
+
+
+class SimulacionForm(forms.ModelForm):
+    fecha_hora_simulada = forms.DateTimeField(
+        required=False,
+        label='Fecha y hora simulada',
+        help_text='Opcional. Sirve para probar fuera de horario o en un día cerrado.',
+        input_formats=['%Y-%m-%dT%H:%M'],
+        widget=forms.DateTimeInput(attrs={'class': _INPUT, 'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+    )
+
+    class Meta:
+        model = Conversacion
+        fields = ['canal', 'nombre_contacto', 'fecha_hora_simulada']
+        widgets = {
+            'canal': forms.Select(attrs={'class': _INPUT}),
+            'nombre_contacto': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'Ej. Laura (opcional)'}),
+        }
+        labels = {'nombre_contacto': 'Nombre del cliente de prueba'}
+
+
+class MensajeSimuladoForm(forms.Form):
+    texto = forms.CharField(max_length=2000, strip=True)

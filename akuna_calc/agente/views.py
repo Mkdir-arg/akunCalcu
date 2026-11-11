@@ -4,25 +4,31 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
+from . import motor
 from .forms import (
     ConfiguracionAgenteForm,
     DiaCerradoForm,
     EntradaConocimientoForm,
     FranjaAtencionForm,
     FranjaTecnicoFormSet,
+    MensajeSimuladoForm,
+    SimulacionForm,
     TecnicoVisitaForm,
     ZonaTecnicoFormSet,
 )
 from .models import (
     DIAS_SEMANA,
     ConfiguracionAgente,
+    Conversacion,
     DiaCerrado,
     EntradaConocimiento,
     FranjaAtencion,
@@ -245,3 +251,79 @@ class ConocimientoDeleteView(LoginRequiredMixin, View):
         entrada.delete()
         messages.success(request, f"Entrada '{tema}' eliminada.")
         return redirect('agente:conocimiento')
+
+
+# ---------------------------------------------------------------------------
+# Simulador de conversación
+# ---------------------------------------------------------------------------
+
+def _mensaje_a_dict(mensaje):
+    return {
+        'id': mensaje.pk,
+        'rol': mensaje.rol,
+        'texto': mensaje.texto,
+        'hora': timezone.localtime(mensaje.created_at).strftime('%H:%M'),
+        'detalle': mensaje.detalle or {},
+    }
+
+
+def _simulacion_o_404(pk):
+    return get_object_or_404(Conversacion, pk=pk, es_simulacion=True)
+
+
+class SimuladorListView(LoginRequiredMixin, ListView):
+    model = Conversacion
+    template_name = 'agente/simulador_list.html'
+    context_object_name = 'simulaciones'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return (
+            Conversacion.objects.filter(es_simulacion=True)
+            .select_related('iniciada_por')
+            .annotate(cantidad_mensajes=Count('mensajes'))
+            .order_by('-updated_at')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = SimulacionForm()
+        return context
+
+
+@login_required
+@require_POST
+def simulacion_nueva(request):
+    form = SimulacionForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, 'Revisá los datos de la simulación.')
+        return redirect('agente:simulador')
+    conversacion = form.save(commit=False)
+    conversacion.es_simulacion = True
+    conversacion.iniciada_por = request.user
+    conversacion.save()
+    return redirect('agente:simulacion', pk=conversacion.pk)
+
+
+@login_required
+def simulacion(request, pk):
+    conversacion = _simulacion_o_404(pk)
+    config = ConfiguracionAgente.obtener()
+    mensajes = [_mensaje_a_dict(m) for m in conversacion.mensajes.all()]
+    return render(request, 'agente/simulacion.html', {
+        'conversacion': conversacion,
+        'config': config,
+        'mensajes_json': mensajes,
+        'momento': motor.momento_de(conversacion),
+    })
+
+
+@login_required
+@require_POST
+def simulacion_enviar(request, pk):
+    conversacion = _simulacion_o_404(pk)
+    form = MensajeSimuladoForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'error': 'Escribí un mensaje (hasta 2000 caracteres).'}, status=400)
+    nuevos = motor.responder(conversacion, form.cleaned_data['texto'])
+    return JsonResponse({'mensajes': [_mensaje_a_dict(m) for m in nuevos]})
