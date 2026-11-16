@@ -8,12 +8,16 @@
         <h1 class="page-title">Novedades</h1>
         <p class="page-sub">Lo nuevo y lo corregido en el sistema.</p>
     </div>
-    <nav class="tabs" aria-label="Filtrar por tipo">
-        <a class="tab {% if not tipo_filter %}on{% endif %}" href="{% url 'novedades:lista' %}">Todo</a>
-        {% for clave, etiqueta in tipo_choices %}
-        <a class="tab {% if tipo_filter == clave %}on{% endif %}" href="?tipo={{ clave }}">{{ etiqueta }}</a>
-        {% endfor %}
-    </nav>
+    <div class="page-actions items-center">
+        <a class="btn btn-ghost" href="{% url 'novedades:pedidos' %}"><i class="far fa-life-ring"></i>Mis pedidos</a>
+        <a class="btn btn-secondary" href="{% url 'novedades:pedido_crear' %}"><i class="fas fa-plus"></i>Nuevo pedido</a>
+        <nav class="tabs" aria-label="Filtrar por tipo">
+            <a class="tab {% if not tipo_filter %}on{% endif %}" href="{% url 'novedades:lista' %}">Todo</a>
+            {% for clave, etiqueta in tipo_choices %}
+            <a class="tab {% if tipo_filter == clave %}on{% endif %}" href="?tipo={{ clave }}">{{ etiqueta }}</a>
+            {% endfor %}
+        </nav>
+    </div>
 </div>
 
 <section class="card overflow-hidden">

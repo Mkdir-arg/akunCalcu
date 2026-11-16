@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Noticia
+from .models import ComentarioPedido, Noticia, PedidoDesarrollo
 from .services import modulo_choices
 
 
@@ -34,3 +34,39 @@ class BorradorApiForm(forms.Form):
     texto_tecnico = forms.CharField(required=False)
     pr_numero = forms.IntegerField(required=False, min_value=1)
     autor = forms.CharField(required=False, max_length=100)
+
+
+class PedidoDesarrolloForm(forms.ModelForm):
+    class Meta:
+        model = PedidoDesarrollo
+        fields = ['titulo', 'etiqueta', 'comentario']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'input', 'placeholder': 'En pocas palabras, qué necesitás'}),
+            'etiqueta': forms.Select(attrs={'class': 'input'}),
+            'comentario': forms.Textarea(attrs={'class': 'input', 'rows': 6}),
+        }
+        help_texts = {
+            'comentario': 'Contá qué pasa o qué te gustaría, en qué pantalla y, si es un error, cómo repetirlo.',
+        }
+
+
+class ComentarioPedidoForm(forms.ModelForm):
+    class Meta:
+        model = ComentarioPedido
+        fields = ['texto']
+        widgets = {'texto': forms.Textarea(attrs={'class': 'input', 'rows': 3, 'placeholder': 'Escribí un comentario'})}
+        labels = {'texto': 'Comentario'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['texto'].required = True
+
+
+class CambioEstadoForm(forms.Form):
+    estado = forms.ChoiceField(
+        label='Estado', choices=PedidoDesarrollo.ESTADO_CHOICES, widget=forms.Select(attrs={'class': 'input'}),
+    )
+    nota = forms.CharField(
+        label='Nota (opcional)', required=False,
+        widget=forms.Textarea(attrs={'class': 'input', 'rows': 2, 'placeholder': 'Por qué cambia el estado'}),
+    )

@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-16 — FEAT-060: pedidos al desarrollo
+
+Nuevo ítem **Pedidos al desarrollo** (y botones en Novedades): cualquier usuario levanta un pedido con título, etiqueta (Error, Mejora, Nueva funcionalidad, Consulta) y comentario, y lo sigue como un ticket. El administrador (acceso total) ve todos, filtra por estado y etiqueta, comenta y cambia el estado (Nuevo → En análisis → En desarrollo → Resuelto / Descartado); cada cambio queda en el hilo, y quien lo pidió puede responder. Migración `novedades/0002` (REQ-077).
+
+---
+
 ## 2026-11-11 — FIX-031: selección masiva de perfiles
 
 En Configuración › Perfiles vuelven a andar el check «todos», el contador, «Aplicar precio masivo» y los filtros. El rediseño «Taller» había borrado el script de la pantalla.

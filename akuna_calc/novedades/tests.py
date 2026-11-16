@@ -10,7 +10,7 @@ from django.utils import timezone
 from usuarios.models import PerfilAccesoUsuario
 
 from .context_processors import novedades as novedades_cp
-from .models import LecturaNovedades, Noticia
+from .models import ComentarioPedido, LecturaNovedades, Noticia, PedidoDesarrollo
 from .services import marcar_leidas, no_leidas_para, publicadas_para
 
 SECRETO = 'secreto-de-prueba'
@@ -345,3 +345,125 @@ class CorreccionesRevisionTests(TestCase):
         r = rf.post('/')
         r.user = self.vendedor
         self.assertEqual(novedades_cp(r)['novedades_aviso'], [])
+
+
+class PedidoDesarrolloModelTests(TestCase):
+    def test_str_y_defaults(self):
+        u = User.objects.create_user('ana', password='x')
+        p = PedidoDesarrollo.objects.create(titulo='No imprime el recibo', comentario='Da error', creado_por=u)
+        self.assertEqual(p.estado, PedidoDesarrollo.ESTADO_NUEVO)
+        self.assertEqual(str(p), f'#{p.pk} No imprime el recibo (Nuevo)')
+        self.assertEqual(p.estado_tono, 'amber')
+        c = ComentarioPedido.objects.create(pedido=p, autor=u, texto='Hola')
+        self.assertIn(f'Pedido #{p.pk}', str(c))
+        self.assertFalse(c.es_cambio_estado)
+
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+class PedidoDesarrolloViewTests(TestCase):
+    def setUp(self):
+        self.vendedor = usuario_con_permisos('vendedor', ['presupuestos.ver'])
+        self.otro = usuario_con_permisos('otro', ['presupuestos.ver'])
+        self.admin = User.objects.create_user('jefe', password='x', is_staff=True)
+        self.pedido = PedidoDesarrollo.objects.create(
+            titulo='Filtro de fechas', etiqueta=PedidoDesarrollo.ETIQUETA_MEJORA,
+            comentario='Quiero filtrar por mes', creado_por=self.vendedor,
+        )
+
+    def test_login_requerido(self):
+        for url in (reverse('novedades:pedidos'), reverse('novedades:pedido_crear'),
+                    reverse('novedades:pedido_detalle', args=[self.pedido.pk])):
+            r = self.client.get(url)
+            self.assertEqual(r.status_code, 302, url)
+            self.assertIn('login', r['Location'])
+
+    def test_crear_pedido(self):
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.get(reverse('novedades:pedido_crear')).status_code, 200)
+        r = self.client.post(reverse('novedades:pedido_crear'), {
+            'titulo': 'Se cuelga el cotizador', 'etiqueta': 'error', 'comentario': 'Al guardar',
+        })
+        p = PedidoDesarrollo.objects.get(titulo='Se cuelga el cotizador')
+        self.assertRedirects(r, reverse('novedades:pedido_detalle', args=[p.pk]))
+        self.assertEqual(p.creado_por, self.otro)
+        self.assertEqual(p.estado, PedidoDesarrollo.ESTADO_NUEVO)
+
+    def test_crear_sin_titulo_no_guarda(self):
+        self.client.force_login(self.otro)
+        r = self.client.post(reverse('novedades:pedido_crear'), {'titulo': '', 'etiqueta': 'error', 'comentario': ''})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(PedidoDesarrollo.objects.count(), 1)
+
+    def test_usuario_ve_solo_sus_pedidos(self):
+        PedidoDesarrollo.objects.create(titulo='Ajeno', comentario='x', creado_por=self.otro)
+        self.client.force_login(self.vendedor)
+        r = self.client.get(reverse('novedades:pedidos'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Filtro de fechas')
+        self.assertNotContains(r, 'Ajeno')
+
+    def test_pedido_ajeno_da_404(self):
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.get(reverse('novedades:pedido_detalle', args=[self.pedido.pk])).status_code, 404)
+        r = self.client.post(reverse('novedades:pedido_detalle', args=[self.pedido.pk]), {'texto': 'meto mano'})
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(self.pedido.comentarios.exists())
+
+    def test_admin_ve_todos_y_filtra(self):
+        PedidoDesarrollo.objects.create(titulo='Ajeno', comentario='x', creado_por=self.otro,
+                                        etiqueta=PedidoDesarrollo.ETIQUETA_ERROR)
+        self.client.force_login(self.admin)
+        r = self.client.get(reverse('novedades:pedidos'))
+        self.assertContains(r, 'Filtro de fechas')
+        self.assertContains(r, 'Ajeno')
+        r = self.client.get(reverse('novedades:pedidos') + '?etiqueta=error')
+        self.assertNotContains(r, 'Filtro de fechas')
+        r = self.client.get(reverse('novedades:pedidos') + '?estado=resuelto')
+        self.assertNotContains(r, 'Ajeno')
+
+    def test_dueno_comenta(self):
+        self.client.force_login(self.vendedor)
+        url = reverse('novedades:pedido_detalle', args=[self.pedido.pk])
+        r = self.client.post(url, {'texto': 'Sumo un dato'})
+        self.assertRedirects(r, url)
+        c = self.pedido.comentarios.get()
+        self.assertEqual((c.autor, c.texto), (self.vendedor, 'Sumo un dato'))
+        self.assertNotContains(self.client.get(url), reverse('novedades:pedido_estado', args=[self.pedido.pk]))
+
+    def test_admin_cambia_estado_y_queda_en_el_hilo(self):
+        self.client.force_login(self.admin)
+        url = reverse('novedades:pedido_estado', args=[self.pedido.pk])
+        r = self.client.post(url, {'estado': PedidoDesarrollo.ESTADO_DESARROLLO, 'nota': 'Lo tomo esta semana'})
+        self.assertRedirects(r, reverse('novedades:pedido_detalle', args=[self.pedido.pk]))
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estado, PedidoDesarrollo.ESTADO_DESARROLLO)
+        c = self.pedido.comentarios.get()
+        self.assertEqual((c.estado_anterior, c.estado_nuevo, c.texto),
+                         (PedidoDesarrollo.ESTADO_NUEVO, PedidoDesarrollo.ESTADO_DESARROLLO, 'Lo tomo esta semana'))
+        self.client.force_login(self.vendedor)
+        r = self.client.get(reverse('novedades:pedido_detalle', args=[self.pedido.pk]))
+        self.assertContains(r, 'Lo tomo esta semana')
+        self.assertContains(r, 'En desarrollo')
+
+    def test_mismo_estado_sin_nota_no_registra(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('novedades:pedido_estado', args=[self.pedido.pk]), {'estado': PedidoDesarrollo.ESTADO_NUEVO})
+        self.assertFalse(self.pedido.comentarios.exists())
+
+    def test_no_admin_no_cambia_estado(self):
+        self.client.force_login(self.vendedor)
+        r = self.client.post(reverse('novedades:pedido_estado', args=[self.pedido.pk]),
+                             {'estado': PedidoDesarrollo.ESTADO_RESUELTO})
+        self.assertEqual(r.status_code, 403)
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estado, PedidoDesarrollo.ESTADO_NUEVO)
+
+    def test_estado_solo_por_post(self):
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('novedades:pedido_estado', args=[self.pedido.pk])).status_code, 405)
+
+    def test_links_en_novedades_y_menu(self):
+        self.client.force_login(self.vendedor)
+        r = self.client.get(reverse('novedades:lista'))
+        self.assertContains(r, reverse('novedades:pedido_crear'))
+        self.assertContains(r, reverse('novedades:pedidos'))

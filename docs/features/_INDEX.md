@@ -65,6 +65,7 @@
 | [FEAT-057](./FEAT-057-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, sin margen ni IVA (REQ-074) | Implementado (en `development`) | 2026-11-11 | Fuera de plan |
 | [FEAT-058](./FEAT-058-seccion-agente-configuracion.md) | Sección «Agente»: configuración, horario, visitas técnicas y base de conocimiento del asistente de clientes (REQ-075, Etapa 1a) | Implementado | 2026-11-11 | Fuera de plan |
 | [FEAT-059](./FEAT-059-simulador-conversacion-agente.md) | Simulador de conversación del agente: chat de prueba con la configuración real y «detrás de escena» (REQ-076) | Implementado | 2026-11-11 | Fuera de plan |
+| [FEAT-060](./FEAT-060-pedidos-al-desarrollo.md) | Pedidos al desarrollo (tickets) en Novedades: el usuario levanta, el admin comenta y cambia el estado (REQ-077) | Implementado | 2026-11-16 | Fuera de plan |
 
 ---
 
@@ -88,7 +89,7 @@
 | `security` | FEAT-011, FEAT-012, FEAT-029, FEAT-035 | 2026-08-01 |
 | `pedidos` | FEAT-001, FEAT-011 | 2026-05-17 |
 | `gastos_diarios` | FEAT-011 | 2026-05-17 |
-| `novedades` | FEAT-053 | 2026-11-10 |
+| `novedades` | FEAT-053, FEAT-060 | 2026-11-16 |
 | `agente` | FEAT-058, FEAT-059 | 2026-11-11 |
 | `optimizador` | FEAT-054 | 2026-11-10 |
 | `resumenes` | FEAT-055 | 2026-11-10 |
