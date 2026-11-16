@@ -34,6 +34,7 @@ Presupuestos y filtros de Ventas siempre visibles. Deja listas las piezas que us
 | US-074 | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem (REQ-074) | ✅ Completado | Fuera de plan; FEAT-057. Sin migración. Falta probar en el navegador |
 | US-075 | Sección «Agente»: configuración del asistente de clientes (REQ-075, Etapa 1a) | ✅ Completado | Fuera de plan; FEAT-058 / ADR-032. Migración `agente/0001`. Falta probar en el navegador. Sigue la Etapa 1b |
 | US-076 | Simulador de conversación del agente (REQ-076) | ✅ Completado | Fuera de plan; FEAT-059 / ADR-033. Migración `agente/0002`. Falta cargar `OPENAI_API_KEY` en Railway y probar contra OpenAI |
+| US-077 | Pedidos al desarrollo (tickets) en Novedades (REQ-077) | ✅ Completado | Fuera de plan; FEAT-060. Migración `novedades/0002`. Probado en el navegador (admin y vendedor) |
 
 ## Items completados (sprints anteriores)
 

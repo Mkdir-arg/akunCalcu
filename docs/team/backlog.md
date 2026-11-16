@@ -50,6 +50,7 @@ Origen: documento de requerimientos funcionales de Akun. Plan, orden y piezas co
 | US-069 | Como integrante del equipo de Akuna, quiero ver las novedades del sistema al entrar para usar las funciones nuevas desde el primer día sin depender de que alguien me avise | Mediano ✅ |
 | US-070 | Como responsable de fábrica, quiero elegir varios pedidos liberados y que el sistema calcule cómo cortar los perfiles de marco en barras para usar menos aluminio y darle al que corta una planilla clara (FEAT-054) | Grande ✅ |
 | US-071 | Como dirección, quiero recibir por WhatsApp el resumen del día (lunes a viernes) y de la semana (sábado) con presupuestos, ventas, fábrica, agenda, solicitudes y actividad del equipo, para saber cómo va el negocio sin entrar al sistema (FEAT-055) | Mediano ✅ |
+| US-077 | Como usuario de AkunCalcu, quiero levantar pedidos al desarrollo (título, etiqueta y comentario) desde Novedades para que el administrador los reciba, me responda y yo vea en qué estado está cada uno (FEAT-060) | Mediano ✅ |
 | US-072 | Como dirección, quiero asignar tareas a los empleados con responsable, fecha límite y estado, para que nada encargado se pierda y se sume al resumen (REQ-072) | Mediano |
 
 ---
