@@ -96,3 +96,4 @@
 | [REQ-074](./REQ-074-adicionales-libres-item.md) | «Agregar adicional»: conceptos libres con etiqueta y precio en el ítem, fuera del margen y del IVA | Implementado | 2026-11-11 | [FEAT-057](../features/FEAT-057-adicionales-libres-item.md) |
 | [REQ-075](./REQ-075-atencion-automatica-clientes-omnicanal.md) | Atención autónoma de clientes por WhatsApp, email e Instagram (cotiza aluminio, deriva PVC, agenda visita) | En desarrollo | 2026-11-11 | [FEAT-058](../features/FEAT-058-seccion-agente-configuracion.md) (Etapa 1a) |
 | [REQ-076](./REQ-076-simulador-conversacion-agente.md) | Simulador de conversación del agente (chat de prueba con la configuración real) | Implementado | 2026-11-11 | [FEAT-059](../features/FEAT-059-simulador-conversacion-agente.md) |
+| [REQ-077](./REQ-077-pedidos-al-desarrollo.md) | Pedidos al desarrollo (tickets) dentro de Novedades: el usuario levanta, el admin comenta y cambia el estado | En desarrollo | 2026-11-16 | — |
