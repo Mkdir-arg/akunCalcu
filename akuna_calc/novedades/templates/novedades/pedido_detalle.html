@@ -1,0 +1,74 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Pedido #{{ pedido.pk }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <a href="{% url 'novedades:pedidos' %}" class="muted text-sm inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i>Pedidos</a>
+        <h1 class="page-title">#{{ pedido.pk }} · {{ pedido.titulo }}</h1>
+        <div class="flex flex-wrap items-center gap-2 mt-2">
+            {% include 'core/ui/badge.html' with label=pedido.get_estado_display tone=pedido.estado_tono dot=True only %}
+            {% include 'core/ui/badge.html' with label=pedido.get_etiqueta_display tone="gray" only %}
+            <span class="text-sm text-ink-3">Pedido por {{ pedido.creado_por.get_full_name|default:pedido.creado_por.username }} el {{ pedido.creado_en|date:"d/m/Y H:i" }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid gap-4 lg:grid-cols-3">
+    <div class="lg:col-span-2 flex flex-col gap-4">
+        <section class="card card-pad">
+            <p class="sec-label mb-2">Pedido</p>
+            <p class="text-ink" style="max-width:72ch">{{ pedido.comentario|linebreaksbr }}</p>
+        </section>
+
+        <section class="card overflow-hidden">
+            <p class="sec-label px-5 pt-5 pb-1">Comentarios</p>
+            {% for c in comentarios %}
+            <article class="px-5 py-4 border-b border-line-soft">
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <span class="strong">{{ c.autor.get_full_name|default:c.autor.username }}</span>
+                    <span class="text-ink-3">{{ c.creado_en|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% if c.es_cambio_estado %}
+                <p class="text-sm text-ink-2 mt-1"><i class="fas fa-right-left text-ink-3"></i> Cambió el estado de <strong>{{ c.get_estado_anterior_display }}</strong> a <strong>{{ c.get_estado_nuevo_display }}</strong></p>
+                {% endif %}
+                {% if c.texto %}<p class="text-ink mt-1" style="max-width:72ch">{{ c.texto|linebreaksbr }}</p>{% endif %}
+            </article>
+            {% empty %}
+            <p class="px-5 py-4 text-ink-3">Todavía no hay comentarios.</p>
+            {% endfor %}
+
+            <form method="post" class="px-5 py-4 bg-ground">
+                {% csrf_token %}
+                <div class="field mb-3">
+                    <label for="{{ form.texto.id_for_label }}">{{ form.texto.label }}</label>
+                    {{ form.texto }}
+                    {% for e in form.texto.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-comment"></i>Comentar</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    {% if es_admin %}
+    <aside>
+        <form method="post" action="{% url 'novedades:pedido_estado' pedido.pk %}" class="card card-pad">
+            {% csrf_token %}
+            <p class="sec-label mb-3">Estado del pedido</p>
+            <div class="field mb-3">
+                <label for="{{ estado_form.estado.id_for_label }}">{{ estado_form.estado.label }}</label>
+                {{ estado_form.estado }}
+            </div>
+            <div class="field mb-3">
+                <label for="{{ estado_form.nota.id_for_label }}">{{ estado_form.nota.label }}</label>
+                {{ estado_form.nota }}
+            </div>
+            <button type="submit" class="btn btn-secondary w-full justify-center"><i class="fas fa-check"></i>Actualizar estado</button>
+        </form>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}

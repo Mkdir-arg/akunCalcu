@@ -84,3 +84,86 @@ class LecturaNovedades(models.Model):
 
     def __str__(self):
         return f'{self.usuario} · {self.ultima_vista:%d/%m/%Y %H:%M}'
+
+
+class PedidoDesarrollo(models.Model):
+    ETIQUETA_ERROR = 'error'
+    ETIQUETA_MEJORA = 'mejora'
+    ETIQUETA_NUEVA = 'nueva'
+    ETIQUETA_CONSULTA = 'consulta'
+    ETIQUETA_CHOICES = [
+        (ETIQUETA_ERROR, 'Error'),
+        (ETIQUETA_MEJORA, 'Mejora'),
+        (ETIQUETA_NUEVA, 'Nueva funcionalidad'),
+        (ETIQUETA_CONSULTA, 'Consulta'),
+    ]
+
+    ESTADO_NUEVO = 'nuevo'
+    ESTADO_ANALISIS = 'analisis'
+    ESTADO_DESARROLLO = 'desarrollo'
+    ESTADO_RESUELTO = 'resuelto'
+    ESTADO_DESCARTADO = 'descartado'
+    ESTADO_CHOICES = [
+        (ESTADO_NUEVO, 'Nuevo'),
+        (ESTADO_ANALISIS, 'En análisis'),
+        (ESTADO_DESARROLLO, 'En desarrollo'),
+        (ESTADO_RESUELTO, 'Resuelto'),
+        (ESTADO_DESCARTADO, 'Descartado'),
+    ]
+    ESTADO_TONO = {
+        ESTADO_NUEVO: 'amber',
+        ESTADO_ANALISIS: 'blue',
+        ESTADO_DESARROLLO: 'violet',
+        ESTADO_RESUELTO: 'green',
+        ESTADO_DESCARTADO: 'gray',
+    }
+
+    titulo = models.CharField('Título', max_length=200)
+    etiqueta = models.CharField('Etiqueta', max_length=12, choices=ETIQUETA_CHOICES, default=ETIQUETA_MEJORA)
+    comentario = models.TextField('Comentario')
+    estado = models.CharField('Estado', max_length=12, choices=ESTADO_CHOICES, default=ESTADO_NUEVO, db_index=True)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name='Pedido por', on_delete=models.PROTECT,
+        related_name='pedidos_desarrollo',
+    )
+    creado_en = models.DateTimeField('Creado', auto_now_add=True)
+    actualizado_en = models.DateTimeField('Actualizado', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Pedido al desarrollo'
+        verbose_name_plural = 'Pedidos al desarrollo'
+        ordering = ['-creado_en']
+
+    def __str__(self):
+        return f'#{self.pk} {self.titulo} ({self.get_estado_display()})'
+
+    @property
+    def estado_tono(self):
+        return self.ESTADO_TONO.get(self.estado, 'gray')
+
+
+class ComentarioPedido(models.Model):
+    pedido = models.ForeignKey(
+        PedidoDesarrollo, verbose_name='Pedido', on_delete=models.CASCADE, related_name='comentarios',
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name='Autor', on_delete=models.PROTECT,
+        related_name='comentarios_pedido',
+    )
+    texto = models.TextField('Comentario', blank=True)
+    # Completos solo cuando el comentario registra un cambio de estado.
+    estado_anterior = models.CharField('Estado anterior', max_length=12, choices=PedidoDesarrollo.ESTADO_CHOICES, blank=True)
+    estado_nuevo = models.CharField('Estado nuevo', max_length=12, choices=PedidoDesarrollo.ESTADO_CHOICES, blank=True)
+    creado_en = models.DateTimeField('Creado', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Comentario de pedido'
+        verbose_name_plural = 'Comentarios de pedidos'
+        ordering = ['creado_en', 'pk']
+
+    def __str__(self):
+        return f'Pedido #{self.pedido_id} · {self.autor} · {self.creado_en:%d/%m/%Y %H:%M}'
+
+    @property
+    def es_cambio_estado(self):
+        return bool(self.estado_nuevo)

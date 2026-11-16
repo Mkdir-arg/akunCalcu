@@ -249,6 +249,10 @@
                                 <span class="sidebar-text">Novedades</span>
                                 {% if novedades_no_leidas %}<span class="badge b-blue sidebar-text ml-auto" aria-label="{{ novedades_no_leidas }} sin leer">{{ novedades_no_leidas }}</span>{% endif %}
                             </a>
+                            <a href="{% url 'novedades:pedidos' %}" class="nv {% if current_route_key == 'novedades:pedidos' or current_route_key == 'novedades:pedido_crear' or current_route_key == 'novedades:pedido_detalle' %}on{% endif %}">
+                                <i class="far fa-life-ring nv-icon"></i>
+                                <span class="sidebar-text">Pedidos al desarrollo</span>
+                            </a>
                             {% if novedades_puede_gestionar %}
                             <a href="{% url 'novedades:bandeja' %}" class="nv {% if current_route_key == 'novedades:bandeja' or current_route_key == 'novedades:editar' or current_route_key == 'novedades:crear' %}on{% endif %}">
                                 <i class="fas fa-inbox nv-icon"></i>
