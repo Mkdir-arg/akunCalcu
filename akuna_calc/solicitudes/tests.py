@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 import os
 
 from django.contrib.auth import get_user_model
@@ -167,6 +168,83 @@ class ApiCrearTests(BaseSolicitudesTest):
         self.assertEqual(SolicitudPresupuesto.objects.filter(gmail_thread_id='thread-123').count(), 1)
 
 
+class ApiCrearReenvioTests(BaseSolicitudesTest):
+    """FIX-032: el cliente manda el formulario web dos veces (cada envío es un mail y
+    un hilo de Gmail distinto) y la rotación le asignaba una copia a cada vendedor."""
+
+    PEDIDO = {
+        'nombre_cliente': 'Flavia', 'email': 'flaviabalietti@gmail.com',
+        'telefono': '1176214066', 'mensaje': 'Necesito presupuesto de una ventana corrediza',
+    }
+
+    def setUp(self):
+        super().setUp()
+        self.v1 = self.crear_vendedor('v1')
+        self.v2 = self.crear_vendedor('v2')
+
+    def test_mismo_cliente_otro_hilo_no_crea_otra_solicitud(self):
+        r1 = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        r2 = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-2'))
+        self.assertFalse(r1.json()['duplicada'])
+        self.assertTrue(r2.json()['duplicada'])
+        self.assertFalse(r2.json()['notificar'])
+        self.assertEqual(r2.json()['solicitud_id'], r1.json()['solicitud_id'])
+        self.assertEqual(SolicitudPresupuesto.objects.count(), 1)
+
+    def test_reenvio_no_consume_turno(self):
+        self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-2'))
+        r3 = self.api_post('solicitudes:api_crear', {
+            'nombre_cliente': 'Otro', 'email': 'otro@gmail.com', 'telefono': '1144445555',
+            'mensaje': 'Presupuesto de una puerta', 'gmail_thread_id': 't-3',
+        })
+        self.assertEqual(r3.json()['vendedor']['email'], self.v2.email)
+
+    def test_mismo_telefono_en_otro_formato(self):
+        self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        r2 = self.api_post('solicitudes:api_crear', dict(
+            self.PEDIDO, email='', telefono='011 7621-4066', gmail_thread_id='t-2',
+        ))
+        self.assertTrue(r2.json()['duplicada'])
+
+    def test_mismo_email_con_mayusculas(self):
+        self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        r2 = self.api_post('solicitudes:api_crear', dict(
+            self.PEDIDO, email='FlaviaBalietti@Gmail.com', telefono='', gmail_thread_id='t-2',
+        ))
+        self.assertTrue(r2.json()['duplicada'])
+
+    def test_mensaje_distinto_se_suma_a_las_notas(self):
+        r1 = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        self.api_post('solicitudes:api_crear', dict(
+            self.PEDIDO, mensaje='Me olvidé: también una puerta balcón', gmail_thread_id='t-2',
+        ))
+        s = SolicitudPresupuesto.objects.get(pk=r1.json()['solicitud_id'])
+        self.assertIn('también una puerta balcón', s.notas)
+
+    def test_pasadas_24_horas_es_una_solicitud_nueva(self):
+        r1 = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        SolicitudPresupuesto.objects.filter(pk=r1.json()['solicitud_id']).update(
+            fecha_recepcion=timezone.now() - timedelta(hours=25),
+        )
+        r2 = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-2'))
+        self.assertFalse(r2.json()['duplicada'])
+        self.assertEqual(SolicitudPresupuesto.objects.count(), 2)
+
+    def test_descartada_no_cuenta_como_original(self):
+        SolicitudPresupuesto.objects.create(
+            email=self.PEDIDO['email'], estado=SolicitudPresupuesto.ESTADO_DESCARTADA,
+        )
+        r = self.api_post('solicitudes:api_crear', dict(self.PEDIDO, gmail_thread_id='t-1'))
+        self.assertFalse(r.json()['duplicada'])
+
+    def test_sin_email_ni_telefono_no_se_agrupa(self):
+        vacio = {'nombre_cliente': '', 'email': '', 'telefono': '', 'mensaje': 'ventana'}
+        self.api_post('solicitudes:api_crear', dict(vacio, gmail_thread_id='t-1'))
+        r2 = self.api_post('solicitudes:api_crear', dict(vacio, gmail_thread_id='t-2'))
+        self.assertFalse(r2.json()['duplicada'])
+
+
 class ClasificadorSpamTests(TestCase):
     """Casos textuales tomados de producción (solicitudes 60 a 63 y el spam del 26/07).
 
@@ -295,9 +373,12 @@ class ApiCrearSpamTests(BaseSolicitudesTest):
         v1 = self.crear_vendedor('v1')
         v2 = self.crear_vendedor('v2')
 
+        otro_cliente = dict(
+            self.LEGITIMO, nombre_cliente='Otro', email='otro@gmail.com', telefono='1144445555',
+        )
         self.api_post('solicitudes:api_crear', dict(self.LEGITIMO, gmail_thread_id='t-1'))
         self.api_post('solicitudes:api_crear', dict(self.SPAM, gmail_thread_id='t-2'))
-        self.api_post('solicitudes:api_crear', dict(self.LEGITIMO, gmail_thread_id='t-3'))
+        self.api_post('solicitudes:api_crear', dict(otro_cliente, gmail_thread_id='t-3'))
 
         asignados = list(
             SolicitudPresupuesto.objects

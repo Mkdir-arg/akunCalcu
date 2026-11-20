@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-20 — FIX-032: pedidos del formulario web duplicados
+
+Si el cliente manda el formulario dos veces, el pedido ya no se reparte a las dos vendedoras: dentro de las 24 h, el mismo email o teléfono se suma a la solicitud que ya existe.
+
+---
+
 ## 2026-11-16 — FEAT-060: pedidos al desarrollo
 
 Nuevo ítem **Pedidos al desarrollo** (y botones en Novedades): cualquier usuario levanta un pedido con título, etiqueta (Error, Mejora, Nueva funcionalidad, Consulta) y comentario, y lo sigue como un ticket. El administrador (acceso total) ve todos, filtra por estado y etiqueta, comenta y cambia el estado (Nuevo → En análisis → En desarrollo → Resuelto / Descartado); cada cambio queda en el hilo, y quien lo pidió puede responder. Migración `novedades/0002` (REQ-077).

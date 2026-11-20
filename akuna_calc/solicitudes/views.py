@@ -16,7 +16,7 @@ from core.avisos import crear_aviso
 
 from .forms import ReasignarSolicitudForm
 from .models import SolicitudPresupuesto
-from .services import asignar_siguiente_vendedor, vendedores_pool
+from .services import asignar_siguiente_vendedor, buscar_reenvio, vendedores_pool
 from .spam import clasificar_spam
 
 
@@ -68,7 +68,8 @@ def _payload_solicitud(solicitud, duplicada=False):
 def api_crear(request):
     """Crea una solicitud, la asigna al próximo vendedor (round-robin) y devuelve
     sus datos para que n8n reenvíe el mail y avise por WhatsApp. Idempotente por
-    gmail_thread_id (si n8n reintenta, no duplica)."""
+    gmail_thread_id (si n8n reintenta, no duplica) y por cliente: el mismo email o
+    teléfono en 24 h devuelve la solicitud existente (FIX-032)."""
     if not _validar_token(request):
         return JsonResponse({'error': 'No autorizado'}, status=401)
 
@@ -87,6 +88,15 @@ def api_crear(request):
     email = (data.get('email') or '').strip()[:254]
     telefono = (data.get('telefono') or '').strip()[:50]
     mensaje = data.get('mensaje') or ''
+
+    original = buscar_reenvio(email, telefono)
+    if original:
+        if mensaje.strip() and mensaje.strip() != original.mensaje.strip():
+            fecha = timezone.localtime().strftime('%d/%m %H:%M')
+            nota = f'Reenvío del cliente ({fecha}): {mensaje.strip()}'
+            original.notas = f'{original.notas}\n{nota}'.strip()
+            original.save(update_fields=['notas', 'updated_at'])
+        return JsonResponse(_payload_solicitud(original, duplicada=True))
 
     solicitud = SolicitudPresupuesto(
         nombre_cliente=nombre_cliente,

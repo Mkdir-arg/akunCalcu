@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-032 — El mismo pedido del formulario web llegaba a las dos vendedoras
+**Fecha**: 2026-11-20
+**Reportado por**: Usuario
+**Severidad**: Media
+**Feature afectada**: FEAT-025 (reparto de solicitudes)
+
+**Síntoma**: Un mismo cliente aparecía dos veces en el panel de solicitudes, una asignada a cada vendedora, y las dos lo llamaban. Casos en prod: Elena de Paulet (408/409), Mariel (411/412) y Flavia (414/415), del 19 y 20/11.
+**Causa raíz**: El cliente envía el formulario web otra vez a los 24-63 segundos. Cada envío llega como un mail nuevo, en otro hilo de Gmail, y `api_crear` solo detectaba repetidos por `gmail_thread_id`. La segunda copia se creaba y la rotación se la daba a la otra vendedora. Revisadas las 80 ejecuciones de n8n del 08 al 20/11: ningún mail se procesó dos veces; el problema no está en n8n.
+**Solución**: `services.buscar_reenvio()` busca una solicitud no descartada del mismo email (sin distinguir mayúsculas) o teléfono (últimos 8 dígitos) recibida en las últimas 24 h. Si existe, `api_crear` no crea otra ni gasta turno de la rotación: suma el mensaje nuevo a las notas (si es distinto) y responde `duplicada=true`, con lo que n8n no reenvía el mail ni manda WhatsApp. Sin cambios en n8n ni migración.
+**Archivos modificados**: `akuna_calc/solicitudes/services.py`, `akuna_calc/solicitudes/views.py`, `akuna_calc/solicitudes/tests.py`
+
 ### FIX-031 — En Configuración › Perfiles no andaba la selección masiva ni los filtros
 **Fecha**: 2026-11-11
 **Reportado por**: Usuario
