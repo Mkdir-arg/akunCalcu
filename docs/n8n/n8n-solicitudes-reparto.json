@@ -91,10 +91,10 @@
         840,
         260
       ],
-      "notes": "FIX-020: mode=runOnceForEachItem. Antes usaba $input.first() y devolvia 1 solo item, asi que de cada lote del trigger (hasta 20 mails) se procesaba 1 y se perdian los demas en silencio.",
+      "notes": "FIX-020: mode=runOnceForEachItem. Antes usaba $input.first() y devolvia 1 solo item, asi que de cada lote del trigger (hasta 20 mails) se procesaba 1 y se perdian los demas en silencio. FIX-033: la consulta es optativa en la regex (si el cliente la deja vacia el sitio no manda ese rotulo y antes no se extraia ningun dato).",
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const src=$json.body||'';\nconst thread=$json.gmail_thread_id||'';\nconst re=/Nombre\\s+([\\s\\S]*?)\\s+E-?mail\\s+([\\s\\S]*?)\\s+Tel[eé]fono\\s+([\\s\\S]*?)\\s+Barrio\\s*\\/?\\s*Localidad\\s+([\\s\\S]*?)\\s+Escrib[ií][\\s\\S]*?mensaje\\s+([\\s\\S]*?)\\s+Enviado desde/i;\nconst m=src.match(re);\nlet r;\nif(m){ let email=m[2].trim(); const em=email.match(/[^\\s<>\\[\\]()]+@[^\\s<>\\[\\]()]+\\.[^\\s<>\\[\\]()]+/); if(em) email=em[0]; const loc=m[4].trim(); const con=m[5].trim(); r={ es_presupuesto:true, nombre_cliente:m[1].trim(), email:email, telefono:m[3].trim(), asunto:'Formulario web', mensaje:(loc?('Localidad: '+loc+'. '):'')+con, gmail_thread_id:thread }; }\nelse { r={ es_presupuesto:true, nombre_cliente:'', email:'', telefono:'', asunto:'Formulario web', mensaje:src.slice(0,500), gmail_thread_id:thread }; }\nreturn { json:r };"
+        "jsCode": "const src=$json.body||'';\nconst thread=$json.gmail_thread_id||'';\nconst re=/Nombre\\s+([\\s\\S]*?)\\s+E-?mail\\s+([\\s\\S]*?)\\s+Tel[eé]fono\\s+([\\s\\S]*?)\\s+Barrio\\s*\\/?\\s*Localidad\\s+([\\s\\S]*?)\\s+(?:Escrib[ií][\\s\\S]*?mensaje\\s+([\\s\\S]*?)\\s+)?Enviado desde/i;\nconst m=src.match(re);\nlet r;\nif(m){ let email=m[2].trim(); const em=email.match(/[^\\s<>\\[\\]()]+@[^\\s<>\\[\\]()]+\\.[^\\s<>\\[\\]()]+/); if(em) email=em[0]; const loc=m[4].trim(); const con=(m[5]||'').trim(); const partes=[]; if(loc) partes.push('Localidad: '+loc+'.'); if(con) partes.push(con); r={ es_presupuesto:true, nombre_cliente:m[1].trim(), email:email, telefono:m[3].trim(), asunto:'Formulario web', mensaje:partes.join(' '), gmail_thread_id:thread }; }\nelse { r={ es_presupuesto:true, nombre_cliente:'', email:'', telefono:'', asunto:'Formulario web', mensaje:src.slice(0,500), gmail_thread_id:thread }; }\nreturn { json:r };"
       }
     },
     {

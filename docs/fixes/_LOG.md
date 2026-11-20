@@ -22,6 +22,17 @@
 
 ## Fixes registrados
 
+### FIX-033 — Formulario web sin consulta: la solicitud quedaba sin datos del cliente
+**Fecha**: 2026-11-20
+**Reportado por**: Equipo (visto al analizar FIX-032)
+**Severidad**: Media
+**Feature afectada**: FEAT-025 (reparto de solicitudes, workflow n8n `PlXLIyyN2wyFYICD`)
+
+**Síntoma**: La solicitud 389 (10/11) llegó al panel sin nombre, email ni teléfono, aunque el mail traía «Nombre Veronica, E-mail…, Teléfono…, CABA».
+**Causa raíz**: Si el cliente deja vacía la consulta, el sitio no manda el rótulo «Escribí acá tu consulta o mensaje». La regex del nodo `Parsear Formulario` lo exigía, no matcheaba y caía al caso de respaldo, que manda todo vacío.
+**Solución**: El bloque de la consulta es optativo en la regex; el mensaje se arma con lo que haya («Localidad: CABA.» si no hay consulta). Caso nuevo en `docs/n8n/test-nodos-reparto.js` con el cuerpo real. Guardado en n8n como borrador (la API key del MCP no puede publicar): **hay que tocar Publicar en la UI de n8n**.
+**Archivos modificados**: `docs/n8n/n8n-solicitudes-reparto.json`, `docs/n8n/test-nodos-reparto.js`
+
 ### FIX-032 — El mismo pedido del formulario web llegaba a las dos vendedoras
 **Fecha**: 2026-11-20
 **Reportado por**: Usuario

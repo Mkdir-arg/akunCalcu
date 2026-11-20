@@ -14,6 +14,12 @@
 
 ---
 
+## 2026-11-20 — FIX-033: formulario web sin consulta
+
+Si el cliente no escribe nada en la consulta, la solicitud igual trae nombre, email, teléfono y localidad (antes llegaba vacía).
+
+---
+
 ## 2026-11-20 — FIX-032: pedidos del formulario web duplicados
 
 Si el cliente manda el formulario dos veces, el pedido ya no se reparte a las dos vendedoras: dentro de las 24 h, el mismo email o teléfono se suma a la solicitud que ya existe.

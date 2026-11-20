@@ -112,6 +112,21 @@ check('Parsear Formulario: el primer formulario conserva localidad y consulta', 
   assert.match(parseados[0].json.mensaje, /^Localidad: Ciudad Evita\. .*ventanas a medida/);
 });
 
+console.log('\n== 3b. Formulario sin consulta (solicitud 389) ==');
+// Si el cliente deja vacío el mensaje, el sitio no manda el rótulo "Escribí acá tu
+// consulta o mensaje" y la regex vieja no matcheaba: la solicitud quedaba sin datos.
+const SIN_CONSULTA = [{
+  json: { gmail_thread_id: 't389', body: 'Nombre Veronica E-mail vero@ejemplo.com [vero@ejemplo.com] ' +
+    'Teléfono 01159209074 Barrio / Localidad CABA Enviado desde AKUN Aberturas [https://akunaberturas.com.ar]' },
+}];
+const sinConsulta = runEachItem(code('Parsear Formulario'), SIN_CONSULTA)[0].json;
+check('Parsear Formulario: sin consulta igual saca nombre, email, telefono y localidad', () => {
+  assert.strictEqual(sinConsulta.nombre_cliente, 'Veronica');
+  assert.strictEqual(sinConsulta.email, 'vero@ejemplo.com');
+  assert.strictEqual(sinConsulta.telefono, '01159209074');
+  assert.strictEqual(sinConsulta.mensaje, 'Localidad: CABA.');
+});
+
 console.log('\n== 4. Rama IA: el thread_id no se cruza entre mails ==');
 // El IF manda a la rama IA los indices 1 y 3. La respuesta de OpenAI llega pareada a ellos.
 const aIA = [1, 3].map((i) => ({
